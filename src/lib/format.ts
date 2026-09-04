@@ -9,6 +9,20 @@ export function formatUsd(value: number): string {
   return usd.format(value)
 }
 
+/** US market price with an explicit country prefix, e.g. "US $669.52", for use beside an SGD figure. */
+export function formatUsMarketUsd(value: number): string {
+  return `US ${usd.format(value)}`
+}
+
+const sgdWhole = new Intl.NumberFormat('en-SG', { maximumFractionDigits: 0 })
+const sgdCents = new Intl.NumberFormat('en-SG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+/** Singapore dollars as "S$750" for whole amounts, "S$749.50" otherwise. */
+export function formatSgd(value: number): string {
+  const fmt = Number.isInteger(value) ? sgdWhole : sgdCents
+  return `S$${fmt.format(value)}`
+}
+
 export function formatSignedUsd(value: number): string {
   if (value > 0) return `+${usd.format(value)}`
   if (value < 0) return `−${usd.format(Math.abs(value))}`
