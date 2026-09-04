@@ -10,7 +10,7 @@ export function SetsScreen() {
       {SETS.length === 0 ? (
         <EmptyState message="No sets loaded yet." />
       ) : (
-        <ul className="space-y-4">
+        <ul className="grid grid-cols-1 gap-4 tablet:grid-cols-2 wide:grid-cols-3">
           {SETS.map((set) => (
             <li key={set.setCode}>
               <SetTile set={set} />

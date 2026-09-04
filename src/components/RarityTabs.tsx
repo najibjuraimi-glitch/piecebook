@@ -1,4 +1,5 @@
 import type { RarityBucket } from '../data/seed'
+import { BLEED } from './Screen'
 
 interface Props {
   buckets: RarityBucket[]
@@ -11,7 +12,7 @@ export function RarityTabs({ buckets, active, onChange }: Props) {
     <div
       role="tablist"
       aria-label="Rarity"
-      className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-3"
+      className={`no-scrollbar flex gap-2 overflow-x-auto py-3 ${BLEED}`}
     >
       {buckets.map((b) => {
         const selected = b.key === active

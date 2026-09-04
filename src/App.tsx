@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
 import { TabBar } from './components/TabBar'
+import { TopBar } from './components/TopBar'
 import { SetsScreen } from './screens/Sets'
 import { SetDetailScreen } from './screens/SetDetail'
 import { CardDetailScreen } from './screens/CardDetail'
@@ -23,6 +24,7 @@ export default function App() {
   return (
     <div className="min-h-dvh bg-paper">
       <ScrollToTop />
+      <TopBar pathname={pathname} />
       <Routes>
         <Route path="/" element={<SetsScreen />} />
         <Route path="/sets/:setCode" element={<SetDetailScreen />} />

@@ -2,6 +2,12 @@
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
+    // Named per docs/V1-DESKTOP-LAYOUT.md. Below `tablet` the phone shell is unchanged.
+    screens: {
+      tablet: '768px',
+      desktop: '1024px',
+      wide: '1280px',
+    },
     extend: {
       colors: {
         paper: '#F7F5F0',
@@ -25,6 +31,9 @@ export default {
       },
       maxWidth: {
         phone: '480px',
+        tablet: '720px',
+        desktop: '1100px',
+        wide: '1280px',
       },
       boxShadow: {
         paper: '0 1px 2px rgba(26, 26, 26, 0.06), 0 8px 24px rgba(26, 26, 26, 0.08)',

@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { compareCardNumbers, getCard, type Card } from '../data/seed'
 import { useCollection } from '../store/collection'
 import { Screen, ScreenTitle } from '../components/Screen'
-import { CardCell } from '../components/CardCell'
+import { CardCell, CardGrid } from '../components/CardCell'
 import { EmptyState } from '../components/EmptyState'
 import { pluralCards } from '../lib/format'
 
@@ -34,13 +34,13 @@ export function CollectionScreen() {
       {items.length === 0 ? (
         <EmptyState message="No owned cards yet." ctaLabel="Browse sets" ctaTo="/" />
       ) : (
-        <ul className="grid grid-cols-2 gap-3">
+        <CardGrid>
           {items.map(({ card, qty }) => (
             <li key={card.cardNumber}>
               <CardCell card={card} owned qty={qty} />
             </li>
           ))}
-        </ul>
+        </CardGrid>
       )}
     </Screen>
   )

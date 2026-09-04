@@ -16,6 +16,13 @@
   color-scheme: light;
 }
 
+/* ≥ tablet: the bottom TabBar is hidden, so nothing needs to clear it. */
+@media (min-width: 768px) {
+  :root {
+    --tabbar-h: 0px;
+  }
+}
+
 html {
   background: var(--bg);
   -webkit-text-size-adjust: 100%;

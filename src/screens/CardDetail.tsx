@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { getCard, rarityLabel, type Card } from '../data/seed'
 import { useCollection, type CostLot } from '../store/collection'
-import { BackBar, Screen } from '../components/Screen'
+import { BackBar, BLEED, Screen } from '../components/Screen'
 import { CardArt } from '../components/CardArt'
 import { RarityChip } from '../components/RarityChip'
 import { CheckIcon } from '../components/CardCell'
@@ -75,167 +75,172 @@ function CardDetail({ card }: { card: Card }) {
     <Screen>
       <BackBar fallbackTo={`/sets/${encodeURIComponent(card.setCode)}`} />
 
-      <div className="mx-auto w-full max-w-[340px]">
-        <CardArt card={card} large eager className="shadow-paper" />
-      </div>
+      {/* Stacked on phone/tablet; from desktop up, art on the left (~40%) and meta + actions on the right. */}
+      <div className="desktop:grid desktop:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] desktop:items-start desktop:gap-12">
+        <div className="mx-auto w-full max-w-[340px] desktop:sticky desktop:top-6 desktop:mx-0 desktop:max-w-[480px]">
+          <CardArt card={card} large eager className="shadow-paper" />
+        </div>
 
-      <section className="mt-6">
-        <h1 className="text-display text-ink">{card.name}</h1>
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted">
-          <span className="tabular">{card.cardNumber}</span>
-          <span aria-hidden="true">·</span>
-          <RarityChip rarity={card.rarity} size="md" />
-          <span className="sr-only">{rarityLabel(card.rarity)}</span>
-          <span aria-hidden="true">·</span>
-          <span>{card.language}</span>
-          {card.isParallel && (
-            <>
+        <div className="min-w-0">
+          <section className="mt-6 desktop:mt-0">
+            <h1 className="text-display text-ink">{card.name}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-meta text-muted">
+              <span className="tabular">{card.cardNumber}</span>
               <span aria-hidden="true">·</span>
-              <span>Parallel</span>
-            </>
+              <RarityChip rarity={card.rarity} size="md" />
+              <span className="sr-only">{rarityLabel(card.rarity)}</span>
+              <span aria-hidden="true">·</span>
+              <span>{card.language}</span>
+              {card.isParallel && (
+                <>
+                  <span aria-hidden="true">·</span>
+                  <span>Parallel</span>
+                </>
+              )}
+            </div>
+          </section>
+
+          <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4">
+            <p className="text-meta font-medium text-muted">Market (seed)</p>
+            {card.marketUsd === null ? (
+              <p className="mt-1 text-title text-muted">No seed price</p>
+            ) : (
+              <div className="mt-1 flex items-baseline justify-between gap-3">
+                <p className="tabular text-[28px] font-semibold leading-[34px] tracking-[-0.02em] text-ink">
+                  {formatUsd(card.marketUsd)}
+                </p>
+                {card.asOf && <p className="tabular text-meta text-muted">as of {formatDate(card.asOf)}</p>}
+              </div>
+            )}
+          </section>
+
+          {owned && (
+            <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-white">
+                    <CheckIcon />
+                  </span>
+                  <p className="text-body font-semibold text-ink">Owned</p>
+                </div>
+                <QtyStepper value={qty} onChange={(n) => setQty(card.cardNumber, n)} />
+              </div>
+              <DangerGhostButton className="mt-4" onClick={onRemoveOwned}>
+                Remove from collection
+              </DangerGhostButton>
+            </section>
+          )}
+
+          <section className="mt-6">
+            <h2 className="px-1 text-meta font-medium uppercase tracking-[0.08em] text-muted">Cost basis</h2>
+
+            {lots.length > 0 && !editing && (
+              <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
+                {lots.map((lot) => (
+                  <li key={lot.id}>
+                    <button
+                      type="button"
+                      onClick={() => setDraft(draftFrom(lot))}
+                      className="flex min-h-[56px] w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-150 ease-out hover:bg-paper/60 active:bg-paper"
+                      aria-label={`Edit cost, ${formatUsd(lot.paidUsd)} on ${formatDate(lot.paidOn)}`}
+                    >
+                      <div className="min-w-0">
+                        <p className="tabular text-body font-semibold text-ink">
+                          {formatUsd(lot.paidUsd)}
+                          {lot.qty > 1 && <span className="ml-2 text-meta font-medium text-muted">×{lot.qty}</span>}
+                        </p>
+                        <p className="tabular truncate text-meta text-muted">
+                          {formatDate(lot.paidOn)}
+                          {lot.note ? ` · ${lot.note}` : ''}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-meta font-medium text-muted">Edit cost</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {editing && draft ? (
+              <form onSubmit={onSave} className="mt-3 space-y-4 rounded-2xl border border-line bg-surface px-5 py-5">
+                <Field label="Amount paid (USD)" htmlFor="paid">
+                  <input
+                    id="paid"
+                    inputMode="decimal"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    required
+                    autoFocus
+                    placeholder="0.00"
+                    value={draft.paidUsd}
+                    onChange={(e) => setDraft({ ...draft, paidUsd: e.target.value })}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Date" htmlFor="date">
+                  <input
+                    id="date"
+                    type="date"
+                    required
+                    max={todayIso()}
+                    value={draft.paidOn}
+                    onChange={(e) => setDraft({ ...draft, paidOn: e.target.value })}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Qty" htmlFor="qty">
+                  <input
+                    id="qty"
+                    inputMode="numeric"
+                    type="number"
+                    step="1"
+                    min="1"
+                    value={draft.qty}
+                    onChange={(e) => setDraft({ ...draft, qty: e.target.value })}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Note (optional)" htmlFor="note">
+                  <input
+                    id="note"
+                    type="text"
+                    maxLength={80}
+                    placeholder="e.g. Carousell, meetup, sealed lot"
+                    value={draft.note}
+                    onChange={(e) => setDraft({ ...draft, note: e.target.value })}
+                    className={inputClass}
+                  />
+                </Field>
+                <div className="flex gap-3 pt-1">
+                  <GhostButton onClick={() => setDraft(null)}>Cancel</GhostButton>
+                  {draft.id && <DangerGhostButton onClick={onRemoveLot}>Remove</DangerGhostButton>}
+                </div>
+                <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
+              </form>
+            ) : (
+              <GhostButton className="mt-3" onClick={() => setDraft(emptyDraft())}>
+                Add cost basis
+              </GhostButton>
+            )}
+          </section>
+
+          {(editing || !owned) && (
+            <div
+              className={`sticky z-10 mt-8 bg-gradient-to-t from-paper via-paper/95 to-paper/0 pb-2 pt-6 ${BLEED} desktop:static desktop:mx-0 desktop:bg-none desktop:px-0 desktop:pb-0 desktop:pt-0`}
+              style={{ bottom: 'calc(var(--tabbar-h) + var(--safe-bottom))' }}
+            >
+              {editing ? (
+                <PrimaryButton onClick={() => onSave()} disabled={!draftValid}>
+                  Save cost
+                </PrimaryButton>
+              ) : (
+                <PrimaryButton onClick={() => markOwned(card.cardNumber)}>Mark owned</PrimaryButton>
+              )}
+            </div>
           )}
         </div>
-      </section>
-
-      <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4">
-        <p className="text-meta font-medium text-muted">Market (seed)</p>
-        {card.marketUsd === null ? (
-          <p className="mt-1 text-title text-muted">No seed price</p>
-        ) : (
-          <div className="mt-1 flex items-baseline justify-between gap-3">
-            <p className="tabular text-[28px] font-semibold leading-[34px] tracking-[-0.02em] text-ink">
-              {formatUsd(card.marketUsd)}
-            </p>
-            {card.asOf && <p className="tabular text-meta text-muted">as of {formatDate(card.asOf)}</p>}
-          </div>
-        )}
-      </section>
-
-      {owned && (
-        <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-white">
-                <CheckIcon />
-              </span>
-              <p className="text-body font-semibold text-ink">Owned</p>
-            </div>
-            <QtyStepper value={qty} onChange={(n) => setQty(card.cardNumber, n)} />
-          </div>
-          <DangerGhostButton className="mt-4" onClick={onRemoveOwned}>
-            Remove from collection
-          </DangerGhostButton>
-        </section>
-      )}
-
-      <section className="mt-6">
-        <h2 className="px-1 text-meta font-medium uppercase tracking-[0.08em] text-muted">Cost basis</h2>
-
-        {lots.length > 0 && !editing && (
-          <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
-            {lots.map((lot) => (
-              <li key={lot.id}>
-                <button
-                  type="button"
-                  onClick={() => setDraft(draftFrom(lot))}
-                  className="flex min-h-[56px] w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors duration-150 ease-out hover:bg-paper/60 active:bg-paper"
-                  aria-label={`Edit cost, ${formatUsd(lot.paidUsd)} on ${formatDate(lot.paidOn)}`}
-                >
-                  <div className="min-w-0">
-                    <p className="tabular text-body font-semibold text-ink">
-                      {formatUsd(lot.paidUsd)}
-                      {lot.qty > 1 && <span className="ml-2 text-meta font-medium text-muted">×{lot.qty}</span>}
-                    </p>
-                    <p className="tabular truncate text-meta text-muted">
-                      {formatDate(lot.paidOn)}
-                      {lot.note ? ` · ${lot.note}` : ''}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-meta font-medium text-muted">Edit cost</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {editing && draft ? (
-          <form onSubmit={onSave} className="mt-3 space-y-4 rounded-2xl border border-line bg-surface px-5 py-5">
-            <Field label="Amount paid (USD)" htmlFor="paid">
-              <input
-                id="paid"
-                inputMode="decimal"
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                autoFocus
-                placeholder="0.00"
-                value={draft.paidUsd}
-                onChange={(e) => setDraft({ ...draft, paidUsd: e.target.value })}
-                className={inputClass}
-              />
-            </Field>
-            <Field label="Date" htmlFor="date">
-              <input
-                id="date"
-                type="date"
-                required
-                max={todayIso()}
-                value={draft.paidOn}
-                onChange={(e) => setDraft({ ...draft, paidOn: e.target.value })}
-                className={inputClass}
-              />
-            </Field>
-            <Field label="Qty" htmlFor="qty">
-              <input
-                id="qty"
-                inputMode="numeric"
-                type="number"
-                step="1"
-                min="1"
-                value={draft.qty}
-                onChange={(e) => setDraft({ ...draft, qty: e.target.value })}
-                className={inputClass}
-              />
-            </Field>
-            <Field label="Note (optional)" htmlFor="note">
-              <input
-                id="note"
-                type="text"
-                maxLength={80}
-                placeholder="e.g. Carousell, meetup, sealed lot"
-                value={draft.note}
-                onChange={(e) => setDraft({ ...draft, note: e.target.value })}
-                className={inputClass}
-              />
-            </Field>
-            <div className="flex gap-3 pt-1">
-              <GhostButton onClick={() => setDraft(null)}>Cancel</GhostButton>
-              {draft.id && <DangerGhostButton onClick={onRemoveLot}>Remove</DangerGhostButton>}
-            </div>
-            <button type="submit" className="hidden" aria-hidden="true" tabIndex={-1} />
-          </form>
-        ) : (
-          <GhostButton className="mt-3" onClick={() => setDraft(emptyDraft())}>
-            Add cost basis
-          </GhostButton>
-        )}
-      </section>
-
-      {(editing || !owned) && (
-        <div
-          className="sticky z-10 -mx-4 mt-8 bg-gradient-to-t from-paper via-paper/95 to-paper/0 px-4 pb-2 pt-6"
-          style={{ bottom: 'calc(var(--tabbar-h) + var(--safe-bottom))' }}
-        >
-          {editing ? (
-            <PrimaryButton onClick={() => onSave()} disabled={!draftValid}>
-              Save cost
-            </PrimaryButton>
-          ) : (
-            <PrimaryButton onClick={() => markOwned(card.cardNumber)}>Mark owned</PrimaryButton>
-          )}
-        </div>
-      )}
+      </div>
     </Screen>
   )
 }
