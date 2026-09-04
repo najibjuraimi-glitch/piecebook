@@ -16,7 +16,7 @@ export function SetTile({ set }: { set: RosterSet }) {
   return (
     <Link
       to={`/sets/${encodeURIComponent(set.setCode)}`}
-      className="block overflow-hidden rounded-2xl border border-line bg-surface shadow-paper transition-transform duration-150 ease-out active:scale-[0.99]"
+      className="block h-full overflow-hidden rounded-2xl border border-line bg-surface shadow-paper transition-transform duration-150 ease-out active:scale-[0.99]"
     >
       <ArtBand setCode={set.setCode} setName={set.setName} boxArtUrl={set.boxArtUrl} />
 
