@@ -13,16 +13,16 @@ Collectors want to see what a sealed EN box goes for in SG, and the seed market 
 | Field | Meaning |
 | --- | --- |
 | `setCode`, `setName`, `language`, `product` | Which box (`booster_box`) feeds which set |
-| `boxArtUrl` | Booster box art. `null` for now; Cards fills later |
+| `boxArtUrl` | Closed EN booster box front, supplied and cleared by Cards / Design (retailer watermark acceptable in V1). `null` if none |
 | `sgAskSgd`, `sgSource` | SG clean-box ask in SGD and where it was read |
 | `usMarketUsd`, `usSource` | TCGPlayer market in USD and product reference |
 | `asOf` | ISO date the prices were read |
 
-Design and Code do not invent prices or art. `boxArtUrl` stays `null` until Cards supplies URLs; the field is wired so art appears without a code rewrite.
+Design and Code do not invent prices or art. Only URLs Cards supplies and Design clears as closed box fronts go into `boxArtUrl` (pack / open-carton promo shots are not box fronts).
 
 ## SetTile
 Quiet surface card. Whole tile taps to the set.
-- Art band on top: box art when `boxArtUrl` is set; otherwise type-first (big OP code on tinted paper).
+- Art band on top: box art when `boxArtUrl` is set, `object-fit: cover` so the box face fills the band. Type-first (big OP code on tinted paper) only when there is no URL or the image fails to load.
 - Body: EN set meta, set code, set name, card count, then the sealed price:
   - Primary: `Box · S$750` (SG ask; the meta line above already says EN, so the language is not repeated)
   - Secondary, muted: `US $669.52 · as of 4 Sep 2026`
