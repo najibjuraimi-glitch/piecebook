@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { getCard, rarityLabel, type Card } from '../data/seed'
+import { getCard, type Card } from '../data/seed'
 import { useCollection, type CostLot } from '../store/collection'
 import { BackBar, BLEED, Screen } from '../components/Screen'
 import { CardArt } from '../components/CardArt'
@@ -88,7 +88,6 @@ function CardDetail({ card }: { card: Card }) {
               <span className="tabular">{card.cardNumber}</span>
               <span aria-hidden="true">·</span>
               <RarityChip rarity={card.rarity} size="md" />
-              <span className="sr-only">{rarityLabel(card.rarity)}</span>
               <span aria-hidden="true">·</span>
               <span>{card.language}</span>
               {card.isParallel && (

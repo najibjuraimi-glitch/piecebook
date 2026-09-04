@@ -112,15 +112,17 @@ export const RARITY_ORDER = ['L', 'SEC', 'SR', 'R', 'UC', 'C'] as const
 
 export const PARALLELS_TAB = 'Parallels'
 
+/**
+ * UI copy for seed rarity codes (Cards/Design). Used everywhere a rarity is shown:
+ * filter chips, card cells and card detail. Seed CSV codes themselves are unchanged.
+ */
 export const RARITY_LABELS: Record<string, string> = {
   L: 'Leader',
-  SEC: 'SEC',
-  SR: 'SR',
-  R: 'R',
-  UC: 'UC',
-  C: 'C',
-  SP: 'SP',
-  TR: 'TR',
+  SEC: 'Secret Rare',
+  SR: 'Super Rare',
+  R: 'Rare',
+  UC: 'Uncommon',
+  C: 'Common',
 }
 
 export function rarityLabel(rarity: string): string {
