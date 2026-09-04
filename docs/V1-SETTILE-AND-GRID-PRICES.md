@@ -22,7 +22,7 @@ Design and Code do not invent prices or art. Only URLs Cards supplies and Design
 
 ## SetTile
 Quiet surface card. Whole tile taps to the set.
-- Art band on top: box art when `boxArtUrl` is set, `object-fit: cover` so the box face fills the band. Type-first (big OP code on tinted paper) only when there is no URL or the image fails to load.
+- Art band on top (3:2): box art when `boxArtUrl` is set, `object-fit: cover; object-position: center` so the box face fills the band. Vendored fronts are pre-framed to 3:2 so lightbox walls and floor sit outside the frame. Type-first (big OP code on tinted paper) only when there is no URL or the image fails to load.
 - Body: EN set meta, set code, set name, card count, then the sealed price:
   - Primary: `Box · S$750` (SG ask; the meta line above already says EN, so the language is not repeated)
   - Secondary, muted: `US $669.52 · as of 4 Sep 2026`
