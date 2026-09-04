@@ -63,7 +63,7 @@ export function SetDetailScreen() {
 
       {hasIntroContent(intro) && <SetIntro intro={intro} />}
 
-      <SearchField value={query} onChange={setQuery} className="mt-5" />
+      <SearchField value={query} onChange={setQuery} className="mt-5 tablet:max-w-[560px]" />
 
       <SortControls sort={sort} onChange={(s) => update({ sort: s })} count={visible.length} className="mt-3 px-1" />
 
