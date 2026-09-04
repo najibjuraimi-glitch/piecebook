@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import type { Card } from '../data/seed'
+import { formatUsd } from '../lib/format'
 import { CardArt } from './CardArt'
 import { RarityChip } from './RarityChip'
 
@@ -47,6 +48,10 @@ export function CardCell({ card, owned = false, qty = 0 }: Props) {
           <span className="tabular truncate text-meta text-muted">{card.cardNumber}</span>
           <RarityChip rarity={card.rarity} />
         </div>
+        {/* Seed market_usd only; no as-of, change or trend on cells. */}
+        {card.marketUsd !== null && (
+          <p className="tabular text-meta text-muted">{formatUsd(card.marketUsd)}</p>
+        )}
       </div>
     </Link>
   )
