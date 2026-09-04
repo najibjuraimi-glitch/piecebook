@@ -60,9 +60,9 @@ function ArtBand({ setCode, setName, boxArtUrl }: ArtBandProps) {
           decoding="async"
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
-          // Anchor the cover crop to the top: product shots carry the set label along
-          // the top edge, while the bottom is expendable floor / shadow.
-          className={`h-full w-full object-cover object-top transition-opacity duration-200 ease-out ${
+          // Design: centre cover. Vendored box fronts are pre-framed to the band's 3:2 so the
+          // face fills the band with lightbox walls and floor already outside the frame.
+          className={`h-full w-full object-cover object-center transition-opacity duration-200 ease-out ${
             loaded ? 'opacity-100' : 'opacity-0'
           }`}
         />
