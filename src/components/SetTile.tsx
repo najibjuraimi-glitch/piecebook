@@ -42,8 +42,9 @@ interface ArtBandProps {
 
 /**
  * Top band of the tile. Shows Cards' booster box art when `boxArtUrl` is
- * seeded; until then (and if the image fails) it is type-first: the set code
- * large on tinted paper.
+ * seeded, cropped with object-fit: cover so the box face fills the band. Falls
+ * back to type-first (the set code large on tinted paper) only when there is
+ * no URL or the image fails to load.
  */
 function ArtBand({ setCode, setName, boxArtUrl }: ArtBandProps) {
   const [loaded, setLoaded] = useState(false)
@@ -51,16 +52,15 @@ function ArtBand({ setCode, setName, boxArtUrl }: ArtBandProps) {
   const showArt = Boolean(boxArtUrl) && !failed
 
   return (
-    <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#EFEBE3]">
+    <div className="relative aspect-[3/2] w-full overflow-hidden bg-[#EFEBE3]">
       {showArt && (
         <img
           src={boxArtUrl ?? undefined}
           alt={`${setName} booster box`}
-          loading="lazy"
           decoding="async"
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
-          className={`h-full w-full object-cover transition-opacity duration-200 ease-out ${
+          className={`h-full w-full object-cover object-center transition-opacity duration-200 ease-out ${
             loaded ? 'opacity-100' : 'opacity-0'
           }`}
         />
