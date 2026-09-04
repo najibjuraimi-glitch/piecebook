@@ -12,7 +12,7 @@ const TINTS: Record<string, string> = {
   TR: 'bg-[#F2E3E0] text-[#7A3C33]',
 }
 
-/** On-card rarity badge. Shows the spelled label (Leader, Secret Rare, …); filter chips keep short codes via RarityTabs. */
+/** Rarity badge on card cells and card detail. Shows the spelled label (Leader, Secret Rare, …). */
 export function RarityChip({ rarity, size = 'sm' }: { rarity: string; size?: 'sm' | 'md' }) {
   const tint = TINTS[rarity] ?? 'bg-[#EEEBE5] text-[#6B6560]'
   const dims = size === 'sm' ? 'h-5 px-1.5 text-[11px]' : 'h-6 px-2 text-[12px]'
