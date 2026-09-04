@@ -1,52 +1,67 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { getCard, type Card } from '../data/seed'
+import { getCard } from '../data/seed'
 import { useCollection } from '../store/collection'
+import { summarisePortfolio } from '../lib/portfolio'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { StatBlock } from '../components/StatBlock'
 import { EmptyState } from '../components/EmptyState'
 import { CardArt } from '../components/CardArt'
-import { formatSignedUsd, formatUsd } from '../lib/format'
+import { formatSgd, formatSignedUsd, formatUsd } from '../lib/format'
 
-interface Holding {
-  card: Card
-  qty: number
-  marketValue: number
-}
+const DASH = '—'
 
+/**
+ * Three quiet figures over the owned cards, all from Cards' seed prices.
+ * Market is always USD. Costs are shown per currency and never converted.
+ * P/L only exists where a USD cost can be set against the USD seed market.
+ * No charts, no tickers, no marketplace links.
+ */
 export function PortfolioScreen() {
-  const { owned, lots } = useCollection()
+  const { owned } = useCollection()
+  const summary = useMemo(() => summarisePortfolio(owned, getCard), [owned])
+  const { holdings, marketUsd, costSgd, costUsd, plUsd, plSkippedUnpriced } = summary
 
-  const { holdings, market, cost } = useMemo(() => {
-    const holdings: Holding[] = []
-    let market = 0
-    for (const [cardNumber, entry] of Object.entries(owned)) {
-      const card = getCard(cardNumber)
-      if (!card) continue
-      const marketValue = (card.marketUsd ?? 0) * entry.qty
-      market += marketValue
-      holdings.push({ card, qty: entry.qty, marketValue })
-    }
-    const cost = lots.reduce((sum, lot) => sum + lot.paidUsd, 0)
-    holdings.sort((a, b) => b.marketValue - a.marketValue)
-    return { holdings, market, cost }
-  }, [owned, lots])
+  const hasCosts = costSgd !== null || costUsd !== null
+  const costValue: string | string[] =
+    costSgd !== null && costUsd !== null
+      ? [formatSgd(costSgd), formatUsd(costUsd)]
+      : costSgd !== null
+        ? formatSgd(costSgd)
+        : costUsd !== null
+          ? formatUsd(costUsd)
+          : DASH
 
-  const pl = market - cost
-  const plTone = pl > 0 ? 'good' : pl < 0 ? 'bad' : 'ink'
-  const top = holdings.filter((h) => h.marketValue > 0).slice(0, 5)
+  const plTone = plUsd === null ? 'ink' : plUsd > 0 ? 'good' : plUsd < 0 ? 'bad' : 'ink'
+  const plSubline =
+    plUsd === null && costSgd !== null
+      ? 'P/L needs USD costs (seed market is USD).'
+      : plUsd !== null && (costSgd !== null || plSkippedUnpriced)
+        ? 'USD costs against seed market only.'
+        : undefined
+
+  const top = holdings.filter((h) => (h.marketUsd ?? 0) > 0).slice(0, 5)
 
   return (
     <Screen>
       <ScreenTitle title="Portfolio" />
       {holdings.length === 0 ? (
-        <EmptyState message="Log owned cards with cost to see portfolio." ctaLabel="Browse sets" ctaTo="/" />
+        <EmptyState message="No owned cards yet." ctaLabel="Browse sets" ctaTo="/" />
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 tablet:grid-cols-3 tablet:gap-4">
-            <StatBlock label="Market value" value={formatUsd(market)} />
-            <StatBlock label="Cost basis" value={formatUsd(cost)} />
-            <StatBlock label="Unrealized P/L" value={formatSignedUsd(pl)} tone={plTone} />
+            <StatBlock label="Market value" value={marketUsd === null ? DASH : formatUsd(marketUsd)} />
+            <StatBlock
+              label="Cost basis"
+              value={costValue}
+              subline={hasCosts ? undefined : 'Add what you paid on a card to see cost basis and P/L.'}
+            />
+            <StatBlock
+              label="Unrealized P/L"
+              value={plUsd === null ? DASH : formatSignedUsd(plUsd)}
+              tone={plTone}
+              subline={plSubline}
+            />
           </div>
           <p className="mt-4 px-1 text-meta text-muted">Values use Cards’ seed prices, not live market.</p>
 
@@ -54,7 +69,7 @@ export function PortfolioScreen() {
             <section className="mt-8">
               <h2 className="px-1 text-meta font-medium uppercase tracking-[0.08em] text-muted">Top owned</h2>
               <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
-                {top.map(({ card, qty, marketValue }) => (
+                {top.map(({ card, qty, marketUsd: value }) => (
                   <li key={card.cardNumber}>
                     <Link
                       to={`/cards/${encodeURIComponent(card.cardNumber)}`}
@@ -70,7 +85,7 @@ export function PortfolioScreen() {
                           {qty > 1 ? ` · ×${qty}` : ''}
                         </p>
                       </div>
-                      <p className="tabular shrink-0 text-[15px] font-semibold text-ink">{formatUsd(marketValue)}</p>
+                      <p className="tabular shrink-0 text-[15px] font-semibold text-ink">{formatUsd(value ?? 0)}</p>
                     </Link>
                   </li>
                 ))}

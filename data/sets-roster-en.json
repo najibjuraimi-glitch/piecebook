@@ -1,0 +1,248 @@
+{
+  "asOf": "2026-09-04",
+  "note": "EN booster box roster. cardSeedStatus ready = card checklist CSV in repo; pending = checklist not seeded yet, prices and art null. boxArtUrl vendored = front already under public/box-art.",
+  "sets": [
+    {
+      "setCode": "OP-01",
+      "setName": "Romance Dawn",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2022-12-02",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-02",
+      "setName": "Paramount War",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2023-03-10",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-03",
+      "setName": "Pillars of Strength",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2023-06-30",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-04",
+      "setName": "Kingdoms of Intrigue",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2023-09-22",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-05",
+      "setName": "Awakening of the New Era",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2023-12-08",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-06",
+      "setName": "Wings of the Captain",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2024-03-15",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "EB-01",
+      "setName": "Memorial Collection",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2024-05-03",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-07",
+      "setName": "500 Years in the Future",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2024-06-28",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-08",
+      "setName": "Two Legends",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2024-09-13",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "PRB-01",
+      "setName": "One Piece Card The Best",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2024-11-08",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-09",
+      "setName": "Emperors in the New World",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2024-12-13",
+      "cardSeedStatus": "ready",
+      "sgAskSgd": 750,
+      "usMarketUsd": 669.52,
+      "boxArtUrl": "vendored"
+    },
+    {
+      "setCode": "OP-10",
+      "setName": "Royal Blood",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2025-03-21",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "EB-02",
+      "setName": "Anime 25th Collection",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2025-05-09",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-11",
+      "setName": "A Fist of Divine Speed",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2025-06-06",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-12",
+      "setName": "Legacy of the Master",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2025-08-22",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "PRB-02",
+      "setName": "One Piece Card The Best Vol.2",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2025-10-03",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-13",
+      "setName": "Carrying on His Will",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2025-11-07",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-14",
+      "setName": "The Azure Sea's Seven",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2026-01-16",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "EB-03",
+      "setName": "One Piece Heroines Edition",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2026-02-20",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-15",
+      "setName": "Adventure on Kami's Island",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2026-04-03",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-16",
+      "setName": "The Time of Battle",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2026-06-12",
+      "cardSeedStatus": "ready",
+      "sgAskSgd": 295,
+      "usMarketUsd": 207.42,
+      "boxArtUrl": null
+    },
+    {
+      "setCode": "OP-17",
+      "setName": "The World's Strongest Warriors",
+      "language": "EN",
+      "product": "booster_box",
+      "enReleased": "2026-08-28",
+      "cardSeedStatus": "pending",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null
+    }
+  ]
+}

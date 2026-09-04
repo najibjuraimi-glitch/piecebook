@@ -2,12 +2,15 @@ import type { SealedGuidance, SealedProduct } from '../data/sealed'
 import { SealedPrice } from './SealedPrice'
 
 interface Props {
-  guidance: SealedGuidance
+  /** EN / JP notes; omitted for sets Cards has not written guidance for. */
+  guidance?: SealedGuidance
   /** Cards' seeded EN booster box; the price row is omitted when absent. */
   product?: SealedProduct
 }
 
+/** Renders nothing when there is neither guidance nor a price, so no set gets an empty strip. */
 export function SealedStrip({ guidance, product }: Props) {
+  if (!guidance && !product) return null
   return (
     <section
       aria-label="Sealed"
@@ -15,20 +18,26 @@ export function SealedStrip({ guidance, product }: Props) {
     >
       <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">Sealed</p>
       {/* Stacked EN/JP on phone; one full-width line from tablet up. */}
-      <dl className="mt-1.5 space-y-1 tablet:mt-0 tablet:flex tablet:min-w-0 tablet:flex-wrap tablet:gap-x-8 tablet:gap-y-1 tablet:space-y-0">
-        <div className="flex gap-3 tablet:min-w-0">
-          <dt className="w-6 shrink-0 text-[14px] font-semibold leading-5 text-ink">EN</dt>
-          <dd className="tabular text-[14px] leading-5 text-ink tablet:truncate">{guidance.en}</dd>
-        </div>
-        <div className="flex gap-3 tablet:min-w-0">
-          <dt className="w-6 shrink-0 text-[14px] font-semibold leading-5 text-ink">JP</dt>
-          <dd className="tabular text-[14px] leading-5 text-muted tablet:truncate">{guidance.jp}</dd>
-        </div>
-      </dl>
+      {guidance && (
+        <dl className="mt-1.5 space-y-1 tablet:mt-0 tablet:flex tablet:min-w-0 tablet:flex-wrap tablet:gap-x-8 tablet:gap-y-1 tablet:space-y-0">
+          <div className="flex gap-3 tablet:min-w-0">
+            <dt className="w-6 shrink-0 text-[14px] font-semibold leading-5 text-ink">EN</dt>
+            <dd className="tabular text-[14px] leading-5 text-ink tablet:truncate">{guidance.en}</dd>
+          </div>
+          <div className="flex gap-3 tablet:min-w-0">
+            <dt className="w-6 shrink-0 text-[14px] font-semibold leading-5 text-ink">JP</dt>
+            <dd className="tabular text-[14px] leading-5 text-muted tablet:truncate">{guidance.jp}</dd>
+          </div>
+        </dl>
+      )}
       {product && (
         <SealedPrice
           product={product}
-          className="mt-2.5 border-t border-line pt-2.5 tablet:col-start-2 tablet:mt-2 tablet:pt-2"
+          className={
+            guidance
+              ? 'mt-2.5 border-t border-line pt-2.5 tablet:col-start-2 tablet:mt-2 tablet:pt-2'
+              : 'mt-1.5 tablet:col-start-2 tablet:mt-0'
+          }
         />
       )}
     </section>
