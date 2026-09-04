@@ -14,7 +14,7 @@ export default {
         bad: '#B42318',
       },
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         display: ['28px', { lineHeight: '34px', letterSpacing: '-0.01em', fontWeight: '700' }],

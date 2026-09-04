@@ -10,12 +10,12 @@ export interface SealedGuidance {
 
 const SEALED: Record<string, SealedGuidance> = {
   'OP-09': {
-    en: 'EN booster box (24 packs × 12 cards) feeds this EN checklist. EN release 13 Dec 2024.',
-    jp: 'JP box of the same set (新たなる皇帝) pulls Japanese-language prints, which are not in this EN seed.',
+    en: 'EN box feeds this set · 13 Dec 2024',
+    jp: 'JP box (新たなる皇帝) · not in EN seed',
   },
   'OP-16': {
-    en: 'EN booster box (24 packs × 12 cards) feeds this EN checklist. EN release 12 Jun 2026.',
-    jp: 'JP box (決戦の刻, 24 packs × 6 cards, out 30 May 2026) pulls Japanese-language prints, which are not in this EN seed.',
+    en: 'EN box feeds this set · 12 Jun 2026',
+    jp: 'JP box (決戦の刻) · not in EN seed',
   },
 }
 
