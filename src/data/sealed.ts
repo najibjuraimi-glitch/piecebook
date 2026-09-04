@@ -11,11 +11,11 @@ export interface SealedGuidance {
 const SEALED: Record<string, SealedGuidance> = {
   'OP-09': {
     en: 'EN box feeds this set · 13 Dec 2024',
-    jp: 'JP box (新たなる皇帝) · not in EN seed',
+    jp: 'JP box (新たなる皇帝) · 31 Aug 2024',
   },
   'OP-16': {
     en: 'EN box feeds this set · 12 Jun 2026',
-    jp: 'JP box (決戦の刻) · not in EN seed',
+    jp: 'JP box (決戦の刻) · 30 May 2026',
   },
 }
 
