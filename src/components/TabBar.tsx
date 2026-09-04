@@ -10,7 +10,7 @@ export function TabBar({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 backdrop-blur supports-[backdrop-filter]:bg-paper/85"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-paper/95 backdrop-blur supports-[backdrop-filter]:bg-paper/85 tablet:hidden"
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
       <ul className="mx-auto flex h-[var(--tabbar-h)] max-w-phone items-stretch">

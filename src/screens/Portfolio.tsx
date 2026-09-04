@@ -43,7 +43,7 @@ export function PortfolioScreen() {
         <EmptyState message="Log owned cards with cost to see portfolio." ctaLabel="Browse sets" ctaTo="/" />
       ) : (
         <>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-3 tablet:grid-cols-3 tablet:gap-4">
             <StatBlock label="Market value" value={formatUsd(market)} />
             <StatBlock label="Cost basis" value={formatUsd(cost)} />
             <StatBlock label="Unrealized P/L" value={formatSignedUsd(pl)} tone={plTone} />

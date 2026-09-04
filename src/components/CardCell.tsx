@@ -1,3 +1,4 @@
+import React from 'react'
 import { Link } from 'react-router-dom'
 import type { Card } from '../data/seed'
 import { CardArt } from './CardArt'
@@ -7,6 +8,15 @@ interface Props {
   card: Card
   owned?: boolean
   qty?: number
+}
+
+/** Art grid: 2 / 3 / 4 / 5 columns at phone / tablet / desktop / wide. Shared by Set detail and Collection. */
+export function CardGrid({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <ul className={`grid grid-cols-2 gap-3 tablet:grid-cols-3 tablet:gap-4 desktop:grid-cols-4 wide:grid-cols-5 ${className}`}>
+      {children}
+    </ul>
+  )
 }
 
 export function CardCell({ card, owned = false, qty = 0 }: Props) {

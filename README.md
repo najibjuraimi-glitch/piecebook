@@ -2,7 +2,7 @@
 
 Phone-first web app for One Piece TCG collectors. V1 lets you browse OP-09 and OP-16 by rarity, see which sealed product feeds each set, mark the cards you own, log what you paid, and see a portfolio total from the seed prices.
 
-Specs live alongside the code: `V1-PRD.md` (scope), `V1-DESIGN-PACK.md` (IA, palette, copy), `seed-sources.md` (data provenance).
+Specs live alongside the code: `V1-PRD.md` (scope), `V1-DESIGN-PACK.md` (IA, palette, copy), `docs/V1-DESKTOP-LAYOUT.md` (tablet/desktop breakpoints), `seed-sources.md` (data provenance).
 
 ## Run it
 
@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Open the printed URL (default `http://localhost:5173`). Best viewed at phone width; on larger screens the app renders as a centred 480px column.
+Open the printed URL (default `http://localhost:5173`). Below 768px the app is a phone column with a bottom tab bar; from 768px up it grows to a 720 / 1100 / 1280px column with a quiet top bar and a 3–5 column card grid (see `docs/V1-DESKTOP-LAYOUT.md`).
 
 ```bash
 npm run build     # type-check + production build into dist/
