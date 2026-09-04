@@ -15,13 +15,15 @@ export function formatSignedUsd(value: number): string {
   return usd.format(0)
 }
 
-const dateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-/** Formats an ISO date (YYYY-MM-DD) for display without timezone drift. */
+/** Formats an ISO date (YYYY-MM-DD) as "4 Sep 2026" without timezone drift. */
 export function formatDate(iso: string): string {
   const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})/)
   if (!m) return iso
-  return dateFmt.format(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+  const month = MONTHS[Number(m[2]) - 1]
+  if (!month) return iso
+  return `${Number(m[3])} ${month} ${m[1]}`
 }
 
 export function todayIso(): string {
