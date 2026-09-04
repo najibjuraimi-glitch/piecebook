@@ -2,9 +2,10 @@ import rosterSeed from '../../data/sets-roster-en.json'
 import { getSealedProduct, type SealedProduct } from './sealed'
 
 /**
- * One row of Cards' `data/sets-roster-en.json`: every EN booster set Piecebook
- * knows about, whether or not its card checklist has been seeded yet. The
- * roster decides membership on Sets home; the card CSVs only decide depth.
+ * One row of Cards' `data/sets-roster-en.json` (`{ asOf, note, sets: [...] }`):
+ * every EN booster set Piecebook knows about, whether or not its card checklist
+ * has been seeded yet. The roster decides membership on Sets home; the card
+ * CSVs only decide depth.
  */
 export type CardSeedStatus = 'ready' | 'pending'
 
@@ -12,6 +13,8 @@ export interface RosterSet {
   setCode: string
   setName: string
   language: string
+  /** Sealed product the prices describe; `booster_box` throughout V1. */
+  product: string
   /** ISO date YYYY-MM-DD; null when Cards has not supplied one. */
   enReleased: string | null
   cardSeedStatus: CardSeedStatus
@@ -23,10 +26,14 @@ export interface RosterSet {
    * that is not a local path is treated as no art so nothing is ever hotlinked.
    */
   boxArtUrl: string | null
+  /** Row date when Cards gives one, else the file-level `asOf`. */
   asOf: string | null
 }
 
-type Row = Partial<(typeof rosterSeed)[number]> & { setCode: string }
+type Row = Partial<(typeof rosterSeed)['sets'][number]> & { setCode: string; asOf?: string }
+
+const FILE_AS_OF: string | null = text(rosterSeed.asOf)
+const ROWS: Row[] = Array.isArray(rosterSeed.sets) ? (rosterSeed.sets as Row[]) : []
 
 function text(v: unknown): string | null {
   return typeof v === 'string' && v.trim() !== '' ? v.trim() : null
@@ -42,7 +49,7 @@ function resolveBoxArt(setCode: string, language: string, raw: unknown): string 
   const value = text(raw)
   if (!value) return null
   if (value.startsWith('/')) return value
-  if (value.toLowerCase() === 'vendored') return getSealedProduct(setCode, language)?.boxArtUrl ?? null
+  if (value.toLowerCase() === 'vendored') return getSealedProduct(setCode, language, 'booster_box')?.boxArtUrl ?? null
   return null
 }
 
@@ -52,18 +59,18 @@ function toRosterSet(row: Row): RosterSet {
     setCode: row.setCode,
     setName: text(row.setName) ?? row.setCode,
     language,
+    product: text(row.product) ?? 'booster_box',
     enReleased: text(row.enReleased),
     cardSeedStatus: row.cardSeedStatus === 'ready' ? 'ready' : 'pending',
     sgAskSgd: money(row.sgAskSgd),
     usMarketUsd: money(row.usMarketUsd),
     boxArtUrl: resolveBoxArt(row.setCode, language, row.boxArtUrl),
-    asOf: text(row.asOf),
+    asOf: text(row.asOf) ?? FILE_AS_OF,
   }
 }
 
 /** Roster in EN release order, oldest first. Rows without a date sort last, by code. */
-export const ROSTER: RosterSet[] = (rosterSeed as Row[])
-  .filter((r) => typeof r.setCode === 'string' && r.setCode.trim() !== '')
+export const ROSTER: RosterSet[] = ROWS.filter((r) => typeof r.setCode === 'string' && r.setCode.trim() !== '')
   .map(toRosterSet)
   .sort((a, b) => {
     if (a.enReleased && b.enReleased && a.enReleased !== b.enReleased) return a.enReleased.localeCompare(b.enReleased)
@@ -84,14 +91,14 @@ export function getRosterSet(setCode: string | undefined): RosterSet | undefined
  * used. Undefined when neither has a price, so the tile omits the block.
  */
 export function rosterSealedProduct(set: RosterSet): SealedProduct | undefined {
-  const seeded = getSealedProduct(set.setCode, set.language)
+  const seeded = getSealedProduct(set.setCode, set.language, set.product)
   if (seeded && (seeded.sgAskSgd !== null || seeded.usMarketUsd !== null)) return seeded
   if (set.sgAskSgd === null && set.usMarketUsd === null) return undefined
   return {
     setCode: set.setCode,
     setName: set.setName,
     language: set.language,
-    product: 'booster_box',
+    product: set.product,
     boxArtUrl: set.boxArtUrl,
     sgAskSgd: set.sgAskSgd,
     sgSource: null,

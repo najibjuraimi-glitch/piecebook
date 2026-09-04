@@ -72,7 +72,7 @@ CSV header (exact): `set_code,set_name,card_number,name,rarity,language,image_ur
 
 ## EN sets roster (`data/sets-roster-en.json`)
 
-`asOf` 2026-09-04. 22 EN booster sets: OP-01…OP-17, EB-01…EB-03, PRB-01…PRB-02.
+One object `{ asOf, note, sets }`, file-level `asOf` 2026-09-04. 22 EN booster sets in `sets`: OP-01…OP-17, EB-01…EB-03, PRB-01…PRB-02, every row `product: booster_box`. OP-13 is spelled `Carrying on His Will` (lowercase on), per Cards.
 
 - `cardSeedStatus` is `ready` only for OP-09 and OP-16 (the two CSVs above); every other row is `pending` with `sgAskSgd`, `usMarketUsd` and `boxArtUrl` all `null`. No prices or art were added for pending sets.
 - OP-09 / OP-16 prices repeat `data/sealed-seed.json` (SG ask S$750 / S$295, TCGPlayer US market $669.52 / $207.42). OP-09 `boxArtUrl` is `vendored` → `/box-art/op09-en-white.jpg`; OP-16 stays `null`.

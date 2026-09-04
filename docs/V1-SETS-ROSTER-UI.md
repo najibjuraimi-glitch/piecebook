@@ -11,16 +11,15 @@ Recreated in-repo from the implementation brief; wording follows the brief, noth
 Sets home should show every EN booster set a collector might own, not only the two whose checklists are seeded. A set with no checklist yet still gets a tile and a quiet detail page. Nothing is invented to fill the gap.
 
 ## Roster (Cards)
-`data/sets-roster-en.json`, one row per EN set. 22 rows: OP-01 … OP-17, EB-01 … EB-03, PRB-01 … PRB-02. `asOf` 2026-09-04.
+`data/sets-roster-en.json` is one object `{ asOf, note, sets: [...] }`: file-level `asOf` 2026-09-04, a one-line `note` on what the file covers, and 22 rows in `sets`: OP-01 … OP-17, EB-01 … EB-03, PRB-01 … PRB-02.
 
-| Field | Meaning |
+| Field (per row) | Meaning |
 | --- | --- |
-| `setCode`, `setName`, `language` | Which set; `language` is `EN` throughout |
+| `setCode`, `setName`, `language`, `product` | Which set and which sealed product the prices describe; `language` is `EN` and `product` is `booster_box` throughout |
 | `enReleased` | ISO EN release date; drives tile order |
 | `cardSeedStatus` | `ready` when the card CSV is in the repo, `pending` otherwise |
 | `sgAskSgd`, `usMarketUsd` | EN booster box SG ask / US market, or `null` |
-| `boxArtUrl` | Local path under `public/box-art/`, or `null`. Cards may write `vendored` for a set whose front is already in the repo (OP-09 → `/box-art/op09-en-white.jpg`). Anything else is treated as no art; nothing is hotlinked |
-| `asOf` | Date the row was read |
+| `boxArtUrl` | Local path under `public/box-art/`, or `null`. Cards writes `vendored` for a set whose front is already in the repo (OP-09 → `/box-art/op09-en-white.jpg`). Anything else is treated as no art; nothing is hotlinked |
 
 Key rows:
 - **Most sets**: `pending`, prices `null`, `boxArtUrl` `null`.
