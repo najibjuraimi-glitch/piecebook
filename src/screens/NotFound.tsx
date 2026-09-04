@@ -1,10 +1,15 @@
 import { Screen, ScreenTitle } from '../components/Screen'
 import { EmptyState } from '../components/EmptyState'
 
-export function NotFoundScreen({ message = 'Nothing here.' }: { message?: string }) {
+interface Props {
+  title?: string
+  message?: string
+}
+
+export function NotFoundScreen({ title = 'Not found', message = 'Nothing here.' }: Props) {
   return (
     <Screen>
-      <ScreenTitle title="Not found" />
+      <ScreenTitle title={title} />
       <EmptyState message={message} ctaLabel="Browse sets" ctaTo="/" />
     </Screen>
   )

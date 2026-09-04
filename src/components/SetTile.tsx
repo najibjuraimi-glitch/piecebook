@@ -1,29 +1,36 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { CardSet } from '../data/seed'
-import { getSealedProduct } from '../data/sealed'
+import { getSet } from '../data/seed'
+import { rosterSealedProduct, type RosterSet } from '../data/roster'
 import { pluralCards } from '../lib/format'
 import { SealedPrice } from './SealedPrice'
 
-export function SetTile({ set }: { set: CardSet }) {
-  const language = set.cards[0]?.language ?? 'EN'
-  const sealed = getSealedProduct(set.setCode, language)
+/**
+ * One roster set. Art band from the roster's box art (type-first when null),
+ * card count from the seed CSV when the checklist is ready, "Checklist soon"
+ * when it is pending, and the sealed price row only when Cards has a price.
+ */
+export function SetTile({ set }: { set: RosterSet }) {
+  const catalog = set.cardSeedStatus === 'ready' ? getSet(set.setCode) : undefined
+  const sealed = rosterSealedProduct(set)
   return (
     <Link
       to={`/sets/${encodeURIComponent(set.setCode)}`}
       className="block overflow-hidden rounded-2xl border border-line bg-surface shadow-paper transition-transform duration-150 ease-out active:scale-[0.99]"
     >
-      <ArtBand setCode={set.setCode} setName={set.setName} boxArtUrl={sealed?.boxArtUrl ?? null} />
+      <ArtBand setCode={set.setCode} setName={set.setName} boxArtUrl={set.boxArtUrl} />
 
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
           <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">
-            {language} set<span className="tabular normal-case tracking-normal"> · {set.setCode}</span>
+            {set.language} set<span className="tabular normal-case tracking-normal"> · {set.setCode}</span>
           </p>
           <ChevronRight />
         </div>
         <p className="mt-1.5 text-title text-ink">{set.setName}</p>
-        <p className="tabular mt-1 text-meta text-muted">{pluralCards(set.cards.length)} in seed</p>
+        <p className="tabular mt-1 text-meta text-muted">
+          {catalog ? `${pluralCards(catalog.cards.length)} in seed` : 'Checklist soon'}
+        </p>
 
         {/* The meta line above already says "EN set", so the price row reads "Box · S$750". */}
         {sealed && (

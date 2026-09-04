@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
-import { ALL_TAB, getSet, rarityTabs } from '../data/seed'
+import { ALL_TAB, getSet, rarityTabs, type CardSet } from '../data/seed'
+import { getRosterSet, rosterSealedProduct, type RosterSet } from '../data/roster'
 import { getSealedGuidance, getSealedProduct } from '../data/sealed'
-import { getSetIntro, hasIntroContent } from '../data/intros'
+import { getSetIntro, hasIntroContent, type SetIntro as SetIntroData } from '../data/intros'
 import { DEFAULT_SORT, matchesSearch, parseSort, sortCards, type SortKey } from '../lib/query'
 import { useCollection } from '../store/collection'
 import { BackBar, BLEED, Screen } from '../components/Screen'
@@ -14,14 +15,70 @@ import { RarityTabs } from '../components/RarityTabs'
 import { CardCell, CardGrid } from '../components/CardCell'
 import { NotFoundScreen } from './NotFound'
 
+/**
+ * Three outcomes for `/sets/:setCode`: a seeded checklist (full depth from
+ * PR #5), a roster set whose checklist Cards has not seeded yet (sealed notes
+ * and dates only, no search / sort / rarity), or a code on neither list.
+ */
 export function SetDetailScreen() {
   const { setCode } = useParams()
   const set = getSet(setCode)
+  const roster = getRosterSet(setCode)
+
+  if (set) return <SeededSetDetail key={set.setCode} set={set} />
+  if (roster) return <PendingSetDetail roster={roster} />
+  return <NotFoundScreen title="Set not found" message="That set isn’t on the roster." />
+}
+
+function PendingSetDetail({ roster }: { roster: RosterSet }) {
+  const guidance = getSealedGuidance(roster.setCode)
+  const product = rosterSealedProduct(roster)
+  const intro = getSetIntro(roster.setCode, roster.language)
+
+  // No intro from Cards: fall back to the roster's EN date alone. Nothing else is inferred.
+  const dateOnly: SetIntroData | undefined = roster.enReleased
+    ? {
+        setCode: roster.setCode,
+        setName: roster.setName,
+        language: roster.language,
+        enReleased: roster.enReleased,
+        jpReleased: null,
+        packsPerBox: null,
+        cardsPerPack: null,
+        introTheme: null,
+        sources: [],
+        asOf: roster.asOf,
+      }
+    : undefined
+  const shownIntro = hasIntroContent(intro) ? intro : dateOnly
+
+  return (
+    <Screen>
+      <BackBar title={roster.setCode} subline={roster.setName} fallbackTo="/" />
+
+      <SealedStrip guidance={guidance} product={product} />
+
+      {shownIntro && <SetIntro intro={shownIntro} />}
+
+      <section
+        aria-label="Checklist"
+        className="mt-6 rounded-2xl border border-line bg-surface px-5 py-8 text-center tablet:py-10"
+      >
+        <p className="text-title text-ink">Checklist not seeded yet</p>
+        <p className="mx-auto mt-2 max-w-[36ch] text-body text-muted">
+          Card list for this set is coming. Sealed notes above still apply.
+        </p>
+      </section>
+    </Screen>
+  )
+}
+
+function SeededSetDetail({ set }: { set: CardSet }) {
   const [params, setParams] = useSearchParams()
   const { isOwned, ownedQty } = useCollection()
   const [query, setQuery] = useState('')
 
-  const tabs = useMemo(() => (set ? rarityTabs(set.cards) : []), [set])
+  const tabs = useMemo(() => rarityTabs(set.cards), [set])
 
   const requested = params.get('rarity')
   const active = tabs.find((t) => t.key === requested)?.key ?? ALL_TAB
@@ -34,8 +91,6 @@ export function SetDetailScreen() {
     if (!bucket) return []
     return sortCards(bucket.cards.filter((c) => matchesSearch(c, query)), sort)
   }, [tabs, active, query, sort])
-
-  if (!set) return <NotFoundScreen message="That set isn’t in the seed." />
 
   const update = (patch: { rarity?: string; sort?: SortKey }) => {
     const next = new URLSearchParams(params)
