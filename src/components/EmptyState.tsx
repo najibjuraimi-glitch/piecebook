@@ -6,6 +6,7 @@ interface Props {
   ctaTo?: string
 }
 
+/** Short sentence + one quiet CTA. Ghost, not accent: the accent is reserved for Mark owned. */
 export function EmptyState({ message, ctaLabel, ctaTo }: Props) {
   return (
     <div className="flex flex-col items-center gap-5 px-4 pb-12 pt-16 text-center">
@@ -13,7 +14,7 @@ export function EmptyState({ message, ctaLabel, ctaTo }: Props) {
       {ctaLabel && ctaTo && (
         <Link
           to={ctaTo}
-          className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-accent px-6 text-body font-semibold text-white transition-colors duration-150 ease-out hover:bg-[#B2511F] active:bg-[#9E4719]"
+          className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-line bg-transparent px-6 text-body font-semibold text-ink transition-colors duration-150 ease-out hover:bg-white active:bg-[#F0ECE4]"
         >
           {ctaLabel}
         </Link>
