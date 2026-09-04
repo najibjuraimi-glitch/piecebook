@@ -1,0 +1,26 @@
+[
+  {
+    "setCode": "OP-09",
+    "setName": "Emperors in the New World",
+    "language": "EN",
+    "product": "booster_box",
+    "boxArtUrl": "/box-art/op09-en-white.jpg",
+    "sgAskSgd": 750,
+    "sgSource": "bacontcg Carousell clean EN box ask",
+    "usMarketUsd": 669.52,
+    "usSource": "TCGPlayer market English booster box product 563834",
+    "asOf": "2026-09-04"
+  },
+  {
+    "setCode": "OP-16",
+    "setName": "The Time of Battle",
+    "language": "EN",
+    "product": "booster_box",
+    "boxArtUrl": null,
+    "sgAskSgd": 295,
+    "sgSource": "SG clean EN box ask (book 4 Sep 2026)",
+    "usMarketUsd": 207.42,
+    "usSource": "TCGPlayer market English booster box product 689336",
+    "asOf": "2026-09-04"
+  }
+]

@@ -2,7 +2,7 @@
 
 Phone-first web app for One Piece TCG collectors. V1 lets you browse OP-09 and OP-16 by rarity, see which sealed product feeds each set, mark the cards you own, log what you paid, and see a portfolio total from the seed prices.
 
-Specs live alongside the code: `V1-PRD.md` (scope), `V1-DESIGN-PACK.md` (IA, palette, copy), `docs/V1-DESKTOP-LAYOUT.md` (tablet/desktop breakpoints), `seed-sources.md` (data provenance).
+Specs live alongside the code: `V1-PRD.md` (scope), `V1-DESIGN-PACK.md` (IA, palette, copy), `docs/V1-DESKTOP-LAYOUT.md` (tablet/desktop breakpoints), `docs/V1-SETTILE-AND-GRID-PRICES.md` (sealed box prices on set tiles, muted USD on card cells), `seed-sources.md` (data provenance).
 
 ## Run it
 
@@ -31,9 +31,10 @@ npm run preview   # serve the production build locally
 ## Data
 
 - **Catalog** is the read-only seed under `data/` (`op09-en-seed.csv`, `op16-en-seed.csv`). The CSVs are bundled into the app at build time and parsed in the browser. Only same-set numbered rows (`OP09-*`, `OP16-*`) are loaded, per `data/SEED-VERSION.txt`.
-- **Prices** are the seed `market_usd` values with their `as_of` date. There is no live price feed; every price in the UI is labelled as seed.
+- **Prices** are the seed `market_usd` values with their `as_of` date. There is no live price feed; every price in the UI is labelled as seed. Card cells show the bare `market_usd` muted under the name; card detail carries the `as_of` date.
 - **Parallels** are detected from the card number (`OP09-001p1`) and shown in their own Parallels tab.
 - **Sealed guidance** is not yet a CSV column, so the short EN/JP notes per set live in `src/data/sealed.ts`.
+- **Sealed prices** come from `data/sealed-seed.json` (Cards): per set, the EN booster box SG ask in SGD, the TCGPlayer US market in USD, the `asOf` date and a `boxArtUrl` for the closed box front shown on the set tile. Box art is vendored under `public/box-art/` and referenced by local path, not hotlinked. Set tiles fall back to type-first (big OP code) when the URL is missing or the image fails to load.
 
 ## Your data is local-only
 
