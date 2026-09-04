@@ -112,15 +112,23 @@ export const RARITY_ORDER = ['L', 'SEC', 'SR', 'R', 'UC', 'C'] as const
 
 export const PARALLELS_TAB = 'Parallels'
 
+/** Filter-chip copy (Design): Leader · SEC · SR · R · UC · C. Only L is spelled out; the rest stay short codes. */
+export const RARITY_CHIP_LABELS: Record<string, string> = {
+  L: 'Leader',
+}
+
+/** On-card copy (Design): spelled-out rarity names for card cells and card detail. */
 export const RARITY_LABELS: Record<string, string> = {
   L: 'Leader',
-  SEC: 'SEC',
-  SR: 'SR',
-  R: 'R',
-  UC: 'UC',
-  C: 'C',
-  SP: 'SP',
-  TR: 'TR',
+  SEC: 'Secret Rare',
+  SR: 'Super Rare',
+  R: 'Rare',
+  UC: 'Uncommon',
+  C: 'Common',
+}
+
+export function rarityChipLabel(rarity: string): string {
+  return RARITY_CHIP_LABELS[rarity] ?? rarity
 }
 
 export function rarityLabel(rarity: string): string {
@@ -148,11 +156,11 @@ export function bucketByRarity(cards: Card[]): RarityBucket[] {
   for (const r of RARITY_ORDER) {
     const list = base.filter((c) => c.rarity === r)
     seen.add(r)
-    if (list.length) buckets.push({ key: r, label: rarityLabel(r), cards: list })
+    if (list.length) buckets.push({ key: r, label: rarityChipLabel(r), cards: list })
   }
   const extra = [...new Set(base.map((c) => c.rarity))].filter((r) => !seen.has(r)).sort()
   for (const r of extra) {
-    buckets.push({ key: r, label: rarityLabel(r), cards: base.filter((c) => c.rarity === r) })
+    buckets.push({ key: r, label: rarityChipLabel(r), cards: base.filter((c) => c.rarity === r) })
   }
   if (parallels.length) buckets.push({ key: PARALLELS_TAB, label: PARALLELS_TAB, cards: parallels })
   return buckets
