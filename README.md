@@ -2,7 +2,7 @@
 
 Phone-first web app for One Piece TCG collectors. V1 lets you browse OP-09 and OP-16 by rarity, search a set by name or number, sort by name or seed price, read a short intro per set, see which sealed product feeds each set, and mark the cards you own.
 
-Specs live alongside the code: `V1-PRD.md` (scope), `V1-DESIGN-PACK.md` (IA, palette, copy), `docs/V1-DESKTOP-LAYOUT.md` (tablet/desktop breakpoints), `docs/V1-SETTILE-AND-GRID-PRICES.md` (sealed box prices on set tiles, muted USD on card cells), `seed-sources.md` (data provenance).
+Specs live alongside the code: `V1-PRD.md` (scope), `V1-DESIGN-PACK.md` (IA, palette, copy), `docs/V1-DESKTOP-LAYOUT.md` (tablet/desktop breakpoints), `docs/V1-SETTILE-AND-GRID-PRICES.md` (sealed box prices on set tiles, muted USD on card cells), `docs/V1-OWN-AND-SET-DEPTH-UI.md` (set intro, thin Own), `docs/V1-SET-DETAIL-CONTROLS.md` (search, sort, All tab), `seed-sources.md` (data provenance).
 
 ## Run it
 
