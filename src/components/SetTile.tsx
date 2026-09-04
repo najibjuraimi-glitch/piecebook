@@ -25,7 +25,10 @@ export function SetTile({ set }: { set: CardSet }) {
         <p className="mt-1.5 text-title text-ink">{set.setName}</p>
         <p className="tabular mt-1 text-meta text-muted">{pluralCards(set.cards.length)} in seed</p>
 
-        {sealed && <SealedPrice product={sealed} className="mt-4 border-t border-line pt-3.5" />}
+        {/* The meta line above already says "EN set", so the price row reads "Box · S$750". */}
+        {sealed && (
+          <SealedPrice product={sealed} withLanguage={false} className="mt-4 border-t border-line pt-3.5" />
+        )}
       </div>
     </Link>
   )

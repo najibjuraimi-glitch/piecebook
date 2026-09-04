@@ -24,12 +24,12 @@ Design and Code do not invent prices or art. `boxArtUrl` stays `null` until Card
 Quiet surface card. Whole tile taps to the set.
 - Art band on top: box art when `boxArtUrl` is set; otherwise type-first (big OP code on tinted paper).
 - Body: EN set meta, set code, set name, card count, then the sealed price:
-  - Primary: `EN box · S$750` (SG ask)
+  - Primary: `Box · S$750` (SG ask; the meta line above already says EN, so the language is not repeated)
   - Secondary, muted: `US $669.52 · as of 4 Sep 2026`
 - No buy / cart / seller chrome.
 
 ## SealedStrip (set detail)
-Keep the EN / JP guidance lines. Add the same primary / secondary price row under them.
+Keep the EN / JP guidance lines. Add the same primary / secondary price row under them, as `EN box · S$750` (the strip also lists JP, so the price says which box). State the language once per line: the EN / JP badge carries it, so guidance copy reads `Box feeds this set · …`, not `EN box feeds…`.
 
 ## CardCell (set grid, collection)
 Under name + rarity, one muted `$12.50` from the seed `market_usd`. Omit the line when the value is missing. No `as_of` on cells, no % change, no sparklines. Art stays first.

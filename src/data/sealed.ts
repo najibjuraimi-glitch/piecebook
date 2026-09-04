@@ -10,14 +10,16 @@ export interface SealedGuidance {
   jp: string
 }
 
+// The strip shows the language as a badge beside each line, so the copy itself
+// does not repeat it ("EN  Box feeds…", not "EN  EN box feeds…").
 const SEALED: Record<string, SealedGuidance> = {
   'OP-09': {
-    en: 'EN box feeds this set · 13 Dec 2024',
-    jp: 'JP box (新たなる皇帝) · 31 Aug 2024',
+    en: 'Box feeds this set · 13 Dec 2024',
+    jp: 'Box (新たなる皇帝) · 31 Aug 2024',
   },
   'OP-16': {
-    en: 'EN box feeds this set · 12 Jun 2026',
-    jp: 'JP box (決戦の刻) · 30 May 2026',
+    en: 'Box feeds this set · 12 Jun 2026',
+    jp: 'Box (決戦の刻) · 30 May 2026',
   },
 }
 
@@ -73,8 +75,12 @@ export function getSealedProduct(
   )
 }
 
-/** Short product noun for the price row, e.g. "EN box". */
-export function sealedProductLabel(p: SealedProduct): string {
+/**
+ * Short product noun for the price row: "EN box", or just "Box" when the
+ * surrounding UI already states the language (avoids "EN … EN box").
+ */
+export function sealedProductLabel(p: SealedProduct, withLanguage = true): string {
   const noun = p.product === 'booster_box' ? 'box' : p.product.replace(/_/g, ' ')
-  return `${p.language} ${noun}`
+  if (withLanguage) return `${p.language} ${noun}`
+  return noun.charAt(0).toUpperCase() + noun.slice(1)
 }

@@ -7,9 +7,15 @@ const SEP = ' · '
  * Two-line sealed price from Cards' seed: SG ask first (primary), US market and
  * as-of date muted underneath. Falls back to the US figure as primary when the
  * SG ask is missing. Renders nothing when neither price is seeded.
+ *
+ * `withLanguage` controls the "EN" in "EN box"; pass false where the language
+ * is already visible in the same stack (e.g. under an "EN set" meta line).
  */
-export function sealedPriceLines(p: SealedProduct): { primary: string; secondary: string | null } | null {
-  const label = sealedProductLabel(p)
+export function sealedPriceLines(
+  p: SealedProduct,
+  withLanguage = true,
+): { primary: string; secondary: string | null } | null {
+  const label = sealedProductLabel(p, withLanguage)
   const sg = p.sgAskSgd !== null ? formatSgd(p.sgAskSgd) : null
   const us = p.usMarketUsd !== null ? formatUsMarketUsd(p.usMarketUsd) : null
   const asOf = p.asOf ? `as of ${formatDate(p.asOf)}` : null
@@ -24,11 +30,13 @@ export function sealedPriceLines(p: SealedProduct): { primary: string; secondary
 
 interface Props {
   product: SealedProduct
+  /** Set false when the language is already shown nearby; the row then reads "Box · S$750". */
+  withLanguage?: boolean
   className?: string
 }
 
-export function SealedPrice({ product, className = '' }: Props) {
-  const lines = sealedPriceLines(product)
+export function SealedPrice({ product, withLanguage = true, className = '' }: Props) {
+  const lines = sealedPriceLines(product, withLanguage)
   if (!lines) return null
   return (
     <div className={`tabular ${className}`}>
