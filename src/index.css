@@ -59,3 +59,10 @@ body {
 input[type='date']::-webkit-calendar-picker-indicator {
   opacity: 0.6;
 }
+
+/* The SearchField draws its own clear ×; hide the WebKit one so there is never a pair. */
+.search-field::-webkit-search-cancel-button,
+.search-field::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+}

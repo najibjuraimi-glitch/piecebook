@@ -1,0 +1,32 @@
+[
+  {
+    "setCode": "OP-09",
+    "setName": "Emperors in the New World",
+    "language": "EN",
+    "enReleased": "2024-12-13",
+    "jpReleased": "2024-08-31",
+    "packsPerBox": 24,
+    "cardsPerPack": 12,
+    "introTheme": "Second English anniversary set built around the new Four Emperors: Luffy, Shanks, Blackbeard, and Buggy.",
+    "sources": [
+      "Bandai EN product materials / retail box print",
+      "12 cards per pack, 24 packs per box"
+    ],
+    "asOf": "2026-09-04"
+  },
+  {
+    "setCode": "OP-16",
+    "setName": "The Time of Battle",
+    "language": "EN",
+    "enReleased": "2026-06-12",
+    "jpReleased": "2026-05-30",
+    "packsPerBox": 24,
+    "cardsPerPack": 12,
+    "introTheme": "Paramount War set covering Impel Down and Marineford, with Admiral chase arts including Manga rares.",
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/op16.html",
+      "12 cards per pack, 24 packs per box"
+    ],
+    "asOf": "2026-09-04"
+  }
+]

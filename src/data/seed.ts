@@ -112,6 +112,9 @@ export const RARITY_ORDER = ['L', 'SEC', 'SR', 'R', 'UC', 'C'] as const
 
 export const PARALLELS_TAB = 'Parallels'
 
+/** First rarity tab and the default on open: every card in the set, parallels included. */
+export const ALL_TAB = 'All'
+
 /**
  * UI copy for seed rarity codes (Cards/Design). Used everywhere a rarity is shown:
  * filter chips, card cells and card detail. Seed CSV codes themselves are unchanged.
@@ -158,4 +161,9 @@ export function bucketByRarity(cards: Card[]): RarityBucket[] {
   }
   if (parallels.length) buckets.push({ key: PARALLELS_TAB, label: PARALLELS_TAB, cards: parallels })
   return buckets
+}
+
+/** Rarity tabs for Set detail: All first, then the fixed-order rarity buckets. */
+export function rarityTabs(cards: Card[]): RarityBucket[] {
+  return [{ key: ALL_TAB, label: ALL_TAB, cards }, ...bucketByRarity(cards)]
 }
