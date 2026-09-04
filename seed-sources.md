@@ -69,3 +69,17 @@ CSV header (exact): `set_code,set_name,card_number,name,rarity,language,image_ur
 3. Took USD from `tr.current` in the prints table (correct parallel price, not the base row).  
 4. Mapped rarity codes; AA/Manga → base rarity; Special Card → `SP`; Treasure Rare → `TR`.  
 5. Wrote CSVs under `/workspace/op-collector/` plus this sources log and `README-gaps.md`.
+
+## EN sets roster (`data/sets-roster-en.json`)
+
+`asOf` 2026-09-04. 22 EN booster sets: OP-01…OP-17, EB-01…EB-03, PRB-01…PRB-02.
+
+- `cardSeedStatus` is `ready` only for OP-09 and OP-16 (the two CSVs above); every other row is `pending` with `sgAskSgd`, `usMarketUsd` and `boxArtUrl` all `null`. No prices or art were added for pending sets.
+- OP-09 / OP-16 prices repeat `data/sealed-seed.json` (SG ask S$750 / S$295, TCGPlayer US market $669.52 / $207.42). OP-09 `boxArtUrl` is `vendored` → `/box-art/op09-en-white.jpg`; OP-16 stays `null`.
+- EN set names and EN release dates (`enReleased`) were cross-checked across four independent release calendars that agree on every row:
+  - https://samuraiswordtokyo.com/blogs/news/one-piece-card-sets-in-order
+  - https://www.trackalacker.com/articles/news/one-piece-card-game-full-product-list
+  - https://tcgking.nl/blogs/collecting/one-piece-card-game-release-schedule-2026-set-list
+  - https://www.misprint.com/posts/one-piece-tcg-release-calendar
+  - Official product pages (https://en.onepiece-cardgame.com/products/op17.html etc.) confirm names; their dates render client-side and were not scraped.
+- Not included: EB-04 (no standalone EN box; folded into OP14-EB04 / OP15-EB04), EB-05 and OP-18 (not released as of `asOf`), starter decks, promos.
