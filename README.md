@@ -1,0 +1,48 @@
+# Piecebook
+
+Phone-first web app for One Piece TCG collectors. V1 lets you browse OP-09 and OP-16 by rarity, see which sealed product feeds each set, mark the cards you own, log what you paid, and see a portfolio total from the seed prices.
+
+Specs live alongside the code: `V1-PRD.md` (scope), `V1-DESIGN-PACK.md` (IA, palette, copy), `seed-sources.md` (data provenance).
+
+## Run it
+
+```bash
+npm install
+npm run dev
+```
+
+Open the printed URL (default `http://localhost:5173`). Best viewed at phone width; on larger screens the app renders as a centred 480px column.
+
+```bash
+npm run build     # type-check + production build into dist/
+npm run preview   # serve the production build locally
+```
+
+## Routes
+
+| Route | Screen |
+| --- | --- |
+| `/` | Sets |
+| `/sets/:setCode` | Set detail — sealed strip, rarity tabs, card grid (e.g. `/sets/OP-09`) |
+| `/cards/:cardNumber` | Card detail — Mark owned, cost basis (e.g. `/cards/OP09-001p1`) |
+| `/collection` | Owned cards |
+| `/portfolio` | Market value, cost basis, unrealized P/L |
+
+## Data
+
+- **Catalog** is the read-only seed under `data/` (`op09-en-seed.csv`, `op16-en-seed.csv`). The CSVs are bundled into the app at build time and parsed in the browser. Only same-set numbered rows (`OP09-*`, `OP16-*`) are loaded, per `data/SEED-VERSION.txt`.
+- **Prices** are the seed `market_usd` values with their `as_of` date. There is no live price feed; every price in the UI is labelled as seed.
+- **Parallels** are detected from the card number (`OP09-001p1`) and shown in their own Parallels tab.
+- **Sealed guidance** is not yet a CSV column, so the short EN/JP notes per set live in `src/data/sealed.ts`.
+
+## Your data is local-only
+
+Owned flags, quantities and cost lots (`{ cardNumber, qty, paidUsd, paidOn, note? }`) are stored in your browser's `localStorage` under the key `piecebook.v1`. There are no accounts and nothing is sent anywhere. Clearing site data for the app wipes your collection.
+
+## Deploying
+
+The build in `dist/` is a static single-page app. Configure your host to serve `index.html` for unknown paths so deep links like `/cards/OP16-001` work (a `public/_redirects` file is included for Netlify-style hosts).
+
+## Not in V1
+
+Live prices, charts, alerts, search, scanning, accounts or sync, marketplace links, dark mode.

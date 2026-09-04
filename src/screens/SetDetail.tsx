@@ -1,0 +1,55 @@
+import { useMemo } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
+import { bucketByRarity, getSet } from '../data/seed'
+import { getSealedGuidance } from '../data/sealed'
+import { useCollection } from '../store/collection'
+import { BackBar, Screen } from '../components/Screen'
+import { SealedStrip } from '../components/SealedStrip'
+import { RarityTabs } from '../components/RarityTabs'
+import { CardCell } from '../components/CardCell'
+import { NotFoundScreen } from './NotFound'
+
+export function SetDetailScreen() {
+  const { setCode } = useParams()
+  const set = getSet(setCode)
+  const [params, setParams] = useSearchParams()
+  const { isOwned, ownedQty } = useCollection()
+
+  const buckets = useMemo(() => (set ? bucketByRarity(set.cards) : []), [set])
+
+  if (!set) return <NotFoundScreen message="That set isn’t in the seed." />
+
+  const requested = params.get('rarity')
+  const active = buckets.find((b) => b.key === requested)?.key ?? buckets[0]?.key ?? ''
+  const activeBucket = buckets.find((b) => b.key === active)
+
+  const sealed = getSealedGuidance(set.setCode)
+
+  return (
+    <Screen>
+      <BackBar title={set.setCode} subline={set.setName} fallbackTo="/" />
+
+      {sealed && <SealedStrip guidance={sealed} />}
+
+      <div className="sticky top-0 z-20 -mx-4 mt-3 bg-paper/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-paper/85">
+        <RarityTabs
+          buckets={buckets}
+          active={active}
+          onChange={(key) => setParams({ rarity: key }, { replace: true })}
+        />
+      </div>
+
+      {!activeBucket || activeBucket.cards.length === 0 ? (
+        <p className="px-1 pt-10 text-center text-body text-muted">No cards in this rarity.</p>
+      ) : (
+        <ul className="grid grid-cols-2 gap-3 pt-2">
+          {activeBucket.cards.map((card) => (
+            <li key={card.cardNumber}>
+              <CardCell card={card} owned={isOwned(card.cardNumber)} qty={ownedQty(card.cardNumber)} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Screen>
+  )
+}
