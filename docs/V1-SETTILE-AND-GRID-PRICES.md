@@ -13,7 +13,7 @@ Collectors want to see what a sealed EN box goes for in SG, and the seed market 
 | Field | Meaning |
 | --- | --- |
 | `setCode`, `setName`, `language`, `product` | Which box (`booster_box`) feeds which set |
-| `boxArtUrl` | Closed EN booster box front, supplied and cleared by Cards / Design (retailer watermark acceptable in V1). `null` if none |
+| `boxArtUrl` | Closed EN booster box front on white, supplied and cleared by Cards / Design. Vendored in the repo under `public/box-art/` and referenced by local path (`/box-art/op09-en-white.jpg`), never hotlinked. `null` if none |
 | `sgAskSgd`, `sgSource` | SG clean-box ask in SGD and where it was read |
 | `usMarketUsd`, `usSource` | TCGPlayer market in USD and product reference |
 | `asOf` | ISO date the prices were read |

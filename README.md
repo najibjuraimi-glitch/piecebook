@@ -34,7 +34,7 @@ npm run preview   # serve the production build locally
 - **Prices** are the seed `market_usd` values with their `as_of` date. There is no live price feed; every price in the UI is labelled as seed. Card cells show the bare `market_usd` muted under the name; card detail carries the `as_of` date.
 - **Parallels** are detected from the card number (`OP09-001p1`) and shown in their own Parallels tab.
 - **Sealed guidance** is not yet a CSV column, so the short EN/JP notes per set live in `src/data/sealed.ts`.
-- **Sealed prices** come from `data/sealed-seed.json` (Cards): per set, the EN booster box SG ask in SGD, the TCGPlayer US market in USD, the `asOf` date and a `boxArtUrl` for the closed box front shown on the set tile. Set tiles fall back to type-first (big OP code) when the URL is missing or the image fails to load.
+- **Sealed prices** come from `data/sealed-seed.json` (Cards): per set, the EN booster box SG ask in SGD, the TCGPlayer US market in USD, the `asOf` date and a `boxArtUrl` for the closed box front shown on the set tile. Box art is vendored under `public/box-art/` and referenced by local path, not hotlinked. Set tiles fall back to type-first (big OP code) when the URL is missing or the image fails to load.
 
 ## Your data is local-only
 
