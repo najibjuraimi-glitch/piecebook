@@ -23,6 +23,11 @@ export function formatSgd(value: number): string {
   return `S$${fmt.format(value)}`
 }
 
+/** A paid amount in the currency it was paid in: "S$120" / "S$119.50" or "$85.00". Never converted. */
+export function formatMoney(amount: number, currency: 'SGD' | 'USD'): string {
+  return currency === 'SGD' ? formatSgd(amount) : usd.format(amount)
+}
+
 export function formatSignedUsd(value: number): string {
   if (value > 0) return `+${usd.format(value)}`
   if (value < 0) return `−${usd.format(Math.abs(value))}`

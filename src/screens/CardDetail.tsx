@@ -6,6 +6,7 @@ import { CardArt } from '../components/CardArt'
 import { RarityChip } from '../components/RarityChip'
 import { CheckIcon } from '../components/CardCell'
 import { DangerGhostButton, PrimaryButton } from '../components/Buttons'
+import { CostBasisPanel } from '../components/CostBasis'
 import { formatDate, formatUsd } from '../lib/format'
 import { NotFoundScreen } from './NotFound'
 
@@ -17,13 +18,16 @@ export function CardDetailScreen() {
 }
 
 /**
- * Thin Own: the only user action here is the owned flag (with a quiet qty
- * stepper once owned). No cost, date or note entry in V1.
+ * Own first, cost second. Not owned: one accent Mark owned in the thumb zone.
+ * Owned: the Owned block with a quiet qty stepper, then the cost basis block
+ * underneath (ghost Add cost basis, or the saved summary). Removing ownership
+ * drops the cost with it, so there is never cost UI on an unowned card.
  */
 function CardDetail({ card }: { card: Card }) {
-  const { isOwned, ownedQty, markOwned, removeOwned, setQty } = useCollection()
+  const { isOwned, ownedQty, costFor, markOwned, removeOwned, setQty, setCost, clearCost } = useCollection()
   const owned = isOwned(card.cardNumber)
   const qty = ownedQty(card.cardNumber)
+  const cost = costFor(card.cardNumber)
 
   return (
     <Screen>
@@ -68,20 +72,29 @@ function CardDetail({ card }: { card: Card }) {
           </section>
 
           {owned ? (
-            <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4" aria-label="Ownership">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-white">
-                    <CheckIcon />
-                  </span>
-                  <p className="text-body font-semibold text-ink">Owned</p>
+            <>
+              <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4" aria-label="Ownership">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-ink text-white">
+                      <CheckIcon />
+                    </span>
+                    <p className="text-body font-semibold text-ink">Owned</p>
+                  </div>
+                  <QtyStepper value={qty} onChange={(n) => setQty(card.cardNumber, n)} />
                 </div>
-                <QtyStepper value={qty} onChange={(n) => setQty(card.cardNumber, n)} />
-              </div>
+              </section>
+
+              <CostBasisPanel
+                cost={cost}
+                onSave={(c) => setCost(card.cardNumber, c)}
+                onClear={() => clearCost(card.cardNumber)}
+              />
+
               <DangerGhostButton className="mt-4" onClick={() => removeOwned(card.cardNumber)}>
                 Remove from collection
               </DangerGhostButton>
-            </section>
+            </>
           ) : (
             <div
               className={`sticky z-10 mt-8 bg-gradient-to-t from-paper via-paper/95 to-paper/0 pb-2 pt-6 ${BLEED} desktop:static desktop:mx-0 desktop:bg-none desktop:px-0 desktop:pb-0 desktop:pt-0`}

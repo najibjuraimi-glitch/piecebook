@@ -9,6 +9,8 @@ interface Props {
   card: Card
   owned?: boolean
   qty?: number
+  /** Optional muted "Paid S$120" line under the market figure (Collection only). */
+  paid?: string
 }
 
 /** Art grid: 2 / 3 / 4 / 5 columns at phone / tablet / desktop / wide. Shared by Set detail and Collection. */
@@ -20,7 +22,7 @@ export function CardGrid({ children, className = '' }: { children: React.ReactNo
   )
 }
 
-export function CardCell({ card, owned = false, qty = 0 }: Props) {
+export function CardCell({ card, owned = false, qty = 0, paid }: Props) {
   return (
     <Link
       to={`/cards/${encodeURIComponent(card.cardNumber)}`}
@@ -52,6 +54,7 @@ export function CardCell({ card, owned = false, qty = 0 }: Props) {
         {card.marketUsd !== null && (
           <p className="tabular text-meta text-muted">{formatUsd(card.marketUsd)}</p>
         )}
+        {paid && <p className="tabular truncate text-meta text-muted">Paid {paid}</p>}
       </div>
     </Link>
   )
