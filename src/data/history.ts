@@ -90,6 +90,24 @@ export function changeSince(points: PricePoint[], days = 30): PriceChange | null
   return { delta: Math.round((latest.usd - since.usd) * 100) / 100, since, latest }
 }
 
+/**
+ * Movement since a given moment (a watch star): the reference is the newest
+ * point on or before that day, the latest is the newest point. Null when there
+ * is no point that old yet or nothing has moved in between.
+ */
+export function changeSinceDate(points: PricePoint[], sinceIso: string): PriceChange | null {
+  if (points.length < 2) return null
+  const day = sinceIso.slice(0, 10)
+  const latest = points[points.length - 1]
+  let since: PricePoint | undefined
+  for (const p of points) {
+    if (p.asOf <= day) since = p
+    else break
+  }
+  if (!since || since.asOf === latest.asOf) return null
+  return { delta: Math.round((latest.usd - since.usd) * 100) / 100, since, latest }
+}
+
 /** Histories for many cards at once (owned and watched cards on Portfolio and Collection); each set's file loads once. */
 export function usePriceHistories(cards: Card[]): { byCard: Map<string, PricePoint[]>; loading: boolean } {
   const key = cards.map((c) => c.cardNumber).sort().join('|')

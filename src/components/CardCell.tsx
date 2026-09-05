@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import type { Card } from '../data/seed'
-import { formatUsd } from '../lib/format'
+import { formatDate, formatSignedUsd, formatUsd } from '../lib/format'
 import { CardArt } from './CardArt'
 import { RarityChip } from './RarityChip'
 import { StarIcon } from './StarButton'
@@ -14,6 +14,8 @@ interface Props {
   paid?: string
   /** Small star on the art when the card is on the watchlist. */
   watching?: boolean
+  /** Optional "+$1.20 since 3 Sep 2026" line under the market figure (watched cards in Collection). */
+  change?: { delta: number; since: string }
 }
 
 /** Art grid: 2 / 3 / 4 / 5 columns at phone / tablet / desktop / wide. Shared by Set detail and Collection. */
@@ -25,7 +27,7 @@ export function CardGrid({ children, className = '' }: { children: React.ReactNo
   )
 }
 
-export function CardCell({ card, owned = false, qty = 0, paid, watching = false }: Props) {
+export function CardCell({ card, owned = false, qty = 0, paid, watching = false, change }: Props) {
   return (
     <Link
       to={`/cards/${encodeURIComponent(card.cardNumber)}`}
@@ -69,6 +71,14 @@ export function CardCell({ card, owned = false, qty = 0, paid, watching = false 
           <p className="tabular text-meta text-muted">{formatUsd(card.marketUsd)}</p>
         )}
         {paid && <p className="tabular truncate text-meta text-muted">Paid {paid}</p>}
+        {change && (
+          <p className="tabular truncate text-meta text-muted">
+            <span className={change.delta > 0 ? 'font-medium text-good' : change.delta < 0 ? 'font-medium text-bad' : ''}>
+              {formatSignedUsd(change.delta)}
+            </span>{' '}
+            since {formatDate(change.since)}
+          </p>
+        )}
       </div>
     </Link>
   )

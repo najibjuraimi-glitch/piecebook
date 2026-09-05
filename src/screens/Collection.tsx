@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { compareCardNumbers, getCard, getSet, type Card } from '../data/seed'
 import { getRosterSet } from '../data/roster'
+import { changeSinceDate, usePriceHistories } from '../data/history'
 import { useCollection, type CostBasis } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
 import { Screen, ScreenTitle } from '../components/Screen'
@@ -37,6 +38,8 @@ export function CollectionScreen() {
   const watchedSets = useMemo(() => watch.sets.map((code) => getRosterSet(code)).filter((s) => s !== undefined), [watch.sets])
   const watchedCards = useMemo(() => watch.cards.map((n) => getCard(n)).filter((c): c is Card => c !== undefined), [watch.cards])
   const watching = watchedSets.length > 0 || watchedCards.length > 0
+  // Movement since each star, from the same dated seed points as the card page.
+  const watchedHistory = usePriceHistories(watchedCards)
 
   return (
     <Screen>
@@ -73,11 +76,23 @@ export function CollectionScreen() {
 
           {watchedCards.length > 0 && (
             <CardGrid className={watchedSets.length > 0 ? 'mt-4' : 'mt-3'}>
-              {watchedCards.map((card) => (
-                <li key={card.cardNumber}>
-                  <CardCell card={card} owned={isOwned(card.cardNumber)} qty={ownedQty(card.cardNumber)} watching />
-                </li>
-              ))}
+              {watchedCards.map((card) => {
+                const at = watch.watchedAt(card.cardNumber)
+                const moved = at ? changeSinceDate(watchedHistory.byCard.get(card.cardNumber) ?? [], at) : null
+                // A card that has not moved since its star gets no line; the cell stays as it was.
+                const change = moved && moved.delta !== 0 ? moved : null
+                return (
+                  <li key={card.cardNumber}>
+                    <CardCell
+                      card={card}
+                      owned={isOwned(card.cardNumber)}
+                      qty={ownedQty(card.cardNumber)}
+                      watching
+                      change={change ? { delta: change.delta, since: change.since.asOf } : undefined}
+                    />
+                  </li>
+                )
+              })}
             </CardGrid>
           )}
         </section>
