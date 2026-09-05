@@ -60,6 +60,8 @@ export interface Crumb {
 interface BackBarProps {
   title?: string
   subline?: string
+  /** One quiet ink line under the subline, e.g. "You own 12 of 151". */
+  meta?: string
   /** Path from home to here, e.g. Sets › OP-09 › OP09-004p1. Rendered in place of the title. */
   crumbs?: Crumb[]
   fallbackTo: string
@@ -92,7 +94,7 @@ function Breadcrumb({ crumbs }: { crumbs: Crumb[] }) {
 }
 
 /** Detail-screen header: in-app chevron (uses history when available) + optional title or breadcrumb + one right-side action. */
-export function BackBar({ title, subline, crumbs, fallbackTo, action }: BackBarProps) {
+export function BackBar({ title, subline, meta, crumbs, fallbackTo, action }: BackBarProps) {
   const navigate = useNavigate()
   const goBack = () => {
     if (window.history.length > 1) navigate(-1)
@@ -114,6 +116,7 @@ export function BackBar({ title, subline, crumbs, fallbackTo, action }: BackBarP
         <div className="min-w-0 flex-1 pt-1.5">
           <h1 className="tabular truncate text-title text-ink">{title}</h1>
           {subline && <p className="truncate text-meta text-muted">{subline}</p>}
+          {meta && <p className="tabular mt-0.5 truncate text-meta text-ink">{meta}</p>}
         </div>
       )}
       {!title && crumbs && (

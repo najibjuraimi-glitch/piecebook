@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getSet } from '../data/seed'
 import { rosterSealedProduct, type RosterSet } from '../data/roster'
 import { pluralCards } from '../lib/format'
+import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
 import { SealedPrice } from './SealedPrice'
 import { StarIcon } from './StarButton'
@@ -16,6 +17,8 @@ export function SetTile({ set }: { set: RosterSet }) {
   const catalog = set.cardSeedStatus === 'ready' ? getSet(set.setCode) : undefined
   const sealed = rosterSealedProduct(set)
   const watching = useWatchlist().isWatchingSet(set.setCode)
+  const { isOwned } = useCollection()
+  const ownedInSet = catalog ? catalog.cards.filter((c) => isOwned(c.cardNumber)).length : 0
   return (
     <Link
       to={`/sets/${encodeURIComponent(set.setCode)}`}
@@ -36,6 +39,7 @@ export function SetTile({ set }: { set: RosterSet }) {
         <p className="mt-1.5 text-title text-ink">{set.setName}</p>
         <p className="tabular mt-1 text-meta text-muted">
           {catalog ? `${pluralCards(catalog.cards.length)} in seed` : 'Checklist soon'}
+          {ownedInSet > 0 && <span className="text-ink"> · you own {ownedInSet}</span>}
         </p>
 
         {/* The meta line above already says "EN set", so the price row reads "Box · S$750". */}
