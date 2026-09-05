@@ -29,7 +29,7 @@ export function SetTile({ set }: { set: RosterSet }) {
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
           <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">
-            {set.language} set<span className="tabular normal-case tracking-normal"> · {set.setCode}</span>
+            {set.language} {set.product === 'starter_deck' ? 'starter deck' : 'set'}<span className="tabular normal-case tracking-normal"> · {set.setCode}</span>
           </p>
           <span className="flex items-center gap-1.5">
             {watching && <StarIcon filled className="h-4 w-4 text-ink" />}
@@ -38,7 +38,7 @@ export function SetTile({ set }: { set: RosterSet }) {
         </div>
         <p className="mt-1.5 text-title text-ink">{set.setName}</p>
         <p className="tabular mt-1 text-meta text-muted">
-          {catalog ? `${pluralCards(catalog.cards.length)} in seed` : 'Checklist soon'}
+          {catalog ? (set.product === 'starter_deck' ? `${catalog.cards.length} different cards` : `${pluralCards(catalog.cards.length)} in seed`) : 'Checklist soon'}
           {ownedInSet > 0 && <span className="text-ink"> · you own {ownedInSet}</span>}
         </p>
 

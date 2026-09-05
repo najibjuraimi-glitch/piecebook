@@ -24,6 +24,9 @@ interface Props {
  * the box's own facts. One card, one figure, no buy or seller chrome. Sets with
  * no EN box (EB-04) get the guidance line instead of a price.
  */
+/** "booster box", "starter deck" — the roster's product in words. */
+const productNoun = (product: string) => product.replace(/_/g, ' ')
+
 export function BoxCard({ set, product, intro, guidance, className = '' }: Props) {
   if (!product && !guidance) return null
   const points = boxPriceHistory(set.setCode).map((p) => ({ asOf: p.asOf, usd: p.marketUsd, source: 'limitless' as const }))
@@ -41,7 +44,7 @@ export function BoxCard({ set, product, intro, guidance, className = '' }: Props
       {hasBox && <BoxImage set={set} />}
 
       <div className="min-w-0 flex-1">
-        <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">{hasBox ? `${set.language} booster box` : 'Sealed'}</p>
+        <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">{hasBox ? `${set.language} ${productNoun(set.product)}` : 'Sealed'}</p>
 
         {hasBox && product ? (
           <>
@@ -87,7 +90,7 @@ function BoxImage({ set }: { set: RosterSet }) {
       {show && (
         <img
           src={src ?? undefined}
-          alt={`${set.setName} booster box`}
+          alt={`${set.setName} ${productNoun(set.product)}`}
           decoding="async"
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}

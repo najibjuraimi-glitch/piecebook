@@ -362,7 +362,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
             {attrs && deck.leader && check.standard !== null && (
               <p className="mt-2 text-meta text-muted">
                 Standard is the format most events use; cards from blocks that have rotated out are not legal in it. Extra allows every card.
-                Legality here is as Limitless publishes it.
+                Legality here is as Limitless publishes it. New to the game? <Link to="/learn" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">Learn to play</Link>.
               </p>
             )}
           </section>

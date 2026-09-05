@@ -49,7 +49,7 @@ export interface CardSet {
  * first CSV that lists it, e.g. `OP01-024` → OP-01) and is additionally a
  * member of the reprint set's checklist.
  */
-const REPRINT_SETS = /^PRB-/i
+const REPRINT_SETS = /^(PRB|ST)-/i
 
 function isSameSetRow(setCode: string, cardNumber: string): boolean {
   return cardNumber.toUpperCase().startsWith(`${setCode.replace(/-/g, '').toUpperCase()}-`)
@@ -204,9 +204,10 @@ export interface RarityBucket {
  * outside the fixed list (e.g. SP / TR if they ever appear as base prints) is
  * appended after C so no seed row is hidden.
  */
-export function bucketByRarity(cards: Card[]): RarityBucket[] {
-  const base = cards.filter((c) => !c.isParallel)
-  const parallels = cards.filter((c) => c.isParallel)
+export function bucketByRarity(cards: Card[], { byRarityOnly = false }: { byRarityOnly?: boolean } = {}): RarityBucket[] {
+  // A deck's prints are the deck: its leader is often a reprint parallel, so a deck files every print by rarity.
+  const base = byRarityOnly ? cards : cards.filter((c) => !c.isParallel)
+  const parallels = byRarityOnly ? [] : cards.filter((c) => c.isParallel)
 
   const buckets: RarityBucket[] = []
   const seen = new Set<string>()
@@ -224,6 +225,6 @@ export function bucketByRarity(cards: Card[]): RarityBucket[] {
 }
 
 /** Rarity tabs for Set detail: All first, then the fixed-order rarity buckets. */
-export function rarityTabs(cards: Card[]): RarityBucket[] {
-  return [{ key: ALL_TAB, label: ALL_TAB, cards }, ...bucketByRarity(cards)]
+export function rarityTabs(cards: Card[], options: { byRarityOnly?: boolean } = {}): RarityBucket[] {
+  return [{ key: ALL_TAB, label: ALL_TAB, cards }, ...bucketByRarity(cards, options)]
 }

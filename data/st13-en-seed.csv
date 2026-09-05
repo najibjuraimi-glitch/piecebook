@@ -1,0 +1,36 @@
+set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+ST-13,Ultra Deck: The Three Brothers,ST13-001,Sabo,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-001_EN.webp,2.09,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-001p1,Sabo,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-001_p1_EN.webp,18.81,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-002,Portgas.D.Ace,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-002_EN.webp,2.21,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-002p1,Portgas.D.Ace,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-002_p1_EN.webp,22.08,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-003,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-003_EN.webp,5.49,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-003p1,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-003_p1_EN.webp,48.68,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-004,Edward.Newgate,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-004_EN.webp,0.15,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-004p1,Edward.Newgate,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-004_p1_EN.webp,2.15,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-005,Emporio.Ivankov,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-005_EN.webp,0.28,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-005p1,Emporio.Ivankov,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-005_p1_EN.webp,1.32,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-006,Curly.Dadan,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-006_EN.webp,0.12,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-006p1,Curly.Dadan,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-006_p1_EN.webp,0.46,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-007,Sabo,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-007_EN.webp,0.25,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-007p1,Sabo,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-007_p1_EN.webp,4.82,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-008,Sabo,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-008_EN.webp,0.60,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-008p1,Sabo,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-008_p1_EN.webp,6.46,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-009,Shanks,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-009_EN.webp,0.21,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-009p1,Shanks,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-009_p1_EN.webp,6.14,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-010,Portgas.D.Ace,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-010_EN.webp,0.26,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-010p1,Portgas.D.Ace,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-010_p1_EN.webp,13.21,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-011,Portgas.D.Ace,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-011_EN.webp,1.11,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-011p1,Portgas.D.Ace,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-011_p1_EN.webp,9.12,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-012,Makino,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-012_EN.webp,0.20,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-012p1,Makino,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-012_p1_EN.webp,2.08,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-013,Monkey.D.Garp,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-013_EN.webp,0.80,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-013p1,Monkey.D.Garp,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-013_p1_EN.webp,8.80,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-014,Monkey.D.Luffy,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-014_EN.webp,0.26,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-014p1,Monkey.D.Luffy,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-014_p1_EN.webp,13.97,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-015,Monkey.D.Luffy,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-015_EN.webp,1.55,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-015p1,Monkey.D.Luffy,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-015_p1_EN.webp,26.59,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-016,Yamato,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-016_EN.webp,0.29,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-016p1,Yamato,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-016_p1_EN.webp,13.11,2026-09-05,Parallel
+ST-13,Ultra Deck: The Three Brothers,ST13-017,Flame Dragon King,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-017_EN.webp,1.84,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-018,Gum-Gum Jet Spear,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-018_EN.webp,0.21,2026-09-05,
+ST-13,Ultra Deck: The Three Brothers,ST13-019,The Three Brothers' Bond,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-019_EN.webp,0.25,2026-09-05,
