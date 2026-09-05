@@ -9,7 +9,9 @@ import { RarityChip } from '../components/RarityChip'
 import { CheckIcon } from '../components/CardCell'
 import { DangerGhostButton, PrimaryButton } from '../components/Buttons'
 import { CostBasisPanel } from '../components/CostBasis'
-import { formatDate, formatUsd } from '../lib/format'
+import { PriceChart } from '../components/PriceChart'
+import { usePriceHistory } from '../data/history'
+import { formatDate, formatUsd, pluralPoints } from '../lib/format'
 import { NotFoundScreen } from './NotFound'
 
 export function CardDetailScreen() {
@@ -31,6 +33,7 @@ function CardDetail({ card }: { card: Card }) {
   const qty = ownedQty(card.cardNumber)
   const cost = costFor(card.cardNumber)
   const watch = useWatchlist()
+  const history = usePriceHistory(card)
 
   return (
     <Screen>
@@ -74,6 +77,16 @@ function CardDetail({ card }: { card: Card }) {
                 </p>
                 {card.asOf && <p className="tabular text-meta text-muted">as of {formatDate(card.asOf)}</p>}
               </div>
+            )}
+
+            {/* History from dated seed points only. Two or more: a quiet line. One: say so, no chart. */}
+            {!history.loading && history.points.length >= 2 && (
+              <PriceChart points={history.points} className="mt-4 border-t border-line pt-4" />
+            )}
+            {!history.loading && history.points.length === 1 && (
+              <p className="tabular mt-3 text-meta text-muted">
+                {pluralPoints(1)} · history builds with each seed refresh
+              </p>
             )}
           </section>
 
