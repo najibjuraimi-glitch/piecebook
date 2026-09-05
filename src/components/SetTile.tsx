@@ -29,7 +29,7 @@ export function SetTile({ set }: { set: RosterSet }) {
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
           <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">
-            {set.language} set<span className="tabular normal-case tracking-normal"> · {set.setCode}</span>
+            {set.language} {set.product === 'starter_deck' ? 'starter deck' : 'set'}<span className="tabular normal-case tracking-normal"> · {set.setCode}</span>
           </p>
           <span className="flex items-center gap-1.5">
             {watching && <StarIcon filled className="h-4 w-4 text-ink" />}
