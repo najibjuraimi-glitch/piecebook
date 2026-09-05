@@ -1,4 +1,5 @@
 import { useId, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import type { PricePoint } from '../data/history'
 import { formatDate, formatUsd } from '../lib/format'
 
@@ -172,7 +173,10 @@ export function PriceChart({ points, className = '' }: Props) {
           ? 'Weekly points from TCGPlayer chart data; daily points read from Limitless. Seed, not live.'
           : sources.has('tcgplayer')
             ? 'Weekly points from TCGPlayer chart data. Seed, not live.'
-            : 'Daily points read from Limitless. Seed, not live.'}
+            : 'Daily points read from Limitless. Seed, not live.'}{' '}
+        <Link to="/about-prices" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+          How prices work
+        </Link>
       </p>
     </figure>
   )

@@ -27,6 +27,7 @@ npm run preview   # serve the production build locally
 | `/cards/:cardNumber` | Card detail — star to watch; Market (seed) with a price-history line once two or more dated points exist; Mark owned / Remove from collection; once owned, Add cost basis / Edit cost / Clear cost (e.g. `/cards/OP09-001p1`) |
 | `/collection` | Watching (starred sets and cards), then owned cards with a muted `Paid …` line where a cost exists |
 | `/portfolio` | Market value, Cost basis, Unrealized P/L from seed prices; Top owned |
+| `/about-prices` | How prices work — what “seed” means, where card, history and box prices come from, what Piecebook never does. Linked from the chart footnote and Portfolio |
 
 ## Data
 
