@@ -54,6 +54,8 @@ Owned flags, quantities and cost basis are stored in your browser's `localStorag
 
 The build in `dist/` is a static single-page app. Configure your host to serve `index.html` for unknown paths so deep links like `/cards/OP16-001` work (a `public/_redirects` file is included for Netlify-style hosts).
 
+**GitHub Pages** (`https://najibjuraimi-glitch.github.io/piecebook/`): `.github/workflows/pages.yml` builds every push to `main` with `PIECEBOOK_BASE=/piecebook/` (Vite `base`, the router `basename` and the box-art path all follow it), copies `index.html` to `404.html` so deep links load, and commits the result to the `gh-pages` branch. One-time repo setting: Settings → Pages → Build and deployment → Source "Deploy from a branch" → `gh-pages`, `/ (root)`. Locally the base stays `/`.
+
 ## Not in V1
 
 Live prices, alerts, FX conversion, global search across sets, scanning, accounts or sync, marketplace or affiliate links, dark mode.
