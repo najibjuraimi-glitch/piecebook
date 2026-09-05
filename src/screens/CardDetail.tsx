@@ -81,8 +81,15 @@ function CardDetail({ card }: { card: Card }) {
                 </>
               )}
             </div>
-            {/* Artist credit where Limitless carries one; a page per illustrator comes with 7.3. */}
-            {attrs?.artist && <p className="mt-1 text-meta text-muted">Illustrated by {attrs.artist}</p>}
+            {/* Artist credit where Limitless carries one; the name opens every print they drew (7.3). */}
+            {attrs?.artist && (
+              <p className="mt-1 text-meta text-muted">
+                Illustrated by{' '}
+                <Link to={`/artists/${encodeURIComponent(attrs.artist)}`} className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+                  {attrs.artist}
+                </Link>
+              </p>
+            )}
             {/* Door to the character page (7.4): only a name printed more than once has anywhere to go. */}
             {prints > 1 && (
               <Link

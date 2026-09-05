@@ -7,7 +7,9 @@ import { StarterDeckRow } from '../components/StarterDeckRow'
 import { EmptyState } from '../components/EmptyState'
 import { SearchField } from '../components/SearchField'
 import { SearchResults } from '../components/SearchResults'
+import { FacetChips, useSearchAttributes } from '../components/FacetChips'
 import { resolveCardNumber, searchAll } from '../lib/search'
+import { useCollection } from '../store/collection'
 
 /**
  * Every EN set on Cards' roster, oldest EN release first. The roster, not the
@@ -24,7 +26,11 @@ export function SetsScreen() {
   const boosters = ROSTER.filter((s) => s.product !== 'starter_deck')
   // Number order, newest number first: release dates scramble the numbering (ST-22 shipped after ST-23).
   const decks = [...ROSTER.filter((s) => s.product === 'starter_deck')].sort((a, b) => b.setCode.localeCompare(a.setCode, 'en', { numeric: true }))
-  const results = useMemo(() => searchAll(query), [query])
+  // Facets (2.3) read every set's attributes; they load on the first search and stay.
+  const attrs = useSearchAttributes(searching)
+  const { isOwned } = useCollection()
+  const results = useMemo(() => searchAll(query, { attrs, isOwned }), [query, attrs, isOwned])
+  const loading = searching && !attrs
 
   const setQuery = (q: string) => {
     const next = new URLSearchParams(params)
@@ -68,9 +74,11 @@ export function SetsScreen() {
           placeholder="Search every set by name or number"
           className="tablet:max-w-[560px]"
         />
+        <FacetChips query={query} onChange={setQuery} attrs={attrs} className="mt-2" />
+        {loading && <p className="mt-2 px-1 text-meta text-muted">Loading…</p>}
       </form>
 
-      {results ? (
+      {loading ? null : results ? (
         <SearchResults results={results} />
       ) : searching ? (
         <p className="px-1 pt-10 text-center text-body text-muted">Keep typing to search every set.</p>
