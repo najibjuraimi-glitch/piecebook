@@ -13,7 +13,8 @@
  *     as_of is blank iff market_usd is blank, else an ISO date
  *   - image_url is on the Limitless CDN (nothing else is ever hotlinked)
  *   - SEED-VERSION.txt row counts match the files
- *   - price-history files parse, with one row per card per day
+ *   - price-history files parse, with one row per card per day and a known source
+ *   - tcgplayer-products.csv: unique card numbers, roster sets, numeric ids
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -114,21 +115,37 @@ for (const [key, n] of counts) {
   else if (Number(m[1]) !== n) fail(`SEED-VERSION.txt says ${key}=${m[1]} but the file has ${n} rows`)
 }
 
+const SOURCES = new Set(['limitless', 'tcgplayer'])
 const historyDir = join(DATA, 'price-history')
 if (existsSync(historyDir)) {
   for (const f of readdirSync(historyDir).filter((f) => f.endsWith('.csv'))) {
     const { header, rows } = parseCsv(readFileSync(join(historyDir, f), 'utf8'))
-    if (header !== 'card_number,as_of,market_usd') fail(`price-history/${f}: header "${header}"`)
+    if (header !== 'card_number,as_of,market_usd,source') fail(`price-history/${f}: header "${header}"`)
     const seen = new Set()
     rows.forEach((r, i) => {
-      const [num, asOf, usd] = r
+      const [num, asOf, usd, source] = r
       const key = `${num}|${asOf}`
       if (seen.has(key)) fail(`price-history/${f}:${i + 2}: duplicate ${key}`)
       seen.add(key)
       if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf)) fail(`price-history/${f}:${i + 2}: as_of "${asOf}"`)
-      if (!/^\d+(\.\d{1,2})?$/.test(usd)) fail(`price-history/${f}:${i + 2}: market_usd "${usd}"`)
+      if (!/^\d+(\.\d{1,2})?$/.test(usd) || Number(usd) <= 0) fail(`price-history/${f}:${i + 2}: market_usd "${usd}"`)
+      if (!SOURCES.has(source)) fail(`price-history/${f}:${i + 2}: source "${source}"`)
     })
   }
+}
+
+const productsFile = join(DATA, 'tcgplayer-products.csv')
+if (existsSync(productsFile)) {
+  const { header, rows } = parseCsv(readFileSync(productsFile, 'utf8'))
+  if (header !== 'card_number,set_code,tcgplayer_product_id') fail(`tcgplayer-products.csv: header "${header}"`)
+  const seen = new Set()
+  rows.forEach((r, i) => {
+    const [num, setCode, id] = r
+    if (seen.has(num)) fail(`tcgplayer-products.csv:${i + 2}: duplicate ${num}`)
+    seen.add(num)
+    if (!roster.some((s) => s.setCode === setCode)) fail(`tcgplayer-products.csv:${i + 2}: unknown set ${setCode}`)
+    if (!/^\d+$/.test(id)) fail(`tcgplayer-products.csv:${i + 2}: product id "${id}"`)
+  })
 }
 
 for (const w of warnings) console.warn(`warn: ${w}`)

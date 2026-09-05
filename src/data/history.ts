@@ -8,9 +8,13 @@ import { csvToObjects } from './csv'
  * `npm run seed:refresh`). Loaded lazily per set: only card detail needs it,
  * so the history never lands in the main bundle.
  */
+export type PriceSource = 'limitless' | 'tcgplayer'
+
 export interface PricePoint {
   asOf: string
   usd: number
+  /** Where the reading came from: daily Limitless seed, or TCGPlayer's weekly chart data (backfill). */
+  source: PriceSource
 }
 
 const FILES = import.meta.glob('../../data/price-history/*.csv', {
@@ -36,7 +40,7 @@ function loadSet(setCode: string): Promise<Map<string, PricePoint[]>> {
       const usd = Number(row.market_usd)
       if (!row.card_number || !row.as_of || !Number.isFinite(usd)) continue
       const list = byCard.get(row.card_number) ?? []
-      list.push({ asOf: row.as_of, usd })
+      list.push({ asOf: row.as_of, usd, source: row.source === 'tcgplayer' ? 'tcgplayer' : 'limitless' })
       byCard.set(row.card_number, list)
     }
     for (const list of byCard.values()) list.sort((a, b) => a.asOf.localeCompare(b.asOf))
@@ -54,7 +58,7 @@ export async function priceHistoryFor(card: Card): Promise<PricePoint[]> {
   const byCard = await loadSet(card.setCode)
   const points = [...(byCard.get(card.cardNumber) ?? [])]
   if (card.marketUsd !== null && card.asOf && !points.some((p) => p.asOf === card.asOf)) {
-    points.push({ asOf: card.asOf, usd: card.marketUsd })
+    points.push({ asOf: card.asOf, usd: card.marketUsd, source: 'limitless' })
     points.sort((a, b) => a.asOf.localeCompare(b.asOf))
   }
   return points

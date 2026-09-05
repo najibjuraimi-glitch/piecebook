@@ -20,8 +20,10 @@
  *     print in the box; a set with no Limitless page of its own (EB-04) is
  *     assembled from its numbers on the other sets' pages
  * Writes data/{code}-en-seed.csv, appends today's priced rows to
- * data/price-history/{code}.csv (one row per card per day) and repins the
- * per-file counts in data/SEED-VERSION.txt. Cards' roster JSON is never edited.
+ * data/price-history/{code}.csv (one row per card per day, source=limitless),
+ * upserts data/tcgplayer-products.csv (card → TCGPlayer product id) and repins
+ * the per-file counts in data/SEED-VERSION.txt. Cards' roster JSON is never
+ * edited.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -145,6 +147,8 @@ function parseBlocks(page) {
     const cardNumber = m[2] ? `${base}p${m[2]}` : base
     const cur = b.match(/<tr\s+class="current"\s*>(.*?)<\/tr>/s)
     const usd = cur?.[1].match(/card-price usd"[^>]*>\$([\d,]+\.\d{2})<\/a>/)
+    // The USD link is a TCGPlayer partner URL wrapping the product page; keep the product id for provenance / backfill.
+    const product = cur?.[1].match(/tcgplayer\.com%2Fproduct%2F(\d+)/i) ?? cur?.[1].match(/tcgplayer\.com\/product\/(\d+)/i)
     out.push({
       cardNumber,
       base,
@@ -153,6 +157,7 @@ function parseBlocks(page) {
       printLabel: clean(label[2]),
       imageUrl: img[1],
       usd: usd ? usd[1].replace(/,/g, '') : null,
+      tcgplayerProductId: product ? product[1] : null,
     })
   }
   return out
@@ -213,26 +218,54 @@ function buildRows(set, prints, seededBase) {
   return { rows, unmapped, noPrice }
 }
 
+const HISTORY_FIELDS = ['card_number', 'as_of', 'market_usd', 'source']
+
 function appendHistory(setCode, rows) {
   mkdirSync(HISTORY_DIR, { recursive: true })
   const file = join(HISTORY_DIR, `${codeKey(setCode)}.csv`)
-  const existing = existsSync(file) ? parseCsv(readFileSync(file, 'utf8')) : []
+  // Rows written before the `source` column existed were all Limitless reads.
+  const raw = existsSync(file) ? parseCsv(readFileSync(file, 'utf8')) : []
+  const existing = raw.map((r) => ({ ...r, source: r.source || 'limitless' }))
   // One row per card per day; a re-run on the same day replaces that day's value.
   const byKey = new Map(existing.map((r) => [`${r.card_number}|${r.as_of}`, r]))
-  let changed = 0
+  let changed = raw.some((r) => !r.source) ? 1 : 0 // legacy header: rewrite once with the source column
   for (const r of rows) {
     if (r.market_usd === '') continue
     const key = `${r.card_number}|${r.as_of}`
     const prev = byKey.get(key)
-    if (prev && prev.market_usd === r.market_usd) continue
-    byKey.set(key, { card_number: r.card_number, as_of: r.as_of, market_usd: r.market_usd })
+    if (prev && prev.market_usd === r.market_usd && prev.source === 'limitless') continue
+    byKey.set(key, { card_number: r.card_number, as_of: r.as_of, market_usd: r.market_usd, source: 'limitless' })
     changed++
   }
   if (changed === 0) return 0
   const all = [...byKey.values()].sort(
     (a, b) => compareNumbers(a.card_number, b.card_number) || a.as_of.localeCompare(b.as_of),
   )
-  if (!DRY) writeFileSync(file, toCsv(all, ['card_number', 'as_of', 'market_usd']))
+  if (!DRY) writeFileSync(file, toCsv(all, HISTORY_FIELDS))
+  return changed
+}
+
+/**
+ * data/tcgplayer-products.csv: card_number → TCGPlayer product id, as linked
+ * from each print's current-price row on Limitless. Provenance for the seed
+ * price and the key for `npm run seed:backfill`. Never rendered as a link.
+ */
+function upsertProductIds(rowsBySet) {
+  const file = join(DATA, 'tcgplayer-products.csv')
+  const byCard = new Map((existsSync(file) ? parseCsv(readFileSync(file, 'utf8')) : []).map((r) => [r.card_number, r]))
+  let changed = 0
+  for (const [setCode, prints] of rowsBySet) {
+    for (const p of prints) {
+      if (!p.tcgplayerProductId) continue
+      const prev = byCard.get(p.cardNumber)
+      if (prev && prev.tcgplayer_product_id === p.tcgplayerProductId) continue
+      byCard.set(p.cardNumber, { card_number: p.cardNumber, set_code: setCode, tcgplayer_product_id: p.tcgplayerProductId })
+      changed++
+    }
+  }
+  if (changed === 0) return 0
+  const all = [...byCard.values()].sort((a, b) => a.set_code.localeCompare(b.set_code) || compareNumbers(a.card_number, b.card_number))
+  if (!DRY) writeFileSync(file, toCsv(all, ['card_number', 'set_code', 'tcgplayer_product_id']))
   return changed
 }
 
@@ -291,6 +324,7 @@ for (const [code, slug] of toFetch) {
 
 const seededBase = loadSeededBaseRarities()
 const counts = new Map()
+const printsBySet = new Map()
 let failures = 0
 for (const set of targets) {
   let prints
@@ -301,6 +335,7 @@ for (const set of targets) {
     const own = prefixOf(set.setCode)
     prints = [...pages.values()].flat().filter((p) => p.cardNumber.startsWith(own))
   }
+  printsBySet.set(set.setCode, prints)
   const { rows, unmapped, noPrice } = buildRows(set, prints, seededBase)
   if (rows.length === 0) {
     console.log(`  ${set.setCode}: no rows found, skipped`)
@@ -319,5 +354,7 @@ for (const set of targets) {
   console.log(`  ${set.setCode}: ${rows.length} rows, ${added} history points${notes.length ? ' · ' + notes.join(' · ') : ''}`)
 }
 repinSeedVersion(counts)
+const ids = upsertProductIds(printsBySet)
+if (ids) console.log(`  tcgplayer-products.csv: ${ids} product id(s) added or changed`)
 console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
 process.exit(failures ? 1 : 0)
