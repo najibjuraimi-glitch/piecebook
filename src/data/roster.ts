@@ -1,6 +1,7 @@
 import rosterSeed from '../../data/sets-roster-en.json'
 import { latestBoxPrice } from './boxPrices'
 import type { SealedProduct } from './sealed'
+import { formatDate, todayIso } from '../lib/format'
 
 /**
  * One row of Cards' `data/sets-roster-en.json` (`{ asOf, note, sets: [...] }`):
@@ -19,6 +20,12 @@ export interface RosterSet {
   /** ISO date YYYY-MM-DD; null when Cards has not supplied one. */
   enReleased: string | null
   cardSeedStatus: CardSeedStatus
+  /**
+   * True while the set code is the refresh's guess by sequence (7.5): TCGCSV
+   * names carry no code, so an upcoming set is OP‑nn / EB‑nn "next" until
+   * Limitless lists it. A provisional code is never displayed.
+   */
+  codeProvisional: boolean
   sgAskSgd: number | null
   /** Where Cards read `sgAskSgd` (e.g. a Carousell ask). Provenance only; never rendered. */
   sgSource: string | null
@@ -50,7 +57,9 @@ export function boxImageUrl(productId: number, size: '400w' | 'in_1000x1000' = '
 
 // Rows are read field-by-field through `text()` / `money()`, so optional
 // columns Cards adds on some rows only (e.g. `priceNote`) need no schema change.
-type Row = Partial<Record<keyof (typeof rosterSeed)['sets'][number] | 'priceNote' | 'sgSource' | 'tcgplayerProductId', unknown>> & {
+type Row = Partial<
+  Record<keyof (typeof rosterSeed)['sets'][number] | 'priceNote' | 'sgSource' | 'tcgplayerProductId' | 'codeProvisional', unknown>
+> & {
   setCode: string
 }
 
@@ -90,6 +99,7 @@ function toRosterSet(row: Row): RosterSet {
     product: text(row.product) ?? 'booster_box',
     enReleased: text(row.enReleased),
     cardSeedStatus: row.cardSeedStatus === 'ready' ? 'ready' : 'pending',
+    codeProvisional: row.codeProvisional === true,
     sgAskSgd: money(row.sgAskSgd),
     sgSource: text(row.sgSource),
     usMarketUsd: money(row.usMarketUsd),
@@ -116,6 +126,36 @@ export function getRosterSet(setCode: string | undefined): RosterSet | undefined
   if (!setCode) return undefined
   const lower = setCode.toLowerCase()
   return ROSTER.find((s) => s.setCode.toLowerCase() === lower)
+}
+
+/**
+ * An upcoming booster (7.5): on the roster from TCGCSV's presale listing, no
+ * checklist yet because Limitless has not listed the set. Tiles and the set
+ * page show its name, date and pre-order market instead of cards.
+ */
+export function isUpcoming(set: RosterSet): boolean {
+  return set.cardSeedStatus === 'pending' && set.product === 'booster_box'
+}
+
+/** Every upcoming booster in release order (the roster is already date-sorted). */
+export const UPCOMING: RosterSet[] = ROSTER.filter(isUpcoming)
+
+/**
+ * The one date line an upcoming set carries: `Coming 20 Nov 2026` until the
+ * day, `Released 20 Nov 2026 · checklist soon` once it has passed and Limitless
+ * still has not listed it. Null when the roster has no date.
+ */
+export function comingLine(set: RosterSet): string | null {
+  if (!set.enReleased) return null
+  return set.enReleased >= todayIso() ? `Coming ${formatDate(set.enReleased)}` : `Released ${formatDate(set.enReleased)} · checklist soon`
+}
+
+/**
+ * How a roster set is named in the UI: its code where the code is real, its
+ * name alone while the code is the refresh's guess. Never a provisional code.
+ */
+export function displayCode(set: RosterSet): string | null {
+  return set.codeProvisional ? null : set.setCode
 }
 
 /**

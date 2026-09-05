@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ALL_TAB, getSet, rarityTabs, type CardSet } from '../data/seed'
-import { getRosterSet, rosterSealedProduct, type RosterSet } from '../data/roster'
+import { comingLine, displayCode, getRosterSet, isUpcoming, rosterSealedProduct, type RosterSet } from '../data/roster'
 import { getSealedGuidance } from '../data/sealed'
 import { getSetIntro, hasIntroContent, type SetIntro as SetIntroData } from '../data/intros'
 import { DEFAULT_SORT, matchesSearch, parseSort, sortCards, type SortKey } from '../lib/query'
@@ -30,8 +30,38 @@ export function SetDetailScreen() {
   const roster = getRosterSet(setCode)
 
   if (set) return <SeededSetDetail key={set.setCode} set={set} />
+  if (roster && isUpcoming(roster)) return <UpcomingSetDetail key={roster.setCode} roster={roster} />
   if (roster) return <PendingSetDetail roster={roster} />
   return <NotFoundScreen title="Set not found" message="That set isn’t on the roster." />
+}
+
+/**
+ * An upcoming booster (7.5): on the roster from TCGCSV's presale listing, not
+ * yet on Limitless. TCGplayer's name as the title (the code is provisional and
+ * never shown), `Coming 20 Nov 2026`, the BoxCard with the pre-order market,
+ * one sentence about the checklist, and the star. No search, no rarity tabs.
+ */
+function UpcomingSetDetail({ roster }: { roster: RosterSet }) {
+  const product = rosterSealedProduct(roster)
+  const watch = useWatchlist()
+  const code = displayCode(roster)
+
+  return (
+    <Screen>
+      <BackBar
+        title={code ?? roster.setName}
+        subline={code ? roster.setName : undefined}
+        meta={comingLine(roster) ?? undefined}
+        wrapTitle={code === null}
+        fallbackTo="/"
+        action={<StarButton subject="set" active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}
+      />
+
+      <BoxCard set={roster} product={product} presale />
+
+      <p className="mt-6 px-1 text-body text-muted">The checklist appears here the day Limitless lists the set.</p>
+    </Screen>
+  )
 }
 
 /** Cards' intro when they wrote one; otherwise the roster's EN date alone. Nothing else is inferred. */

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { RosterSet } from '../data/roster'
-import { boxImageUrl } from '../data/roster'
+import { boxImageUrl, displayCode } from '../data/roster'
 import type { SealedGuidance, SealedProduct } from '../data/sealed'
 import type { SetIntro } from '../data/intros'
 import { boxPriceHistory } from '../data/boxPrices'
@@ -15,6 +15,8 @@ interface Props {
   intro?: SetIntro
   /** EN / JP lines; the EN line carries the override for sets without an EN box (EB-04). */
   guidance?: SealedGuidance
+  /** Upcoming set (7.5): the figure is TCGplayer's pre-order market and is labelled so; the render shows even before a price exists. */
+  presale?: boolean
   className?: string
 }
 
@@ -27,8 +29,8 @@ interface Props {
 /** "booster box", "starter deck" — the roster's product in words. */
 const productNoun = (product: string) => product.replace(/_/g, ' ')
 
-export function BoxCard({ set, product, intro, guidance, className = '' }: Props) {
-  if (!product && !guidance) return null
+export function BoxCard({ set, product, intro, guidance, presale = false, className = '' }: Props) {
+  if (!product && !guidance && !presale) return null
   const points = boxPriceHistory(set.setCode).map((p) => ({ asOf: p.asOf, usd: p.marketUsd, source: 'limitless' as const }))
   const change = changeSince(points, 30)
   const facts = [
@@ -38,13 +40,14 @@ export function BoxCard({ set, product, intro, guidance, className = '' }: Props
   // Dates live in About this set below; the card keeps only the box's own facts and its JP counterpart.
   const jp = intro?.jpName ? `JP box ${intro.jpName}` : null
   const hasBox = Boolean(product && product.usMarketUsd !== null)
+  const market = presale ? 'pre-order market' : 'TCGplayer market'
 
   return (
     <section aria-label="Sealed" className={`flex gap-4 rounded-2xl border border-line bg-surface p-4 tablet:gap-6 tablet:p-5 ${className}`}>
-      {hasBox && <BoxImage set={set} />}
+      {(hasBox || presale) && <BoxImage set={set} />}
 
       <div className="min-w-0 flex-1">
-        <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">{hasBox ? `${set.language} ${productNoun(set.product)}` : 'Sealed'}</p>
+        <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">{hasBox || presale ? `${set.language} ${productNoun(set.product)}` : 'Sealed'}</p>
 
         {hasBox && product ? (
           <>
@@ -55,18 +58,21 @@ export function BoxCard({ set, product, intro, guidance, className = '' }: Props
             <p className="tabular mt-0.5 text-meta text-muted">
               {change ? (
                 <>
+                  {presale && `${market} · `}
                   <span className={change.delta > 0 ? 'font-medium text-good' : change.delta < 0 ? 'font-medium text-bad' : 'text-ink'}>
                     {change.delta === 0 ? 'Unchanged' : formatSignedUsd(change.delta)}
                   </span>{' '}
                   since {formatDate(change.since.asOf)}
                 </>
               ) : points.length === 1 ? (
-                `TCGplayer market · read daily since ${formatDate(points[0].asOf)}`
+                `${market} · ${presale ? 'TCGplayer · ' : ''}read daily since ${formatDate(points[0].asOf)}`
               ) : (
-                'TCGplayer market · read daily'
+                `${market} · ${presale ? 'TCGplayer · ' : ''}read daily`
               )}
             </p>
           </>
+        ) : presale ? (
+          <p className="tabular mt-1 text-body text-ink">No pre-order market yet · TCGplayer</p>
         ) : (
           guidance && <p className="tabular mt-1 text-body text-ink">{guidance.en}</p>
         )}
@@ -98,8 +104,13 @@ function BoxImage({ set }: { set: RosterSet }) {
         />
       )}
       {!(show && loaded) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#EFEBE3]">
-          <span className="tabular text-[15px] font-semibold text-ink">{set.setCode}</span>
+        <div className="absolute inset-0 flex items-center justify-center bg-[#EFEBE3] px-2 text-center">
+          {/* The code when it is real; a provisional code is never shown, so the name stands in. */}
+          {displayCode(set) ? (
+            <span className="tabular text-[15px] font-semibold text-ink">{set.setCode}</span>
+          ) : (
+            <span className="line-clamp-3 text-[11px] font-medium leading-4 text-ink">{set.setName}</span>
+          )}
         </div>
       )}
     </div>

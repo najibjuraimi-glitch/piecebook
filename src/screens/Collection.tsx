@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { compareCardNumbers, getCard, getSet, type Card } from '../data/seed'
-import { getRosterSet } from '../data/roster'
+import { comingLine, displayCode, getRosterSet, isUpcoming } from '../data/roster'
 import { changeSinceDate, usePriceHistories, type PriceChange, type PricePoint } from '../data/history'
 import { PLAYSET, isPlayset } from '../lib/playsets'
 import { printsNamed } from '../lib/search'
@@ -87,17 +87,19 @@ export function CollectionScreen() {
             <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
               {watchedSets.map((set) => {
                 const catalog = getSet(set.setCode)
+                // A watched upcoming set (7.5) has no code to show yet; its date line stands in for the count.
+                const code = displayCode(set)
                 return (
                   <li key={set.setCode}>
                     <Link
                       to={`/sets/${encodeURIComponent(set.setCode)}`}
                       className="flex min-h-[56px] items-center gap-3 px-4 py-3 transition-colors duration-150 ease-out hover:bg-paper/60 active:bg-paper"
                     >
-                      <span className="tabular w-16 shrink-0 text-body font-semibold text-ink">{set.setCode}</span>
+                      {code && <span className="tabular w-16 shrink-0 text-body font-semibold text-ink">{code}</span>}
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[15px] font-medium leading-5 text-ink">{set.setName}</span>
                         <span className="tabular block text-meta text-muted">
-                          {catalog ? `${pluralCards(catalog.cards.length)} in seed` : 'Checklist soon'}
+                          {catalog ? `${pluralCards(catalog.cards.length)} in seed` : isUpcoming(set) ? (comingLine(set) ?? 'Checklist soon') : 'Checklist soon'}
                         </span>
                       </span>
                       <ChevronRight />

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ROSTER } from '../data/roster'
+import { ROSTER, UPCOMING } from '../data/roster'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { SetTile } from '../components/SetTile'
 import { StarterDeckRow } from '../components/StarterDeckRow'
@@ -44,11 +44,20 @@ export function SetsScreen() {
       <ScreenTitle title="Sets" subline="EN sets" />
       {!searching && decks.length > 0 && (
         <p className="-mt-3 mb-6 text-meta text-muted">
-          {boosters.length} booster sets, then{' '}
+          {boosters.length - UPCOMING.length} booster sets, then{' '}
           <a href="#starter-decks" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
             {decks.length} starter decks
           </a>
           .
+          {/* Upcoming sets sit last in the date-ordered grid (7.5); this jumps to the first of them. */}
+          {UPCOMING.length > 0 && (
+            <>
+              {' '}
+              <a href="#coming-soon" className="whitespace-nowrap text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+                Coming soon · {UPCOMING.length} {UPCOMING.length === 1 ? 'set' : 'sets'}
+              </a>
+            </>
+          )}
         </p>
       )}
 
@@ -71,7 +80,7 @@ export function SetsScreen() {
         <>
           <ul className="grid grid-cols-1 gap-4 tablet:grid-cols-2 wide:grid-cols-3">
             {boosters.map((set) => (
-              <li key={set.setCode}>
+              <li key={set.setCode} id={set.setCode === UPCOMING[0]?.setCode ? 'coming-soon' : undefined} className="scroll-mt-4">
                 <SetTile set={set} />
               </li>
             ))}
