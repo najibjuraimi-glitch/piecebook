@@ -85,7 +85,7 @@ function CardDetail({ card }: { card: Card }) {
             )}
             {!history.loading && history.points.length === 1 && (
               <p className="tabular mt-3 text-meta text-muted">
-                {pluralPoints(1)} · history builds with each seed refresh
+                Tracked since {formatDate(history.points[0].asOf)} · {pluralPoints(1)} so far
               </p>
             )}
           </section>

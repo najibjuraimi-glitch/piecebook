@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "seed:refresh": "node scripts/seed-refresh.mjs"
+    "seed:refresh": "node scripts/seed-refresh.mjs",
+    "seed:check": "node scripts/seed-check.mjs"
   },
   "repository": {
     "type": "git",
