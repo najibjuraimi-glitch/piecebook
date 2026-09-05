@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { ALL_TAB, getSet, rarityTabs, type CardSet } from '../data/seed'
 import { getRosterSet, rosterSealedProduct, type RosterSet } from '../data/roster'
@@ -89,7 +89,9 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   const [params, setParams] = useSearchParams()
   const { isOwned, ownedQty } = useCollection()
   const watch = useWatchlist()
-  const [query, setQuery] = useState('')
+  // Search text lives in the URL as `?q=`, so "All 151 in OP-09" from global search
+  // lands prefilled and the address stays truthful once the collector edits it.
+  const query = params.get('q') ?? ''
 
   const tabs = useMemo(() => rarityTabs(set.cards), [set])
 
@@ -105,7 +107,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
     return sortCards(bucket.cards.filter((c) => matchesSearch(c, query)), sort)
   }, [tabs, active, query, sort])
 
-  const update = (patch: { rarity?: string; sort?: SortKey }) => {
+  const update = (patch: { rarity?: string; sort?: SortKey; q?: string }) => {
     const next = new URLSearchParams(params)
     if (patch.rarity !== undefined) {
       if (patch.rarity === ALL_TAB) next.delete('rarity')
@@ -114,6 +116,10 @@ function SeededSetDetail({ set }: { set: CardSet }) {
     if (patch.sort !== undefined) {
       if (patch.sort === DEFAULT_SORT) next.delete('sort')
       else next.set('sort', patch.sort)
+    }
+    if (patch.q !== undefined) {
+      if (patch.q.trim()) next.set('q', patch.q)
+      else next.delete('q')
     }
     setParams(next, { replace: true })
   }
@@ -137,7 +143,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
 
       {intro && <SetIntro intro={intro} />}
 
-      <SearchField value={query} onChange={setQuery} className="mt-5 tablet:max-w-[560px]" />
+      <SearchField value={query} onChange={(q) => update({ q })} className="mt-5 tablet:max-w-[560px]" />
 
       <SortControls sort={sort} onChange={(s) => update({ sort: s })} count={visible.length} className="mt-3 px-1" />
 

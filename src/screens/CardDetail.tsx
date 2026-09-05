@@ -10,7 +10,9 @@ import { CheckIcon } from '../components/CardCell'
 import { DangerGhostButton, PrimaryButton } from '../components/Buttons'
 import { CostBasisPanel } from '../components/CostBasis'
 import { PriceChart } from '../components/PriceChart'
+import { PlayBlock } from '../components/PlayBlock'
 import { changeSince, usePriceHistory } from '../data/history'
+import { useCardAttributes } from '../data/attributes'
 import { formatDate, formatSignedUsd, formatUsd, pluralPoints } from '../lib/format'
 import { NotFoundScreen } from './NotFound'
 
@@ -22,10 +24,12 @@ export function CardDetailScreen() {
 }
 
 /**
- * Own first, cost second. Not owned: one accent Mark owned in the thumb zone.
- * Owned: the Owned block with a quiet qty stepper, then the cost basis block
- * underneath (ghost Add cost basis, or the saved summary). Removing ownership
- * drops the cost with it, so there is never cost UI on an unowned card.
+ * Identity, Market (seed), then what the card does (the Play block, from the
+ * lazily loaded attributes), then Own. Not owned: one accent Mark owned in the
+ * thumb zone, last in the column so it stays pinned while the effect text
+ * scrolls. Owned: the Owned block with a quiet qty stepper, then the cost basis
+ * block underneath (ghost Add cost basis, or the saved summary). Removing
+ * ownership drops the cost with it, so there is never cost UI on an unowned card.
  */
 function CardDetail({ card }: { card: Card }) {
   const { isOwned, ownedQty, costFor, markOwned, removeOwned, setQty, setCost, clearCost } = useCollection()
@@ -35,6 +39,7 @@ function CardDetail({ card }: { card: Card }) {
   const watch = useWatchlist()
   const history = usePriceHistory(card)
   const change = history.loading ? null : changeSince(history.points, 30)
+  const attrs = useCardAttributes(card)
 
   return (
     <Screen>
@@ -70,6 +75,8 @@ function CardDetail({ card }: { card: Card }) {
                 </>
               )}
             </div>
+            {/* Artist credit where Limitless carries one; a page per illustrator comes with 7.3. */}
+            {attrs?.artist && <p className="mt-1 text-meta text-muted">Illustrated by {attrs.artist}</p>}
           </section>
 
           <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4">
@@ -105,6 +112,8 @@ function CardDetail({ card }: { card: Card }) {
               </p>
             )}
           </section>
+
+          {attrs && <PlayBlock attrs={attrs} className="mt-6" />}
 
           {owned ? (
             <>

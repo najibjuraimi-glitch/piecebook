@@ -1,7 +1,8 @@
-import { NavLink } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { isSetsSection } from './TopBar'
 
 const TABS = [
-  { to: '/', label: 'Sets', icon: SetsIcon, match: (p: string) => p === '/' || p.startsWith('/sets') || p.startsWith('/cards') },
+  { to: '/', label: 'Sets', icon: SetsIcon, match: isSetsSection },
   { to: '/collection', label: 'Collection', icon: CollectionIcon, match: (p: string) => p.startsWith('/collection') },
   { to: '/portfolio', label: 'Portfolio', icon: PortfolioIcon, match: (p: string) => p.startsWith('/portfolio') },
 ]
@@ -18,9 +19,9 @@ export function TabBar({ pathname }: { pathname: string }) {
           const active = match(pathname)
           return (
             <li key={to} className="flex-1">
-              <NavLink
+              {/* A plain Link: NavLink would drop aria-current on /sets, /cards and /characters, which all belong to Sets. */}
+              <Link
                 to={to}
-                end={to === '/'}
                 aria-current={active ? 'page' : undefined}
                 className={`flex h-full min-h-[44px] flex-col items-center justify-center gap-1 transition-colors duration-150 ease-out ${
                   active ? 'text-ink' : 'text-muted hover:text-ink'
@@ -28,7 +29,7 @@ export function TabBar({ pathname }: { pathname: string }) {
               >
                 <Icon active={active} />
                 <span className="text-tab font-medium">{label}</span>
-              </NavLink>
+              </Link>
             </li>
           )
         })}

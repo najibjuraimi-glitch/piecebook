@@ -1,8 +1,12 @@
-import { Link, NavLink } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { CONTENT_COLUMN, Wordmark } from './Screen'
 
+/** Sets is home for the whole box › cards tree, including the search cross-cuts into it (card and character views). */
+export const isSetsSection = (p: string) =>
+  p === '/' || p.startsWith('/sets') || p.startsWith('/cards') || p.startsWith('/characters')
+
 const LINKS = [
-  { to: '/', label: 'Sets', match: (p: string) => p === '/' || p.startsWith('/sets') || p.startsWith('/cards') },
+  { to: '/', label: 'Sets', match: isSetsSection },
   { to: '/collection', label: 'Collection', match: (p: string) => p.startsWith('/collection') },
   { to: '/portfolio', label: 'Portfolio', match: (p: string) => p.startsWith('/portfolio') },
 ]
@@ -24,16 +28,15 @@ export function TopBar({ pathname }: { pathname: string }) {
               const active = match(pathname)
               return (
                 <li key={to}>
-                  <NavLink
+                  <Link
                     to={to}
-                    end={to === '/'}
                     aria-current={active ? 'page' : undefined}
                     className={`inline-flex h-9 items-center rounded-full px-3 text-[15px] font-medium transition-colors duration-150 ease-out ${
                       active ? 'text-ink' : 'text-muted hover:text-ink'
                     }`}
                   >
                     {label}
-                  </NavLink>
+                  </Link>
                 </li>
               )
             })}
