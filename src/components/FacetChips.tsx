@@ -61,10 +61,11 @@ export function FacetChips({ query, onChange, attrs, className = '' }: Props) {
   // On a phone the row scrolls, so a word just typed may light a chip out of view: bring the newest lit chip in.
   const rowRef = useRef<HTMLDivElement>(null)
   const litKeys = parsed.hits.map((h) => chipKey(h.facet)).join('\u0000')
-  const prevLit = useRef<string[]>([])
+  const prevLit = useRef<string[] | null>(null)
   useEffect(() => {
     const keys = litKeys ? litKeys.split('\u0000') : []
-    const fresh = keys.filter((k) => !prevLit.current.includes(k))
+    // Nothing moves on arrival; only a word typed (or a chip tapped) after that.
+    const fresh = prevLit.current === null ? [] : keys.filter((k) => !prevLit.current!.includes(k))
     prevLit.current = keys
     const row = rowRef.current
     if (!row || fresh.length === 0) return
