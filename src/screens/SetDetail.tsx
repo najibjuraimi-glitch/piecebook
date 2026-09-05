@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ALL_TAB, getSet, rarityTabs, type CardSet } from '../data/seed'
 import { getRosterSet, rosterSealedProduct, type RosterSet } from '../data/roster'
 import { getSealedGuidance } from '../data/sealed'
@@ -7,6 +7,8 @@ import { getSetIntro, hasIntroContent, type SetIntro as SetIntroData } from '../
 import { DEFAULT_SORT, matchesSearch, parseSort, sortCards, type SortKey } from '../lib/query'
 import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
+import { useDecks } from '../store/decks'
+import { GhostButton } from '../components/Buttons'
 import { StarButton } from '../components/StarButton'
 import { BackBar, BLEED, Screen } from '../components/Screen'
 import { BoxCard } from '../components/BoxCard'
@@ -93,7 +95,9 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   // lands prefilled and the address stays truthful once the collector edits it.
   const query = params.get('q') ?? ''
 
-  const tabs = useMemo(() => rarityTabs(set.cards), [set])
+  const roster = getRosterSet(set.setCode)
+  const isDeck = roster?.product === 'starter_deck'
+  const tabs = useMemo(() => rarityTabs(set.cards, { byRarityOnly: isDeck }), [set, isDeck])
 
   const requested = params.get('rarity')
   const active = tabs.find((t) => t.key === requested)?.key ?? ALL_TAB
@@ -104,8 +108,10 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   const visible = useMemo(() => {
     const bucket = tabs.find((t) => t.key === active)
     if (!bucket) return []
-    return sortCards(bucket.cards.filter((c) => matchesSearch(c, query)), sort)
-  }, [tabs, active, query, sort])
+    const sorted = sortCards(bucket.cards.filter((c) => matchesSearch(c, query)), sort)
+    // On a deck page the leader leads, whatever the sort.
+    return isDeck ? [...sorted.filter((c) => c.rarity === 'L'), ...sorted.filter((c) => c.rarity !== 'L')] : sorted
+  }, [tabs, active, query, sort, isDeck])
 
   const update = (patch: { rarity?: string; sort?: SortKey; q?: string }) => {
     const next = new URLSearchParams(params)
@@ -125,7 +131,6 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   }
 
   const language = set.cards[0]?.language ?? 'EN'
-  const roster = getRosterSet(set.setCode)
   const ownedInSet = set.cards.filter((c) => isOwned(c.cardNumber)).length
   const sealed = getSealedGuidance(set.setCode, language)
   const sealedProduct = roster ? rosterSealedProduct(roster) : undefined
@@ -136,12 +141,13 @@ function SeededSetDetail({ set }: { set: CardSet }) {
       <BackBar
         title={set.setCode}
         subline={set.setName}
-        meta={ownedInSet > 0 ? `You own ${ownedInSet} of ${set.cards.length}` : undefined}
+        meta={ownedInSet > 0 ? `You own ${ownedInSet} of ${set.cards.length}${isDeck ? ' different cards' : ''}` : undefined}
         fallbackTo="/"
         action={<StarButton subject="set" active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
       />
 
       {roster && <BoxCard set={roster} product={sealedProduct} intro={intro} guidance={sealed} />}
+      {roster && isDeck && <StarterDeckActions set={set} roster={roster} />}
 
       {intro && <SetIntro intro={intro} />}
 
@@ -170,5 +176,52 @@ function SeededSetDetail({ set }: { set: CardSet }) {
         </CardGrid>
       )}
     </Screen>
+  )
+}
+
+/**
+ * A starter deck's own actions (6.5): open it in Decks with its leader and one of
+ * each card (Bandai publishes the deck's total and rarities, not copies per card,
+ * so the player sets the copies from the box), mark every card in it owned, and a
+ * door to Learn to play for the newcomer who just bought it.
+ */
+function StarterDeckActions({ set, roster }: { set: CardSet; roster: RosterSet }) {
+  const { createDeck, replaceCards } = useDecks()
+  const { markOwned, isOwned } = useCollection()
+  const navigate = useNavigate()
+  const [marked, setMarked] = useState(false)
+  const leader = set.cards.find((c) => c.rarity === 'L')
+  const others = [...new Set(set.cards.filter((c) => c.rarity !== 'L').map((c) => c.baseNumber))]
+  const unowned = set.cards.filter((c) => !isOwned(c.cardNumber)).length
+
+  const openInDecks = () => {
+    const id = createDeck(`${roster.setCode} ${roster.setName}`)
+    replaceCards(id, Object.fromEntries(others.map((n) => [n, 1])), leader ? leader.baseNumber : null)
+    navigate(`/decks/${id}`)
+  }
+  const ownAll = () => {
+    for (const c of set.cards) if (!isOwned(c.cardNumber)) markOwned(c.cardNumber)
+    setMarked(true)
+  }
+
+  return (
+    <section aria-label="This deck" className="mt-3 rounded-2xl border border-line bg-surface p-4">
+      <div className="flex flex-wrap gap-2">
+        <GhostButton className="tablet:max-w-[260px]" onClick={openInDecks}>
+          Open in Decks
+        </GhostButton>
+        <GhostButton className="tablet:max-w-[260px]" onClick={ownAll} disabled={unowned === 0}>
+          {unowned === 0 ? (marked ? 'Marked all owned' : 'All owned') : 'I have this deck'}
+        </GhostButton>
+      </div>
+      <p className="mt-2 text-meta text-muted">
+        Bandai publishes the deck’s total and rarities, not how many of each card it holds, so both start with one of each: set the copies from your
+        box. {set.cards.length} different cards.{' '}
+        <Link to="/learn" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+          New to the game? Learn to play
+        </Link>
+        .
+      </p>
+    </section>
   )
 }

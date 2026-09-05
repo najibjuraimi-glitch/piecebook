@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ROSTER } from '../data/roster'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { SetTile } from '../components/SetTile'
+import { StarterDeckRow } from '../components/StarterDeckRow'
 import { EmptyState } from '../components/EmptyState'
 import { SearchField } from '../components/SearchField'
 import { SearchResults } from '../components/SearchResults'
@@ -20,6 +21,9 @@ export function SetsScreen() {
   const navigate = useNavigate()
   const query = params.get('q') ?? ''
   const searching = query.trim() !== ''
+  const boosters = ROSTER.filter((s) => s.product !== 'starter_deck')
+  // Number order, newest number first: release dates scramble the numbering (ST-22 shipped after ST-23).
+  const decks = [...ROSTER.filter((s) => s.product === 'starter_deck')].sort((a, b) => b.setCode.localeCompare(a.setCode, 'en', { numeric: true }))
   const results = useMemo(() => searchAll(query), [query])
 
   const setQuery = (q: string) => {
@@ -38,6 +42,15 @@ export function SetsScreen() {
   return (
     <Screen>
       <ScreenTitle title="Sets" subline="EN sets" />
+      {!searching && decks.length > 0 && (
+        <p className="-mt-3 mb-6 text-meta text-muted">
+          {boosters.length} booster sets, then{' '}
+          <a href="#starter-decks" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+            {decks.length} starter decks
+          </a>
+          .
+        </p>
+      )}
 
       <form role="search" onSubmit={onSubmit} className="mb-6">
         <SearchField
@@ -55,13 +68,31 @@ export function SetsScreen() {
       ) : ROSTER.length === 0 ? (
         <EmptyState message="No sets loaded yet." />
       ) : (
-        <ul className="grid grid-cols-1 gap-4 tablet:grid-cols-2 wide:grid-cols-3">
-          {ROSTER.map((set) => (
-            <li key={set.setCode}>
-              <SetTile set={set} />
-            </li>
-          ))}
-        </ul>
+        <>
+          <ul className="grid grid-cols-1 gap-4 tablet:grid-cols-2 wide:grid-cols-3">
+            {boosters.map((set) => (
+              <li key={set.setCode}>
+                <SetTile set={set} />
+              </li>
+            ))}
+          </ul>
+          {decks.length > 0 && (
+            <section id="starter-decks" aria-label="Starter decks" className="mt-10 scroll-mt-4">
+              <div className="flex items-baseline justify-between px-1">
+                <h2 className="text-meta font-medium uppercase tracking-[0.08em] text-muted">Starter decks</h2>
+                <span className="tabular text-meta text-muted">{decks.length}</span>
+              </div>
+              <p className="mt-1 px-1 text-meta text-muted">Ready-made decks Bandai sells, newest number first. Each one is a set of its own here; a row says how many different cards it holds.</p>
+              <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
+                {decks.map((set) => (
+                  <li key={set.setCode}>
+                    <StarterDeckRow set={set} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       )}
     </Screen>
   )
