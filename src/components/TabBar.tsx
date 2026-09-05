@@ -9,8 +9,6 @@ const TABS = [
 ]
 
 export function TabBar({ pathname }: { pathname: string }) {
-  const underCollection = typeof window !== 'undefined' && window.localStorage.getItem('piecebook.draft.decksUnderCollection') === '1' // DRAFT ONLY
-  const tabs = underCollection ? TABS.filter((t) => t.to !== '/decks') : TABS
   return (
     <nav
       aria-label="Primary"
@@ -18,7 +16,7 @@ export function TabBar({ pathname }: { pathname: string }) {
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
       <ul className="mx-auto flex h-[var(--tabbar-h)] max-w-phone items-stretch">
-        {tabs.map(({ to, label, icon: Icon, match }) => {
+        {TABS.map(({ to, label, icon: Icon, match }) => {
           const active = match(pathname)
           return (
             <li key={to} className="flex-1">

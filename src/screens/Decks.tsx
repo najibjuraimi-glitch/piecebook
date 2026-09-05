@@ -26,7 +26,7 @@ export function DecksScreen() {
       {decks.length === 0 ? (
         <div className="rounded-2xl border border-line bg-surface px-5 py-8 text-center tablet:py-10">
           <p className="text-title text-ink">No decks yet</p>
-          <p className="mx-auto mt-2 max-w-[36ch] text-body text-muted">Pick a leader, add fifty cards, and see what you already own.</p>
+          <p className="mx-auto mt-2 max-w-[36ch] text-body text-muted">Pick a leader or paste a list, add fifty cards, and see what you already own.</p>
           <PrimaryButton className="mx-auto mt-6 max-w-[280px]" onClick={start}>
             New deck
           </PrimaryButton>

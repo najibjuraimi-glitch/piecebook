@@ -13,12 +13,10 @@ const LINKS = [
 ]
 
 /**
- * Tablet/desktop chrome: wordmark left, three text links right. Nothing else —
+ * Tablet/desktop chrome: wordmark left, four text links right. Nothing else —
  * no search, cart, charts or bell. Hidden on phone, where the TabBar takes over.
  */
 export function TopBar({ pathname }: { pathname: string }) {
-  const underCollection = typeof window !== 'undefined' && window.localStorage.getItem('piecebook.draft.decksUnderCollection') === '1' // DRAFT ONLY
-  const links = underCollection ? LINKS.filter((l) => l.to !== '/decks') : LINKS
   return (
     <header className="hidden border-b border-line bg-paper tablet:block">
       <div className={`${CONTENT_COLUMN} flex h-14 items-center justify-between`}>
@@ -27,7 +25,7 @@ export function TopBar({ pathname }: { pathname: string }) {
         </Link>
         <nav aria-label="Primary">
           <ul className="flex items-center gap-1">
-            {links.map(({ to, label, match }) => {
+            {LINKS.map(({ to, label, match }) => {
               const active = match(pathname)
               return (
                 <li key={to}>

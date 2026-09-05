@@ -6,8 +6,6 @@ import { changeSinceDate, usePriceHistories } from '../data/history'
 import { PLAYSET, isPlayset } from '../lib/playsets'
 import { useCollection, type CostBasis } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
-import { useDecks } from '../store/decks'
-import { DECK_SIZE, deckCount } from '../lib/deck'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { CardCell, CardGrid } from '../components/CardCell'
 import { ChevronRight } from '../components/SetTile'
@@ -24,8 +22,6 @@ interface OwnedCard {
 export function CollectionScreen() {
   const { owned, isOwned, ownedQty } = useCollection()
   const watch = useWatchlist()
-  const { decks } = useDecks()
-  const decksUnderCollection = typeof window !== 'undefined' && window.localStorage.getItem('piecebook.draft.decksUnderCollection') === '1' // DRAFT ONLY
 
   const items = useMemo<OwnedCard[]>(() => {
     const list: OwnedCard[] = []
@@ -54,32 +50,6 @@ export function CollectionScreen() {
   return (
     <Screen>
       <ScreenTitle title="Collection" subline={pluralCards(items.length)} />
-
-      {decksUnderCollection && (
-        <section aria-label="Decks" className="mb-8">
-          <div className="flex items-baseline justify-between px-1">
-            <h2 className="text-meta font-medium uppercase tracking-[0.08em] text-muted">Decks</h2>
-            <Link to="/decks" className="text-meta font-medium text-ink hover:underline">New deck</Link>
-          </div>
-          <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
-            {decks.map((d) => {
-              const leader = d.leader ? getCard(d.leader) : undefined
-              return (
-                <li key={d.id}>
-                  <Link to={`/decks/${d.id}`} className="flex min-h-[56px] items-center gap-3 px-3 py-2 transition-colors duration-150 ease-out hover:bg-paper/60 active:bg-paper">
-                    <span className="tabular w-16 shrink-0 text-body font-semibold text-ink">{leader ? leader.baseNumber.split('-')[0] : '—'}</span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-medium leading-5 text-ink">{d.name}</span>
-                      <span className="tabular block text-meta text-muted">{leader ? leader.name : 'No leader'} · {deckCount(d)} of {DECK_SIZE}</span>
-                    </span>
-                    <ChevronRight />
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
-        </section>
-      )}
 
       {watching && (
         <section aria-label="Watching" className="mb-8">
