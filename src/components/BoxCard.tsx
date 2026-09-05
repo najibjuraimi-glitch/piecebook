@@ -62,16 +62,22 @@ export function BoxCard({ set, product, intro, guidance, presale = false, classN
             <p className="tabular mt-0.5 text-meta text-ink">
               {lead.join(SEP)}
               {SEP}
+              {/* Clauses wrap whole, so a narrow column breaks at a separator rather than inside a date. */}
               {change ? (
                 <>
                   <span className="whitespace-nowrap">
                     <span className="font-medium">{change.delta === 0 ? 'no change' : formatSignedUsMarketUsd(change.delta)}</span> since{' '}
                     {formatShortDate(change.since.asOf)}
                   </span>
-                  {asOf && <span className="whitespace-nowrap">{`${SEP}${asOf}`}</span>}
+                  {asOf && (
+                    <>
+                      {'\u00a0· '}
+                      <span className="whitespace-nowrap">{asOf}</span>
+                    </>
+                  )}
                 </>
               ) : (
-                asOf
+                <span className="whitespace-nowrap">{asOf}</span>
               )}
             </p>
           </>

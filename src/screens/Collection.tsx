@@ -54,6 +54,25 @@ function movementSince(points: readonly { asOf: string; usd: number }[], day: st
 const QUIET_USD = 1
 
 /**
+ * A ` · ` separated line whose clauses wrap whole: the dot stays glued to the
+ * clause before it and the line may break only after it, never inside a figure
+ * or a date.
+ */
+function Clauses({ text }: { text: string }) {
+  const parts = text.split(' · ')
+  return (
+    <>
+      {parts.map((part, i) => (
+        <span key={i}>
+          {i > 0 && '\u00a0· '}
+          <span className="whitespace-nowrap">{part}</span>
+        </span>
+      ))}
+    </>
+  )
+}
+
+/**
  * The print of a watched name that moved most since the star (7.4): a watched
  * name is a question about movement, not a sum. Null only when no print has any
  * price history; a name whose prints all sit still comes back with delta 0.
@@ -151,7 +170,9 @@ export function CollectionScreen() {
                       {code && <span className="tabular w-16 shrink-0 text-body font-semibold text-ink">{code}</span>}
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[15px] font-medium leading-5 text-ink">{displayName(set)}</span>
-                        <span className={`tabular block text-meta ${upcoming ? 'text-ink' : 'text-muted'}`}>{line}</span>
+                        <span className={`tabular block text-meta ${upcoming ? 'text-ink' : 'text-muted'}`}>
+                          <Clauses text={line} />
+                        </span>
                       </span>
                       <ChevronRight />
                     </Link>
@@ -186,7 +207,9 @@ export function CollectionScreen() {
                         <span className="tabular block truncate text-[15px] font-medium leading-5 text-ink">
                           {name} · {prints.length} {prints.length === 1 ? 'print' : 'prints'}
                         </span>
-                        <span className="tabular block text-meta text-ink">{line}</span>
+                        <span className="tabular block text-meta text-ink">
+                          <Clauses text={line} />
+                        </span>
                       </span>
                       <ChevronRight />
                     </Link>
