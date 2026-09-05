@@ -81,7 +81,7 @@ export function PortfolioScreen() {
             />
           </div>
           <p className="mt-4 px-1 text-meta text-muted">
-            Values use Cards’ seed prices, not live market.{' '}
+            Values use market prices read once a day, not live prices.{' '}
             <Link to="/about-prices" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
               How prices work
             </Link>

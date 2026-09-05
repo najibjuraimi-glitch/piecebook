@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import type { Card } from '../data/seed'
-import { formatDate, formatSignedUsd, formatUsd } from '../lib/format'
+import { formatShortDate, formatSignedUsd, formatUsd } from '../lib/format'
 import { CardArt } from './CardArt'
 import { RarityChip } from './RarityChip'
 import { StarIcon } from './StarButton'
@@ -14,7 +14,7 @@ interface Props {
   paid?: string
   /** Small star on the art when the card is on the watchlist. */
   watching?: boolean
-  /** Optional "+$1.20 since 3 Sep 2026" line under the market figure (watched cards in Collection). */
+  /** Optional "+$1.20 since you starred 3 Sep" line under the market figure (watched cards in Collection); `since` is the star's day. */
   change?: { delta: number; since: string }
 }
 
@@ -71,12 +71,10 @@ export function CardCell({ card, owned = false, qty = 0, paid, watching = false,
           <p className="tabular text-meta text-muted">{formatUsd(card.marketUsd)}</p>
         )}
         {paid && <p className="tabular truncate text-meta text-muted">Paid {paid}</p>}
+        {/* Movement in ink, not red or green: the cell reports, it does not judge. */}
         {change && (
-          <p className="tabular truncate text-meta text-muted">
-            <span className={change.delta > 0 ? 'font-medium text-good' : change.delta < 0 ? 'font-medium text-bad' : ''}>
-              {formatSignedUsd(change.delta)}
-            </span>{' '}
-            since {formatDate(change.since)}
+          <p className="tabular truncate text-meta text-ink">
+            <span className="font-medium">{formatSignedUsd(change.delta)}</span> since you starred {formatShortDate(change.since)}
           </p>
         )}
       </div>

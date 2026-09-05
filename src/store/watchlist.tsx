@@ -65,6 +65,8 @@ export interface WatchlistApi {
   isWatchingCharacter: (name: string) => boolean
   /** ISO timestamp the card was starred, or undefined when it is not watched. */
   watchedAt: (cardNumber: string) => string | undefined
+  /** ISO timestamp the set was starred, or undefined when it is not watched. */
+  setWatchedAt: (setCode: string) => string | undefined
   /** ISO timestamp the character was starred, or undefined when it is not watched. */
   characterWatchedAt: (name: string) => string | undefined
   toggleCard: (cardNumber: string) => void
@@ -106,6 +108,7 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
   const isWatchingSet = useCallback((c: string) => Boolean(state.sets[c]), [state.sets])
   const isWatchingCharacter = useCallback((name: string) => Boolean(state.characters[name]), [state.characters])
   const watchedAt = useCallback((n: string) => state.cards[n]?.at, [state.cards])
+  const setWatchedAt = useCallback((c: string) => state.sets[c]?.at, [state.sets])
   const characterWatchedAt = useCallback((name: string) => state.characters[name]?.at, [state.characters])
   const toggleCard = useCallback((n: string) => setState((s) => ({ ...s, cards: toggle(s.cards, n) })), [])
   const toggleSet = useCallback((c: string) => setState((s) => ({ ...s, sets: toggle(s.sets, c) })), [])
@@ -120,12 +123,13 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
       isWatchingSet,
       isWatchingCharacter,
       watchedAt,
+      setWatchedAt,
       characterWatchedAt,
       toggleCard,
       toggleSet,
       toggleCharacter,
     }),
-    [state, isWatchingCard, isWatchingSet, isWatchingCharacter, watchedAt, characterWatchedAt, toggleCard, toggleSet, toggleCharacter],
+    [state, isWatchingCard, isWatchingSet, isWatchingCharacter, watchedAt, setWatchedAt, characterWatchedAt, toggleCard, toggleSet, toggleCharacter],
   )
 
   return <WatchlistContext.Provider value={api}>{children}</WatchlistContext.Provider>
