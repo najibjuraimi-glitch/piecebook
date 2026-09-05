@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { CollectionProvider } from './store/collection'
 import { WatchlistProvider } from './store/watchlist'
+import { DecksProvider } from './store/decks'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -11,7 +12,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <BrowserRouter basename={import.meta.env.BASE_URL} future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <CollectionProvider>
         <WatchlistProvider>
-          <App />
+          <DecksProvider>
+            <App />
+          </DecksProvider>
         </WatchlistProvider>
       </CollectionProvider>
     </BrowserRouter>

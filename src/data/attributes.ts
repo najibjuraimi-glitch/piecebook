@@ -88,6 +88,33 @@ export async function attributesFor(card: Card): Promise<CardAttributes | undefi
   return (await loadSet(card.setCode)).get(card.cardNumber)
 }
 
+/**
+ * Every set's attributes at once, by card number (about 100 kB gzipped over 23
+ * chunks). Only the deck builder needs the whole game in memory: leader colours,
+ * categories and legality for any card a player might add.
+ */
+export async function loadAllAttributes(): Promise<Map<string, CardAttributes>> {
+  const codes = Object.keys(FILES).map((p) => p.match(/\/([a-z0-9]+)\.csv$/i)?.[1] ?? '').filter(Boolean)
+  const maps = await Promise.all(codes.map((code) => loadSet(code.replace(/^([a-z]+)(\d+)$/i, '$1-$2').toUpperCase())))
+  const all = new Map<string, CardAttributes>()
+  for (const m of maps) for (const [k, v] of m) all.set(k, v)
+  return all
+}
+
+export function useAllAttributes(): Map<string, CardAttributes> | null {
+  const [all, setAll] = useState<Map<string, CardAttributes> | null>(null)
+  useEffect(() => {
+    let live = true
+    loadAllAttributes().then((m) => {
+      if (live) setAll(m)
+    })
+    return () => {
+      live = false
+    }
+  }, [])
+  return all
+}
+
 export function useCardAttributes(card: Card): CardAttributes | undefined {
   const [state, setState] = useState<{ key: string; attrs: CardAttributes | undefined } | null>(null)
   useEffect(() => {
