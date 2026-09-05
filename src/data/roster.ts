@@ -1,5 +1,5 @@
 import rosterSeed from '../../data/sets-roster-en.json'
-import { getSealedProduct, type SealedProduct } from './sealed'
+import type { SealedProduct } from './sealed'
 
 /**
  * One row of Cards' `data/sets-roster-en.json` (`{ asOf, note, sets: [...] }`):
@@ -19,6 +19,8 @@ export interface RosterSet {
   enReleased: string | null
   cardSeedStatus: CardSeedStatus
   sgAskSgd: number | null
+  /** Where Cards read `sgAskSgd` (e.g. a Carousell ask). Provenance only; never rendered. */
+  sgSource: string | null
   usMarketUsd: number | null
   /** Where Cards read `usMarketUsd` (TCGPlayer product URL). Provenance only; never rendered as a link. */
   usSource: string | null
@@ -26,8 +28,9 @@ export interface RosterSet {
   priceNote: string | null
   /**
    * Resolved local path under `public/box-art/`, or null. Cards may write the
-   * literal `vendored` to mean "use the file already in the repo"; anything
-   * that is not a local path is treated as no art so nothing is ever hotlinked.
+   * literal `vendored` to mean "use the file already in the repo", which
+   * resolves to `/box-art/{code}-{lang}-white.jpg`; anything that is not a
+   * local path is treated as no art so nothing is ever hotlinked.
    */
   boxArtUrl: string | null
   /** Row date when Cards gives one, else the file-level `asOf`. */
@@ -36,7 +39,9 @@ export interface RosterSet {
 
 // Rows are read field-by-field through `text()` / `money()`, so optional
 // columns Cards adds on some rows only (e.g. `priceNote`) need no schema change.
-type Row = Partial<Record<keyof (typeof rosterSeed)['sets'][number] | 'priceNote', unknown>> & { setCode: string }
+type Row = Partial<Record<keyof (typeof rosterSeed)['sets'][number] | 'priceNote' | 'sgSource', unknown>> & {
+  setCode: string
+}
 
 const FILE_AS_OF: string | null = text(rosterSeed.asOf)
 const ROWS: Row[] = Array.isArray(rosterSeed.sets) ? (rosterSeed.sets as Row[]) : []
@@ -55,7 +60,9 @@ function resolveBoxArt(setCode: string, language: string, raw: unknown): string 
   const value = text(raw)
   if (!value) return null
   if (value.startsWith('/')) return value
-  if (value.toLowerCase() === 'vendored') return getSealedProduct(setCode, language, 'booster_box')?.boxArtUrl ?? null
+  if (value.toLowerCase() === 'vendored') {
+    return `/box-art/${setCode.replace(/-/g, '').toLowerCase()}-${language.toLowerCase()}-white.jpg`
+  }
   return null
 }
 
@@ -69,6 +76,7 @@ function toRosterSet(row: Row): RosterSet {
     enReleased: text(row.enReleased),
     cardSeedStatus: row.cardSeedStatus === 'ready' ? 'ready' : 'pending',
     sgAskSgd: money(row.sgAskSgd),
+    sgSource: text(row.sgSource),
     usMarketUsd: money(row.usMarketUsd),
     usSource: text(row.usSource),
     priceNote: text(row.priceNote),
@@ -94,14 +102,11 @@ export function getRosterSet(setCode: string | undefined): RosterSet | undefined
 }
 
 /**
- * The EN booster box price row for a roster set. Cards' `sealed-seed.json` row
- * wins when present (it carries the SG source too); otherwise the roster's own
- * US market price and source are used. Undefined when neither has a price, so
- * the tile omits the block.
+ * The EN booster box price row for a roster set, straight from the roster (the
+ * single source of sealed prices since `sealed-seed.json` was folded into it on
+ * 5 Sep 2026). Undefined when neither price is set, so the tile omits the block.
  */
 export function rosterSealedProduct(set: RosterSet): SealedProduct | undefined {
-  const seeded = getSealedProduct(set.setCode, set.language, set.product)
-  if (seeded && (seeded.sgAskSgd !== null || seeded.usMarketUsd !== null)) return seeded
   if (set.sgAskSgd === null && set.usMarketUsd === null) return undefined
   return {
     setCode: set.setCode,
@@ -110,7 +115,7 @@ export function rosterSealedProduct(set: RosterSet): SealedProduct | undefined {
     product: set.product,
     boxArtUrl: set.boxArtUrl,
     sgAskSgd: set.sgAskSgd,
-    sgSource: null,
+    sgSource: set.sgSource,
     usMarketUsd: set.usMarketUsd,
     usSource: set.usSource,
     asOf: set.asOf,

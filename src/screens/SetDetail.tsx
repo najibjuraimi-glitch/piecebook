@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { ALL_TAB, getSet, rarityTabs, type CardSet } from '../data/seed'
 import { getRosterSet, rosterSealedProduct, type RosterSet } from '../data/roster'
-import { getSealedGuidance, getSealedProduct } from '../data/sealed'
+import { getSealedGuidance } from '../data/sealed'
 import { getSetIntro, hasIntroContent, type SetIntro as SetIntroData } from '../data/intros'
 import { DEFAULT_SORT, matchesSearch, parseSort, sortCards, type SortKey } from '../lib/query'
 import { useCollection } from '../store/collection'
@@ -41,6 +41,8 @@ function introFor(roster: RosterSet | undefined, setCode: string, language: stri
     language: roster.language,
     enReleased: roster.enReleased,
     jpReleased: null,
+    jpName: null,
+    cardTypes: null,
     packsPerBox: null,
     cardsPerPack: null,
     introTheme: null,
@@ -109,9 +111,8 @@ function SeededSetDetail({ set }: { set: CardSet }) {
 
   const language = set.cards[0]?.language ?? 'EN'
   const roster = getRosterSet(set.setCode)
-  const sealed = getSealedGuidance(set.setCode)
-  // Box price: Cards' sealed-seed row when present, else the roster's US market row.
-  const sealedProduct = getSealedProduct(set.setCode, language) ?? (roster ? rosterSealedProduct(roster) : undefined)
+  const sealed = getSealedGuidance(set.setCode, language)
+  const sealedProduct = roster ? rosterSealedProduct(roster) : undefined
   const intro = introFor(roster, set.setCode, language)
 
   return (

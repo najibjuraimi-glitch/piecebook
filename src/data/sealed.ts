@@ -1,36 +1,41 @@
-import sealedSeed from '../../data/sealed-seed.json'
+import { getSetIntro } from './intros'
+import { formatDate } from '../lib/format'
 
 /**
- * Sealed guidance per set. The seed CSVs carry no `sealed_guidance` column yet,
- * so these short notes are maintained here until Cards supplies them in the
- * data contract. Keep them brief and factual: which product feeds which language.
+ * Sealed guidance per set: which box feeds the EN set and when, and the JP box
+ * it mirrors. Derived from Cards' `data/set-intros.json` (EN / JP release dates
+ * and the JP title from Bandai's product pages), so no set needs hand-written
+ * copy. The strip shows the language as a badge beside each line, so the copy
+ * itself does not repeat it ("EN  Box feeds…", not "EN  EN box feeds…").
  */
 export interface SealedGuidance {
   en: string
   jp: string
 }
 
-// The strip shows the language as a badge beside each line, so the copy itself
-// does not repeat it ("EN  Box feeds…", not "EN  EN box feeds…").
-const SEALED: Record<string, SealedGuidance> = {
-  'OP-09': {
-    en: 'Box feeds this set · 13 Dec 2024',
-    jp: 'Box (新たなる皇帝) · 31 Aug 2024',
-  },
-  'OP-16': {
-    en: 'Box feeds this set · 12 Jun 2026',
-    jp: 'Box (決戦の刻) · 30 May 2026',
-  },
+/** Sets whose EN product is not a plain booster box; the derived line would be misleading. */
+const OVERRIDES: Record<string, Partial<SealedGuidance>> = {
+  'EB-04': { en: 'No EN box · cards ship in OP14-EB04 (16 Jan 2026) and OP15-EB04 (3 Apr 2026)' },
 }
 
-export function getSealedGuidance(setCode: string): SealedGuidance | undefined {
-  return SEALED[setCode]
+export function getSealedGuidance(setCode: string, language = 'EN'): SealedGuidance | undefined {
+  const intro = getSetIntro(setCode, language)
+  const override = OVERRIDES[setCode] ?? {}
+  const en = override.en ?? (intro?.enReleased ? `Box feeds this set · ${formatDate(intro.enReleased)}` : null)
+  const jp =
+    override.jp ??
+    (intro?.jpReleased
+      ? `Box${intro.jpName ? ` (${intro.jpName})` : ''} · ${formatDate(intro.jpReleased)}`
+      : null)
+  if (!en && !jp) return undefined
+  return { en: en ?? '—', jp: jp ?? '—' }
 }
 
 /**
- * One sealed product row from Cards' `data/sealed-seed.json`. Prices are seed
- * values (SG ask in SGD, US market in USD) as of `asOf`; there is no live feed.
- * `boxArtUrl` is null until Cards fills it; the UI stays type-first meanwhile.
+ * The sealed product a set's box prices describe. Built from the roster row
+ * (`data/sets-roster-en.json`): SG ask in SGD, US market in USD, both as of
+ * `asOf`; there is no live feed. `boxArtUrl` is a local path under
+ * `public/box-art/` or null; the UI stays type-first meanwhile.
  */
 export interface SealedProduct {
   setCode: string
@@ -43,36 +48,6 @@ export interface SealedProduct {
   usMarketUsd: number | null
   usSource: string | null
   asOf: string | null
-}
-
-function toProduct(row: (typeof sealedSeed)[number]): SealedProduct {
-  const sg = Number(row.sgAskSgd)
-  const us = Number(row.usMarketUsd)
-  return {
-    setCode: row.setCode,
-    setName: row.setName,
-    language: row.language || 'EN',
-    product: row.product || 'booster_box',
-    boxArtUrl: row.boxArtUrl || null,
-    sgAskSgd: Number.isFinite(sg) ? sg : null,
-    sgSource: row.sgSource || null,
-    usMarketUsd: Number.isFinite(us) ? us : null,
-    usSource: row.usSource || null,
-    asOf: row.asOf || null,
-  }
-}
-
-const SEALED_PRODUCTS: SealedProduct[] = sealedSeed.map(toProduct)
-
-/** The EN booster box for a set, if Cards has seeded one. */
-export function getSealedProduct(
-  setCode: string,
-  language = 'EN',
-  product = 'booster_box',
-): SealedProduct | undefined {
-  return SEALED_PRODUCTS.find(
-    (p) => p.setCode === setCode && p.language === language && p.product === product,
-  )
 }
 
 /**
