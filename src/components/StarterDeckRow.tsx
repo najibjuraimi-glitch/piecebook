@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getSet } from '../data/seed'
 import { rosterSealedProduct, type RosterSet } from '../data/roster'
-import { formatDate, formatUsMarketUsd, pluralCards } from '../lib/format'
+import { formatDate, formatUsMarketUsd } from '../lib/format'
 import { useCollection } from '../store/collection'
 import { ChevronRight } from './SetTile'
 
@@ -19,7 +19,7 @@ export function StarterDeckRow({ set }: { set: RosterSet }) {
   const [failed, setFailed] = useState(false)
   const meta = [
     set.enReleased ? formatDate(set.enReleased) : null,
-    catalog ? pluralCards(catalog.cards.length) : 'Checklist soon',
+    catalog ? `${catalog.cards.length} different cards` : 'Checklist soon · not on Limitless yet',
     sealed?.usMarketUsd !== null && sealed?.usMarketUsd !== undefined ? formatUsMarketUsd(sealed.usMarketUsd) : null,
   ].filter((m): m is string => m !== null)
   return (
@@ -35,12 +35,12 @@ export function StarterDeckRow({ set }: { set: RosterSet }) {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[15px] font-medium leading-5 text-ink">
+        <p className="text-[15px] font-medium leading-5 text-ink">
           <span className="tabular text-muted">{set.setCode}</span> · {set.setName}
         </p>
-        <p className="tabular truncate text-meta text-muted">
+        <p className="tabular text-meta text-muted">
+          {ownedInSet > 0 && <span className="text-ink">you own {ownedInSet} · </span>}
           {meta.join(' · ')}
-          {ownedInSet > 0 && <span className="text-ink"> · you own {ownedInSet}</span>}
         </p>
       </div>
       <ChevronRight />

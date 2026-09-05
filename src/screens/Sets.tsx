@@ -22,7 +22,8 @@ export function SetsScreen() {
   const query = params.get('q') ?? ''
   const searching = query.trim() !== ''
   const boosters = ROSTER.filter((s) => s.product !== 'starter_deck')
-  const decks = ROSTER.filter((s) => s.product === 'starter_deck')
+  // Number order, newest number first: release dates scramble the numbering (ST-22 shipped after ST-23).
+  const decks = [...ROSTER.filter((s) => s.product === 'starter_deck')].sort((a, b) => b.setCode.localeCompare(a.setCode, 'en', { numeric: true }))
   const results = useMemo(() => searchAll(query), [query])
 
   const setQuery = (q: string) => {
@@ -41,6 +42,15 @@ export function SetsScreen() {
   return (
     <Screen>
       <ScreenTitle title="Sets" subline="EN sets" />
+      {!searching && decks.length > 0 && (
+        <p className="-mt-3 mb-6 text-meta text-muted">
+          {boosters.length} booster sets, then{' '}
+          <a href="#starter-decks" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+            {decks.length} starter decks
+          </a>
+          .
+        </p>
+      )}
 
       <form role="search" onSubmit={onSubmit} className="mb-6">
         <SearchField
@@ -67,14 +77,14 @@ export function SetsScreen() {
             ))}
           </ul>
           {decks.length > 0 && (
-            <section aria-label="Starter decks" className="mt-10">
+            <section id="starter-decks" aria-label="Starter decks" className="mt-10 scroll-mt-4">
               <div className="flex items-baseline justify-between px-1">
                 <h2 className="text-meta font-medium uppercase tracking-[0.08em] text-muted">Starter decks</h2>
                 <span className="tabular text-meta text-muted">{decks.length}</span>
               </div>
-              <p className="mt-1 px-1 text-meta text-muted">Ready-made decks Bandai sells, newest first. Each one is a set of its own here.</p>
+              <p className="mt-1 px-1 text-meta text-muted">Ready-made decks Bandai sells, newest number first. Each one is a set of its own here; a row says how many different cards it holds.</p>
               <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
-                {[...decks].reverse().map((set) => (
+                {decks.map((set) => (
                   <li key={set.setCode}>
                     <StarterDeckRow set={set} />
                   </li>

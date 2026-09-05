@@ -38,7 +38,7 @@ export function SetTile({ set }: { set: RosterSet }) {
         </div>
         <p className="mt-1.5 text-title text-ink">{set.setName}</p>
         <p className="tabular mt-1 text-meta text-muted">
-          {catalog ? `${pluralCards(catalog.cards.length)} in seed` : 'Checklist soon'}
+          {catalog ? (set.product === 'starter_deck' ? `${catalog.cards.length} different cards` : `${pluralCards(catalog.cards.length)} in seed`) : 'Checklist soon'}
           {ownedInSet > 0 && <span className="text-ink"> · you own {ownedInSet}</span>}
         </p>
 

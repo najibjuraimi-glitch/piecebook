@@ -115,18 +115,20 @@ function CardDetail({ card }: { card: Card }) {
           </section>
 
           {attrs && <PlayBlock attrs={attrs} className="mt-6" />}
-          {/* 6.6: link-first. Limitless lists tournament decks by card; we point there rather than copy anything. */}
-          <p className="mt-3 px-1 text-meta text-muted">
-            <a
-              href={`https://onepiece.limitlesstcg.com/decks?card=${encodeURIComponent(card.baseNumber)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink"
-            >
-              Decks that play this card
-            </a>{' '}
-            · tournament lists on Limitless <span aria-hidden="true">↗</span>
-          </p>
+          {/* 6.6: link-first. Limitless's card page lists the latest tournament decks with this card; we point there rather than copy anything. */}
+          <a
+            href={`https://onepiece.limitlesstcg.com/cards/en/${encodeURIComponent(card.baseNumber)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Decks that play this card, on Limitless, opens in a new tab"
+            className="mt-3 flex min-h-[48px] items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-2.5 text-ink transition-colors duration-150 ease-out hover:bg-paper/60 active:bg-paper"
+          >
+            <span className="min-w-0">
+              <span className="block text-[15px] font-medium leading-5">Decks that play this card</span>
+              <span className="block text-meta text-muted">Latest tournament lists on Limitless · opens a new tab</span>
+            </span>
+            <span aria-hidden="true" className="shrink-0 text-muted">↗</span>
+          </a>
 
           {owned ? (
             <>
