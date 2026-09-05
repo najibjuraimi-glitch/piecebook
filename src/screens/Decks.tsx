@@ -22,6 +22,13 @@ export function DecksScreen() {
   return (
     <Screen>
       <ScreenTitle title="Decks" subline={decks.length === 0 ? 'Build a leader and fifty cards' : `${decks.length} ${decks.length === 1 ? 'deck' : 'decks'}`} />
+      <p className="-mt-3 mb-6 text-meta text-muted">
+        New to the game?{' '}
+        <Link to="/learn" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+          Learn to play
+        </Link>{' '}
+        in five sentences, then Bandai’s rules.
+      </p>
 
       {decks.length === 0 ? (
         <div className="rounded-2xl border border-line bg-surface px-5 py-8 text-center tablet:py-10">
