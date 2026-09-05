@@ -143,6 +143,9 @@ const FIXED_TERMS: Term[] = [
   { norms: ['i', 'dont', 'own'], facet: { kind: 'missing' } },
 ]
 
+/** Words that only join facet words together; next to one they are not part of a name. */
+const CONNECTIVES = new Set(['a', 'an', 'the', 'and', 'or', 'with', 'that', 'card', 'cards', 'print', 'prints'])
+
 interface Token {
   norm: string
   start: number
@@ -204,10 +207,17 @@ export function parseQuery(rawQuery: string, traits: readonly string[] = []): Pa
     }
   }
 
+  // Connectives leaning on a facet word are the sentence, not a name: "red or green blockers", "the red cards I own".
+  const dropped: Token[] = []
+  for (let i = 0; i < tokens.length; i++) {
+    if (taken[i] || !CONNECTIVES.has(tokens[i].norm)) continue
+    if ((i > 0 && taken[i - 1]) || (i + 1 < tokens.length && taken[i + 1])) dropped.push(tokens[i])
+  }
+
   hits.sort((a, b) => a.start - b.start)
   // What is left once the facet spans are cut out; a stray hyphen or apostrophe on its own is not text.
   let cut = query
-  for (const h of [...hits].sort((a, b) => b.start - a.start)) cut = cut.slice(0, h.start) + ' ' + cut.slice(h.end)
+  for (const h of [...hits, ...dropped].sort((a, b) => b.start - a.start)) cut = cut.slice(0, h.start) + ' ' + cut.slice(h.end)
   const text = cut
     .split(/\s+/)
     .filter((t) => /[a-z0-9]/i.test(t))
