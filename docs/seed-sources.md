@@ -74,7 +74,8 @@ CSV header (exact): `set_code,set_name,card_number,name,rarity,language,image_ur
 
 One object `{ asOf, note, sets }`, file-level `asOf` 2026-09-04. 22 EN booster sets in `sets`: OP-01…OP-17, EB-01…EB-03, PRB-01…PRB-02, every row `product: booster_box`. OP-13 is spelled `Carrying on His Will` (lowercase on), per Cards.
 
-- `cardSeedStatus` is `ready` only for OP-09 and OP-16 (the two CSVs above); every other row is `pending` with `sgAskSgd`, `usMarketUsd` and `boxArtUrl` all `null`. No prices or art were added for pending sets.
+- `cardSeedStatus` is `ready` only for OP-09 and OP-16 (the two CSVs above); every other row is `pending` with `boxArtUrl` `null`. No card checklists or art were added for pending sets.
+- **Sealed box prices (Cards' 4 Sep 2026 hunt).** Every one of the 22 rows carries `usMarketUsd` (TCGPlayer market / identifiable Unopened English booster box ask, read 4 Sep 2026) with a per-row `asOf` of `2026-09-04` and the TCGPlayer product URL in `usSource` (e.g. OP-01 → product 557280, OP-17 → product 704752). `sgAskSgd` is set only where an SG ask was verified: OP-09 S$750 and OP-16 S$295; every other row keeps `sgAskSgd: null` and the UI never derives an SGD figure from USD. EB-02 carries a `priceNote` explaining which listing was used. Source URLs are provenance only; the app does not render them as links.
 - OP-09 / OP-16 prices repeat `data/sealed-seed.json` (SG ask S$750 / S$295, TCGPlayer US market $669.52 / $207.42). OP-09 `boxArtUrl` is `vendored` → `/box-art/op09-en-white.jpg`; OP-16 stays `null`.
 - EN set names and EN release dates (`enReleased`) were cross-checked across four independent release calendars that agree on every row:
   - https://samuraiswordtokyo.com/blogs/news/one-piece-card-sets-in-order

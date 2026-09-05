@@ -20,6 +20,10 @@ export interface RosterSet {
   cardSeedStatus: CardSeedStatus
   sgAskSgd: number | null
   usMarketUsd: number | null
+  /** Where Cards read `usMarketUsd` (TCGPlayer product URL). Provenance only; never rendered as a link. */
+  usSource: string | null
+  /** Cards' free-text caveat on a price row, when they wrote one. */
+  priceNote: string | null
   /**
    * Resolved local path under `public/box-art/`, or null. Cards may write the
    * literal `vendored` to mean "use the file already in the repo"; anything
@@ -30,7 +34,9 @@ export interface RosterSet {
   asOf: string | null
 }
 
-type Row = Partial<(typeof rosterSeed)['sets'][number]> & { setCode: string; asOf?: string }
+// Rows are read field-by-field through `text()` / `money()`, so optional
+// columns Cards adds on some rows only (e.g. `priceNote`) need no schema change.
+type Row = Partial<Record<keyof (typeof rosterSeed)['sets'][number] | 'priceNote', unknown>> & { setCode: string }
 
 const FILE_AS_OF: string | null = text(rosterSeed.asOf)
 const ROWS: Row[] = Array.isArray(rosterSeed.sets) ? (rosterSeed.sets as Row[]) : []
@@ -64,6 +70,8 @@ function toRosterSet(row: Row): RosterSet {
     cardSeedStatus: row.cardSeedStatus === 'ready' ? 'ready' : 'pending',
     sgAskSgd: money(row.sgAskSgd),
     usMarketUsd: money(row.usMarketUsd),
+    usSource: text(row.usSource),
+    priceNote: text(row.priceNote),
     boxArtUrl: resolveBoxArt(row.setCode, language, row.boxArtUrl),
     asOf: text(row.asOf) ?? FILE_AS_OF,
   }
@@ -87,8 +95,9 @@ export function getRosterSet(setCode: string | undefined): RosterSet | undefined
 
 /**
  * The EN booster box price row for a roster set. Cards' `sealed-seed.json` row
- * wins when present (it carries sources); otherwise the roster's own prices are
- * used. Undefined when neither has a price, so the tile omits the block.
+ * wins when present (it carries the SG source too); otherwise the roster's own
+ * US market price and source are used. Undefined when neither has a price, so
+ * the tile omits the block.
  */
 export function rosterSealedProduct(set: RosterSet): SealedProduct | undefined {
   const seeded = getSealedProduct(set.setCode, set.language, set.product)
@@ -103,7 +112,7 @@ export function rosterSealedProduct(set: RosterSet): SealedProduct | undefined {
     sgAskSgd: set.sgAskSgd,
     sgSource: null,
     usMarketUsd: set.usMarketUsd,
-    usSource: null,
+    usSource: set.usSource,
     asOf: set.asOf,
   }
 }
