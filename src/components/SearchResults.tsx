@@ -9,7 +9,8 @@ import { pluralCards } from '../lib/format'
 const PER_SET = 10
 
 /**
- * Global search results: an exact-number hit first, then names that recur
+ * Global search results: the reading in words when facets are on, an
+ * exact-number hit, illustrators whose name matches, then names that recur
  * across sets (the character view), then matches grouped by set in release
  * order so the box › cards tree is still visible in a flat result.
  */
@@ -17,12 +18,14 @@ export function SearchResults({ results }: { results: Results }) {
   const { isOwned, ownedQty } = useCollection()
   const watch = useWatchlist()
 
-  if (results.total === 0 && !results.exact) {
-    return <p className="px-1 pt-10 text-center text-body text-muted">No cards match “{results.query}”.</p>
+  if (results.total === 0 && !results.exact && results.artists.length === 0) {
+    return <p className="mx-auto max-w-[36ch] px-1 pt-10 text-center text-body text-muted">{results.emptyText}</p>
   }
 
   return (
     <div className="space-y-8">
+      {results.summary && <p className="tabular -mb-3 px-1 text-body text-muted">{results.summary}</p>}
+
       {results.exact && (
         <Link
           to={`/cards/${encodeURIComponent(results.exact.cardNumber)}`}
@@ -36,6 +39,28 @@ export function SearchResults({ results }: { results: Results }) {
           <span className="shrink-0 text-meta text-muted">Open</span>
           <ChevronRight />
         </Link>
+      )}
+
+      {results.artists.length > 0 && (
+        <section aria-label="Artists">
+          <h2 className="px-1 text-meta font-medium uppercase tracking-[0.08em] text-muted">Artists</h2>
+          <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
+            {results.artists.slice(0, 6).map((a) => (
+              <li key={a.name}>
+                <Link
+                  to={`/artists/${encodeURIComponent(a.name)}`}
+                  className="flex min-h-[52px] items-center gap-3 px-4 py-2.5 transition-colors duration-150 ease-out hover:bg-paper/60 active:bg-paper"
+                >
+                  <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">{a.name}</span>
+                  <span className="tabular shrink-0 text-meta text-muted">
+                    {a.prints} {a.prints === 1 ? 'print' : 'prints'}
+                  </span>
+                  <ChevronRight />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {results.names.length > 0 && (

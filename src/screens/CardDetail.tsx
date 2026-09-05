@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { getCard, type Card } from '../data/seed'
 import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
@@ -76,8 +76,15 @@ function CardDetail({ card }: { card: Card }) {
                 </>
               )}
             </div>
-            {/* Artist credit where Limitless carries one; a page per illustrator comes with 7.3. */}
-            {attrs?.artist && <p className="mt-1 text-meta text-muted">Illustrated by {attrs.artist}</p>}
+            {/* Artist credit where Limitless carries one; the name opens every print they drew (7.3). */}
+            {attrs?.artist && (
+              <p className="mt-1 text-meta text-muted">
+                Illustrated by{' '}
+                <Link to={`/artists/${encodeURIComponent(attrs.artist)}`} className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+                  {attrs.artist}
+                </Link>
+              </p>
+            )}
           </section>
 
           <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4">
