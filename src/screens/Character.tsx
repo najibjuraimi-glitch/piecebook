@@ -5,8 +5,7 @@ import { CardCell, CardGrid } from '../components/CardCell'
 import { StarButton } from '../components/StarButton'
 import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
-import { printsNamed } from '../lib/search'
-import { pluralCards } from '../lib/format'
+import { pluralPrints, printsNamed } from '../lib/search'
 import { NotFoundScreen } from './NotFound'
 
 /**
@@ -51,7 +50,7 @@ export function CharacterScreen() {
               <h2 className="min-w-0 truncate text-meta font-medium uppercase tracking-[0.08em] text-muted">
                 <span className="tabular normal-case tracking-normal text-ink">{group.setCode}</span> · {group.setName}
               </h2>
-              <span className="tabular shrink-0 text-meta text-muted">{pluralCards(group.cards.length)}</span>
+              <span className="tabular shrink-0 text-meta text-muted">{pluralPrints(group.cards.length)}</span>
             </div>
             <CardGrid className="mt-3">
               {group.cards.map((card) => (

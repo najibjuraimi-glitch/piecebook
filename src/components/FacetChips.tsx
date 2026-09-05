@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { loadAllAttributes, type CardAttributes } from '../data/attributes'
 import {
   addFacet,
   CATEGORIES,
   COLOURS,
   COSTS,
+  cycleOwnership,
   facetLabel,
   hasFacet,
   parseQuery,
@@ -45,133 +46,128 @@ interface Props {
   className?: string
 }
 
+type Opener = 'colour' | 'category' | 'cost' | 'trait'
+
 /**
- * The facet row under a search field (2.3). The query is the only state: a chip
- * tapped on appends its word, tapped off cuts the word out, and a word typed by
- * hand lights the same chip. Colours and types, then Cost (a second row of
- * numbers), Trait (a search-as-you-type list), any typed keyword or trait as a
- * lit chip, then Owned. Nothing shows until the field has text.
+ * The facet line under a search field (2.3). The query is the only state: a
+ * value chosen appends its word, a lit chip tapped cuts the word out, and a word
+ * typed by hand lights the same chip. One line, wrapping rather than scrolling:
+ * first whatever is lit, in the order the query says it (colours, types, cost,
+ * traits, keywords, Owned or Missing alike), then Owned when it is not, then the
+ * four openers Colour, Type, Cost and Trait, each unfolding its values as a row
+ * beneath. Owned cycles Owned → Missing → off. Nothing shows until the field has text.
  */
 export function FacetChips({ query, onChange, attrs, className = '' }: Props) {
   const traits = useMemo(() => traitList(attrs), [attrs])
   const parsed = useMemo(() => parseQuery(query, traits), [query, traits])
-  const [costOpen, setCostOpen] = useState(false)
-  const [traitOpen, setTraitOpen] = useState(false)
-
-  // On a phone the row scrolls, so a word just typed may light a chip out of view: bring the newest lit chip in.
-  const rowRef = useRef<HTMLDivElement>(null)
-  const litKeys = parsed.hits.map((h) => chipKey(h.facet)).join('\u0000')
-  const prevLit = useRef<string[] | null>(null)
-  useEffect(() => {
-    const keys = litKeys ? litKeys.split('\u0000') : []
-    // Nothing moves on arrival; only a word typed (or a chip tapped) after that.
-    const fresh = prevLit.current === null ? [] : keys.filter((k) => !prevLit.current!.includes(k))
-    prevLit.current = keys
-    const row = rowRef.current
-    if (!row || fresh.length === 0) return
-    const el = row.querySelector<HTMLElement>(`[data-chip="${fresh[fresh.length - 1].replace(/"/g, '\\"')}"]`)
-    if (!el) return
-    const left = el.offsetLeft - row.offsetLeft
-    const right = left + el.offsetWidth
-    if (right > row.scrollLeft + row.clientWidth) row.scrollTo({ left: right - row.clientWidth + 16, behavior: 'smooth' })
-    else if (left < row.scrollLeft) row.scrollTo({ left: Math.max(0, left - 16), behavior: 'smooth' })
-  }, [litKeys])
+  const [open, setOpen] = useState<Opener | null>(null)
 
   if (!query.trim()) return null
 
-  const toggle = (facet: Facet) => onChange(toggleFacet(parsed, facet))
-  const costOn = parsed.cost !== null
-  const costRow = costOpen || costOn
+  const lit: Facet[] = []
+  for (const h of parsed.hits) if (!lit.some((f) => sameFacet(f, h.facet))) lit.push(h.facet)
+  const ownershipLit = parsed.owned || parsed.missing
 
-  // Keywords and traits have no fixed chip; the ones read from the query light up here.
-  const extras: Facet[] = []
-  for (const h of parsed.hits) {
-    if ((h.facet.kind === 'keyword' || h.facet.kind === 'trait') && !extras.some((f) => sameFacet(f, h.facet))) extras.push(h.facet)
+  const choose = (facet: Facet) => {
+    onChange(toggleFacet(parsed, facet))
+    setOpen(null)
   }
+  const unlight = (facet: Facet) => {
+    if (facet.kind === 'owned' || facet.kind === 'missing') onChange(cycleOwnership(parsed))
+    else onChange(removeFacet(parsed, facet))
+  }
+  const toggleOpen = (which: Opener) => setOpen((o) => (o === which ? null : which))
 
   return (
     <div className={className}>
-      <div
-        ref={rowRef}
-        role="group"
-        aria-label="Narrow the search"
-        className="no-scrollbar -mx-4 flex items-center gap-1.5 overflow-x-auto px-4 py-0.5 tablet:mx-0 tablet:flex-wrap tablet:overflow-visible tablet:px-0"
-      >
-        {COLOURS.map((c) => (
-          <Chip key={c} id={chipKey({ kind: 'colour', value: c })} on={hasFacet(parsed, { kind: 'colour', value: c })} onClick={() => toggle({ kind: 'colour', value: c })}>
-            {c}
-          </Chip>
-        ))}
-        <Divider />
-        {CATEGORIES.map((c) => (
-          <Chip key={c} id={chipKey({ kind: 'category', value: c })} on={hasFacet(parsed, { kind: 'category', value: c })} onClick={() => toggle({ kind: 'category', value: c })}>
-            {c}
-          </Chip>
-        ))}
-        <Divider />
-        <Chip
-          id={costOn ? chipKey({ kind: 'cost', value: parsed.cost as number }) : undefined}
-          on={costOn}
-          expanded={costRow}
-          onClick={() => {
-            if (costOn) {
-              onChange(removeFacet(parsed, { kind: 'cost', value: parsed.cost as number }))
-              setCostOpen(false)
-            } else setCostOpen((v) => !v)
-          }}
-        >
-          {costOn ? `Cost ${parsed.cost}` : 'Cost'}
-        </Chip>
-        <Chip on={false} expanded={traitOpen} onClick={() => setTraitOpen((v) => !v)}>
-          Trait
-        </Chip>
-        {extras.map((f) => (
-          <Chip key={chipKey(f)} id={chipKey(f)} on onClick={() => onChange(removeFacet(parsed, f))}>
+      <div role="group" aria-label="Narrow the search" className="flex flex-wrap items-center gap-x-1">
+        {lit.map((f) => (
+          <Chip key={chipKey(f)} on onClick={() => unlight(f)}>
             {facetLabel(f)}
           </Chip>
         ))}
-        <Divider />
-        <Chip id={chipKey({ kind: 'owned' })} on={parsed.owned} onClick={() => toggle({ kind: 'owned' })}>
-          Owned
+        {!ownershipLit && (
+          <Chip on={false} onClick={() => onChange(cycleOwnership(parsed))}>
+            Owned
+          </Chip>
+        )}
+        <Chip on={false} expanded={open === 'colour'} onClick={() => toggleOpen('colour')}>
+          Colour
+        </Chip>
+        <Chip on={false} expanded={open === 'category'} onClick={() => toggleOpen('category')}>
+          Type
+        </Chip>
+        <Chip on={false} expanded={open === 'cost'} onClick={() => toggleOpen('cost')}>
+          Cost
+        </Chip>
+        <Chip on={false} expanded={open === 'trait'} onClick={() => toggleOpen('trait')}>
+          Trait
         </Chip>
       </div>
 
-      {costRow && (
-        <div role="group" aria-label="Cost" className="no-scrollbar -mx-4 flex items-center gap-1.5 overflow-x-auto px-4 py-0.5 tablet:mx-0 tablet:flex-wrap tablet:overflow-visible tablet:px-0">
+      {open === 'colour' && (
+        <ValueRow label="Colour">
+          {COLOURS.map((c) => (
+            <Chip key={c} on={hasFacet(parsed, { kind: 'colour', value: c })} onClick={() => choose({ kind: 'colour', value: c })}>
+              {c}
+            </Chip>
+          ))}
+        </ValueRow>
+      )}
+
+      {open === 'category' && (
+        <ValueRow label="Type">
+          {CATEGORIES.map((c) => (
+            <Chip key={c} on={hasFacet(parsed, { kind: 'category', value: c })} onClick={() => choose({ kind: 'category', value: c })}>
+              {c}
+            </Chip>
+          ))}
+        </ValueRow>
+      )}
+
+      {open === 'cost' && (
+        <ValueRow label="Cost">
           {COSTS.map((n) => (
-            <Chip key={n} small on={parsed.cost === n} onClick={() => toggle({ kind: 'cost', value: n })}>
+            <Chip key={n} small on={parsed.cost === n} onClick={() => choose({ kind: 'cost', value: n })}>
               {n}
             </Chip>
           ))}
-        </div>
+        </ValueRow>
       )}
 
-      {traitOpen && (
+      {open === 'trait' && (
         <TraitPicker
           traits={traits}
           parsed={parsed}
           loading={!attrs}
           onPick={(t) => {
             onChange(addFacet(parsed, { kind: 'trait', value: t }))
-            setTraitOpen(false)
+            setOpen(null)
           }}
-          onClose={() => setTraitOpen(false)}
+          onClose={() => setOpen(null)}
         />
       )}
     </div>
   )
 }
 
+/** The values an opener unfolds, on their own line beneath; wraps, never scrolls. */
+function ValueRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap items-center gap-x-1">
+      {children}
+    </div>
+  )
+}
+
 /** Filled ink when on, hairline when off, as in the builder; the target is 44px tall around a 32px pill. */
 function Chip({
-  id,
   on,
   small = false,
   expanded,
   onClick,
   children,
 }: {
-  id?: string
   on: boolean
   small?: boolean
   expanded?: boolean
@@ -181,7 +177,6 @@ function Chip({
   return (
     <button
       type="button"
-      data-chip={id}
       aria-pressed={expanded === undefined ? on : undefined}
       aria-expanded={expanded}
       onClick={onClick}
@@ -189,22 +184,18 @@ function Chip({
     >
       <span
         className={`flex items-center gap-1 rounded-full border font-medium transition-colors duration-150 ease-out ${
-          small ? 'tabular h-8 min-w-[2.25rem] justify-center px-2.5 text-[13px]' : 'h-8 px-3 text-[13px]'
-        } ${on ? 'border-ink bg-ink text-white' : 'border-line bg-transparent text-muted hover:bg-white hover:text-ink'}`}
+          small ? 'tabular h-8 min-w-[2.25rem] justify-center px-2.5 text-[13px]' : 'h-8 px-2.5 text-[13px]'
+        } ${on ? 'border-ink bg-ink text-white' : expanded ? 'border-ink bg-white text-ink' : 'border-line bg-transparent text-muted hover:bg-white hover:text-ink'}`}
       >
         {children}
         {expanded !== undefined && (
-          <svg viewBox="0 0 12 12" className={`h-3 w-3 transition-transform duration-150 ${expanded ? 'rotate-180' : ''}`} fill="none" aria-hidden="true">
+          <svg viewBox="0 0 12 12" className={`-mr-0.5 h-2.5 w-2.5 transition-transform duration-150 ${expanded ? 'rotate-180' : ''}`} fill="none" aria-hidden="true">
             <path d="M3 4.5l3 3 3-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
       </span>
     </button>
   )
-}
-
-function Divider() {
-  return <span aria-hidden="true" className="mx-0.5 h-4 w-px shrink-0 bg-line" />
 }
 
 /** The traits Limitless records, narrowed as you type; Enter takes the first, Escape closes. */
@@ -226,7 +217,7 @@ function TraitPicker({
   const matches = traits.filter((t) => !parsed.traits.includes(t) && (!q || t.toLowerCase().includes(q)))
 
   return (
-    <div className="mt-2 rounded-2xl border border-line bg-surface p-2 tablet:max-w-[560px]">
+    <div className="mt-1 rounded-2xl border border-line bg-surface p-2 tablet:max-w-[560px]">
       <input
         autoFocus
         type="text"

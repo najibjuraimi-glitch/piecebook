@@ -48,32 +48,26 @@ export function SetsScreen() {
   return (
     <Screen>
       <ScreenTitle title="Sets" subline="EN sets" />
-      {!searching && decks.length > 0 && (
+      {!searching && (
         <p className="-mt-3 mb-6 text-meta text-muted">
-          {boosters.length - UPCOMING.length} booster sets, then{' '}
-          <a href="#starter-decks" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
-            {decks.length} starter decks
-          </a>
-          .
+          {boosters.length - UPCOMING.length} booster sets
           {/* Upcoming sets sit last in the date-ordered grid (7.5); this jumps to the first of them. */}
           {UPCOMING.length > 0 && (
             <>
-              {' '}
-              <a href="#coming-soon" className="whitespace-nowrap text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
-                Coming soon · {UPCOMING.length} {UPCOMING.length === 1 ? 'set' : 'sets'}
-              </a>
+              , <JumpLink href="#coming-soon">{UPCOMING.length} coming soon</JumpLink>
             </>
           )}
+          {decks.length > 0 && (
+            <>
+              , then <JumpLink href="#starter-decks">{decks.length} starter decks</JumpLink>
+            </>
+          )}
+          .
         </p>
       )}
 
       <form role="search" onSubmit={onSubmit} className="mb-6">
-        <SearchField
-          value={query}
-          onChange={setQuery}
-          placeholder="Search every set by name or number"
-          className="tablet:max-w-[560px]"
-        />
+        <SearchField value={query} onChange={setQuery} placeholder="Search cards, sets, artists" className="tablet:max-w-[560px]" />
         <FacetChips query={query} onChange={setQuery} attrs={attrs} className="mt-2" />
         {loading && <p className="mt-2 px-1 text-meta text-muted">Loading…</p>}
       </form>
@@ -112,5 +106,17 @@ export function SetsScreen() {
         </>
       )}
     </Screen>
+  )
+}
+
+/** A same-page jump inside a sentence: the words stay on the line, the target is 44px tall around them. */
+function JumpLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      className="-mx-1 -my-3 inline-flex h-11 items-center whitespace-nowrap rounded-lg px-1 text-ink underline decoration-line underline-offset-2 transition-colors duration-150 ease-out hover:bg-white hover:decoration-ink"
+    >
+      {children}
+    </a>
   )
 }
