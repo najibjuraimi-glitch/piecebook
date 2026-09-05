@@ -164,6 +164,36 @@ if (existsSync(historyDir)) {
   }
 }
 
+// Box prices: hand reads on the roster (decision 3.1), remembered per read date.
+const BOX_STALE_DAYS = 45
+const boxHistory = join(DATA, 'box-price-history.csv')
+if (existsSync(boxHistory)) {
+  const { header, rows } = parseCsv(readFileSync(boxHistory, 'utf8'))
+  if (header !== 'set_code,as_of,us_market_usd,sg_ask_sgd,source') fail(`box-price-history.csv: header "${header}"`)
+  const seen = new Set()
+  rows.forEach((r, i) => {
+    const [setCode, asOf, us, sg, source] = r
+    const key = `${setCode}|${asOf}`
+    if (seen.has(key)) fail(`box-price-history.csv:${i + 2}: duplicate ${key}`)
+    seen.add(key)
+    if (!roster.some((s) => s.setCode === setCode)) fail(`box-price-history.csv:${i + 2}: unknown set ${setCode}`)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf)) fail(`box-price-history.csv:${i + 2}: as_of "${asOf}"`)
+    if (us === '' && sg === '') fail(`box-price-history.csv:${i + 2}: no price`)
+    if (us !== '' && !/^\d+(\.\d{1,2})?$/.test(us)) fail(`box-price-history.csv:${i + 2}: us_market_usd "${us}"`)
+    if (sg !== '' && !/^\d+(\.\d{1,2})?$/.test(sg)) fail(`box-price-history.csv:${i + 2}: sg_ask_sgd "${sg}"`)
+    if (source !== 'roster') fail(`box-price-history.csv:${i + 2}: source "${source}"`)
+  })
+}
+{
+  const rosterFile = JSON.parse(readFileSync(join(DATA, 'sets-roster-en.json'), 'utf8'))
+  const dates = roster.filter((s) => s.usMarketUsd != null || s.sgAskSgd != null).map((s) => s.asOf ?? rosterFile.asOf).filter(Boolean).sort()
+  const newest = dates[dates.length - 1]
+  if (newest) {
+    const age = Math.floor((Date.now() - Date.parse(newest)) / 86_400_000)
+    if (age > BOX_STALE_DAYS) warn(`box prices were last read by hand on ${newest}, ${age} days ago (over ${BOX_STALE_DAYS}); due for a re-read on the roster`)
+  }
+}
+
 const productsFile = join(DATA, 'tcgplayer-products.csv')
 if (existsSync(productsFile)) {
   const { header, rows } = parseCsv(readFileSync(productsFile, 'utf8'))

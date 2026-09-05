@@ -6,6 +6,7 @@
  *   npm run seed:refresh -- --sets OP-17,EB-04
  *   npm run seed:refresh -- --dry-run    # report only, write nothing
  *   npm run seed:refresh -- --as-of 2026-09-05
+ *   npm run seed:refresh -- --boxes-only # snapshot the roster's box prices into data/box-price-history.csv, nothing else
  *
  * Source: https://onepiece.limitlesstcg.com/cards/en/{slug}?display=full&show=all&per-page=all
  * (one `card-page-main` block per print). Rules, kept identical to the first
@@ -65,6 +66,7 @@ const flag = (name) => {
 }
 const DRY = args.includes('--dry-run')
 const NO_HISTORY = args.includes('--no-history')
+const BOXES_ONLY = args.includes('--boxes-only') // only snapshot the roster's box prices; no Limitless fetch
 const AS_OF = flag('--as-of') ?? new Date().toISOString().slice(0, 10)
 const ONLY = flag('--sets')?.split(',').map((s) => s.trim().toUpperCase())
 
@@ -350,6 +352,38 @@ function upsertProductIds(rowsBySet) {
   return changed
 }
 
+/**
+ * data/box-price-history.csv: one row per set per hand read of the roster's box
+ * prices (`asOf` on the roster row, else the file-level date). Decision 3.1
+ * (5 Sep 2026): the roster is the only source of box prices and the workflow
+ * never reads TCGPlayer; this file just remembers each read so the box card can
+ * say "since". Re-running on the same read date replaces that row.
+ */
+const BOX_HISTORY_FIELDS = ['set_code', 'as_of', 'us_market_usd', 'sg_ask_sgd', 'source']
+
+function snapshotBoxPrices(rosterFile) {
+  const file = join(DATA, 'box-price-history.csv')
+  const fileAsOf = rosterFile.asOf ?? AS_OF
+  const byKey = new Map((existsSync(file) ? parseCsv(readFileSync(file, 'utf8')) : []).map((r) => [`${r.set_code}|${r.as_of}`, r]))
+  let changed = 0
+  for (const s of rosterFile.sets) {
+    const us = s.usMarketUsd == null ? '' : String(s.usMarketUsd)
+    const sg = s.sgAskSgd == null ? '' : String(s.sgAskSgd)
+    if (us === '' && sg === '') continue
+    const asOf = s.asOf ?? fileAsOf
+    const row = { set_code: s.setCode, as_of: asOf, us_market_usd: us, sg_ask_sgd: sg, source: 'roster' }
+    const prev = byKey.get(`${s.setCode}|${asOf}`)
+    if (prev && prev.us_market_usd === us && prev.sg_ask_sgd === sg) continue
+    byKey.set(`${s.setCode}|${asOf}`, row)
+    changed++
+  }
+  if (changed === 0) return 0
+  const order = new Map(rosterFile.sets.map((s, i) => [s.setCode, i]))
+  const all = [...byKey.values()].sort((a, b) => (order.get(a.set_code) ?? 999) - (order.get(b.set_code) ?? 999) || a.as_of.localeCompare(b.as_of))
+  if (!DRY) writeFileSync(file, toCsv(all, BOX_HISTORY_FIELDS))
+  return changed
+}
+
 function repinSeedVersion(counts) {
   const file = join(DATA, 'SEED-VERSION.txt')
   const lines = readFileSync(file, 'utf8').split('\n')
@@ -367,7 +401,16 @@ function repinSeedVersion(counts) {
 
 // ---------------------------------------------------------------- main
 
-const roster = JSON.parse(readFileSync(join(DATA, 'sets-roster-en.json'), 'utf8')).sets
+const rosterFile = JSON.parse(readFileSync(join(DATA, 'sets-roster-en.json'), 'utf8'))
+const roster = rosterFile.sets
+
+if (BOXES_ONLY) {
+  const n = snapshotBoxPrices(rosterFile)
+  console.log(`  box-price-history.csv: ${n} row(s) added or changed`)
+  console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
+  process.exit(0)
+}
+
 const targets = roster.filter((s) => !ONLY || ONLY.includes(s.setCode.toUpperCase()))
 if (targets.length === 0) {
   console.error('No roster sets matched --sets')
@@ -439,5 +482,9 @@ for (const set of targets) {
 repinSeedVersion(counts)
 const ids = upsertProductIds(printsBySet)
 if (ids) console.log(`  tcgplayer-products.csv: ${ids} product id(s) added or changed`)
+if (!NO_HISTORY) {
+  const boxes = snapshotBoxPrices(rosterFile)
+  if (boxes) console.log(`  box-price-history.csv: ${boxes} row(s) added or changed`)
+}
 console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
 process.exit(failures ? 1 : 0)

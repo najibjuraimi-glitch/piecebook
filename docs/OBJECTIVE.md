@@ -26,9 +26,11 @@ Bold entries were added after the audit on 5 Sep 2026; before them the map was a
 ## Order of work
 Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 → 4), with 1.0 (attribute capture) pulled forward because it is a one-day pipeline change that unlocks both other pillars; then Play (6), Belong (7), Start here (8).
 
+## Decisions taken
+- 1.0 — Bandai's card text is shown as every card database shows it (Jib, 5 Sep 2026).
+- 3.1 — Box price feed: option (a). Cards' roster is the only source of box prices, read by hand from the TCGPlayer product page in `usSource` (plus a verified SG ask where one exists), each read dated; cadence monthly, as a normal PR. The daily refresh never reads TCGPlayer; it snapshots the roster's reads into `data/box-price-history.csv` so the box card can say "since", and `seed:check` warns when the newest read is over 45 days old. Limitless lists no sealed products, and TCGPlayer's terms rule out automated reads; option (b) waits for an official TCGPlayer API partnership. (Jib delegated to Code as interim Cards, 5 Sep 2026.)
+
 ## Decisions parked on the board
-- 1.0 — showing Bandai's card text (standard practice among card databases; accept explicitly, as with images)
-- 3.1 — box price feed (Cards cadence vs TCGPlayer box reads)
 - 6.1 — where decks live (fourth tab vs under Collection)
 - 6.5 — starter decks on Cards' roster
 - 6.6 — decklists: link only, or import as a source
