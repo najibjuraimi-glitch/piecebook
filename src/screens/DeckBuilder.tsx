@@ -1,11 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ALL_CARDS, getCard, type Card } from '../data/seed'
 import { useAllAttributes, type CardAttributes } from '../data/attributes'
 import { useDecks } from '../store/decks'
+import { useCollection } from '../store/collection'
+import { useWatchlist } from '../store/watchlist'
 import { checkDeck, DECK_SIZE, exportDeckText, MAX_COPIES, mention, parseDeckText, splitColours, type Deck, type DeckIssue } from '../lib/deck'
 import { matchesSearch } from '../lib/query'
-import { formatUsMarketUsd } from '../lib/format'
+import { formatDate, formatUsd, formatUsMarketUsd } from '../lib/format'
 import { BackBar, CONTENT_COLUMN, Screen } from '../components/Screen'
 import { CardArt } from '../components/CardArt'
 import { SearchField } from '../components/SearchField'
@@ -22,6 +24,13 @@ function baseCard(cardNumber: string): Card | undefined {
 }
 
 const nameOf = (cardNumber: string) => baseCard(cardNumber)?.name
+
+/** Every print of a base number, so any copy a collector holds counts. */
+const PRINTS_BY_BASE: Map<string, Card[]> = (() => {
+  const m = new Map<string, Card[]>()
+  for (const c of ALL_CARDS) m.set(c.baseNumber, [...(m.get(c.baseNumber) ?? []), c])
+  return m
+})()
 
 /** The base print's seed price. A parallel's price is that print's, not the card's, so it is not shown for the card. */
 const seedPrice = (card: Card): number | null => (card.isParallel ? null : card.marketUsd)
@@ -44,20 +53,28 @@ interface Undo {
 }
 
 /**
- * The deck builder (6.2). Order after research: leader, then the check (count
- * and every issue naming its cards), then adding cards right under it, then the
- * fifty by category, then text in and out, then delete. A strip pinned above
- * the tab bar keeps the count and a copy action under the thumb while editing.
- * Local-only; nothing leaves the browser.
+ * The deck builder (6.2) with the collection gap (6.3). Order after research:
+ * leader, then the check (count and every issue naming its cards), then adding
+ * cards right under it, then the fifty by category, then what the collection
+ * covers, then text in and out, then delete. A strip pinned above the tab bar
+ * keeps the count and a copy action under the thumb while editing. Local-only;
+ * nothing leaves the browser.
  */
 function DeckBuilder({ deck }: { deck: Deck }) {
   const { renameDeck, deleteDeck, setLeader, setCardQty, replaceCards } = useDecks()
+  const { isOwned, ownedQty } = useCollection()
+  const watch = useWatchlist()
   const attrs = useAllAttributes()
   const navigate = useNavigate()
   const check = useMemo(() => checkDeck(deck, attrs, nameOf), [deck, attrs])
   const leader = deck.leader ? baseCard(deck.leader) : undefined
   const leaderAttrs = deck.leader && attrs ? attrs.get(deck.leader) : undefined
   const empty = !deck.leader && Object.keys(deck.cards).length === 0
+
+  const haveOf = useCallback(
+    (base: string) => (PRINTS_BY_BASE.get(base) ?? []).reduce((s, p) => s + (isOwned(p.cardNumber) ? ownedQty(p.cardNumber) : 0), 0),
+    [isOwned, ownedQty],
+  )
 
   // One step back after any change, offered in the strip for a few seconds.
   const [undo, setUndo] = useState<Undo | null>(null)
@@ -108,9 +125,42 @@ function DeckBuilder({ deck }: { deck: Deck }) {
     return order.filter((k) => byCat.has(k)).map((k) => ({ category: k, items: byCat.get(k)! }))
   }, [deck.cards, attrs])
 
-  // Adding cards: name or number; the leader's colours unless widened.
+  // 6.3: what the collection covers, by base number (any print counts), with what it would cost.
+  const gap = useMemo(() => {
+    const need = [...(deck.leader ? [[deck.leader, 1] as const] : []), ...Object.entries(deck.cards)]
+    let owned = 0
+    let total = 0
+    let toComplete = 0
+    let unpricedMissing = 0
+    let wholeDeck = 0
+    let unpricedAll = 0
+    let asOf: string | null = null
+    const missing: { card: Card; need: number; have: number; each: number | null }[] = []
+    const held: { card: Card; need: number; have: number }[] = []
+    for (const [n, q] of need) {
+      const card = baseCard(n)
+      if (!card) continue
+      const have = haveOf(card.baseNumber)
+      const each = seedPrice(card)
+      total += q
+      owned += Math.min(have, q)
+      if (card.asOf && (!asOf || card.asOf > asOf)) asOf = card.asOf
+      if (each === null) unpricedAll += q
+      else wholeDeck += each * q
+      if (have > 0) held.push({ card, need: q, have })
+      if (have < q) {
+        missing.push({ card, need: q, have, each })
+        if (each === null) unpricedMissing += q - have
+        else toComplete += each * (q - have)
+      }
+    }
+    return { owned, total, missing, held, toComplete, unpricedMissing, wholeDeck, unpricedAll, asOf }
+  }, [deck, haveOf])
+
+  // Adding cards: name or number; the leader's colours unless widened; Owned narrows further.
   const [query, setQuery] = useState('')
   const [allColours, setAllColours] = useState(false)
+  const [ownedOnly, setOwnedOnly] = useState(false)
   const [pickLeader, setPickLeader] = useState(!deck.leader)
   const results = useMemo(() => {
     const q = query.trim()
@@ -129,6 +179,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
         if (a?.category === 'Leader') continue
         if (!allColours && check.colours.length && a?.color && !splitColours(a.color).some((col) => check.colours.includes(col))) continue
       }
+      if (ownedOnly && haveOf(base) === 0) continue
       seen.add(base)
       if (out.length >= RESULT_LIMIT) {
         more = true
@@ -137,7 +188,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
       out.push(baseCard(base) ?? c)
     }
     return { cards: out, more }
-  }, [query, attrs, pickLeader, allColours, check.colours])
+  }, [query, attrs, pickLeader, allColours, ownedOnly, check.colours, haveOf])
 
   const chooseLeader = (card: Card) => {
     remember(deck.leader ? `Leader was ${nameOf(deck.leader) ?? deck.leader}` : `Leader set to ${card.name}`)
@@ -188,6 +239,15 @@ function DeckBuilder({ deck }: { deck: Deck }) {
     setImportNote(notes.length ? notes.join(' · ') : `Read ${entries.length} ${entries.length === 1 ? 'line' : 'lines'}.`)
   }
 
+  const starMissing = () => {
+    for (const m of gap.missing) if (!watch.isWatchingCard(m.card.cardNumber)) watch.toggleCard(m.card.cardNumber)
+  }
+  const missingUnstarred = gap.missing.filter((m) => !watch.isWatchingCard(m.card.cardNumber)).length
+
+  const ownedWords = (base: string) => {
+    const have = haveOf(base)
+    return have === 0 ? null : have === 1 ? 'owned' : `${have}\u00a0owned`
+  }
   // Colour is only worth a word when the list is not already one colour.
   const showColour = pickLeader || allColours || check.colours.length === 0
 
@@ -304,6 +364,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
                   <Chip on={allColours} onClick={() => setAllColours(true)}>All colours</Chip>
                 </div>
               )}
+              <Chip on={ownedOnly} onClick={() => setOwnedOnly((v) => !v)}>Owned</Chip>
             </div>
             {results.cards.length > 0 && (
               <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
@@ -316,7 +377,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
                       key={card.baseNumber}
                       card={card}
                       a={a}
-                      more={[a?.category || null, showColour ? a?.color || null : null, price !== null ? usMoney(price) : null]}
+                      more={[a?.category || null, showColour ? a?.color || null : null, price !== null ? usMoney(price) : null, ownedWords(card.baseNumber)]}
                       right={
                         pickLeader ? (
                           <button
@@ -338,7 +399,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
             {results.more && <p className="mt-2 px-1 text-meta text-muted">First {RESULT_LIMIT} matches · keep typing to narrow it.</p>}
             {query.trim().length >= 2 && results.cards.length === 0 && (
               <p className="mt-3 px-1 text-body text-muted">
-                {!allColours && !pickLeader && check.colours.length > 0 ? 'No cards match with these filters.' : 'No cards match.'}
+                {ownedOnly || (!allColours && !pickLeader && check.colours.length > 0) ? 'No cards match with these filters.' : 'No cards match.'}
               </p>
             )}
           </section>
@@ -376,6 +437,71 @@ function DeckBuilder({ deck }: { deck: Deck }) {
               </ul>
             </section>
           ))}
+
+          {/* 6.3 From your collection */}
+          {gap.total > 0 && (
+            <section aria-label="From your collection" className="mt-8 rounded-2xl border border-line bg-surface p-4">
+              <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">From your collection</p>
+              <p className="tabular mt-1 text-body text-ink">
+                You own {gap.owned} of {gap.total}
+                {gap.missing.length > 0 && <span className="text-muted"> · {gap.total - gap.owned} missing</span>}
+              </p>
+              <p className="tabular mt-0.5 text-meta text-muted">
+                {gap.missing.length > 0 && (
+                  <>
+                    {formatUsMarketUsd(gap.toComplete)} to complete
+                    {gap.unpricedMissing > 0 && ` (${gap.unpricedMissing} ${gap.unpricedMissing === 1 ? 'card has' : 'cards have'} no seed price)`}
+                    {' · '}
+                  </>
+                )}
+                the whole deck is {formatUsMarketUsd(gap.wholeDeck)}
+                {gap.unpricedAll > 0 && ` (${gap.unpricedAll} without a seed price)`}
+                {gap.asOf && ` · seed prices as of ${formatDate(gap.asOf)}`}
+              </p>
+
+              {gap.missing.length > 0 && (
+                <>
+                  <p className="mt-4 text-meta font-medium text-ink">Missing</p>
+                  <ul className="mt-1 divide-y divide-line border-t border-line">
+                    {gap.missing.map((m) => (
+                      <li key={m.card.baseNumber} className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 py-2 text-meta">
+                        <span className="min-w-0 text-ink">
+                          {m.card.name} <span className="tabular text-muted">{m.card.baseNumber}</span>
+                        </span>
+                        <span className="tabular ml-auto shrink-0 text-muted">
+                          need {m.need - m.have}
+                          {m.each !== null ? ` · ${formatUsd(m.each)} each · ${formatUsd(m.each * (m.need - m.have))}` : ' · no seed price'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                  {missingUnstarred > 0 && (
+                    <GhostButton className="mt-3" onClick={starMissing}>
+                      Star the {missingUnstarred} missing {missingUnstarred === 1 ? 'card' : 'cards'}
+                    </GhostButton>
+                  )}
+                </>
+              )}
+
+              {gap.held.length > 0 && (
+                <>
+                  <p className="mt-4 text-meta font-medium text-ink">You have</p>
+                  <ul className="mt-1 divide-y divide-line border-t border-line">
+                    {gap.held.map((h) => (
+                      <li key={h.card.baseNumber} className="flex items-center justify-between gap-3 py-2 text-meta">
+                        <span className="min-w-0 truncate text-ink">
+                          {h.card.name} <span className="tabular text-muted">{h.card.baseNumber}</span>
+                        </span>
+                        <span className="tabular shrink-0 text-muted">
+                          {Math.min(h.have, h.need)} of {h.need}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
+          )}
 
           {/* Text out and in, for a deck that already has something in it */}
           {!empty && (
