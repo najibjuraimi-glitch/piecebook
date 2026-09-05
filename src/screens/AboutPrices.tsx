@@ -21,12 +21,12 @@ export function AboutPricesScreen() {
       <div className="mt-8 max-w-[64ch] space-y-8">
         <Section title="Card prices">
           <p>
-            A card's <strong>Market (seed)</strong> is the TCGPlayer market price for that print as shown on Limitless, read
-            once a day by our seed refresh. The <em>as of</em> date beside it is the day it was read. Prices are in US
-            dollars because that is the currency of the source; Piecebook does not convert.
+            A card's <strong>Market</strong> price is the TCGplayer market price for that print as shown on Limitless, read
+            once a day. The <em>as of</em> date beside it is the day it was read. Prices are in US dollars because that is
+            the currency of the source; Piecebook does not convert.
           </p>
           <p>
-            Some prints have no price at all. Those say <strong>No seed price</strong> rather than borrow a number from a
+            Some prints have no price at all. Those say <strong>No market price</strong> rather than borrow a number from a
             similar card.
           </p>
         </Section>

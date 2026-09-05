@@ -11,6 +11,14 @@ import { formatDate, todayIso } from '../lib/format'
  */
 export type CardSeedStatus = 'ready' | 'pending'
 
+/**
+ * Where a set's code was read (7.5): the card numbers TCGCSV lists for the
+ * group (`OP18-021` → OP-18), the group's abbreviation alone when no single is
+ * listed yet, Limitless (Cards' rows and any code Limitless confirmed), or
+ * assigned by sequence while a group shows neither.
+ */
+export type CodeSource = 'tcgcsv-cards' | 'tcgcsv-abbreviation' | 'limitless' | 'sequence'
+
 export interface RosterSet {
   setCode: string
   setName: string
@@ -21,11 +29,13 @@ export interface RosterSet {
   enReleased: string | null
   cardSeedStatus: CardSeedStatus
   /**
-   * True while the set code is the refresh's guess by sequence (7.5): TCGCSV
-   * names carry no code, so an upcoming set is OP‑nn / EB‑nn "next" until
-   * Limitless lists it. A provisional code is never displayed.
+   * True only while the set code is the refresh's guess by sequence (7.5): a
+   * group on TCGCSV with no card numbers and no abbreviation yet. A provisional
+   * code is never displayed. A code read from the group's cards is confirmed
+   * and shown like any other.
    */
   codeProvisional: boolean
+  codeSource: CodeSource
   sgAskSgd: number | null
   /** Where Cards read `sgAskSgd` (e.g. a Carousell ask). Provenance only; never rendered. */
   sgSource: string | null
@@ -58,9 +68,18 @@ export function boxImageUrl(productId: number, size: '400w' | 'in_1000x1000' = '
 // Rows are read field-by-field through `text()` / `money()`, so optional
 // columns Cards adds on some rows only (e.g. `priceNote`) need no schema change.
 type Row = Partial<
-  Record<keyof (typeof rosterSeed)['sets'][number] | 'priceNote' | 'sgSource' | 'tcgplayerProductId' | 'codeProvisional', unknown>
+  Record<keyof (typeof rosterSeed)['sets'][number] | 'priceNote' | 'sgSource' | 'tcgplayerProductId' | 'codeProvisional' | 'codeSource', unknown>
 > & {
   setCode: string
+}
+
+const CODE_SOURCES: readonly CodeSource[] = ['tcgcsv-cards', 'tcgcsv-abbreviation', 'limitless', 'sequence']
+
+/** Rows Cards wrote by hand carry no `codeSource`: their codes are the ones Limitless files the checklists under. */
+function codeSource(row: Row): CodeSource {
+  const v = row.codeSource
+  if (typeof v === 'string' && (CODE_SOURCES as readonly string[]).includes(v)) return v as CodeSource
+  return row.codeProvisional === true ? 'sequence' : 'limitless'
 }
 
 const FILE_AS_OF: string | null = text(rosterSeed.asOf)
@@ -100,6 +119,7 @@ function toRosterSet(row: Row): RosterSet {
     enReleased: text(row.enReleased),
     cardSeedStatus: row.cardSeedStatus === 'ready' ? 'ready' : 'pending',
     codeProvisional: row.codeProvisional === true,
+    codeSource: codeSource(row),
     sgAskSgd: money(row.sgAskSgd),
     sgSource: text(row.sgSource),
     usMarketUsd: money(row.usMarketUsd),
@@ -156,6 +176,30 @@ export function comingLine(set: RosterSet): string | null {
  */
 export function displayCode(set: RosterSet): string | null {
   return set.codeProvisional ? null : set.setCode
+}
+
+const EXTRA_BOOSTER_PREFIX = /^Extra Booster:\s*/i
+
+/**
+ * TCGplayer names extra boosters "Extra Booster: One Piece Heroines Edition
+ * Vol.2"; that prefix is the product type, said once in the eyebrow, so the
+ * name itself is shown without it. Cards' own names pass through untouched.
+ */
+export function displayName(set: RosterSet): string {
+  return set.setName.replace(EXTRA_BOOSTER_PREFIX, '').trim() || set.setName
+}
+
+/** The product noun for a tile's eyebrow: "extra booster" when TCGplayer's name says so, "starter deck", else "set". */
+export function productLabel(set: RosterSet): string {
+  if (set.product === 'starter_deck') return 'starter deck'
+  if (EXTRA_BOOSTER_PREFIX.test(set.setName)) return 'extra booster'
+  return 'set'
+}
+
+/** The pending page's one date line, naming whose date it is: `US release 20 Nov 2026 · TCGplayer's date`. Null without a date. */
+export function releaseLine(set: RosterSet): string | null {
+  if (!set.enReleased) return null
+  return `US release ${formatDate(set.enReleased)} · TCGplayer's date`
 }
 
 /**

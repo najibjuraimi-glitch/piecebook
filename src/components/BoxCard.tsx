@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import type { RosterSet } from '../data/roster'
-import { boxImageUrl, displayCode } from '../data/roster'
+import { boxImageUrl, displayCode, displayName } from '../data/roster'
 import type { SealedGuidance, SealedProduct } from '../data/sealed'
 import type { SetIntro } from '../data/intros'
 import { boxPriceHistory } from '../data/boxPrices'
 import { changeSince } from '../data/history'
-import { formatDate, formatSignedUsd, formatUsd } from '../lib/format'
+import { formatDate, formatShortDate, formatSignedUsMarketUsd, formatUsd } from '../lib/format'
 
 interface Props {
   set: RosterSet
@@ -22,12 +22,15 @@ interface Props {
 
 /**
  * The box as a product at the top of set detail (3.2): official TCGplayer
- * render, TCGplayer market price read daily with its date and movement, then
- * the box's own facts. One card, one figure, no buy or seller chrome. Sets with
- * no EN box (EB-04) get the guidance line instead of a price.
+ * render, TCGplayer market price with its date and, from the second daily
+ * reading, its movement, then the box's own facts. One card, one figure, no buy
+ * or seller chrome. Sets with no EN box (EB-04) get the guidance line instead
+ * of a price.
  */
 /** "booster box", "starter deck" — the roster's product in words. */
 const productNoun = (product: string) => product.replace(/_/g, ' ')
+
+const SEP = ' · '
 
 export function BoxCard({ set, product, intro, guidance, presale = false, className = '' }: Props) {
   if (!product && !guidance && !presale) return null
@@ -40,7 +43,10 @@ export function BoxCard({ set, product, intro, guidance, presale = false, classN
   // Dates live in About this set below; the card keeps only the box's own facts and its JP counterpart.
   const jp = intro?.jpName ? `JP box ${intro.jpName}` : null
   const hasBox = Boolean(product && product.usMarketUsd !== null)
-  const market = presale ? 'pre-order market' : 'TCGplayer market'
+  // `pre-order market · TCGplayer · as of 4 Sep 2026`, or `TCGplayer market · as of 4 Sep 2026` once released.
+  // From the second reading the movement leads and the as-of date follows it when the line has room.
+  const lead = presale ? ['pre-order market', 'TCGplayer'] : ['TCGplayer market']
+  const asOf = product?.asOf ? `as of ${formatDate(product.asOf)}` : null
 
   return (
     <section aria-label="Sealed" className={`flex gap-4 rounded-2xl border border-line bg-surface p-4 tablet:gap-6 tablet:p-5 ${className}`}>
@@ -51,23 +57,21 @@ export function BoxCard({ set, product, intro, guidance, presale = false, classN
 
         {hasBox && product ? (
           <>
-            <div className="mt-1 flex flex-wrap items-baseline gap-x-3">
-              <p className="tabular text-[24px] font-semibold leading-[30px] tracking-[-0.02em] text-ink">{formatUsd(product.usMarketUsd ?? 0)}</p>
-              {product.asOf && <p className="tabular text-meta text-muted">as of {formatDate(product.asOf)}</p>}
-            </div>
-            <p className="tabular mt-0.5 text-meta text-muted">
+            <p className="tabular mt-1 text-[24px] font-semibold leading-[30px] tracking-[-0.02em] text-ink">{formatUsd(product.usMarketUsd ?? 0)}</p>
+            {/* The line qualifies the figure (whose market, which day), so it reads in ink. */}
+            <p className="tabular mt-0.5 text-meta text-ink">
+              {lead.join(SEP)}
+              {SEP}
               {change ? (
                 <>
-                  {presale && `${market} · `}
-                  <span className={change.delta > 0 ? 'font-medium text-good' : change.delta < 0 ? 'font-medium text-bad' : 'text-ink'}>
-                    {change.delta === 0 ? 'Unchanged' : formatSignedUsd(change.delta)}
-                  </span>{' '}
-                  since {formatDate(change.since.asOf)}
+                  <span className="whitespace-nowrap">
+                    <span className="font-medium">{change.delta === 0 ? 'no change' : formatSignedUsMarketUsd(change.delta)}</span> since{' '}
+                    {formatShortDate(change.since.asOf)}
+                  </span>
+                  {asOf && <span className="whitespace-nowrap">{`${SEP}${asOf}`}</span>}
                 </>
-              ) : points.length === 1 ? (
-                `${market} · ${presale ? 'TCGplayer · ' : ''}read daily since ${formatDate(points[0].asOf)}`
               ) : (
-                `${market} · ${presale ? 'TCGplayer · ' : ''}read daily`
+                asOf
               )}
             </p>
           </>
@@ -78,7 +82,7 @@ export function BoxCard({ set, product, intro, guidance, presale = false, classN
         )}
 
         {(facts.length > 0 || jp) && (
-          <p className="tabular mt-3 border-t border-line pt-3 text-meta text-muted">{[...facts, jp].filter(Boolean).join(' · ')}</p>
+          <p className="tabular mt-3 border-t border-line pt-3 text-meta text-muted">{[...facts, jp].filter(Boolean).join(SEP)}</p>
         )}
       </div>
     </section>
@@ -96,7 +100,7 @@ function BoxImage({ set }: { set: RosterSet }) {
       {show && (
         <img
           src={src ?? undefined}
-          alt={`${set.setName} ${productNoun(set.product)}`}
+          alt={`${displayName(set)} ${productNoun(set.product)}`}
           decoding="async"
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
@@ -109,7 +113,7 @@ function BoxImage({ set }: { set: RosterSet }) {
           {displayCode(set) ? (
             <span className="tabular text-[15px] font-semibold text-ink">{set.setCode}</span>
           ) : (
-            <span className="line-clamp-3 text-[11px] font-medium leading-4 text-ink">{set.setName}</span>
+            <span className="line-clamp-3 text-[11px] font-medium leading-4 text-ink">{displayName(set)}</span>
           )}
         </div>
       )}

@@ -60,11 +60,15 @@ export function formatShortDate(iso: string): string {
 }
 
 export function todayIso(): string {
-  const d = new Date()
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return localDayIso(new Date())
+}
+
+/** The local calendar day (YYYY-MM-DD) of a moment such as a star's timestamp; a bare ISO date passes through unchanged. */
+export function localDayIso(when: string | Date): string {
+  if (typeof when === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(when)) return when
+  const d = when instanceof Date ? when : new Date(when)
+  if (Number.isNaN(d.getTime())) return String(when).slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 export function pluralCards(n: number): string {

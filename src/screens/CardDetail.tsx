@@ -56,7 +56,14 @@ function CardDetail({ card }: { card: Card }) {
           { label: card.setCode, to: `/sets/${encodeURIComponent(card.setCode)}` },
           { label: card.cardNumber },
         ]}
-        action={<StarButton subject="card" active={watch.isWatchingCard(card.cardNumber)} onToggle={() => watch.toggleCard(card.cardNumber)} />}
+        action={
+          <StarButton
+            subject="card"
+            name={`${card.name} ${card.cardNumber}`}
+            active={watch.isWatchingCard(card.cardNumber)}
+            onToggle={() => watch.toggleCard(card.cardNumber)}
+          />
+        }
       />
 
       {/* Stacked on phone/tablet; from desktop up, art on the left (~40%) and meta + actions on the right. */}
@@ -105,21 +112,21 @@ function CardDetail({ card }: { card: Card }) {
           </section>
 
           <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4">
-            <p className="text-meta font-medium text-muted">Market (seed)</p>
+            <p className="text-meta font-medium text-muted">Market</p>
             {card.marketUsd === null ? (
-              <p className="mt-1 text-title text-muted">No seed price</p>
+              <p className="mt-1 text-title text-muted">No market price</p>
             ) : (
               <div className="mt-1 flex items-baseline justify-between gap-3">
                 <p className="tabular text-[28px] font-semibold leading-[34px] tracking-[-0.02em] text-ink">
                   {formatUsd(card.marketUsd)}
                 </p>
-                {card.asOf && <p className="tabular text-meta text-muted">as of {formatDate(card.asOf)}</p>}
+                {card.asOf && <p className="tabular text-meta text-ink">as of {formatDate(card.asOf)}</p>}
               </div>
             )}
 
             {/* Movement in words with its timeframe; colour only on the figure. Card detail is the one place this belongs. */}
             {change && (
-              <p className="tabular mt-1 text-meta text-muted">
+              <p className="tabular mt-1 text-meta text-ink">
                 <span className={change.delta > 0 ? 'font-medium text-good' : change.delta < 0 ? 'font-medium text-bad' : 'text-ink'}>
                   {change.delta === 0 ? 'Unchanged' : formatSignedUsd(change.delta)}
                 </span>{' '}

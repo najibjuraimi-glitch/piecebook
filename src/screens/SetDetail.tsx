@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ALL_TAB, getSet, rarityTabs, type CardSet } from '../data/seed'
-import { comingLine, displayCode, getRosterSet, isUpcoming, rosterSealedProduct, type RosterSet } from '../data/roster'
+import { displayCode, displayName, getRosterSet, isUpcoming, releaseLine, rosterSealedProduct, type RosterSet } from '../data/roster'
 import { getSealedGuidance } from '../data/sealed'
 import { getSetIntro, hasIntroContent, type SetIntro as SetIntroData } from '../data/intros'
 import { DEFAULT_SORT, matchesSearch, parseSort, sortCards, type SortKey } from '../lib/query'
@@ -39,29 +39,32 @@ export function SetDetailScreen() {
 
 /**
  * An upcoming booster (7.5): on the roster from TCGCSV's presale listing, not
- * yet on Limitless. TCGplayer's name as the title (the code is provisional and
- * never shown), `Coming 20 Nov 2026`, the BoxCard with the pre-order market,
- * one sentence about the checklist, and the star. No search, no rarity tabs.
+ * yet on Limitless. The code as the title like any set (read from TCGCSV's card
+ * numbers; only a code still guessed by sequence stays hidden and the name
+ * leads), the name without its "Extra Booster:" prefix, `US release 20 Nov 2026
+ * · TCGplayer's date`, the BoxCard with the pre-order market, one sentence about
+ * the checklist, and the star. No search, no rarity tabs.
  */
 function UpcomingSetDetail({ roster }: { roster: RosterSet }) {
   const product = rosterSealedProduct(roster)
   const watch = useWatchlist()
   const code = displayCode(roster)
+  const name = displayName(roster)
 
   return (
     <Screen>
       <BackBar
-        title={code ?? roster.setName}
-        subline={code ? roster.setName : undefined}
-        meta={comingLine(roster) ?? undefined}
+        title={code ?? name}
+        subline={code ? name : undefined}
+        meta={releaseLine(roster) ?? undefined}
         wrapTitle={code === null}
         fallbackTo="/"
-        action={<StarButton subject="set" active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}
+        action={<StarButton subject="set" name={name} active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}
       />
 
       <BoxCard set={roster} product={product} presale />
 
-      <p className="mt-6 px-1 text-body text-muted">The checklist appears here the day Limitless lists the set.</p>
+      <p className="mt-6 px-1 text-body text-muted">The checklist appears here the day Limitless, our card source, publishes it.</p>
     </Screen>
   )
 }
@@ -97,9 +100,11 @@ function PendingSetDetail({ roster }: { roster: RosterSet }) {
     <Screen>
       <BackBar
         title={roster.setCode}
-        subline={roster.setName}
+        subline={displayName(roster)}
         fallbackTo="/"
-        action={<StarButton subject="set" active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}
+        action={
+          <StarButton subject="set" name={displayName(roster)} active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />
+        }
       />
 
       <BoxCard set={roster} product={product} intro={shownIntro} guidance={guidance} />
@@ -179,7 +184,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
         subline={set.setName}
         meta={ownedInSet > 0 ? `You own ${ownedInSet} of ${set.cards.length}${isDeck ? ' different cards' : ''}` : undefined}
         fallbackTo="/"
-        action={<StarButton subject="set" active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
+        action={<StarButton subject="set" name={set.setName} active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
       />
 
       {roster && <BoxCard set={roster} product={sealedProduct} intro={intro} guidance={sealed} />}

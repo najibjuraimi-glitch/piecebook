@@ -49,9 +49,9 @@ export function PortfolioScreen() {
   const plTone = plUsd === null ? 'ink' : plUsd > 0 ? 'good' : plUsd < 0 ? 'bad' : 'ink'
   const plSubline =
     plUsd === null && costSgd !== null
-      ? 'P/L needs USD costs (seed market is USD).'
+      ? 'P/L needs USD costs (market prices are in USD).'
       : plUsd !== null && (costSgd !== null || plSkippedUnpriced)
-        ? 'USD costs against seed market only.'
+        ? 'USD costs against market prices only.'
         : undefined
 
   const top = holdings.filter((h) => (h.marketUsd ?? 0) > 0).slice(0, 5)
