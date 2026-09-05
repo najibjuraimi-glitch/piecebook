@@ -9,7 +9,7 @@ import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
 import { StarButton } from '../components/StarButton'
 import { BackBar, BLEED, Screen } from '../components/Screen'
-import { SealedStrip } from '../components/SealedStrip'
+import { BoxCard } from '../components/BoxCard'
 import { SetIntro } from '../components/SetIntro'
 import { SearchField } from '../components/SearchField'
 import { SortControls } from '../components/SortControls'
@@ -68,7 +68,7 @@ function PendingSetDetail({ roster }: { roster: RosterSet }) {
         action={<StarButton subject="set" active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}
       />
 
-      <SealedStrip guidance={guidance} product={product} />
+      <BoxCard set={roster} product={product} intro={shownIntro} guidance={guidance} />
 
       {shownIntro && <SetIntro intro={shownIntro} />}
 
@@ -141,7 +141,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
         action={<StarButton subject="set" active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
       />
 
-      <SealedStrip guidance={sealed} product={sealedProduct} />
+      {roster && <BoxCard set={roster} product={sealedProduct} intro={intro} guidance={sealed} />}
 
       {intro && <SetIntro intro={intro} />}
 
