@@ -1,6 +1,6 @@
 {
   "asOf": "2026-09-04",
-  "note": "EN booster boxes for Sets home. US prices from TCGPlayer market/ask hunt 4 Sep 2026 (see sealed-asks-roster-hunt.json). SG only where verified (OP-09, OP-16). Card grids only when cardSeedStatus=ready; every set is ready as of 2026-09-05 (checklists under data/*-en-seed.csv, same-set rows only).",
+  "note": "EN booster boxes for Sets home. US prices from TCGPlayer market/ask hunt 4 Sep 2026 (see sealed-asks-roster-hunt.json). SG only where verified (OP-09, OP-16). Card grids only when cardSeedStatus=ready; every set is ready as of 2026-09-05 (checklists under data/*-en-seed.csv; same-set rows only except PRB reprint sets, which list every print in the box). EB-04 has no EN box: cards ship in OP14-EB04 / OP15-EB04..",
   "sets": [
     {
       "setCode": "OP-01",
@@ -223,6 +223,20 @@
       "boxArtUrl": null,
       "asOf": "2026-09-04",
       "usSource": "https://www.tcgplayer.com/product/628352/one-piece-card-game?Language=English"
+    },
+    {
+      "setCode": "EB-04",
+      "setName": "Egghead Crisis",
+      "product": "booster_box",
+      "language": "EN",
+      "enReleased": "2026-01-16",
+      "cardSeedStatus": "ready",
+      "sgAskSgd": null,
+      "usMarketUsd": null,
+      "boxArtUrl": null,
+      "asOf": "2026-09-05",
+      "usSource": null,
+      "priceNote": "No standalone EN booster box. EB-04 (JP: Egghead Crisis) cards ship inside OP14-EB04 (16 Jan 2026) and OP15-EB04 (3 Apr 2026); no box price is shown. Checklist assembled from the EB04-numbered prints Limitless files on the OP-14 / OP-15 / OP-17 EN pages."
     },
     {
       "setCode": "OP-14",
