@@ -126,6 +126,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
 
   const language = set.cards[0]?.language ?? 'EN'
   const roster = getRosterSet(set.setCode)
+  const ownedInSet = set.cards.filter((c) => isOwned(c.cardNumber)).length
   const sealed = getSealedGuidance(set.setCode, language)
   const sealedProduct = roster ? rosterSealedProduct(roster) : undefined
   const intro = introFor(roster, set.setCode, language)
@@ -135,6 +136,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
       <BackBar
         title={set.setCode}
         subline={set.setName}
+        meta={ownedInSet > 0 ? `You own ${ownedInSet} of ${set.cards.length}` : undefined}
         fallbackTo="/"
         action={<StarButton subject="set" active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
       />
