@@ -19,11 +19,13 @@
  *   - regular sets keep same-set numbers only; PRB reprint sets keep every
  *     print in the box; a set with no Limitless page of its own (EB-04) is
  *     assembled from its numbers on the other sets' pages
- * Writes data/{code}-en-seed.csv, appends today's priced rows to
- * data/price-history/{code}.csv (one row per card per day, source=limitless),
- * upserts data/tcgplayer-products.csv (card → TCGPlayer product id) and repins
- * the per-file counts in data/SEED-VERSION.txt. Cards' roster JSON is never
- * edited.
+ * Writes data/{code}-en-seed.csv (identity, rarity, image, price, variant),
+ * data/card-attributes/{code}.csv (category, colour, cost / life, stats,
+ * traits, effect and trigger text, artist, block, legality), appends today's
+ * priced rows to data/price-history/{code}.csv (one row per card per day,
+ * source=limitless), upserts data/tcgplayer-products.csv (card → TCGPlayer
+ * product id) and repins the per-file counts in data/SEED-VERSION.txt. Cards'
+ * roster JSON is never edited.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -47,7 +49,12 @@ const RARITY = {
   'Treasure Rare': 'TR',
 }
 const REPRINT_SETS = /^PRB-/
-const FIELDS = ['set_code', 'set_name', 'card_number', 'name', 'rarity', 'language', 'image_url', 'market_usd', 'as_of']
+const FIELDS = ['set_code', 'set_name', 'card_number', 'name', 'rarity', 'language', 'image_url', 'market_usd', 'as_of', 'variant']
+const ATTR_DIR = join(DATA, 'card-attributes')
+const ATTR_FIELDS = [
+  'card_number', 'variant', 'category', 'color', 'cost', 'life', 'power', 'counter', 'attribute', 'types',
+  'effect', 'trigger', 'artist', 'block', 'standard', 'extra',
+]
 
 // ---------------------------------------------------------------- args
 
@@ -133,6 +140,58 @@ function compareNumbers(a, b) {
 
 // ---------------------------------------------------------------- Limitless parsing
 
+const stripTags = (s) => clean(s.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, ''))
+
+/**
+ * Human name for a parallel print. Official rarity labels on a parallel
+ * (Special Card, Treasure Rare) are the variant; style labels (Alternate Art,
+ * Manga Art, Pirate Foil, Full Art, Textured Foil, …) pass through as written.
+ * Limitless's untranslated `card.style.*` keys and blank labels become the
+ * plain word "Parallel" rather than a guessed style name. Base prints: blank.
+ */
+function variantOf(cardNumber, base, printLabel) {
+  if (cardNumber === base) return ''
+  if (!printLabel || /^card\.style\./i.test(printLabel)) return 'Parallel'
+  return printLabel
+}
+
+/** Category, colour, cost/life, stats, text, traits, artist and legality from one card-page-main block. */
+function parseAttributes(b) {
+  const textHtml = b.slice(b.indexOf('<div class="card-text">'), b.indexOf('<div class="card-legality">'))
+  const type = textHtml.match(/<p class="card-text-type">(.*?)<\/p>/s)?.[1] ?? ''
+  const category = type.match(/data-tooltip="Category">([^<]+)</)?.[1]?.trim() ?? ''
+  const color = type.match(/data-tooltip="Color">([^<]+)</)?.[1]?.trim() ?? ''
+  const cost = type.match(/(\d+)\s*Cost/)?.[1] ?? ''
+  const life = type.match(/(\d+)\s*Life/)?.[1] ?? ''
+  const stats = textHtml.match(/<p class="card-text-section">(.*?)<\/p>/s)?.[1] ?? ''
+  const power = stats.match(/(\d+)\s*Power/)?.[1] ?? ''
+  const counter = stats.match(/\+(\d+)\s*Counter/)?.[1] ?? ''
+  const attribute = stats.match(/data-tooltip="Attribute">([^<]+)</)?.[1]?.trim() ?? ''
+  const types = textHtml.match(/data-tooltip="Type">([^<]+)</)?.[1]?.trim() ?? ''
+  const artist = stripTags(textHtml.match(/card-text-artist">\s*Illustrated by(.*?)<\/div>/s)?.[1] ?? '')
+  const effects = []
+  const triggers = []
+  for (const m of textHtml.matchAll(/<div class="card-text-section(?: [^"]*)?">(.*?)<\/div>/gs)) {
+    const inner = m[1]
+    if (/card-text-title|data-tooltip="Type"|Illustrated by/.test(inner) || /card-text-artist/.test(m[0])) continue
+    const text = stripTags(inner)
+    if (!text) continue
+    if (/^\[Trigger\]/.test(text)) triggers.push(text)
+    else effects.push(text)
+  }
+  const legality = b.slice(b.indexOf('<div class="card-legality">'), b.indexOf('<div class="card-prints">'))
+  const block = legality.match(/regulation-mark">\s*Block\s*(\d+)/)?.[1] ?? ''
+  const legal = (format) => {
+    const m = legality.match(new RegExp(`<div>${format}</div>\\s*<div class="(legal|not-legal)">`))
+    return m ? (m[1] === 'legal' ? 'legal' : 'not legal') : ''
+  }
+  return {
+    category, color, cost, life, power, counter, attribute, types,
+    effect: effects.join('\n'), trigger: triggers.join('\n'), artist, block,
+    standard: legal('Standard'), extra: legal('Extra'),
+  }
+}
+
 function parseBlocks(page) {
   const blocks = page.split('<div class="card-page-main">').slice(1)
   const out = []
@@ -158,6 +217,8 @@ function parseBlocks(page) {
       imageUrl: img[1],
       usd: usd ? usd[1].replace(/,/g, '') : null,
       tcgplayerProductId: product ? product[1] : null,
+      variant: variantOf(cardNumber, base, clean(label[2])),
+      attributes: parseAttributes(b),
     })
   }
   return out
@@ -207,6 +268,7 @@ function buildRows(set, prints, seededBase) {
       image_url: p.imageUrl,
       market_usd: p.usd ?? '',
       as_of: p.usd ? AS_OF : '',
+      variant: p.variant,
     })
   }
   rows.sort((a, b) => {
@@ -216,6 +278,25 @@ function buildRows(set, prints, seededBase) {
     return compareNumbers(a.card_number, b.card_number)
   })
   return { rows, unmapped, noPrice }
+}
+
+/**
+ * data/card-attributes/{code}.csv: what each print is and does (category,
+ * colour, cost / life, power, counter, attribute, traits, effect and trigger
+ * text, illustrator, regulation block, Standard / Extra legality) plus the
+ * human variant name. Same rows as the set's seed CSV, in the same order.
+ * Loaded lazily per set by the app.
+ */
+function writeAttributes(setCode, rows, prints) {
+  mkdirSync(ATTR_DIR, { recursive: true })
+  const byNumber = new Map(prints.map((p) => [p.cardNumber, p]))
+  const out = rows.map((r) => {
+    const p = byNumber.get(r.card_number)
+    return { card_number: r.card_number, variant: r.variant, ...(p?.attributes ?? {}) }
+  })
+  const missing = out.filter((o) => !o.category).map((o) => o.card_number)
+  if (!DRY) writeFileSync(join(ATTR_DIR, `${codeKey(setCode)}.csv`), toCsv(out, ATTR_FIELDS))
+  return missing
 }
 
 const HISTORY_FIELDS = ['card_number', 'as_of', 'market_usd', 'source']
@@ -346,9 +427,11 @@ for (const set of targets) {
   const before = existsSync(file) ? parseCsv(readFileSync(file, 'utf8')).length : 0
   if (!DRY) writeFileSync(file, toCsv(rows, FIELDS))
   const added = NO_HISTORY ? 0 : appendHistory(set.setCode, rows)
+  const noCategory = writeAttributes(set.setCode, rows, prints)
   counts.set(codeKey(set.setCode), rows.length)
   const notes = []
   if (before && before !== rows.length) notes.push(`was ${before}`)
+  if (noCategory.length) notes.push(`no attributes: ${noCategory.join(' ')}`)
   if (noPrice.length) notes.push(`no price: ${noPrice.join(' ')}`)
   if (unmapped.length) notes.push(`UNMAPPED: ${unmapped.join(' ')}`)
   console.log(`  ${set.setCode}: ${rows.length} rows, ${added} history points${notes.length ? ' · ' + notes.join(' · ') : ''}`)

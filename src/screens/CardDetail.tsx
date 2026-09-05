@@ -60,7 +60,7 @@ function CardDetail({ card }: { card: Card }) {
               {card.isParallel && (
                 <>
                   <span aria-hidden="true">·</span>
-                  <span>Parallel</span>
+                  <span>{card.variant ?? 'Parallel'}</span>
                 </>
               )}
             </div>

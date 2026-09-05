@@ -13,6 +13,9 @@
  *     as_of is blank iff market_usd is blank, else an ISO date
  *   - image_url is on the Limitless CDN (nothing else is ever hotlinked)
  *   - SEED-VERSION.txt row counts match the files
+ *   - variant is set on every parallel and blank on every base print
+ *   - card-attributes/{code}.csv mirrors the seed row for row, with a known
+ *     category, numeric stats and legality values
  *   - price-history files parse, with one row per card per day and a known source
  *   - tcgplayer-products.csv: unique card numbers, roster sets, numeric ids
  */
@@ -21,7 +24,9 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const DATA = join(dirname(fileURLToPath(import.meta.url)), '..', 'data')
-const HEADER = 'set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of'
+const HEADER = 'set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant'
+const ATTR_HEADER = 'card_number,variant,category,color,cost,life,power,counter,attribute,types,effect,trigger,artist,block,standard,extra'
+const CATEGORIES = new Set(['Leader', 'Character', 'Event', 'Stage'])
 const RARITIES = new Set(['L', 'C', 'UC', 'R', 'SR', 'SEC', 'SP', 'TR', 'P'])
 const CDN = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/'
 const REPRINT = /^PRB-/
@@ -82,8 +87,9 @@ for (const f of files) {
   const bases = new Set()
   rows.forEach((r, i) => {
     const line = i + 2
-    const [setCode, setName, num, name, rarity, lang, img, usd, asOf] = r
-    if (r.length !== 9) fail(`${f}:${line}: ${r.length} fields`)
+    const [setCode, setName, num, name, rarity, lang, img, usd, asOf, variant] = r
+    if (r.length !== 10) fail(`${f}:${line}: ${r.length} fields`)
+    if (/p\d+$/.test(num) !== (variant !== '')) fail(`${f}:${line}: variant "${variant}" on ${num} (parallels need one, base prints none)`)
     if (setCode !== set.setCode) fail(`${f}:${line}: set_code ${setCode}`)
     if (setName !== set.setName) warn(`${f}:${line}: set_name "${setName}" differs from roster "${set.setName}"`)
     if (!/^[A-Z0-9]+-\d+(p\d+)?$/.test(num)) fail(`${f}:${line}: card_number "${num}"`)
@@ -106,6 +112,30 @@ for (const f of files) {
     if (missing.length) fail(`${f}: base checklist gaps ${missing.join(',')}`)
   }
   counts.set(f.replace('-en-seed.csv', ''), rows.length)
+
+  // Attributes file: same card numbers, in the same order, with known categories and legality values.
+  const attrFile = join(DATA, 'card-attributes', `${codeKey(set.setCode)}.csv`)
+  if (!existsSync(attrFile)) {
+    fail(`card-attributes/${codeKey(set.setCode)}.csv is missing`)
+  } else {
+    const attrs = parseCsv(readFileSync(attrFile, 'utf8'))
+    if (attrs.header !== ATTR_HEADER) fail(`card-attributes/${codeKey(set.setCode)}.csv: header "${attrs.header}"`)
+    if (attrs.rows.length !== rows.length) fail(`card-attributes/${codeKey(set.setCode)}.csv: ${attrs.rows.length} rows vs ${rows.length} in the seed`)
+    attrs.rows.forEach((a, i) => {
+      const [num, variant, category, , cost, life, power, counter, , , , , , block, standard, extra] = a
+      const line = i + 2
+      if (rows[i] && rows[i][2] !== num) fail(`card-attributes/${codeKey(set.setCode)}.csv:${line}: ${num} out of step with the seed (${rows[i][2]})`)
+      if (rows[i] && rows[i][9] !== variant) fail(`card-attributes/${codeKey(set.setCode)}.csv:${line}: variant differs from the seed`)
+      if (!CATEGORIES.has(category)) fail(`card-attributes/${codeKey(set.setCode)}.csv:${line}: category "${category}"`)
+      for (const [label, v] of [['cost', cost], ['life', life], ['power', power], ['counter', counter], ['block', block]]) {
+        if (v !== '' && !/^\d+$/.test(v)) fail(`card-attributes/${codeKey(set.setCode)}.csv:${line}: ${label} "${v}"`)
+      }
+      if (category === 'Leader' && life === '') warn(`card-attributes/${codeKey(set.setCode)}.csv:${line}: Leader without life`)
+      for (const [label, v] of [['standard', standard], ['extra', extra]]) {
+        if (!['', 'legal', 'not legal'].includes(v)) fail(`card-attributes/${codeKey(set.setCode)}.csv:${line}: ${label} "${v}"`)
+      }
+    })
+  }
 }
 
 const version = readFileSync(join(DATA, 'SEED-VERSION.txt'), 'utf8')
