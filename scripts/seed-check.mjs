@@ -5,8 +5,8 @@
  * a collector; warns on the merely odd.
  *
  *   - every roster set with cardSeedStatus ready has a CSV, and vice versa (a
- *     pending upcoming set has none; a provisional code is boolean-flagged,
- *     only on pending rows, and warned about once its release date has passed)
+ *     pending upcoming set has none; codeSource names where its code came from,
+ *     and only a code still assigned by sequence is provisional and warned about)
  *   - CSV header is exactly the documented contract
  *   - set_code on every row equals the file's set; regular sets hold only
  *     same-set numbers (PRB reprint sets may hold any)
@@ -32,6 +32,8 @@ const CATEGORIES = new Set(['Leader', 'Character', 'Event', 'Stage'])
 const RARITIES = new Set(['L', 'C', 'UC', 'R', 'SR', 'SEC', 'SP', 'TR', 'P'])
 const CDN = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/'
 const REPRINT = /^(PRB|ST)-/
+/** Where a roster row's set code was read (7.5): TCGCSV's card numbers, its group abbreviation alone, Limitless, or assigned by sequence. */
+const CODE_SOURCES = new Set(['tcgcsv-cards', 'tcgcsv-abbreviation', 'limitless', 'sequence'])
 
 const errors = []
 const warnings = []
@@ -75,13 +77,19 @@ for (const set of roster) {
   // A pending row with no seed file is the normal state of an upcoming set (7.5); only a ready row must have its CSV.
   if (set.cardSeedStatus === 'ready' && !files.includes(f)) fail(`${set.setCode} is ready on the roster but ${f} is missing`)
   if (set.cardSeedStatus !== 'ready' && files.includes(f)) warn(`${set.setCode} has ${f} but is not ready on the roster`)
-  // Provisional codes (7.5): a guess by sequence until Limitless lists the set; never displayed, so a stale one is worth a look.
+  // Set codes (7.5): read from the group's card numbers on TCGCSV (or Limitless); a code still assigned by
+  // sequence is provisional, never displayed, and the only kind worth a warning.
   if (set.codeProvisional !== undefined && typeof set.codeProvisional !== 'boolean') fail(`${set.setCode}: codeProvisional "${set.codeProvisional}" is not true / false`)
+  if (set.codeSource !== undefined && !CODE_SOURCES.has(set.codeSource)) fail(`${set.setCode}: codeSource "${set.codeSource}" is not one of ${[...CODE_SOURCES].join(' / ')}`)
+  if (set.codeProvisional === true && set.codeSource !== undefined && set.codeSource !== 'sequence') fail(`${set.setCode}: codeProvisional is true but codeSource is "${set.codeSource}"; a code read from TCGCSV or Limitless is not provisional`)
+  if (set.codeProvisional !== true && set.codeSource === 'sequence') fail(`${set.setCode}: codeSource is sequence but the row is not marked codeProvisional`)
   if (set.codeProvisional === true) {
     if (set.cardSeedStatus === 'ready') warn(`${set.setCode}: codeProvisional is still true on a ready set; Limitless lists the set, so the code can be confirmed`)
     if (!set.tcgplayerProductId || !set.tcgplayerGroupId) fail(`${set.setCode}: an upcoming set needs tcgplayerProductId and tcgplayerGroupId (the refresh found it through TCGCSV)`)
-    if (set.enReleased && set.enReleased < today) warn(`${set.setCode}: provisional code and the release date ${set.enReleased} has passed; Limitless has not confirmed the set yet`)
+    warn(`${set.setCode}: code assigned by sequence; TCGCSV lists no card numbers for the group yet and Limitless has not confirmed it (never displayed)`)
+    if (set.enReleased && set.enReleased < today) warn(`${set.setCode}: provisional code and the release date ${set.enReleased} has passed`)
   }
+  if (set.cardSeedStatus === 'pending' && set.codeProvisional === false && set.codeSource === undefined) warn(`${set.setCode}: a pending row with a confirmed code should say where it came from (codeSource)`)
 }
 for (const f of files) {
   const key = f.replace('-en-seed.csv', '')

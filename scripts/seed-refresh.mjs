@@ -30,11 +30,15 @@
  * Upcoming sets (7.5): the TCGCSV step also scans every One Piece group for a
  * "… Booster Box" product on presale that is not on the roster yet and adds it
  * as a roster row with cardSeedStatus pending, TCGplayer's name, date, product
- * and group ids, and a code assigned by sequence (Extra Booster → EB-nn,
- * Premium Booster → PRB-nn, else OP-nn) marked codeProvisional until Limitless
- * lists the set (probed each run at /cards/{code}). When a pending set's
- * checklist seeds, its row turns ready. Those are the only edits ever made to
- * Cards' roster JSON; prices and names on existing rows are never touched.
+ * and group ids. The set code is read from the group's own cards: TCGCSV lists
+ * the revealed singles with their card numbers (OP18-021 …), and the majority
+ * prefix is the code, cross-checked against the group's abbreviation
+ * (codeSource tcgcsv-cards). Only a group with neither gets a code by sequence
+ * (Extra Booster → EB-nn, Premium Booster → PRB-nn, else OP-nn), marked
+ * codeProvisional (codeSource sequence) and re-read each run from its cards
+ * and from Limitless (/cards/{code}) until one confirms it. When a pending
+ * set's checklist seeds, its row turns ready. Those are the only edits ever
+ * made to Cards' roster JSON; prices and names on existing rows are never touched.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -443,6 +447,48 @@ const setNameFromBox = (productName) => productName.replace(/\s*[-–:]?\s*Boost
 
 const isPresaleBox = (p) => /Booster Box$/i.test(p.name.trim()) && !/Case/i.test(p.name) && p.presaleInfo?.isPresale === true
 
+/** `OP18-021` → `OP-18`, `EB05-007` → `EB-05`, `PRB01-001` → `PRB-01`, `ST23-001` → `ST-23`; null for promos (`P-001`) and anything else. */
+function codeFromCardNumber(number) {
+  const m = String(number ?? '').trim().toUpperCase().match(/^([A-Z]{2,4})(\d{2,3})-\d{3}/)
+  return m ? `${m[1]}-${m[2]}` : null
+}
+
+/** TCGCSV's group `abbreviation` in the roster's spelling when it is a plain code (`OP18`, `EB-05`); null when it is not one (`EB-03-04`). */
+function codeFromAbbreviation(abbreviation) {
+  const m = String(abbreviation ?? '').trim().toUpperCase().match(/^([A-Z]{2,4})-?(\d{2,3})$/)
+  return m ? `${m[1]}-${m[2]}` : null
+}
+
+/**
+ * The set code as TCGCSV states it. The source is the group's own cards: the
+ * revealed singles carry their card numbers in extendedData `Number`, and the
+ * majority prefix is the code (OP18-021, OP18-031, OP18-119 → OP-18; a reprint
+ * such as OP17-119 in the same group is outvoted). The group's abbreviation is
+ * the cross-check when TCGCSV has one, and stands in alone when no single is
+ * listed yet. Null when the group has neither; the caller then falls back to a
+ * provisional code by sequence.
+ */
+function codeFromGroup(group, products) {
+  const votes = new Map()
+  for (const p of products) {
+    const code = codeFromCardNumber((p.extendedData ?? []).find((e) => e.name === 'Number')?.value)
+    if (code) votes.set(code, (votes.get(code) ?? 0) + 1)
+  }
+  const ranked = [...votes.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  const abbreviation = codeFromAbbreviation(group.abbreviation)
+  const notes = []
+  // A majority, not a plurality tie: two codes with the same count decide nothing.
+  if (ranked.length && (ranked.length === 1 || ranked[0][1] > ranked[1][1])) {
+    const [code, n] = ranked[0]
+    const total = [...votes.values()].reduce((a, b) => a + b, 0)
+    notes.push(`${n} of ${total} card number${total === 1 ? '' : 's'} read ${code}`)
+    if (group.abbreviation) notes.push(abbreviation === code ? `abbreviation ${group.abbreviation} agrees` : `abbreviation ${group.abbreviation} DISAGREES`)
+    return { code, source: 'tcgcsv-cards', notes, disagrees: Boolean(group.abbreviation) && abbreviation !== code }
+  }
+  if (abbreviation) return { code: abbreviation, source: 'tcgcsv-abbreviation', notes: [`no card numbers listed yet; abbreviation ${group.abbreviation}`], disagrees: false }
+  return null
+}
+
 /**
  * Scan every TCGCSV group in the One Piece category for a presale booster box
  * whose group is not on the roster, and add it as a pending row. Only groups
@@ -450,6 +496,10 @@ const isPresaleBox = (p) => /Booster Box$/i.test(p.name.trim()) && !/Case/i.test
  * a presale ends at release, so anything older cannot be one, and the daily
  * request count stays small. Groups without such a box (a Deck Set, promos,
  * release event cards) are logged as warnings and never added.
+ *
+ * Rows still provisional from an earlier run are re-read from their own group
+ * first: the day TCGCSV lists the set's singles, the code is confirmed (and
+ * corrected if the sequence guessed wrong).
  */
 async function discoverUpcoming(roster) {
   const groups = (await tcgcsvJson(`/tcgplayer/${TCGCSV_CATEGORY}/groups`)).results
@@ -459,12 +509,38 @@ async function discoverUpcoming(roster) {
     .filter((g) => !known.has(g.groupId) && (!g.publishedOn || g.publishedOn.slice(0, 10) >= horizon))
     .sort((a, b) => (a.publishedOn ?? '').localeCompare(b.publishedOn ?? '') || a.groupId - b.groupId)
   const added = []
+  const confirmed = []
   const warnings = []
   // Next number per series counts the rows added in this run too, so two new OP sets get consecutive codes.
   const nextNumber = (series) => {
     const nums = roster.map((s) => s.setCode.match(new RegExp(`^${series}-(\\d+)$`))).filter(Boolean).map((m) => Number(m[1]))
     return String(Math.max(0, ...nums) + 1).padStart(2, '0')
   }
+
+  for (const s of roster) {
+    if (s.codeProvisional !== true || !s.tcgplayerGroupId) continue
+    const group = groups.find((g) => g.groupId === s.tcgplayerGroupId) ?? { abbreviation: null }
+    const products = (await tcgcsvJson(`/tcgplayer/${TCGCSV_CATEGORY}/${s.tcgplayerGroupId}/products`)).results
+    await sleep(120)
+    const read = codeFromGroup(group, products)
+    if (!read) continue
+    if (read.code !== s.setCode) {
+      if (roster.some((o) => o !== s && o.setCode === read.code)) {
+        warnings.push(`${s.setCode}: TCGCSV group ${s.tcgplayerGroupId} reads as ${read.code}, which another roster row already carries; left provisional`)
+        continue
+      }
+      renameBoxRows(s.setCode, read.code)
+      confirmed.push(`${s.setCode} → ${read.code} (the sequence guessed wrong) · ${read.notes.join(' · ')}`)
+      s.setCode = read.code
+    } else {
+      confirmed.push(`${s.setCode} · ${read.notes.join(' · ')}`)
+    }
+    s.codeProvisional = false
+    s.codeSource = read.source
+    rosterDirty = true
+    if (read.disagrees) warnings.push(`${s.setCode}: TCGCSV's abbreviation for group ${s.tcgplayerGroupId} disagrees with its card numbers; the cards were kept`)
+  }
+
   for (const g of candidates) {
     const products = (await tcgcsvJson(`/tcgplayer/${TCGCSV_CATEGORY}/${g.groupId}/products`)).results
     await sleep(120)
@@ -473,8 +549,15 @@ async function discoverUpcoming(roster) {
       warnings.push(`TCGCSV group ${g.groupId} "${g.name}" (${g.publishedOn?.slice(0, 10) ?? 'no date'}) has no booster box on presale; not classifiable as a set, not added`)
       continue
     }
+    const read = codeFromGroup(g, products)
     const series = seriesFor(box.name)
-    const setCode = `${series}-${nextNumber(series)}`
+    const setCode = read ? read.code : `${series}-${nextNumber(series)}`
+    if (roster.some((s) => s.setCode === setCode)) {
+      warnings.push(`TCGCSV group ${g.groupId} "${g.name}" reads as ${setCode}, which is already on the roster; not added`)
+      continue
+    }
+    if (read && !setCode.startsWith(`${series}-`)) warnings.push(`${setCode}: the box is named "${box.name}" but its cards are numbered ${setCode}; the cards were kept`)
+    if (read?.disagrees) warnings.push(`${setCode}: TCGCSV's abbreviation ${g.abbreviation} disagrees with the group's card numbers; the cards were kept`)
     const enReleased = (box.presaleInfo?.releasedOn ?? g.publishedOn ?? '').slice(0, 10) || null
     const row = {
       setCode,
@@ -483,7 +566,8 @@ async function discoverUpcoming(roster) {
       language: 'EN',
       enReleased,
       cardSeedStatus: 'pending',
-      codeProvisional: true,
+      codeProvisional: !read,
+      codeSource: read ? read.source : 'sequence',
       sgAskSgd: null,
       usMarketUsd: null,
       boxArtUrl: null,
@@ -498,11 +582,20 @@ async function discoverUpcoming(roster) {
     for (let i = roster.length - 1; i >= 0; i--) if (roster[i].product !== 'starter_deck') { at = i + 1; break }
     roster.splice(at, 0, row)
     rosterDirty = true
-    // TCGCSV's own abbreviation is a hint, not a source: noted in the log so a wrong guess is visible the same day.
-    const hint = g.abbreviation ? ` · TCGCSV abbreviation ${g.abbreviation}` : ''
-    added.push(`${setCode} (provisional) "${row.setName}" · ${enReleased ?? 'no date'} · box ${box.productId} · group ${g.groupId}${hint}`)
+    const how = read ? read.notes.join(' · ') : `provisional by sequence: no card numbers and no abbreviation in group ${g.groupId}`
+    added.push(`${setCode}${read ? '' : ' (provisional)'} "${row.setName}" · ${enReleased ?? 'no date'} · box ${box.productId} · group ${g.groupId} · ${how}`)
   }
-  return { added, warnings, probed: candidates.length }
+  return { added, confirmed, warnings, probed: candidates.length }
+}
+
+/** A provisional code the cards corrected: the box's daily rows follow the set to its real code. */
+function renameBoxRows(from, to) {
+  const file = join(DATA, 'box-price-history.csv')
+  if (!existsSync(file)) return
+  const rows = parseCsv(readFileSync(file, 'utf8'))
+  if (!rows.some((r) => r.set_code === from)) return
+  for (const r of rows) if (r.set_code === from) r.set_code = to
+  if (!DRY) writeFileSync(file, toCsv(rows, BOX_HISTORY_FIELDS))
 }
 
 /**
@@ -531,6 +624,7 @@ async function probeLimitless(roster) {
     const title = decode((await res.text()).match(/<title>(.*?)<\/title>/s)?.[1] ?? '')
     if (title.includes(`(${key.toUpperCase()})`)) {
       s.codeProvisional = false
+      s.codeSource = 'limitless'
       rosterDirty = true
       confirmed.push(`${s.setCode} · Limitless title "${title.replace(/\s*–\s*Limitless.*$/, '')}"`)
     } else {
@@ -564,6 +658,7 @@ const roster = rosterFile.sets
 async function refreshBoxes() {
   try {
     const found = await discoverUpcoming(roster)
+    for (const c of found.confirmed) console.log(`  upcoming: code confirmed from TCGCSV cards ${c}`)
     for (const a of found.added) console.log(`  upcoming: added ${a}`)
     for (const w of found.warnings) console.warn(`  warn: ${w}`)
     if (!found.added.length) console.log(`  upcoming: no new presale booster box in ${found.probed} unlisted group(s)`)
@@ -656,7 +751,10 @@ for (const set of targets) {
     // The checklist exists now: the roster row turns ready on its own (7.5). A page of its own on the
     // Limitless index is filed under the code, so finding one also confirms a provisional code.
     set.cardSeedStatus = 'ready'
-    if (set.codeProvisional === true && slugs.has(set.setCode)) set.codeProvisional = false
+    if (set.codeProvisional === true && slugs.has(set.setCode)) {
+      set.codeProvisional = false
+      set.codeSource = 'limitless'
+    }
     rosterDirty = true
     console.log(`  ${set.setCode}: checklist seeded, roster row now ready${set.codeProvisional === true ? ' (code still provisional)' : ''}`)
   }

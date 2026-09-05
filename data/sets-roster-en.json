@@ -1,6 +1,6 @@
 {
   "asOf": "2026-09-04",
-  "note": "EN booster boxes for Sets home. US prices from TCGPlayer market/ask hunt 4 Sep 2026 (see sealed-asks-roster-hunt.json). SG only where verified (OP-09, OP-16). Card grids only when cardSeedStatus=ready; every set is ready as of 2026-09-05 (checklists under data/*-en-seed.csv; same-set rows only except PRB reprint sets, which list every print in the box). EB-04 has no EN box: cards ship in OP14-EB04 / OP15-EB04. tcgplayerProductId / tcgplayerGroupId (added 5 Sep 2026) identify the EN booster box on TCGplayer for the daily TCGCSV price feed; tcgplayerProductName is the listing title as a check. Starter decks (ST-01…ST-36, product starter_deck, added 5 Sep 2026) come from the same TCGCSV groups: name, EN date and the deck product id; ST-14 has no Limitless page and stays pending. Upcoming sets (7.5, 5 Sep 2026) are discovered by the refresh from TCGCSV groups with a Booster Box on presale: cardSeedStatus pending, codeProvisional true until Limitless confirms the code (never shown while provisional).",
+  "note": "EN booster boxes for Sets home. US prices from TCGPlayer market/ask hunt 4 Sep 2026 (see sealed-asks-roster-hunt.json). SG only where verified (OP-09, OP-16). Card grids only when cardSeedStatus=ready; every set is ready as of 2026-09-05 (checklists under data/*-en-seed.csv; same-set rows only except PRB reprint sets, which list every print in the box). EB-04 has no EN box: cards ship in OP14-EB04 / OP15-EB04. tcgplayerProductId / tcgplayerGroupId (added 5 Sep 2026) identify the EN booster box on TCGplayer for the daily TCGCSV price feed; tcgplayerProductName is the listing title as a check. Starter decks (ST-01…ST-36, product starter_deck, added 5 Sep 2026) come from the same TCGCSV groups: name, EN date and the deck product id; ST-14 has no Limitless page and stays pending. Upcoming sets (7.5, 5 Sep 2026) are discovered by the refresh from TCGCSV groups with a Booster Box on presale: cardSeedStatus pending; the set code is the majority prefix of the group's card Numbers (OP18-021 → OP-18), cross-checked against the group abbreviation, codeSource tcgcsv-cards and codeProvisional false; only a group with neither gets a code by sequence (codeProvisional true, codeSource sequence, never shown) until its cards or Limitless (codeSource limitless) confirm it.",
   "sets": [
     {
       "setCode": "OP-01",
@@ -378,7 +378,8 @@
       "language": "EN",
       "enReleased": "2026-10-30",
       "cardSeedStatus": "pending",
-      "codeProvisional": true,
+      "codeProvisional": false,
+      "codeSource": "tcgcsv-cards",
       "sgAskSgd": null,
       "usMarketUsd": null,
       "boxArtUrl": null,
@@ -395,7 +396,8 @@
       "language": "EN",
       "enReleased": "2026-11-20",
       "cardSeedStatus": "pending",
-      "codeProvisional": true,
+      "codeProvisional": false,
+      "codeSource": "tcgcsv-cards",
       "sgAskSgd": null,
       "usMarketUsd": null,
       "boxArtUrl": null,
