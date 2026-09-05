@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom'
 import { getCard, type Card } from '../data/seed'
 import { useCollection } from '../store/collection'
+import { useWatchlist } from '../store/watchlist'
+import { StarButton } from '../components/StarButton'
 import { BackBar, BLEED, Screen } from '../components/Screen'
 import { CardArt } from '../components/CardArt'
 import { RarityChip } from '../components/RarityChip'
@@ -28,10 +30,14 @@ function CardDetail({ card }: { card: Card }) {
   const owned = isOwned(card.cardNumber)
   const qty = ownedQty(card.cardNumber)
   const cost = costFor(card.cardNumber)
+  const watch = useWatchlist()
 
   return (
     <Screen>
-      <BackBar fallbackTo={`/sets/${encodeURIComponent(card.setCode)}`} />
+      <BackBar
+        fallbackTo={`/sets/${encodeURIComponent(card.setCode)}`}
+        action={<StarButton subject="card" active={watch.isWatchingCard(card.cardNumber)} onToggle={() => watch.toggleCard(card.cardNumber)} />}
+      />
 
       {/* Stacked on phone/tablet; from desktop up, art on the left (~40%) and meta + actions on the right. */}
       <div className="desktop:grid desktop:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] desktop:items-start desktop:gap-12">
