@@ -40,6 +40,7 @@ export function DecksScreen() {
               const meta = [
                 check.colours.length ? check.colours.join(' / ') : leader ? null : 'No leader',
                 `${check.count} of ${DECK_SIZE}`,
+                check.standard === null ? null : check.standard ? 'Standard legal' : 'Not Standard legal',
               ].filter(Boolean)
               return (
                 <li key={deck.id}>

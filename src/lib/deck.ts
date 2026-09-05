@@ -39,9 +39,14 @@ export interface DeckCheck {
   /** Leader colours, e.g. ["Red"] or ["Red", "Green"]; empty without a leader or its attributes. */
   colours: string[]
   issues: DeckIssue[]
+  /** Standard / Extra legality of the whole list, null while attributes are loading. */
+  standard: boolean | null
+  extra: boolean | null
+  /** Every card that is not Standard legal, leader included; never truncated. */
+  notStandard: NamedCard[]
   /**
    * Short words each offending row carries beside its facts, by base number:
-   * "outside Red", "5 copies", "a leader". Empty for a clean row.
+   * "outside Red", "not Standard", "5 copies", "a leader". Empty for a clean row.
    */
   flags: Map<string, string[]>
 }
@@ -67,8 +72,8 @@ export function listAll(items: string[]): string {
 
 /**
  * Everything wrong with a list, in words that name cards: size, copies over
- * four, cards outside the leader's colours, a leader in the fifty. Nothing is
- * guessed: a card whose
+ * four, cards outside the leader's colours, a leader in the fifty, and Bandai's
+ * legality as Limitless publishes it. Nothing is guessed: a card whose
  * attributes are missing is skipped. `nameOf` gives the seed name for a number.
  */
 export function checkDeck(deck: Deck, attrs: Map<string, CardAttributes> | null, nameOf: (cardNumber: string) => string | undefined = () => undefined): DeckCheck {
@@ -110,7 +115,26 @@ export function checkDeck(deck: Deck, attrs: Map<string, CardAttributes> | null,
     }
   }
 
-  return { count, complete: count === DECK_SIZE && issues.length === 0, colours, issues, flags }
+  let standard: boolean | null = null
+  let extra: boolean | null = null
+  const notStandard: NamedCard[] = []
+  if (attrs) {
+    const all = [...(deck.leader ? [deck.leader] : []), ...Object.keys(deck.cards)]
+    const known = all.map((n) => attrs.get(n)).filter((a): a is CardAttributes => a !== undefined)
+    if (known.length === all.length && all.length > 0) {
+      for (const a of known) {
+        if (a.standard === 'not legal') {
+          notStandard.push(named(a.cardNumber))
+          flag(a.cardNumber, 'not Standard')
+        }
+        if (a.extra === 'not legal') flag(a.cardNumber, 'not Extra')
+      }
+      standard = notStandard.length === 0 && known.every((a) => a.standard === 'legal')
+      extra = known.every((a) => a.extra === 'legal')
+    }
+  }
+
+  return { count, complete: count === DECK_SIZE && issues.length === 0, colours, issues, standard, extra, notStandard, flags }
 }
 
 /** Plain text, one line per card, the `4xOP09-004` form deck tools exchange; the leader first. */

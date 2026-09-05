@@ -53,12 +53,12 @@ interface Undo {
 }
 
 /**
- * The deck builder (6.2) with the collection gap (6.3). Order after research:
- * leader, then the check (count and every issue naming its cards), then adding
- * cards right under it, then the fifty by category, then what the collection
- * covers, then text in and out, then delete. A strip pinned above the tab bar
- * keeps the count and a copy action under the thumb while editing. Local-only;
- * nothing leaves the browser.
+ * The deck builder (6.2) with the collection gap (6.3) and legality (6.4).
+ * Order after research: leader, then the check (count, every issue naming its
+ * cards, legality in a sentence), then adding cards right under it, then the
+ * fifty by category, then what the collection covers, then text in and out,
+ * then delete. A strip pinned above the tab bar keeps count · legality and a
+ * copy action under the thumb while editing. Local-only; nothing leaves the browser.
  */
 function DeckBuilder({ deck }: { deck: Deck }) {
   const { renameDeck, deleteDeck, setLeader, setCardQty, replaceCards } = useDecks()
@@ -157,9 +157,10 @@ function DeckBuilder({ deck }: { deck: Deck }) {
     return { owned, total, missing, held, toComplete, unpricedMissing, wholeDeck, unpricedAll, asOf }
   }, [deck, haveOf])
 
-  // Adding cards: name or number; the leader's colours unless widened; Owned narrows further.
+  // Adding cards: name or number; the leader's colours unless widened; Standard only and Owned narrow further.
   const [query, setQuery] = useState('')
   const [allColours, setAllColours] = useState(false)
+  const [standardOnly, setStandardOnly] = useState(false)
   const [ownedOnly, setOwnedOnly] = useState(false)
   const [pickLeader, setPickLeader] = useState(!deck.leader)
   const results = useMemo(() => {
@@ -179,6 +180,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
         if (a?.category === 'Leader') continue
         if (!allColours && check.colours.length && a?.color && !splitColours(a.color).some((col) => check.colours.includes(col))) continue
       }
+      if (standardOnly && a?.standard !== 'legal') continue
       if (ownedOnly && haveOf(base) === 0) continue
       seen.add(base)
       if (out.length >= RESULT_LIMIT) {
@@ -188,7 +190,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
       out.push(baseCard(base) ?? c)
     }
     return { cards: out, more }
-  }, [query, attrs, pickLeader, allColours, ownedOnly, check.colours, haveOf])
+  }, [query, attrs, pickLeader, allColours, standardOnly, ownedOnly, check.colours, haveOf])
 
   const chooseLeader = (card: Card) => {
     remember(deck.leader ? `Leader was ${nameOf(deck.leader) ?? deck.leader}` : `Leader set to ${card.name}`)
@@ -244,6 +246,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
   }
   const missingUnstarred = gap.missing.filter((m) => !watch.isWatchingCard(m.card.cardNumber)).length
 
+  const legalityWords = (a: CardAttributes | undefined) => (a?.standard === 'not legal' ? 'not\u00a0Standard' : a?.extra === 'not legal' ? 'not\u00a0Extra' : null)
   const ownedWords = (base: string) => {
     const have = haveOf(base)
     return have === 0 ? null : have === 1 ? 'owned' : `${have}\u00a0owned`
@@ -255,6 +258,8 @@ function DeckBuilder({ deck }: { deck: Deck }) {
     <>
       {check.count} of {DECK_SIZE}
       {!deck.leader && <span className="text-muted"> · No leader</span>}
+      {deck.leader && check.standard === true && <span className="text-muted"> · Standard legal</span>}
+      {deck.leader && check.standard === false && <span className="text-bad"> · Not Standard legal</span>}
     </>
   )
 
@@ -329,7 +334,8 @@ function DeckBuilder({ deck }: { deck: Deck }) {
           <section id="deck-check" aria-label="Deck check" className="mt-5 scroll-mt-4 px-1">
             <p className="tabular text-title text-ink">
               {check.count} of {DECK_SIZE} cards
-              {check.complete && <span className="text-muted"> · ready to play</span>}
+              {check.complete && check.standard !== false && <span className="text-muted"> · ready to play</span>}
+              {check.complete && check.standard === false && <span className="text-muted"> · Extra only</span>}
             </p>
             <ul className="mt-1 space-y-0.5 text-meta text-muted">
               {check.issues.map((i) => (
@@ -337,8 +343,28 @@ function DeckBuilder({ deck }: { deck: Deck }) {
                   <IssueLine issue={i} onCard={jumpToCard} />
                 </li>
               ))}
+              {attrs && deck.leader && check.standard !== null && (
+                <li>
+                  {check.standard ? (
+                    <span className="text-ink">Standard legal</span>
+                  ) : (
+                    <>
+                      <span className="font-medium text-bad">Not Standard legal</span>
+                      {': '}
+                      <CardMentions cards={check.notStandard} onCard={jumpToCard} />
+                    </>
+                  )}
+                  {check.extra ? ' · Extra legal' : ''}
+                </li>
+              )}
               {!attrs && <li>Reading card attributes…</li>}
             </ul>
+            {attrs && deck.leader && check.standard !== null && (
+              <p className="mt-2 text-meta text-muted">
+                Standard is the format most events use; cards from blocks that have rotated out are not legal in it. Extra allows every card.
+                Legality here is as Limitless publishes it.
+              </p>
+            )}
           </section>
 
           {/* Add cards / choose a leader, directly under the check */}
@@ -364,6 +390,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
                   <Chip on={allColours} onClick={() => setAllColours(true)}>All colours</Chip>
                 </div>
               )}
+              <Chip on={standardOnly} onClick={() => setStandardOnly((v) => !v)}>Standard only</Chip>
               <Chip on={ownedOnly} onClick={() => setOwnedOnly((v) => !v)}>Owned</Chip>
             </div>
             {results.cards.length > 0 && (
@@ -377,7 +404,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
                       key={card.baseNumber}
                       card={card}
                       a={a}
-                      more={[a?.category || null, showColour ? a?.color || null : null, price !== null ? usMoney(price) : null, ownedWords(card.baseNumber)]}
+                      more={[a?.category || null, showColour ? a?.color || null : null, price !== null ? usMoney(price) : null, ownedWords(card.baseNumber), legalityWords(a)]}
                       right={
                         pickLeader ? (
                           <button
@@ -399,7 +426,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
             {results.more && <p className="mt-2 px-1 text-meta text-muted">First {RESULT_LIMIT} matches · keep typing to narrow it.</p>}
             {query.trim().length >= 2 && results.cards.length === 0 && (
               <p className="mt-3 px-1 text-body text-muted">
-                {ownedOnly || (!allColours && !pickLeader && check.colours.length > 0) ? 'No cards match with these filters.' : 'No cards match.'}
+                {standardOnly || ownedOnly || (!allColours && !pickLeader && check.colours.length > 0) ? 'No cards match with these filters.' : 'No cards match.'}
               </p>
             )}
           </section>
@@ -541,7 +568,7 @@ function DeckBuilder({ deck }: { deck: Deck }) {
       {/* Room for the strip pinned below. */}
       <div aria-hidden="true" className="h-16" />
 
-      {/* Count under the thumb while editing; tap it for the check, Copy beside it, one step of undo beneath. */}
+      {/* Count · legality under the thumb while editing; tap it for the check, Copy beside it, one step of undo beneath. */}
       <div
         className="fixed inset-x-0 z-20 border-t border-line bg-paper/95 backdrop-blur supports-[backdrop-filter]:bg-paper/85"
         style={{ bottom: 'calc(var(--tabbar-h) + var(--safe-bottom))' }}
