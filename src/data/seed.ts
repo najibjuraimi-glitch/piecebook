@@ -1,6 +1,15 @@
-import op09Csv from '../../data/op09-en-seed.csv?raw'
-import op16Csv from '../../data/op16-en-seed.csv?raw'
 import { csvToObjects } from './csv'
+
+/**
+ * Every EN checklist CSV under data/ (one per set, `opXX-en-seed.csv`,
+ * `ebXX-…`, `prbXX-…`). Adding a set is a CSV drop-in plus flipping its roster
+ * row to `ready`; nothing here needs to change.
+ */
+const SEED_CSVS = import.meta.glob('../../data/*-en-seed.csv', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
 
 export interface Card {
   setCode: string
@@ -24,10 +33,14 @@ export interface CardSet {
 }
 
 /**
- * Only same-set numbered rows are part of the V1 catalog
- * (see data/SEED-VERSION.txt: cleaned-same-set-only).
+ * Only same-set numbered rows are part of the V1 catalog (see
+ * data/SEED-VERSION.txt: cleaned-same-set-only): a row belongs to its set when
+ * the card number carries that set's code, e.g. `OP17-001` under `OP-17`.
+ * Cross-set reprints Limitless files on a set page are dropped.
  */
-const ALLOWED_PREFIXES = [/^OP09-/, /^OP16-/]
+function isSameSetRow(setCode: string, cardNumber: string): boolean {
+  return cardNumber.toUpperCase().startsWith(`${setCode.replace(/-/g, '').toUpperCase()}-`)
+}
 
 const PARALLEL_RE = /p\d+$/i
 
@@ -37,7 +50,7 @@ export function isParallelNumber(cardNumber: string): boolean {
 
 function toCard(row: Record<string, string>): Card | null {
   const cardNumber = row.card_number
-  if (!cardNumber || !ALLOWED_PREFIXES.some((re) => re.test(cardNumber))) return null
+  if (!cardNumber || !row.set_code || !isSameSetRow(row.set_code, cardNumber)) return null
   const market = row.market_usd === '' ? NaN : Number(row.market_usd)
   return {
     setCode: row.set_code,
@@ -68,7 +81,9 @@ export function compareCardNumbers(a: string, b: string): number {
 }
 
 function buildCatalog(): { sets: CardSet[]; byNumber: Map<string, Card> } {
-  const rows = [...csvToObjects(op09Csv), ...csvToObjects(op16Csv)]
+  const rows = Object.keys(SEED_CSVS)
+    .sort()
+    .flatMap((path) => csvToObjects(SEED_CSVS[path]))
   const byNumber = new Map<string, Card>()
   for (const row of rows) {
     const card = toCard(row)

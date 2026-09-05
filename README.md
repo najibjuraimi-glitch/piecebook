@@ -1,6 +1,6 @@
 # Piecebook
 
-Phone-first web app for One Piece TCG collectors. V1 lists every EN booster set on Cards' roster, lets you browse OP-09 and OP-16 by rarity, search a set by name or number, sort by name or seed price, read a short intro per set, see which sealed product feeds each set, mark the cards you own, log what you paid, and see a seed-priced portfolio.
+Phone-first web app for One Piece TCG collectors. V1 lists every EN booster set on Cards' roster, lets you browse every set's EN checklist by rarity, search a set by name or number, sort by name or seed price, read a short intro per set, see which sealed product feeds each set, mark the cards you own, log what you paid, and see a seed-priced portfolio.
 
 Specs live alongside the code: `V1-PRD.md` (scope), `V1-DESIGN-PACK.md` (IA, palette, copy), `docs/V1-DESKTOP-LAYOUT.md` (tablet/desktop breakpoints), `docs/V1-SETTILE-AND-GRID-PRICES.md` (sealed box prices on set tiles, muted USD on card cells), `docs/V1-OWN-AND-SET-DEPTH-UI.md` (set intro, thin Own), `docs/V1-SET-DETAIL-CONTROLS.md` (search, sort, All tab), `docs/V1-COST-AND-PORTFOLIO-UI.md` (cost basis, Portfolio), `docs/V1-SETS-ROSTER-UI.md` (full EN roster, pending set detail), `seed-sources.md` (data provenance).
 
@@ -23,14 +23,14 @@ npm run preview   # serve the production build locally
 | Route | Screen |
 | --- | --- |
 | `/` | Sets — every EN set on the roster, oldest EN release first |
-| `/sets/:setCode` | Set detail — seeded sets (OP-09, OP-16): sealed strip, set intro, search, sort (`?sort=`), rarity tabs with All first (`?rarity=`), card grid (e.g. `/sets/OP-09?sort=price-desc`). Roster sets without a checklist yet (e.g. `/sets/OP-01`): sealed notes / EN date if known, then “Checklist not seeded yet”. Unknown code: “Set not found” |
+| `/sets/:setCode` | Set detail — every roster set is seeded: sealed strip (box price), set intro or EN date, search, sort (`?sort=`), rarity tabs with All first (`?rarity=`), card grid (e.g. `/sets/OP-09?sort=price-desc`). A roster set whose row is flipped back to `pending` shows sealed notes / EN date, then “Checklist not seeded yet”. Unknown code: “Set not found” |
 | `/cards/:cardNumber` | Card detail — Mark owned / Remove from collection; once owned, Add cost basis / Edit cost / Clear cost (e.g. `/cards/OP09-001p1`) |
 | `/collection` | Owned cards, with a muted `Paid …` line where a cost exists |
 | `/portfolio` | Market value, Cost basis, Unrealized P/L from seed prices; Top owned |
 
 ## Data
 
-- **Catalog** is the read-only seed under `data/` (`op09-en-seed.csv`, `op16-en-seed.csv`). The CSVs are bundled into the app at build time and parsed in the browser. Only same-set numbered rows (`OP09-*`, `OP16-*`) are loaded, per `data/SEED-VERSION.txt`.
+- **Catalog** is the read-only seed under `data/`: one `{code}-en-seed.csv` per roster set (22 files, 2,823 rows; see `docs/seed-sources.md`). Every `*-en-seed.csv` is picked up by `import.meta.glob`, bundled into its own `seed` chunk at build time and parsed in the browser. Only same-set numbered rows are loaded (a row's `card_number` must carry its `set_code`, e.g. `OP17-001` under `OP-17`), per `data/SEED-VERSION.txt`. Adding a set is a CSV drop-in plus flipping its roster row to `ready`.
 - **Prices** are the seed `market_usd` values with their `as_of` date. There is no live price feed; every price in the UI is labelled as seed. Card cells show the bare `market_usd` muted under the name; card detail carries the `as_of` date.
 - **Parallels** are detected from the card number (`OP09-001p1`) and shown in their own Parallels tab; the All tab includes them too.
 - **Set intros** come from `data/set-intros.json` (Cards): a one-line theme, EN/JP release dates and packs-per-box / cards-per-pack. Missing fields are simply omitted; nothing is inferred.

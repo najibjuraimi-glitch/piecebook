@@ -26,7 +26,8 @@ Key rows (Cards' verified roster, 4 Sep 2026):
 - **All 22 sets**: `usMarketUsd` filled, `asOf` `2026-09-04`, `usSource` set.
 - **OP-09** `ready`: `sgAskSgd` 750, `usMarketUsd` 669.52, art vendored.
 - **OP-16** `ready`: `sgAskSgd` 295, `usMarketUsd` 207.42, `boxArtUrl` `null`.
-- **Every other set**: `pending`, `sgAskSgd` `null` (no verified SG ask; never derived from USD), `boxArtUrl` `null`.
+- **Every other set**: `sgAskSgd` `null` (no verified SG ask; never derived from USD), `boxArtUrl` `null`.
+- **Checklists (5 Sep 2026)**: all 22 rows are `ready`; one `data/{code}-en-seed.csv` per set, same-set rows only (see `seed-sources.md` for counts and the PRB / EB-04 caveats). The `pending` path stays in the app for any row Cards flips back.
 
 Code and Design do not invent prices, art or intro copy. The roster wins membership: a set is on Sets home iff it is on the roster.
 
@@ -42,7 +43,7 @@ Code and Design do not invent prices, art or intro copy. The roster wins members
   - both `null` → no price line.
 
 ## Set detail
-- **Seeded checklist (OP-09, OP-16)** — unchanged depth from PR #5: SealedStrip, SetIntro, SearchField, sort, All-first RarityTabs, grid.
+- **Seeded checklist (all 22 sets)** — unchanged depth from PR #5: SealedStrip (guidance where Cards wrote it, box price from `sealed-seed.json` or the roster), SetIntro where Cards wrote one else the roster's `EN · D MMM YYYY` line, SearchField, sort, All-first RarityTabs, grid.
 - **Pending checklist** — BackBar (code + name); SealedStrip only if it has something to say (guidance or a price); SetIntro if Cards wrote one, else an optional `EN · D MMM YYYY` line from the roster only; **no search, sort or rarity tabs**; then one empty panel:
   - **Checklist not seeded yet**
   - “Card list for this set is coming. Sealed notes above still apply.”
