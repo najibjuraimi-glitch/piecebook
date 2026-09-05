@@ -653,10 +653,12 @@ for (const set of targets) {
   const before = existsSync(file) ? parseCsv(readFileSync(file, 'utf8')).length : 0
   if (!DRY) writeFileSync(file, toCsv(rows, FIELDS))
   if (set.cardSeedStatus === 'pending') {
-    // The checklist exists now: the roster row turns ready on its own (7.5).
+    // The checklist exists now: the roster row turns ready on its own (7.5). A page of its own on the
+    // Limitless index is filed under the code, so finding one also confirms a provisional code.
     set.cardSeedStatus = 'ready'
+    if (set.codeProvisional === true && slugs.has(set.setCode)) set.codeProvisional = false
     rosterDirty = true
-    console.log(`  ${set.setCode}: checklist seeded, roster row now ready`)
+    console.log(`  ${set.setCode}: checklist seeded, roster row now ready${set.codeProvisional === true ? ' (code still provisional)' : ''}`)
   }
   const added = NO_HISTORY ? 0 : appendHistory(set.setCode, rows)
   const noCategory = writeAttributes(set.setCode, rows, prints)

@@ -78,7 +78,7 @@ for (const set of roster) {
   // Provisional codes (7.5): a guess by sequence until Limitless lists the set; never displayed, so a stale one is worth a look.
   if (set.codeProvisional !== undefined && typeof set.codeProvisional !== 'boolean') fail(`${set.setCode}: codeProvisional "${set.codeProvisional}" is not true / false`)
   if (set.codeProvisional === true) {
-    if (set.cardSeedStatus === 'ready') fail(`${set.setCode}: codeProvisional is still true on a ready set (Limitless confirmed the code when it listed the set)`)
+    if (set.cardSeedStatus === 'ready') warn(`${set.setCode}: codeProvisional is still true on a ready set; Limitless lists the set, so the code can be confirmed`)
     if (!set.tcgplayerProductId || !set.tcgplayerGroupId) fail(`${set.setCode}: an upcoming set needs tcgplayerProductId and tcgplayerGroupId (the refresh found it through TCGCSV)`)
     if (set.enReleased && set.enReleased < today) warn(`${set.setCode}: provisional code and the release date ${set.enReleased} has passed; Limitless has not confirmed the set yet`)
   }
