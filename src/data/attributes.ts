@@ -45,6 +45,12 @@ function legality(v: string): 'legal' | 'not legal' | null {
   return v === 'legal' || v === 'not legal' ? v : null
 }
 
+/** Limitless prints "?" or an untranslated key ("card.attribute.?") where it has no value; that is not data. */
+function known(v: string | undefined): string {
+  const s = (v ?? '').trim()
+  return s === '?' || s.startsWith('card.') ? '' : s
+}
+
 function loadSet(setCode: string): Promise<Map<string, CardAttributes>> {
   const hit = cache.get(setCode)
   if (hit) return hit
@@ -62,8 +68,8 @@ function loadSet(setCode: string): Promise<Map<string, CardAttributes>> {
         life: num(r.life),
         power: num(r.power),
         counter: num(r.counter),
-        attribute: r.attribute ?? '',
-        types: r.types ? r.types.split('/').map((t) => t.trim()).filter(Boolean) : [],
+        attribute: known(r.attribute),
+        types: r.types ? r.types.split('/').map((t) => known(t)).filter(Boolean) : [],
         effect: r.effect ?? '',
         trigger: r.trigger ?? '',
         artist: r.artist ?? '',
