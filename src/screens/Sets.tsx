@@ -1,5 +1,4 @@
-import React from 'react'
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ROSTER } from '../data/roster'
 import { Screen, ScreenTitle } from '../components/Screen'
@@ -12,14 +11,15 @@ import { resolveCardNumber, searchAll } from '../lib/search'
 /**
  * Every EN set on Cards' roster, oldest EN release first. The roster, not the
  * card CSVs, decides membership. One search field above the tiles searches
- * every set at once (`?q=`); results replace the tiles while there is a query
- * and are grouped by set so the tree stays visible. Enter on a full card
- * number opens the card.
+ * every set at once (`?q=`); the tiles step aside for as long as there is a
+ * query, and results are grouped by set so the tree stays visible. Enter on a
+ * full card number opens the card.
  */
 export function SetsScreen() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const query = params.get('q') ?? ''
+  const searching = query.trim() !== ''
   const results = useMemo(() => searchAll(query), [query])
 
   const setQuery = (q: string) => {
@@ -50,6 +50,8 @@ export function SetsScreen() {
 
       {results ? (
         <SearchResults results={results} />
+      ) : searching ? (
+        <p className="px-1 pt-10 text-center text-body text-muted">Keep typing to search every set.</p>
       ) : ROSTER.length === 0 ? (
         <EmptyState message="No sets loaded yet." />
       ) : (

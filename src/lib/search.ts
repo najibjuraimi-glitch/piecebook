@@ -45,7 +45,7 @@ export interface SearchResults {
   exact: Card | undefined
   /** Matches by home set, in roster (release) order. */
   bySet: SetGroup[]
-  /** Card names matched, with print counts, most printed first; only names with more than one print. */
+  /** Card names matched that recur in more than one set, most printed first (single-set names already sit together in their set group). */
   names: NameGroup[]
   total: number
 }
@@ -83,7 +83,7 @@ export function searchAll(rawQuery: string): SearchResults | null {
     byName.set(c.name, entry)
   }
   const names: NameGroup[] = [...byName.entries()]
-    .filter(([, v]) => v.prints > 1)
+    .filter(([, v]) => v.sets.size > 1)
     .map(([name, v]) => ({ name, prints: v.prints, sets: v.sets.size }))
     .sort((a, b) => b.prints - a.prints || a.name.localeCompare(b.name))
 
