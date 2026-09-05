@@ -8,11 +8,12 @@ export const isSetsSection = (p: string) =>
 const LINKS = [
   { to: '/', label: 'Sets', match: isSetsSection },
   { to: '/collection', label: 'Collection', match: (p: string) => p.startsWith('/collection') },
+  { to: '/decks', label: 'Decks', match: (p: string) => p.startsWith('/decks') },
   { to: '/portfolio', label: 'Portfolio', match: (p: string) => p.startsWith('/portfolio') },
 ]
 
 /**
- * Tablet/desktop chrome: wordmark left, three text links right. Nothing else —
+ * Tablet/desktop chrome: wordmark left, four text links right. Nothing else —
  * no search, cart, charts or bell. Hidden on phone, where the TabBar takes over.
  */
 export function TopBar({ pathname }: { pathname: string }) {
