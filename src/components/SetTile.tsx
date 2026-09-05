@@ -69,7 +69,7 @@ function ArtBand({ setCode, setName, boxArtUrl }: ArtBandProps) {
   const showArt = Boolean(boxArtUrl) && !failed
 
   return (
-    <div className="relative aspect-[3/2] w-full overflow-hidden bg-[#EFEBE3]">
+    <div className={`relative aspect-[3/2] w-full overflow-hidden ${showArt && loaded ? 'bg-white' : 'bg-[#EFEBE3]'}`}>
       {showArt && (
         <img
           src={boxArtUrl ?? undefined}
@@ -79,7 +79,7 @@ function ArtBand({ setCode, setName, boxArtUrl }: ArtBandProps) {
           onError={() => setFailed(true)}
           // Design: centre cover. Vendored box fronts are pre-framed to the band's 3:2 so the
           // face fills the band with lightbox walls and floor already outside the frame.
-          className={`h-full w-full object-cover object-center transition-opacity duration-200 ease-out ${
+          className={`h-full w-full object-contain p-3 transition-opacity duration-200 ease-out ${
             loaded ? 'opacity-100' : 'opacity-0'
           }`}
         />

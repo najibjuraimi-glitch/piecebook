@@ -28,19 +28,29 @@ export interface RosterSet {
   /** Cards' free-text caveat on a price row, when they wrote one. */
   priceNote: string | null
   /**
-   * Resolved local path under `public/box-art/`, or null. Cards may write the
-   * literal `vendored` to mean "use the file already in the repo", which
-   * resolves to `/box-art/{code}-{lang}-white.jpg`; anything that is not a
-   * local path is treated as no art so nothing is ever hotlinked.
+   * Box image for the tile: TCGplayer's official product render when the row
+   * has a `tcgplayerProductId` (every EN box, 3.3), else a local path Cards
+   * wrote (`/…` or the literal `vendored`), else null for type-first.
    */
   boxArtUrl: string | null
+  /** TCGplayer product id of the EN booster box (the key for the daily TCGCSV feed); null when there is no EN box. */
+  tcgplayerProductId: number | null
   /** Row date when Cards gives one, else the file-level `asOf`. */
   asOf: string | null
 }
 
+/**
+ * TCGplayer's official product render for a box (Bandai's display-box image),
+ * served from TCGplayer's CDN like card art is served from Limitless's.
+ * `400w` for tiles, `in_1000x1000` for the box card.
+ */
+export function boxImageUrl(productId: number, size: '400w' | 'in_1000x1000' = '400w'): string {
+  return `https://tcgplayer-cdn.tcgplayer.com/product/${productId}_${size}.jpg`
+}
+
 // Rows are read field-by-field through `text()` / `money()`, so optional
 // columns Cards adds on some rows only (e.g. `priceNote`) need no schema change.
-type Row = Partial<Record<keyof (typeof rosterSeed)['sets'][number] | 'priceNote' | 'sgSource', unknown>> & {
+type Row = Partial<Record<keyof (typeof rosterSeed)['sets'][number] | 'priceNote' | 'sgSource' | 'tcgplayerProductId', unknown>> & {
   setCode: string
 }
 
@@ -72,6 +82,7 @@ function resolveBoxArt(setCode: string, language: string, raw: unknown): string 
 
 function toRosterSet(row: Row): RosterSet {
   const language = text(row.language) ?? 'EN'
+  const productId = typeof row.tcgplayerProductId === 'number' && row.tcgplayerProductId > 0 ? row.tcgplayerProductId : null
   return {
     setCode: row.setCode,
     setName: text(row.setName) ?? row.setCode,
@@ -84,7 +95,9 @@ function toRosterSet(row: Row): RosterSet {
     usMarketUsd: money(row.usMarketUsd),
     usSource: text(row.usSource),
     priceNote: text(row.priceNote),
-    boxArtUrl: resolveBoxArt(row.setCode, language, row.boxArtUrl),
+    // The official TCGplayer render for every box (3.3); a local path only for a row with no product id.
+    boxArtUrl: productId ? boxImageUrl(productId, '400w') : resolveBoxArt(row.setCode, language, row.boxArtUrl),
+    tcgplayerProductId: productId,
     asOf: text(row.asOf) ?? FILE_AS_OF,
   }
 }
@@ -122,7 +135,8 @@ export function rosterSealedProduct(set: RosterSet): SealedProduct | undefined {
     language: set.language,
     product: set.product,
     boxArtUrl: set.boxArtUrl,
-    sgAskSgd: set.sgAskSgd,
+    // The SG ask has no automated source and is not shown (3.2); the roster keeps the field as provenance.
+    sgAskSgd: null,
     sgSource: set.sgSource,
     usMarketUsd,
     usSource: set.usSource,
