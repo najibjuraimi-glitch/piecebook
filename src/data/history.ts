@@ -90,6 +90,25 @@ export function changeSince(points: PricePoint[], days = 30): PriceChange | null
   return { delta: Math.round((latest.usd - since.usd) * 100) / 100, since, latest }
 }
 
+/** Histories for many cards at once (owned and watched cards on Portfolio and Collection); each set's file loads once. */
+export function usePriceHistories(cards: Card[]): { byCard: Map<string, PricePoint[]>; loading: boolean } {
+  const key = cards.map((c) => c.cardNumber).sort().join('|')
+  const [state, setState] = useState<{ key: string; byCard: Map<string, PricePoint[]> } | null>(null)
+  useEffect(() => {
+    let live = true
+    Promise.all(cards.map((c) => priceHistoryFor(c).then((points) => [c.cardNumber, points] as const))).then((entries) => {
+      if (live) setState({ key, byCard: new Map(entries) })
+    })
+    return () => {
+      live = false
+    }
+    // `key` captures the card list; the array identity itself may change every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key])
+  const ready = state !== null && state.key === key
+  return { byCard: ready ? state.byCard : new Map(), loading: !ready }
+}
+
 export function usePriceHistory(card: Card): { points: PricePoint[]; loading: boolean } {
   const [state, setState] = useState<{ key: string; points: PricePoint[] } | null>(null)
   useEffect(() => {

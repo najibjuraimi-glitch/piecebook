@@ -1,12 +1,15 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { getCard } from '../data/seed'
+import { getCard, type Card } from '../data/seed'
 import { useCollection } from '../store/collection'
+import { useWatchlist } from '../store/watchlist'
+import { usePriceHistories } from '../data/history'
 import { summarisePortfolio } from '../lib/portfolio'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { StatBlock } from '../components/StatBlock'
 import { EmptyState } from '../components/EmptyState'
 import { CardArt } from '../components/CardArt'
+import { Movers, type MoverCard } from '../components/Movers'
 import { formatSgd, formatSignedUsd, formatUsd } from '../lib/format'
 
 const DASH = '—'
@@ -19,8 +22,19 @@ const DASH = '—'
  */
 export function PortfolioScreen() {
   const { owned } = useCollection()
+  const watch = useWatchlist()
   const summary = useMemo(() => summarisePortfolio(owned, getCard), [owned])
   const { holdings, marketUsd, costSgd, costUsd, plUsd, plSkippedUnpriced } = summary
+
+  // Movers run over everything the collector owns or watches, each card once.
+  const watched = useMemo(() => watch.cards.map((n) => getCard(n)).filter((c): c is Card => c !== undefined), [watch.cards])
+  const moverCards = useMemo<MoverCard[]>(() => {
+    const list: MoverCard[] = holdings.map((h) => ({ card: h.card, qty: h.qty }))
+    const seen = new Set(list.map((m) => m.card.cardNumber))
+    for (const card of watched) if (!seen.has(card.cardNumber)) list.push({ card, qty: 0 })
+    return list
+  }, [holdings, watched])
+  const histories = usePriceHistories(useMemo(() => moverCards.map((m) => m.card), [moverCards]))
 
   const hasCosts = costSgd !== null || costUsd !== null
   const costValue: string | string[] =
@@ -46,7 +60,10 @@ export function PortfolioScreen() {
     <Screen>
       <ScreenTitle title="Portfolio" />
       {holdings.length === 0 ? (
-        <EmptyState message="No owned cards yet." ctaLabel="Browse sets" ctaTo="/" />
+        <>
+          <EmptyState message="No owned cards yet." ctaLabel="Browse sets" ctaTo="/" />
+          {moverCards.length > 0 && <Movers cards={moverCards} byCard={histories.byCard} loading={histories.loading} className="mt-8" />}
+        </>
       ) : (
         <>
           <div className="grid grid-cols-1 gap-3 tablet:grid-cols-3 tablet:gap-4">
@@ -69,6 +86,8 @@ export function PortfolioScreen() {
               How prices work
             </Link>
           </p>
+
+          <Movers cards={moverCards} byCard={histories.byCard} loading={histories.loading} className="mt-8" />
 
           {top.length > 0 && (
             <section className="mt-8">
