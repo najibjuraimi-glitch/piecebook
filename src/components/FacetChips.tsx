@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { loadAllAttributes, type CardAttributes } from '../data/attributes'
 import {
   addFacet,
@@ -15,6 +15,8 @@ import {
   type Facet,
   type ParsedQuery,
 } from '../lib/search'
+
+const chipKey = (f: Facet) => `${f.kind}:${facetLabel(f).toLowerCase()}`
 
 /**
  * Every set's attributes, loaded once the search is first used (2.3: facets
@@ -56,6 +58,24 @@ export function FacetChips({ query, onChange, attrs, className = '' }: Props) {
   const [costOpen, setCostOpen] = useState(false)
   const [traitOpen, setTraitOpen] = useState(false)
 
+  // On a phone the row scrolls, so a word just typed may light a chip out of view: bring the newest lit chip in.
+  const rowRef = useRef<HTMLDivElement>(null)
+  const litKeys = parsed.hits.map((h) => chipKey(h.facet)).join('\u0000')
+  const prevLit = useRef<string[]>([])
+  useEffect(() => {
+    const keys = litKeys ? litKeys.split('\u0000') : []
+    const fresh = keys.filter((k) => !prevLit.current.includes(k))
+    prevLit.current = keys
+    const row = rowRef.current
+    if (!row || fresh.length === 0) return
+    const el = row.querySelector<HTMLElement>(`[data-chip="${fresh[fresh.length - 1].replace(/"/g, '\\"')}"]`)
+    if (!el) return
+    const left = el.offsetLeft - row.offsetLeft
+    const right = left + el.offsetWidth
+    if (right > row.scrollLeft + row.clientWidth) row.scrollTo({ left: right - row.clientWidth + 16, behavior: 'smooth' })
+    else if (left < row.scrollLeft) row.scrollTo({ left: Math.max(0, left - 16), behavior: 'smooth' })
+  }, [litKeys])
+
   if (!query.trim()) return null
 
   const toggle = (facet: Facet) => onChange(toggleFacet(parsed, facet))
@@ -71,23 +91,25 @@ export function FacetChips({ query, onChange, attrs, className = '' }: Props) {
   return (
     <div className={className}>
       <div
+        ref={rowRef}
         role="group"
         aria-label="Narrow the search"
         className="no-scrollbar -mx-4 flex items-center gap-1.5 overflow-x-auto px-4 py-0.5 tablet:mx-0 tablet:flex-wrap tablet:overflow-visible tablet:px-0"
       >
         {COLOURS.map((c) => (
-          <Chip key={c} on={hasFacet(parsed, { kind: 'colour', value: c })} onClick={() => toggle({ kind: 'colour', value: c })}>
+          <Chip key={c} id={chipKey({ kind: 'colour', value: c })} on={hasFacet(parsed, { kind: 'colour', value: c })} onClick={() => toggle({ kind: 'colour', value: c })}>
             {c}
           </Chip>
         ))}
         <Divider />
         {CATEGORIES.map((c) => (
-          <Chip key={c} on={hasFacet(parsed, { kind: 'category', value: c })} onClick={() => toggle({ kind: 'category', value: c })}>
+          <Chip key={c} id={chipKey({ kind: 'category', value: c })} on={hasFacet(parsed, { kind: 'category', value: c })} onClick={() => toggle({ kind: 'category', value: c })}>
             {c}
           </Chip>
         ))}
         <Divider />
         <Chip
+          id={costOn ? chipKey({ kind: 'cost', value: parsed.cost as number }) : undefined}
           on={costOn}
           expanded={costRow}
           onClick={() => {
@@ -103,12 +125,12 @@ export function FacetChips({ query, onChange, attrs, className = '' }: Props) {
           Trait
         </Chip>
         {extras.map((f) => (
-          <Chip key={`${f.kind}-${facetLabel(f)}`} on onClick={() => onChange(removeFacet(parsed, f))}>
+          <Chip key={chipKey(f)} id={chipKey(f)} on onClick={() => onChange(removeFacet(parsed, f))}>
             {facetLabel(f)}
           </Chip>
         ))}
         <Divider />
-        <Chip on={parsed.owned} onClick={() => toggle({ kind: 'owned' })}>
+        <Chip id={chipKey({ kind: 'owned' })} on={parsed.owned} onClick={() => toggle({ kind: 'owned' })}>
           Owned
         </Chip>
       </div>
@@ -141,12 +163,14 @@ export function FacetChips({ query, onChange, attrs, className = '' }: Props) {
 
 /** Filled ink when on, hairline when off, as in the builder; the target is 44px tall around a 32px pill. */
 function Chip({
+  id,
   on,
   small = false,
   expanded,
   onClick,
   children,
 }: {
+  id?: string
   on: boolean
   small?: boolean
   expanded?: boolean
@@ -156,6 +180,7 @@ function Chip({
   return (
     <button
       type="button"
+      data-chip={id}
       aria-pressed={expanded === undefined ? on : undefined}
       aria-expanded={expanded}
       onClick={onClick}

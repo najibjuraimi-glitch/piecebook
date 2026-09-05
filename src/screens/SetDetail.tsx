@@ -14,6 +14,8 @@ import { BackBar, BLEED, Screen } from '../components/Screen'
 import { BoxCard } from '../components/BoxCard'
 import { SetIntro } from '../components/SetIntro'
 import { SearchField } from '../components/SearchField'
+import { FacetChips, useSearchAttributes } from '../components/FacetChips'
+import { matchesFacets, parseQuery, traitList } from '../lib/search'
 import { SortControls } from '../components/SortControls'
 import { RarityTabs } from '../components/RarityTabs'
 import { CardCell, CardGrid } from '../components/CardCell'
@@ -94,6 +96,10 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   // Search text lives in the URL as `?q=`, so "All 151 in OP-09" from global search
   // lands prefilled and the address stays truthful once the collector edits it.
   const query = params.get('q') ?? ''
+  // The same facets as global search (2.3): typed words become chips, the rest matches names.
+  const attrs = useSearchAttributes(query.trim() !== '')
+  const parsed = useMemo(() => parseQuery(query, traitList(attrs)), [query, attrs])
+  const loading = parsed.needsAttributes && !attrs
 
   const roster = getRosterSet(set.setCode)
   const isDeck = roster?.product === 'starter_deck'
@@ -108,10 +114,10 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   const visible = useMemo(() => {
     const bucket = tabs.find((t) => t.key === active)
     if (!bucket) return []
-    const sorted = sortCards(bucket.cards.filter((c) => matchesSearch(c, query)), sort)
+    const sorted = sortCards(bucket.cards.filter((c) => matchesSearch(c, parsed.text) && matchesFacets(c, parsed, attrs, isOwned)), sort)
     // On a deck page the leader leads, whatever the sort.
     return isDeck ? [...sorted.filter((c) => c.rarity === 'L'), ...sorted.filter((c) => c.rarity !== 'L')] : sorted
-  }, [tabs, active, query, sort, isDeck])
+  }, [tabs, active, parsed, attrs, isOwned, sort, isDeck])
 
   const update = (patch: { rarity?: string; sort?: SortKey; q?: string }) => {
     const next = new URLSearchParams(params)
@@ -152,6 +158,8 @@ function SeededSetDetail({ set }: { set: CardSet }) {
       {intro && <SetIntro intro={intro} />}
 
       <SearchField value={query} onChange={(q) => update({ q })} className="mt-5 tablet:max-w-[560px]" />
+      <FacetChips query={query} onChange={(q) => update({ q })} attrs={attrs} className="mt-2" />
+      {loading && <p className="mt-2 px-1 text-meta text-muted">Loading…</p>}
 
       <SortControls sort={sort} onChange={(s) => update({ sort: s })} count={visible.length} className="mt-3 px-1" />
 
@@ -159,7 +167,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
         <RarityTabs buckets={tabs} active={active} onChange={(key) => update({ rarity: key })} />
       </div>
 
-      {visible.length === 0 ? (
+      {loading ? null : visible.length === 0 ? (
         <p className="px-1 pt-10 text-center text-body text-muted">No cards match.</p>
       ) : (
         <CardGrid className="pt-2">
