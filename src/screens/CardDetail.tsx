@@ -75,6 +75,8 @@ function CardDetail({ card }: { card: Card }) {
                 </>
               )}
             </div>
+            {/* Artist credit where Limitless carries one; a page per illustrator comes with 7.3. */}
+            {attrs?.artist && <p className="mt-1 text-meta text-muted">Illustrated by {attrs.artist}</p>}
           </section>
 
           <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4">
