@@ -1,7 +1,7 @@
-# Piecebook — V1 Movers, change since starred, set completion, playsets (Design addendum — DRAFT)
+# Piecebook — V1 Movers, change since starred, set completion, playsets (Design addendum)
 As of: 5 Sep 2026 SGT  
-Owner: Code (draft for Jib / Design approval; not yet built for merge)  
-For: Design (review), Code (implement once approved)  
+Owner: Code, drafted from rendered mockups; approved by Jib 5 Sep 2026 SGT  
+For: Code (implement), Design (critique)  
 Amends: `V1-COST-AND-PORTFOLIO-UI.md` § Portfolio; `V1-WATCHLIST-AND-CHARTS.md` § Watchlist; `V1-SETS-ROSTER-UI.md` § Sets home; `V1-OWN-AND-SET-DEPTH-UI.md` § Thin Own; `V1-DESIGN-PACK.md` § Collection (“no filters in V1” is lifted for one Playsets view)  
 Growth map: 4.1, 4.2, 4.3, 4.4
 
@@ -34,7 +34,7 @@ On each watched card cell, under the market figure: `−$1.35 since 17 Aug 2026`
 - Card detail, under the Owned row with the Qty stepper: `2 of 4 for a playset`, or **Playset complete** at four or more. Leaders are one per deck and get no line.
 - Collection: the **OWNED** heading gains two text chips on the right, **All** · **Playsets**. Playsets shows only cards held four or more times (leaders excluded) with a muted count line `2 playsets · 4 or more copies`; empty: `No playsets yet. 4 copies of a card make one.` Nothing else about Collection changes.
 
-## Decisions for approval
+## Decisions (approved 5 Sep 2026)
 1. Movers sit between the footnote and Top owned (not above the stats).
 2. Chips read **Week / Month**; each row carries its exact `since` date.
 3. Floor of $0.10 on listed moves.
