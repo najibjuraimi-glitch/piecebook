@@ -32,7 +32,7 @@ Key rows (Cards' verified roster, 4 Sep 2026):
 Code and Design do not invent prices, art or intro copy. The roster wins membership: a set is on Sets home iff it is on the roster.
 
 ## Sets home
-- Subline **EN booster boxes**.
+- Subline **EN sets** (was “EN booster boxes” until EB-04, which has no EN box, joined the roster on 5 Sep 2026).
 - Tiles ordered by `enReleased` ascending.
 - Tile per row: art band (box art when `boxArtUrl` resolves, otherwise type-first big code), `EN set · OP-01`, set name, then:
   - `ready` → `{n} cards in seed` and the sealed price block.

@@ -1,6 +1,6 @@
 {
   "asOf": "2026-09-04",
-  "note": "EN booster boxes for Sets home. US prices from TCGPlayer market/ask hunt 4 Sep 2026 (see sealed-asks-roster-hunt.json). SG only where verified (OP-09, OP-16). Card grids only when cardSeedStatus=ready; every set is ready as of 2026-09-05 (checklists under data/*-en-seed.csv; same-set rows only except PRB reprint sets, which list every print in the box). EB-04 has no EN box: cards ship in OP14-EB04 / OP15-EB04..",
+  "note": "EN booster boxes for Sets home. US prices from TCGPlayer market/ask hunt 4 Sep 2026 (see sealed-asks-roster-hunt.json). SG only where verified (OP-09, OP-16). Card grids only when cardSeedStatus=ready; every set is ready as of 2026-09-05 (checklists under data/*-en-seed.csv; same-set rows only except PRB reprint sets, which list every print in the box). EB-04 has no EN box: cards ship in OP14-EB04 / OP15-EB04.",
   "sets": [
     {
       "setCode": "OP-01",
