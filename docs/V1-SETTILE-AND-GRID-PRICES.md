@@ -8,7 +8,7 @@ Amends: `V1-DESIGN-PACK.md` § Components (SetTile, SealedStrip, CardCell) and �
 Collectors want to see what a sealed EN box goes for in SG, and the seed market figure on a card, without leaving the calm set browser. Show both quietly. Do not become a marketplace: no buy / cart / seller chrome, no % change, no sparklines.
 
 ## Sealed seed (Cards)
-`data/sealed-seed.json`, one row per set × language × product. Fields:
+Sealed prices live on the roster rows of `data/sets-roster-en.json` (`sealed-seed.json` was folded into it on 5 Sep 2026). Fields:
 
 | Field | Meaning |
 | --- | --- |

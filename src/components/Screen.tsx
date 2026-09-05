@@ -55,10 +55,12 @@ interface BackBarProps {
   title?: string
   subline?: string
   fallbackTo: string
+  /** Optional single quiet action on the right (e.g. the watchlist star). */
+  action?: React.ReactNode
 }
 
-/** Detail-screen header: in-app chevron (uses history when available) + optional title. */
-export function BackBar({ title, subline, fallbackTo }: BackBarProps) {
+/** Detail-screen header: in-app chevron (uses history when available) + optional title + one right-side action. */
+export function BackBar({ title, subline, fallbackTo, action }: BackBarProps) {
   const navigate = useNavigate()
   const goBack = () => {
     if (window.history.length > 1) navigate(-1)
@@ -77,11 +79,12 @@ export function BackBar({ title, subline, fallbackTo }: BackBarProps) {
         </svg>
       </button>
       {title && (
-        <div className="min-w-0 pt-1.5">
+        <div className="min-w-0 flex-1 pt-1.5">
           <h1 className="tabular truncate text-title text-ink">{title}</h1>
           {subline && <p className="truncate text-meta text-muted">{subline}</p>}
         </div>
       )}
+      {action && <div className={`${title ? '' : 'ml-auto'} -mr-2 shrink-0`}>{action}</div>}
     </header>
   )
 }

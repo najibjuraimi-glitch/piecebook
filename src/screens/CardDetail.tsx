@@ -1,13 +1,17 @@
 import { useParams } from 'react-router-dom'
 import { getCard, type Card } from '../data/seed'
 import { useCollection } from '../store/collection'
+import { useWatchlist } from '../store/watchlist'
+import { StarButton } from '../components/StarButton'
 import { BackBar, BLEED, Screen } from '../components/Screen'
 import { CardArt } from '../components/CardArt'
 import { RarityChip } from '../components/RarityChip'
 import { CheckIcon } from '../components/CardCell'
 import { DangerGhostButton, PrimaryButton } from '../components/Buttons'
 import { CostBasisPanel } from '../components/CostBasis'
-import { formatDate, formatUsd } from '../lib/format'
+import { PriceChart } from '../components/PriceChart'
+import { usePriceHistory } from '../data/history'
+import { formatDate, formatUsd, pluralPoints } from '../lib/format'
 import { NotFoundScreen } from './NotFound'
 
 export function CardDetailScreen() {
@@ -28,10 +32,15 @@ function CardDetail({ card }: { card: Card }) {
   const owned = isOwned(card.cardNumber)
   const qty = ownedQty(card.cardNumber)
   const cost = costFor(card.cardNumber)
+  const watch = useWatchlist()
+  const history = usePriceHistory(card)
 
   return (
     <Screen>
-      <BackBar fallbackTo={`/sets/${encodeURIComponent(card.setCode)}`} />
+      <BackBar
+        fallbackTo={`/sets/${encodeURIComponent(card.setCode)}`}
+        action={<StarButton subject="card" active={watch.isWatchingCard(card.cardNumber)} onToggle={() => watch.toggleCard(card.cardNumber)} />}
+      />
 
       {/* Stacked on phone/tablet; from desktop up, art on the left (~40%) and meta + actions on the right. */}
       <div className="desktop:grid desktop:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] desktop:items-start desktop:gap-12">
@@ -68,6 +77,16 @@ function CardDetail({ card }: { card: Card }) {
                 </p>
                 {card.asOf && <p className="tabular text-meta text-muted">as of {formatDate(card.asOf)}</p>}
               </div>
+            )}
+
+            {/* History from dated seed points only. Two or more: a quiet line. One: say so, no chart. */}
+            {!history.loading && history.points.length >= 2 && (
+              <PriceChart points={history.points} className="mt-4 border-t border-line pt-4" />
+            )}
+            {!history.loading && history.points.length === 1 && (
+              <p className="tabular mt-3 text-meta text-muted">
+                Tracked since {formatDate(history.points[0].asOf)} · {pluralPoints(1)} so far
+              </p>
             )}
           </section>
 

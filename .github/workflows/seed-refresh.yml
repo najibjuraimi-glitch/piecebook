@@ -1,0 +1,96 @@
+name: Seed refresh
+
+# Records one dated seed price per card per day. Runs the same script a human
+# would (`npm run seed:refresh`), builds the app against the result, and opens
+# or updates a single pull request for review. Nothing lands on main unreviewed.
+#
+# Repo setting required once: Settings → Actions → General → Workflow permissions
+# → "Allow GitHub Actions to create and approve pull requests".
+
+on:
+  schedule:
+    # 02:10 UTC = 10:10 SGT, daily. Limitless is fetched once per set with a
+    # 1.5 s pause between pages (~1 minute in total).
+    - cron: '10 2 * * *'
+  workflow_dispatch:
+    inputs:
+      sets:
+        description: 'Comma-separated set codes (e.g. OP-17,EB-04). Empty = every roster set.'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Report only; write nothing and open no PR.'
+        type: boolean
+        default: false
+
+concurrency:
+  group: seed-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Refresh seed from Limitless
+        id: refresh
+        run: |
+          ARGS=""
+          if [ -n "${{ inputs.sets }}" ]; then ARGS="$ARGS --sets ${{ inputs.sets }}"; fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          node scripts/seed-refresh.mjs $ARGS | tee refresh.log
+          {
+            echo 'log<<EOF'
+            cat refresh.log
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      # PRs opened with GITHUB_TOKEN do not trigger the CI workflow, so the
+      # build and data checks run here, before anything is proposed.
+      - name: Build against the refreshed seed
+        run: npm run build
+
+      - name: Seed data sanity
+        run: node scripts/seed-check.mjs
+
+      - name: Open or update the refresh PR
+        if: ${{ inputs.dry_run != true }}
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/seed-refresh
+          delete-branch: true
+          add-paths: |
+            data/*-en-seed.csv
+            data/price-history/*.csv
+            data/SEED-VERSION.txt
+          commit-message: 'Seed refresh ${{ github.run_started_at }}'
+          title: 'Seed refresh: prices as of today'
+          labels: data, automation
+          body: |
+            Daily `npm run seed:refresh` run from the **Seed refresh** workflow.
+
+            - Card checklists re-pulled from Limitless with the rules in `docs/seed-sources.md`.
+            - Today's prices appended to `data/price-history/*.csv` (one row per card per day).
+            - `npm run build` and `scripts/seed-check.mjs` passed against this data.
+
+            Review the diff, then merge. Re-runs on the same day update this PR in place.
+
+            <details><summary>Script output</summary>
+
+            ```
+            ${{ steps.refresh.outputs.log }}
+            ```
+
+            </details>

@@ -56,3 +56,7 @@ export function todayIso(): string {
 export function pluralCards(n: number): string {
   return `${n} ${n === 1 ? 'card' : 'cards'}`
 }
+
+export function pluralPoints(n: number): string {
+  return `${n} dated ${n === 1 ? 'point' : 'points'}`
+}

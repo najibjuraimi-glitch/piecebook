@@ -140,8 +140,9 @@
       "enReleased": "2024-12-13",
       "cardSeedStatus": "ready",
       "sgAskSgd": 750.0,
+      "sgSource": "bacontcg Carousell clean EN box ask",
       "usMarketUsd": 669.52,
-      "boxArtUrl": "vendored",
+      "boxArtUrl": "/box-art/op09-en-white.jpg",
       "asOf": "2026-09-04",
       "usSource": "https://www.tcgplayer.com/product/563834/one-piece-card-game?Language=English"
     },
@@ -285,6 +286,7 @@
       "enReleased": "2026-06-12",
       "cardSeedStatus": "ready",
       "sgAskSgd": 295.0,
+      "sgSource": "SG clean EN box ask (book 4 Sep 2026)",
       "usMarketUsd": 207.42,
       "boxArtUrl": null,
       "asOf": "2026-09-04",

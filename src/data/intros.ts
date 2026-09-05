@@ -12,6 +12,10 @@ export interface SetIntro {
   /** ISO dates YYYY-MM-DD */
   enReleased: string | null
   jpReleased: string | null
+  /** Japanese title of the JP booster (e.g. 新たなる皇帝), from Bandai's JP product page. */
+  jpName: string | null
+  /** Bandai's EN "card types" count as printed, e.g. "126+1". */
+  cardTypes: string | null
   packsPerBox: number | null
   cardsPerPack: number | null
   introTheme: string | null
@@ -19,7 +23,7 @@ export interface SetIntro {
   asOf: string | null
 }
 
-type Row = Partial<(typeof introSeed)[number]> & { setCode: string }
+type Row = Partial<Record<keyof (typeof introSeed)[number] | 'jpName' | 'cardTypes', unknown>> & { setCode: string }
 
 function text(v: unknown): string | null {
   return typeof v === 'string' && v.trim() !== '' ? v.trim() : null
@@ -37,6 +41,8 @@ function toIntro(row: Row): SetIntro {
     language: text(row.language),
     enReleased: text(row.enReleased),
     jpReleased: text(row.jpReleased),
+    jpName: text(row.jpName),
+    cardTypes: text(row.cardTypes),
     packsPerBox: count(row.packsPerBox),
     cardsPerPack: count(row.cardsPerPack),
     introTheme: text(row.introTheme),
@@ -58,6 +64,11 @@ export function getSetIntro(setCode: string, language = 'EN'): SetIntro | undefi
 export function hasIntroContent(intro: SetIntro | undefined): intro is SetIntro {
   if (!intro) return false
   return Boolean(
-    intro.introTheme || intro.enReleased || intro.jpReleased || intro.packsPerBox || intro.cardsPerPack,
+    intro.introTheme ||
+      intro.enReleased ||
+      intro.jpReleased ||
+      intro.cardTypes ||
+      intro.packsPerBox ||
+      intro.cardsPerPack,
   )
 }

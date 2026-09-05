@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { getSet } from '../data/seed'
 import { rosterSealedProduct, type RosterSet } from '../data/roster'
 import { pluralCards } from '../lib/format'
+import { useWatchlist } from '../store/watchlist'
 import { SealedPrice } from './SealedPrice'
+import { StarIcon } from './StarButton'
 
 /**
  * One roster set. Art band from the roster's box art (type-first when null),
@@ -13,6 +15,7 @@ import { SealedPrice } from './SealedPrice'
 export function SetTile({ set }: { set: RosterSet }) {
   const catalog = set.cardSeedStatus === 'ready' ? getSet(set.setCode) : undefined
   const sealed = rosterSealedProduct(set)
+  const watching = useWatchlist().isWatchingSet(set.setCode)
   return (
     <Link
       to={`/sets/${encodeURIComponent(set.setCode)}`}
@@ -25,7 +28,10 @@ export function SetTile({ set }: { set: RosterSet }) {
           <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">
             {set.language} set<span className="tabular normal-case tracking-normal"> · {set.setCode}</span>
           </p>
-          <ChevronRight />
+          <span className="flex items-center gap-1.5">
+            {watching && <StarIcon filled className="h-4 w-4 text-ink" />}
+            <ChevronRight />
+          </span>
         </div>
         <p className="mt-1.5 text-title text-ink">{set.setName}</p>
         <p className="tabular mt-1 text-meta text-muted">

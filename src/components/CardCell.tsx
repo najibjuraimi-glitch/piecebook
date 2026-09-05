@@ -4,6 +4,7 @@ import type { Card } from '../data/seed'
 import { formatUsd } from '../lib/format'
 import { CardArt } from './CardArt'
 import { RarityChip } from './RarityChip'
+import { StarIcon } from './StarButton'
 
 interface Props {
   card: Card
@@ -11,6 +12,8 @@ interface Props {
   qty?: number
   /** Optional muted "Paid S$120" line under the market figure (Collection only). */
   paid?: string
+  /** Small star on the art when the card is on the watchlist. */
+  watching?: boolean
 }
 
 /** Art grid: 2 / 3 / 4 / 5 columns at phone / tablet / desktop / wide. Shared by Set detail and Collection. */
@@ -22,7 +25,7 @@ export function CardGrid({ children, className = '' }: { children: React.ReactNo
   )
 }
 
-export function CardCell({ card, owned = false, qty = 0, paid }: Props) {
+export function CardCell({ card, owned = false, qty = 0, paid, watching = false }: Props) {
   return (
     <Link
       to={`/cards/${encodeURIComponent(card.cardNumber)}`}
@@ -30,6 +33,14 @@ export function CardCell({ card, owned = false, qty = 0, paid }: Props) {
     >
       <div className="relative">
         <CardArt card={card} />
+        {watching && (
+          <span
+            className="absolute left-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-paper/95 text-ink shadow-sm"
+            aria-label="Watching"
+          >
+            <StarIcon filled className="h-3.5 w-3.5" />
+          </span>
+        )}
         {owned && (
           <span
             className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-ink/90 text-white shadow-sm"

@@ -1,8 +1,12 @@
 import { useMemo } from 'react'
-import { compareCardNumbers, getCard, type Card } from '../data/seed'
+import { Link } from 'react-router-dom'
+import { compareCardNumbers, getCard, getSet, type Card } from '../data/seed'
+import { getRosterSet } from '../data/roster'
 import { useCollection, type CostBasis } from '../store/collection'
+import { useWatchlist } from '../store/watchlist'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { CardCell, CardGrid } from '../components/CardCell'
+import { ChevronRight } from '../components/SetTile'
 import { EmptyState } from '../components/EmptyState'
 import { formatMoney, pluralCards } from '../lib/format'
 
@@ -14,7 +18,8 @@ interface OwnedCard {
 }
 
 export function CollectionScreen() {
-  const { owned } = useCollection()
+  const { owned, isOwned, ownedQty } = useCollection()
+  const watch = useWatchlist()
 
   const items = useMemo<OwnedCard[]>(() => {
     const list: OwnedCard[] = []
@@ -29,20 +34,79 @@ export function CollectionScreen() {
     })
   }, [owned])
 
+  const watchedSets = useMemo(() => watch.sets.map((code) => getRosterSet(code)).filter((s) => s !== undefined), [watch.sets])
+  const watchedCards = useMemo(() => watch.cards.map((n) => getCard(n)).filter((c): c is Card => c !== undefined), [watch.cards])
+  const watching = watchedSets.length > 0 || watchedCards.length > 0
+
   return (
     <Screen>
       <ScreenTitle title="Collection" subline={pluralCards(items.length)} />
+
+      {watching && (
+        <section aria-label="Watching" className="mb-8">
+          <h2 className="px-1 text-meta font-medium uppercase tracking-[0.08em] text-muted">Watching</h2>
+
+          {watchedSets.length > 0 && (
+            <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
+              {watchedSets.map((set) => {
+                const catalog = getSet(set.setCode)
+                return (
+                  <li key={set.setCode}>
+                    <Link
+                      to={`/sets/${encodeURIComponent(set.setCode)}`}
+                      className="flex min-h-[56px] items-center gap-3 px-4 py-3 transition-colors duration-150 ease-out hover:bg-paper/60 active:bg-paper"
+                    >
+                      <span className="tabular w-16 shrink-0 text-body font-semibold text-ink">{set.setCode}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-medium leading-5 text-ink">{set.setName}</span>
+                        <span className="tabular block text-meta text-muted">
+                          {catalog ? `${pluralCards(catalog.cards.length)} in seed` : 'Checklist soon'}
+                        </span>
+                      </span>
+                      <ChevronRight />
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+
+          {watchedCards.length > 0 && (
+            <CardGrid className={watchedSets.length > 0 ? 'mt-4' : 'mt-3'}>
+              {watchedCards.map((card) => (
+                <li key={card.cardNumber}>
+                  <CardCell card={card} owned={isOwned(card.cardNumber)} qty={ownedQty(card.cardNumber)} watching />
+                </li>
+              ))}
+            </CardGrid>
+          )}
+        </section>
+      )}
+
       {items.length === 0 ? (
-        <EmptyState message="No owned cards yet." ctaLabel="Browse sets" ctaTo="/" />
+        watching ? (
+          <p className="px-1 pt-2 text-body text-muted">No owned cards yet.</p>
+        ) : (
+          <EmptyState message="No owned cards yet." ctaLabel="Browse sets" ctaTo="/" />
+        )
       ) : (
-        <CardGrid>
-          {items.map(({ card, qty, cost }) => (
-            <li key={card.cardNumber}>
-              {/* Paid line only when a cost exists; cells without one stay as they are. No nag. */}
-              <CardCell card={card} owned qty={qty} paid={cost ? formatMoney(cost.amount, cost.currency) : undefined} />
-            </li>
-          ))}
-        </CardGrid>
+        <>
+          {watching && <h2 className="mb-3 px-1 text-meta font-medium uppercase tracking-[0.08em] text-muted">Owned</h2>}
+          <CardGrid>
+            {items.map(({ card, qty, cost }) => (
+              <li key={card.cardNumber}>
+                {/* Paid line only when a cost exists; cells without one stay as they are. No nag. */}
+                <CardCell
+                  card={card}
+                  owned
+                  qty={qty}
+                  paid={cost ? formatMoney(cost.amount, cost.currency) : undefined}
+                  watching={watch.isWatchingCard(card.cardNumber)}
+                />
+              </li>
+            ))}
+          </CardGrid>
+        </>
       )}
     </Screen>
   )

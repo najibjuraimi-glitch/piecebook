@@ -1,0 +1,360 @@
+#!/usr/bin/env node
+/**
+ * Refresh the EN card checklists and seed prices from Limitless.
+ *
+ *   npm run seed:refresh                 # every set on the roster
+ *   npm run seed:refresh -- --sets OP-17,EB-04
+ *   npm run seed:refresh -- --dry-run    # report only, write nothing
+ *   npm run seed:refresh -- --as-of 2026-09-05
+ *
+ * Source: https://onepiece.limitlesstcg.com/cards/en/{slug}?display=full&show=all&per-page=all
+ * (one `card-page-main` block per print). Rules, kept identical to the first
+ * seeds so re-runs are diffable (see docs/seed-sources.md):
+ *   - card_number from the CDN filename: OP09-001_EN.webp → OP09-001, _p1_ → p1
+ *   - rarity: official Limitless label (Leader, Common … Secret Rare, Special
+ *     Card, Treasure Rare) → code; style labels (Alternate Art, Manga Art, …)
+ *     inherit the base print's rarity; promo numbers (P-xxx) take P
+ *   - market_usd from the `tr.current` prints row; blank when Limitless shows
+ *     none (never invented); as_of = today for priced rows
+ *   - regular sets keep same-set numbers only; PRB reprint sets keep every
+ *     print in the box; a set with no Limitless page of its own (EB-04) is
+ *     assembled from its numbers on the other sets' pages
+ * Writes data/{code}-en-seed.csv, appends today's priced rows to
+ * data/price-history/{code}.csv (one row per card per day, source=limitless),
+ * upserts data/tcgplayer-products.csv (card → TCGPlayer product id) and repins
+ * the per-file counts in data/SEED-VERSION.txt. Cards' roster JSON is never
+ * edited.
+ */
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
+const DATA = join(ROOT, 'data')
+const HISTORY_DIR = join(DATA, 'price-history')
+const BASE = 'https://onepiece.limitlesstcg.com'
+const UA = 'Mozilla/5.0 (Piecebook seed refresh; github.com/najibjuraimi-glitch/piecebook)'
+const DELAY_MS = 1500
+
+const RARITY = {
+  Leader: 'L',
+  Common: 'C',
+  Uncommon: 'UC',
+  Rare: 'R',
+  'Super Rare': 'SR',
+  'Secret Rare': 'SEC',
+  'Special Card': 'SP',
+  'Treasure Rare': 'TR',
+}
+const REPRINT_SETS = /^PRB-/
+const FIELDS = ['set_code', 'set_name', 'card_number', 'name', 'rarity', 'language', 'image_url', 'market_usd', 'as_of']
+
+// ---------------------------------------------------------------- args
+
+const args = process.argv.slice(2)
+const flag = (name) => {
+  const i = args.indexOf(name)
+  return i >= 0 ? args[i + 1] : undefined
+}
+const DRY = args.includes('--dry-run')
+const NO_HISTORY = args.includes('--no-history')
+const AS_OF = flag('--as-of') ?? new Date().toISOString().slice(0, 10)
+const ONLY = flag('--sets')?.split(',').map((s) => s.trim().toUpperCase())
+
+// ---------------------------------------------------------------- helpers
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+function decode(s) {
+  return s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+}
+const clean = (s) => decode(s.replace(/\s+/g, ' ')).trim()
+
+function csvCell(v) {
+  const s = String(v ?? '')
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+}
+function toCsv(rows, fields) {
+  return [fields.join(','), ...rows.map((r) => fields.map((f) => csvCell(r[f])).join(','))].join('\n') + '\n'
+}
+function parseCsv(text) {
+  const lines = text.split(/\r?\n/).filter((l) => l.length > 0)
+  if (lines.length === 0) return []
+  const split = (line) => {
+    const out = []
+    let cur = ''
+    let q = false
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i]
+      if (q) {
+        if (ch === '"' && line[i + 1] === '"') {
+          cur += '"'
+          i++
+        } else if (ch === '"') q = false
+        else cur += ch
+      } else if (ch === '"') q = true
+      else if (ch === ',') {
+        out.push(cur)
+        cur = ''
+      } else cur += ch
+    }
+    out.push(cur)
+    return out
+  }
+  const header = split(lines[0])
+  return lines.slice(1).map((l) => Object.fromEntries(split(l).map((v, i) => [header[i], v])))
+}
+
+async function fetchText(url) {
+  const res = await fetch(url, { headers: { 'User-Agent': UA } })
+  if (!res.ok) throw new Error(`${res.status} ${url}`)
+  return res.text()
+}
+
+const codeKey = (setCode) => setCode.replace(/-/g, '').toLowerCase()
+const prefixOf = (setCode) => `${setCode.replace(/-/g, '').toUpperCase()}-`
+const isParallel = (n) => /p\d+$/.test(n)
+function numKey(cardNumber) {
+  const m = cardNumber.match(/^([^-]*)-(\d+)(?:p(\d+))?$/)
+  return [m ? m[1] : cardNumber, m ? Number(m[2]) : 0, m && m[3] ? Number(m[3]) : 0]
+}
+function compareNumbers(a, b) {
+  const [as, an, ap] = numKey(a)
+  const [bs, bn, bp] = numKey(b)
+  return as.localeCompare(bs) || an - bn || ap - bp || a.localeCompare(b)
+}
+
+// ---------------------------------------------------------------- Limitless parsing
+
+function parseBlocks(page) {
+  const blocks = page.split('<div class="card-page-main">').slice(1)
+  const out = []
+  for (const b of blocks) {
+    const img = b.match(/card-image">\s*<img[^>]*src="([^"]+)"/)
+    const name = b.match(/card-text-name"><a href="\/cards\/en\/([^"]+)">(.*?)<\/a>/)
+    const label = b.match(/prints-current-details">\s*<span class="text-lg">(.*?)<\/span>\s*<span>(.*?)<\/span>/s)
+    if (!img || !name || !label) continue
+    const m = img[1].match(/\/([A-Z0-9]+-\d+)(?:_p(\d+))?_EN\.webp$/)
+    if (!m) continue
+    const base = m[1]
+    const cardNumber = m[2] ? `${base}p${m[2]}` : base
+    const cur = b.match(/<tr\s+class="current"\s*>(.*?)<\/tr>/s)
+    const usd = cur?.[1].match(/card-price usd"[^>]*>\$([\d,]+\.\d{2})<\/a>/)
+    // The USD link is a TCGPlayer partner URL wrapping the product page; keep the product id for provenance / backfill.
+    const product = cur?.[1].match(/tcgplayer\.com%2Fproduct%2F(\d+)/i) ?? cur?.[1].match(/tcgplayer\.com\/product\/(\d+)/i)
+    out.push({
+      cardNumber,
+      base,
+      name: clean(name[2]),
+      setLabel: clean(label[1]),
+      printLabel: clean(label[2]),
+      imageUrl: img[1],
+      usd: usd ? usd[1].replace(/,/g, '') : null,
+      tcgplayerProductId: product ? product[1] : null,
+    })
+  }
+  return out
+}
+
+// ---------------------------------------------------------------- build
+
+function loadSeededBaseRarities() {
+  const map = new Map()
+  for (const f of readdirSync(DATA).filter((f) => f.endsWith('-en-seed.csv'))) {
+    for (const r of parseCsv(readFileSync(join(DATA, f), 'utf8'))) {
+      if (!isParallel(r.card_number) && r.rarity) map.set(r.card_number, r.rarity)
+    }
+  }
+  return map
+}
+
+function buildRows(set, prints, seededBase) {
+  const own = prefixOf(set.setCode)
+  const pageBase = new Map()
+  for (const p of prints) if (p.cardNumber === p.base) pageBase.set(p.base, RARITY[p.printLabel] ?? null)
+
+  const rows = []
+  const seen = new Set()
+  const unmapped = []
+  const noPrice = []
+  for (const p of prints) {
+    if (seen.has(p.cardNumber)) continue
+    seen.add(p.cardNumber)
+    const rarity =
+      RARITY[p.printLabel] ??
+      (p.cardNumber !== p.base ? pageBase.get(p.base) : null) ??
+      seededBase.get(p.base) ??
+      (p.base.startsWith('P-') ? 'P' : null)
+    if (!rarity) {
+      unmapped.push(`${p.cardNumber} (${p.printLabel || 'no label'})`)
+      continue
+    }
+    if (p.usd === null) noPrice.push(p.cardNumber)
+    rows.push({
+      set_code: set.setCode,
+      set_name: set.setName,
+      card_number: p.cardNumber,
+      name: p.name,
+      rarity,
+      language: 'EN',
+      image_url: p.imageUrl,
+      market_usd: p.usd ?? '',
+      as_of: p.usd ? AS_OF : '',
+    })
+  }
+  rows.sort((a, b) => {
+    const ao = a.card_number.startsWith(own)
+    const bo = b.card_number.startsWith(own)
+    if (ao !== bo) return ao ? -1 : 1
+    return compareNumbers(a.card_number, b.card_number)
+  })
+  return { rows, unmapped, noPrice }
+}
+
+const HISTORY_FIELDS = ['card_number', 'as_of', 'market_usd', 'source']
+
+function appendHistory(setCode, rows) {
+  mkdirSync(HISTORY_DIR, { recursive: true })
+  const file = join(HISTORY_DIR, `${codeKey(setCode)}.csv`)
+  // Rows written before the `source` column existed were all Limitless reads.
+  const raw = existsSync(file) ? parseCsv(readFileSync(file, 'utf8')) : []
+  const existing = raw.map((r) => ({ ...r, source: r.source || 'limitless' }))
+  // One row per card per day; a re-run on the same day replaces that day's value.
+  const byKey = new Map(existing.map((r) => [`${r.card_number}|${r.as_of}`, r]))
+  let changed = raw.some((r) => !r.source) ? 1 : 0 // legacy header: rewrite once with the source column
+  for (const r of rows) {
+    if (r.market_usd === '') continue
+    const key = `${r.card_number}|${r.as_of}`
+    const prev = byKey.get(key)
+    if (prev && prev.market_usd === r.market_usd && prev.source === 'limitless') continue
+    byKey.set(key, { card_number: r.card_number, as_of: r.as_of, market_usd: r.market_usd, source: 'limitless' })
+    changed++
+  }
+  if (changed === 0) return 0
+  const all = [...byKey.values()].sort(
+    (a, b) => compareNumbers(a.card_number, b.card_number) || a.as_of.localeCompare(b.as_of),
+  )
+  if (!DRY) writeFileSync(file, toCsv(all, HISTORY_FIELDS))
+  return changed
+}
+
+/**
+ * data/tcgplayer-products.csv: card_number → TCGPlayer product id, as linked
+ * from each print's current-price row on Limitless. Provenance for the seed
+ * price and the key for `npm run seed:backfill`. Never rendered as a link.
+ */
+function upsertProductIds(rowsBySet) {
+  const file = join(DATA, 'tcgplayer-products.csv')
+  const byCard = new Map((existsSync(file) ? parseCsv(readFileSync(file, 'utf8')) : []).map((r) => [r.card_number, r]))
+  let changed = 0
+  for (const [setCode, prints] of rowsBySet) {
+    for (const p of prints) {
+      if (!p.tcgplayerProductId) continue
+      const prev = byCard.get(p.cardNumber)
+      if (prev && prev.tcgplayer_product_id === p.tcgplayerProductId) continue
+      byCard.set(p.cardNumber, { card_number: p.cardNumber, set_code: setCode, tcgplayer_product_id: p.tcgplayerProductId })
+      changed++
+    }
+  }
+  if (changed === 0) return 0
+  const all = [...byCard.values()].sort((a, b) => a.set_code.localeCompare(b.set_code) || compareNumbers(a.card_number, b.card_number))
+  if (!DRY) writeFileSync(file, toCsv(all, ['card_number', 'set_code', 'tcgplayer_product_id']))
+  return changed
+}
+
+function repinSeedVersion(counts) {
+  const file = join(DATA, 'SEED-VERSION.txt')
+  const lines = readFileSync(file, 'utf8').split('\n')
+  const kept = lines.filter((l) => !/^[a-z]+\d+=\d+$/.test(l) && l.trim() !== '')
+  const order = JSON.parse(readFileSync(join(DATA, 'sets-roster-en.json'), 'utf8')).sets.map((s) => codeKey(s.setCode))
+  const merged = new Map()
+  for (const l of lines) {
+    const m = l.match(/^([a-z]+\d+)=(\d+)$/)
+    if (m) merged.set(m[1], Number(m[2]))
+  }
+  for (const [k, v] of counts) merged.set(k, v)
+  const body = order.filter((k) => merged.has(k)).map((k) => `${k}=${merged.get(k)}`)
+  if (!DRY) writeFileSync(file, [...kept, ...body].join('\n') + '\n')
+}
+
+// ---------------------------------------------------------------- main
+
+const roster = JSON.parse(readFileSync(join(DATA, 'sets-roster-en.json'), 'utf8')).sets
+const targets = roster.filter((s) => !ONLY || ONLY.includes(s.setCode.toUpperCase()))
+if (targets.length === 0) {
+  console.error('No roster sets matched --sets')
+  process.exit(1)
+}
+
+console.log(`Refreshing ${targets.length} set(s), as_of ${AS_OF}${DRY ? ' (dry run)' : ''}`)
+
+const index = await fetchText(`${BASE}/cards/en`)
+const slugs = new Map()
+for (const m of index.matchAll(/href="\/cards\/en\/([a-z]+\d+-[a-z0-9-]+)"/g)) {
+  const code = m[1].split('-')[0].toUpperCase().replace(/^([A-Z]+)(\d+)$/, '$1-$2')
+  if (!slugs.has(code)) slugs.set(code, m[1])
+}
+
+// Sets with their own page are fetched; hosted sets (no page) are assembled
+// from their numbers on every page fetched in this run plus the roster's hosts.
+const hosted = targets.filter((s) => !slugs.has(s.setCode))
+const toFetch = new Map()
+for (const s of targets) if (slugs.has(s.setCode)) toFetch.set(s.setCode, slugs.get(s.setCode))
+if (hosted.length > 0) {
+  // A hosted set's prints live on other sets' pages; fetch every page to find them.
+  for (const s of roster) if (slugs.has(s.setCode)) toFetch.set(s.setCode, slugs.get(s.setCode))
+}
+
+const pages = new Map()
+for (const [code, slug] of toFetch) {
+  process.stdout.write(`  fetch ${code} … `)
+  const html = await fetchText(`${BASE}/cards/en/${slug}?display=full&show=all&per-page=all`)
+  const prints = parseBlocks(html)
+  pages.set(code, prints)
+  console.log(`${prints.length} prints`)
+  await sleep(DELAY_MS)
+}
+
+const seededBase = loadSeededBaseRarities()
+const counts = new Map()
+const printsBySet = new Map()
+let failures = 0
+for (const set of targets) {
+  let prints
+  if (slugs.has(set.setCode)) {
+    prints = pages.get(set.setCode)
+    if (!REPRINT_SETS.test(set.setCode)) prints = prints.filter((p) => p.cardNumber.startsWith(prefixOf(set.setCode)))
+  } else {
+    const own = prefixOf(set.setCode)
+    prints = [...pages.values()].flat().filter((p) => p.cardNumber.startsWith(own))
+  }
+  printsBySet.set(set.setCode, prints)
+  const { rows, unmapped, noPrice } = buildRows(set, prints, seededBase)
+  if (rows.length === 0) {
+    console.log(`  ${set.setCode}: no rows found, skipped`)
+    failures++
+    continue
+  }
+  const file = join(DATA, `${codeKey(set.setCode)}-en-seed.csv`)
+  const before = existsSync(file) ? parseCsv(readFileSync(file, 'utf8')).length : 0
+  if (!DRY) writeFileSync(file, toCsv(rows, FIELDS))
+  const added = NO_HISTORY ? 0 : appendHistory(set.setCode, rows)
+  counts.set(codeKey(set.setCode), rows.length)
+  const notes = []
+  if (before && before !== rows.length) notes.push(`was ${before}`)
+  if (noPrice.length) notes.push(`no price: ${noPrice.join(' ')}`)
+  if (unmapped.length) notes.push(`UNMAPPED: ${unmapped.join(' ')}`)
+  console.log(`  ${set.setCode}: ${rows.length} rows, ${added} history points${notes.length ? ' · ' + notes.join(' · ') : ''}`)
+}
+repinSeedVersion(counts)
+const ids = upsertProductIds(printsBySet)
+if (ids) console.log(`  tcgplayer-products.csv: ${ids} product id(s) added or changed`)
+console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
+process.exit(failures ? 1 : 0)

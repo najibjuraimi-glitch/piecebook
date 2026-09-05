@@ -1,18 +1,364 @@
 [
   {
+    "setCode": "OP-01",
+    "setName": "Romance Dawn",
+    "language": "EN",
+    "enReleased": "2022-12-02",
+    "jpReleased": "2022-07-22",
+    "jpName": "ROMANCE DAWN",
+    "cardTypes": "121",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op01.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op01.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-02",
+    "setName": "Paramount War",
+    "language": "EN",
+    "enReleased": "2023-03-10",
+    "jpReleased": "2022-11-04",
+    "jpName": "頂上決戦",
+    "cardTypes": "121",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op02.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op02.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-03",
+    "setName": "Pillars of Strength",
+    "language": "EN",
+    "enReleased": "2023-06-30",
+    "jpReleased": "2023-02-11",
+    "jpName": "強大な敵",
+    "cardTypes": "127",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op03.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op03.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-04",
+    "setName": "Kingdoms of Intrigue",
+    "language": "EN",
+    "enReleased": "2023-09-22",
+    "jpReleased": "2023-05-27",
+    "jpName": "謀略の王国",
+    "cardTypes": "124+1",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op04.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op04.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-05",
+    "setName": "Awakening of the New Era",
+    "language": "EN",
+    "enReleased": "2023-12-08",
+    "jpReleased": "2023-08-26",
+    "jpName": "新時代の主役",
+    "cardTypes": "126+1",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op05.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op05/"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-06",
+    "setName": "Wings of the Captain",
+    "language": "EN",
+    "enReleased": "2024-03-15",
+    "jpReleased": "2023-11-25",
+    "jpName": "双璧の覇者",
+    "cardTypes": "126+1",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op06.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op06.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "EB-01",
+    "setName": "Memorial Collection",
+    "language": "EN",
+    "enReleased": "2024-05-03",
+    "jpReleased": "2024-01-27",
+    "jpName": "メモリアルコレクション",
+    "cardTypes": "61",
+    "packsPerBox": 24,
+    "cardsPerPack": 12,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/eb01.php",
+      "https://www.onepiece-cardgame.com/products/boosters/eb01.php",
+      "12 cards per pack, 24 packs per box (Bandai EN product page)"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-07",
+    "setName": "500 Years in the Future",
+    "language": "EN",
+    "enReleased": "2024-06-28",
+    "jpReleased": "2024-02-24",
+    "jpName": "500年後の未来",
+    "cardTypes": "126+1",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op07.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op07.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-08",
+    "setName": "Two Legends",
+    "language": "EN",
+    "enReleased": "2024-09-13",
+    "jpReleased": "2024-05-25",
+    "jpName": "二つの伝説",
+    "cardTypes": "126+1",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op08.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op08.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "PRB-01",
+    "setName": "One Piece Card The Best",
+    "language": "EN",
+    "enReleased": "2024-11-08",
+    "jpReleased": "2024-07-27",
+    "jpName": "ONE PIECE CARD THE BEST",
+    "cardTypes": "111+30",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/prb01.php",
+      "https://www.onepiece-cardgame.com/products/boosters/prb01.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
     "setCode": "OP-09",
     "setName": "Emperors in the New World",
     "language": "EN",
     "enReleased": "2024-12-13",
     "jpReleased": "2024-08-31",
+    "jpName": "新たなる皇帝",
+    "cardTypes": "130+1",
     "packsPerBox": 24,
     "cardsPerPack": 12,
     "introTheme": "Second English anniversary set built around the new Four Emperors: Luffy, Shanks, Blackbeard, and Buggy.",
     "sources": [
       "Bandai EN product materials / retail box print",
-      "12 cards per pack, 24 packs per box"
+      "12 cards per pack, 24 packs per box",
+      "https://en.onepiece-cardgame.com/products/boosters/op09.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op09/"
     ],
     "asOf": "2026-09-04"
+  },
+  {
+    "setCode": "OP-10",
+    "setName": "Royal Blood",
+    "language": "EN",
+    "enReleased": "2025-03-21",
+    "jpReleased": "2024-11-30",
+    "jpName": "王族の血統",
+    "cardTypes": "126+1",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op10.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op10.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "EB-02",
+    "setName": "Anime 25th Collection",
+    "language": "EN",
+    "enReleased": "2025-05-09",
+    "jpReleased": "2025-01-25",
+    "jpName": "Anime 25th collection",
+    "cardTypes": "87",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/eb02.php",
+      "https://www.onepiece-cardgame.com/products/boosters/eb02.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-11",
+    "setName": "A Fist of Divine Speed",
+    "language": "EN",
+    "enReleased": "2025-06-06",
+    "jpReleased": "2025-03-01",
+    "jpName": "神速の拳",
+    "cardTypes": "128+1",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op11.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op11.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-12",
+    "setName": "Legacy of the Master",
+    "language": "EN",
+    "enReleased": "2025-08-22",
+    "jpReleased": "2025-05-31",
+    "jpName": "師弟の絆",
+    "cardTypes": "128+1",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op12.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op12.php"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "PRB-02",
+    "setName": "One Piece Card The Best Vol.2",
+    "language": "EN",
+    "enReleased": "2025-10-03",
+    "jpReleased": "2025-07-26",
+    "jpName": "ONE PIECE CARD THE BEST vol.2",
+    "cardTypes": "129+30",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/prb02.php",
+      "https://www.onepiece-cardgame.com/products/boosters/prb02/"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-13",
+    "setName": "Carrying on His Will",
+    "language": "EN",
+    "enReleased": "2025-11-07",
+    "jpReleased": "2025-08-23",
+    "jpName": "受け継がれる意志",
+    "cardTypes": "133+1",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op13.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op13/"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "EB-04",
+    "setName": "Egghead Crisis",
+    "language": "EN",
+    "enReleased": "2026-01-16",
+    "jpReleased": "2026-01-31",
+    "jpName": "EGGHEAD CRISIS",
+    "cardTypes": null,
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://www.onepiece-cardgame.com/products/boosters/eb04/"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-14",
+    "setName": "The Azure Sea's Seven",
+    "language": "EN",
+    "enReleased": "2026-01-16",
+    "jpReleased": "2025-11-22",
+    "jpName": "蒼海の七傑",
+    "cardTypes": "163+2",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op14-eb04.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op14/",
+      "EN card types count is for the combined OP14-EB04 / OP15-EB04 product"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "EB-03",
+    "setName": "One Piece Heroines Edition",
+    "language": "EN",
+    "enReleased": "2026-02-20",
+    "jpReleased": "2025-10-25",
+    "jpName": "ONE PIECE Heroines Edition",
+    "cardTypes": "71+4",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/eb03.php",
+      "https://www.onepiece-cardgame.com/products/boosters/eb03/"
+    ],
+    "asOf": "2026-09-05"
+  },
+  {
+    "setCode": "OP-15",
+    "setName": "Adventure on Kami's Island",
+    "language": "EN",
+    "enReleased": "2026-04-03",
+    "jpReleased": "2026-02-28",
+    "jpName": "神の島の冒険",
+    "cardTypes": "159+1",
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/boosters/op15-eb04.php",
+      "https://www.onepiece-cardgame.com/products/boosters/op15/",
+      "EN card types count is for the combined OP14-EB04 / OP15-EB04 product"
+    ],
+    "asOf": "2026-09-05"
   },
   {
     "setCode": "OP-16",
@@ -20,13 +366,32 @@
     "language": "EN",
     "enReleased": "2026-06-12",
     "jpReleased": "2026-05-30",
+    "jpName": "決戦の刻",
+    "cardTypes": "126+1",
     "packsPerBox": 24,
     "cardsPerPack": 12,
     "introTheme": "Paramount War set covering Impel Down and Marineford, with Admiral chase arts including Manga rares.",
     "sources": [
       "https://en.onepiece-cardgame.com/products/op16.html",
-      "12 cards per pack, 24 packs per box"
+      "12 cards per pack, 24 packs per box",
+      "https://www.onepiece-cardgame.com/products/boosters/op16/"
     ],
     "asOf": "2026-09-04"
+  },
+  {
+    "setCode": "OP-17",
+    "setName": "The World's Strongest Warriors",
+    "language": "EN",
+    "enReleased": "2026-08-28",
+    "jpReleased": "2026-08-22",
+    "jpName": "世界最強の戦士",
+    "cardTypes": null,
+    "packsPerBox": null,
+    "cardsPerPack": null,
+    "introTheme": null,
+    "sources": [
+      "https://www.onepiece-cardgame.com/products/boosters/op17/"
+    ],
+    "asOf": "2026-09-05"
   }
 ]

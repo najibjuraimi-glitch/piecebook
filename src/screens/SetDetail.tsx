@@ -2,10 +2,12 @@ import { useMemo, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { ALL_TAB, getSet, rarityTabs, type CardSet } from '../data/seed'
 import { getRosterSet, rosterSealedProduct, type RosterSet } from '../data/roster'
-import { getSealedGuidance, getSealedProduct } from '../data/sealed'
+import { getSealedGuidance } from '../data/sealed'
 import { getSetIntro, hasIntroContent, type SetIntro as SetIntroData } from '../data/intros'
 import { DEFAULT_SORT, matchesSearch, parseSort, sortCards, type SortKey } from '../lib/query'
 import { useCollection } from '../store/collection'
+import { useWatchlist } from '../store/watchlist'
+import { StarButton } from '../components/StarButton'
 import { BackBar, BLEED, Screen } from '../components/Screen'
 import { SealedStrip } from '../components/SealedStrip'
 import { SetIntro } from '../components/SetIntro'
@@ -41,6 +43,8 @@ function introFor(roster: RosterSet | undefined, setCode: string, language: stri
     language: roster.language,
     enReleased: roster.enReleased,
     jpReleased: null,
+    jpName: null,
+    cardTypes: null,
     packsPerBox: null,
     cardsPerPack: null,
     introTheme: null,
@@ -53,10 +57,16 @@ function PendingSetDetail({ roster }: { roster: RosterSet }) {
   const guidance = getSealedGuidance(roster.setCode)
   const product = rosterSealedProduct(roster)
   const shownIntro = introFor(roster, roster.setCode, roster.language)
+  const watch = useWatchlist()
 
   return (
     <Screen>
-      <BackBar title={roster.setCode} subline={roster.setName} fallbackTo="/" />
+      <BackBar
+        title={roster.setCode}
+        subline={roster.setName}
+        fallbackTo="/"
+        action={<StarButton subject="set" active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}
+      />
 
       <SealedStrip guidance={guidance} product={product} />
 
@@ -78,6 +88,7 @@ function PendingSetDetail({ roster }: { roster: RosterSet }) {
 function SeededSetDetail({ set }: { set: CardSet }) {
   const [params, setParams] = useSearchParams()
   const { isOwned, ownedQty } = useCollection()
+  const watch = useWatchlist()
   const [query, setQuery] = useState('')
 
   const tabs = useMemo(() => rarityTabs(set.cards), [set])
@@ -109,14 +120,18 @@ function SeededSetDetail({ set }: { set: CardSet }) {
 
   const language = set.cards[0]?.language ?? 'EN'
   const roster = getRosterSet(set.setCode)
-  const sealed = getSealedGuidance(set.setCode)
-  // Box price: Cards' sealed-seed row when present, else the roster's US market row.
-  const sealedProduct = getSealedProduct(set.setCode, language) ?? (roster ? rosterSealedProduct(roster) : undefined)
+  const sealed = getSealedGuidance(set.setCode, language)
+  const sealedProduct = roster ? rosterSealedProduct(roster) : undefined
   const intro = introFor(roster, set.setCode, language)
 
   return (
     <Screen>
-      <BackBar title={set.setCode} subline={set.setName} fallbackTo="/" />
+      <BackBar
+        title={set.setCode}
+        subline={set.setName}
+        fallbackTo="/"
+        action={<StarButton subject="set" active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
+      />
 
       <SealedStrip guidance={sealed} product={sealedProduct} />
 
@@ -136,7 +151,12 @@ function SeededSetDetail({ set }: { set: CardSet }) {
         <CardGrid className="pt-2">
           {visible.map((card) => (
             <li key={card.cardNumber}>
-              <CardCell card={card} owned={isOwned(card.cardNumber)} qty={ownedQty(card.cardNumber)} />
+              <CardCell
+                card={card}
+                owned={isOwned(card.cardNumber)}
+                qty={ownedQty(card.cardNumber)}
+                watching={watch.isWatchingCard(card.cardNumber)}
+              />
             </li>
           ))}
         </CardGrid>
