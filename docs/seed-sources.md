@@ -1,6 +1,6 @@
 # One Piece TCG EN seed sources (all 23 roster sets)
 
-OP-09 and OP-16 generated 2026-09-04 (Asia/Singapore), `as_of` `2026-09-04`. The other 20 sets generated 2026-09-05 with the same method against the same source, `as_of` `2026-09-05`. OP-09 / OP-16 rows were left exactly as first seeded (the 2026-09-05 re-scrape reproduced their 151 / 149 card numbers, names, rarities and images identically; only live prices had moved).
+OP-09 and OP-16 first generated 2026-09-04 (Asia/Singapore); the other sets 2026-09-05 with the same method against the same source. On 2026-09-05 `npm run seed:refresh` (see Method 8) re-pulled every set: 20 of 23 CSVs came back byte-identical, OP-09 / OP-16 moved to `as_of` `2026-09-05` prices (their 2026-09-04 prices are kept in `data/price-history/`), and EB-04 gained `EB04-054p1`.
 
 ## Output files
 
@@ -16,21 +16,21 @@ OP-09 and OP-16 generated 2026-09-04 (Asia/Singapore), `as_of` `2026-09-04`. The
 | `op07-en-seed.csv` | OP-07 | 500 Years in the Future | 144 | 119 | 25 | 144 | 2026-09-05 |
 | `op08-en-seed.csv` | OP-08 | Two Legends | 144 | 119 | 25 | 144 | 2026-09-05 |
 | `prb01-en-seed.csv` | PRB-01 | One Piece Card The Best | 319 | 1 own + 103 reprint bases | 1 own + 214 reprint parallels | 318 | 2026-09-05 |
-| `op09-en-seed.csv` | OP-09 | Emperors in the New World | 151 | 119 | 32 | 151 | 2026-09-04 |
+| `op09-en-seed.csv` | OP-09 | Emperors in the New World | 151 | 119 | 32 | 151 | 2026-09-05 |
 | `op10-en-seed.csv` | OP-10 | Royal Blood | 144 | 119 | 25 | 144 | 2026-09-05 |
 | `eb02-en-seed.csv` | EB-02 | Anime 25th Collection | 79 | 61 | 18 | 79 | 2026-09-05 |
 | `op11-en-seed.csv` | OP-11 | A Fist of Divine Speed | 147 | 119 | 28 | 147 | 2026-09-05 |
 | `op12-en-seed.csv` | OP-12 | Legacy of the Master | 146 | 119 | 27 | 146 | 2026-09-05 |
 | `prb02-en-seed.csv` | PRB-02 | One Piece Card The Best Vol.2 | 316 | 18 own + 140 reprint bases | 18 own + 140 reprint parallels | 316 | 2026-09-05 |
 | `op13-en-seed.csv` | OP-13 | Carrying on His Will | 165 | 120 | 45 | 165 | 2026-09-05 |
-| `eb04-en-seed.csv` | EB-04 | Egghead Crisis | 83 | 61 | 22 | 82 | 2026-09-05 |
+| `eb04-en-seed.csv` | EB-04 | Egghead Crisis | 84 | 61 | 23 | 83 | 2026-09-05 |
 | `op14-en-seed.csv` | OP-14 | The Azure Sea's Seven | 149 | 120 | 29 | 149 | 2026-09-05 |
 | `eb03-en-seed.csv` | EB-03 | One Piece Heroines Edition | 90 | 62 | 28 | 90 | 2026-09-05 |
 | `op15-en-seed.csv` | OP-15 | Adventure on Kami's Island | 146 | 119 | 27 | 146 | 2026-09-05 |
-| `op16-en-seed.csv` | OP-16 | The Time of Battle | 149 | 119 | 30 | 149 | 2026-09-04 |
+| `op16-en-seed.csv` | OP-16 | The Time of Battle | 149 | 119 | 30 | 149 | 2026-09-05 |
 | `op17-en-seed.csv` | OP-17 | The World's Strongest Warriors | 158 | 119 | 39 | 157 | 2026-09-05 |
 
-3,503 rows in total. Row counts per file are also pinned in `data/SEED-VERSION.txt`.
+3,504 rows in total. Row counts per file are also pinned in `data/SEED-VERSION.txt`.
 
 CSV header (exact): `set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of`
 
@@ -94,6 +94,10 @@ All 22 sets: `https://onepiece.limitlesstcg.com/cards/en/{slug}?display=full&sho
 - **Other cross-set exclusions** (SP / TR chase pulls and promos filed on a set page): OP-03 4, OP-04 5, OP-05 7, OP-06 7, OP-07 7, OP-08 7, OP-10 7, EB-02 26, OP-11 9, OP-12 9, OP-13 10, OP-14 10 non-EB-04, OP-15 9 non-EB-04, OP-17 11. OP-01, OP-02, EB-01, EB-03 had none.
 - **Unpriced prints:** `OP17-118p2`, `OP05-115p1` (PRB-01 reprint parallel) and `EB04-061p3` had no USD on Limitless at scrape time; `market_usd` / `as_of` left blank (the app shows “No seed price”).
 
+## Set intros (`data/set-intros.json`)
+
+One row per roster set. `enReleased` from Bandai's EN product page (`https://en.onepiece-cardgame.com/products/boosters/{code}.php`; OP-14 / OP-15 use `op14-eb04.php` / `op15-eb04.php`, OP-16 `products/op16.html`; the OP-17 EN page was an empty stub so its date is the roster's, cross-checked on the Limitless index). `jpReleased` and `jpName` from Bandai's JP product page (`https://www.onepiece-cardgame.com/products/boosters/{code}.php` or `/{code}/`), fields 発売日 and 商品名 with the product-type prefix and 【code】 suffix stripped. `cardTypes` is Bandai's EN "card types" figure as printed (`126+1`); for OP-14 / OP-15 it counts the combined OP14-EB04 / OP15-EB04 product. `packsPerBox` / `cardsPerPack` only where Bandai states them (EB-01: 12 cards, 24 packs; OP-09 / OP-16 from the retail box print). `introTheme` is Cards' copy and stays null until they write one. Every EN date matched the roster's `enReleased`; OP-09 / OP-16 JP dates matched the previously hand-written guidance.
+
 ## Method
 
 1. Verified EN set names (Bandai + Limitless + OPTCG allSets).  
@@ -103,6 +107,7 @@ All 22 sets: `https://onepiece.limitlesstcg.com/cards/en/{slug}?display=full&sho
 5. Wrote CSVs under `/workspace/op-collector/` plus this sources log and `README-gaps.md`.
 6. (2026-09-05, remaining 20 sets) Re-ran steps 2–4 with one parser for every set, validating it first by regenerating OP-09 / OP-16 and diffing against the committed CSVs (identical card numbers, names, rarities and image URLs). Kept same-set rows only, wrote `data/{code}-en-seed.csv`, flipped each roster row to `cardSeedStatus: ready`.
 7. (2026-09-05, second pass) Rebuilt `prb01` / `prb02` with every print on the page (rarity chain: official label → base rarity on the same page → base rarity from the base set's CSV → `P` for promo numbers) and assembled `eb04` from the EB04-numbered rows on the OP-14 / OP-15 / OP-17 pages. Added the EB-04 roster row.
+8. (2026-09-05) Ported the scrape to `scripts/seed-refresh.mjs` (`npm run seed:refresh`, Node, no dependencies) with the same rules; a hosted set such as EB-04 is now assembled from every fetched page, which is how `EB04-054p1` (filed on the OP-16 page) was found. Each run appends one row per priced card per day to `data/price-history/{code}.csv` (`card_number,as_of,market_usd`; same-day re-runs replace that day's value) and repins `data/SEED-VERSION.txt`. It never edits Cards' roster.
 
 ## EN sets roster (`data/sets-roster-en.json`)
 
@@ -110,7 +115,7 @@ One object `{ asOf, note, sets }`, file-level `asOf` 2026-09-04. 23 EN sets in `
 
 - `cardSeedStatus` is `ready` on all 23 rows as of 2026-09-05 (one CSV per set, table above; EB-04 added by Code with null prices, see Gaps). `boxArtUrl` is still `null` everywhere except OP-09; no art was added.
 - **Sealed box prices (Cards' 4 Sep 2026 hunt).** Every one of the 22 rows carries `usMarketUsd` (TCGPlayer market / identifiable Unopened English booster box ask, read 4 Sep 2026) with a per-row `asOf` of `2026-09-04` and the TCGPlayer product URL in `usSource` (e.g. OP-01 → product 557280, OP-17 → product 704752). `sgAskSgd` is set only where an SG ask was verified: OP-09 S$750 and OP-16 S$295; every other row keeps `sgAskSgd: null` and the UI never derives an SGD figure from USD. EB-02 carries a `priceNote` explaining which listing was used. Source URLs are provenance only; the app does not render them as links.
-- OP-09 / OP-16 prices repeat `data/sealed-seed.json` (SG ask S$750 / S$295, TCGPlayer US market $669.52 / $207.42). OP-09 `boxArtUrl` is `vendored` → `/box-art/op09-en-white.jpg`; OP-16 stays `null`.
+- OP-09 / OP-16 SG asks (S$750 / S$295) and their `sgSource` now live on the roster rows; `data/sealed-seed.json` was removed on 5 Sep 2026 so the roster is the single source of sealed prices. OP-09 `boxArtUrl` is the local path `/box-art/op09-en-white.jpg`; every other row is `null`. **Box art is blocked on cleared images**: adding a front needs a closed EN box photo on white cleared by Cards / Design and vendored under `public/box-art/{code}-en-white.jpg` (the roster value `vendored` resolves to that path); nothing is scraped or hotlinked.
 - EN set names and EN release dates (`enReleased`) were cross-checked across four independent release calendars that agree on every row:
   - https://samuraiswordtokyo.com/blogs/news/one-piece-card-sets-in-order
   - https://www.trackalacker.com/articles/news/one-piece-card-game-full-product-list

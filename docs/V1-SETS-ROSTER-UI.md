@@ -43,7 +43,7 @@ Code and Design do not invent prices, art or intro copy. The roster wins members
   - both `null` → no price line.
 
 ## Set detail
-- **Seeded checklist (all 23 sets)** — unchanged depth from PR #5: SealedStrip (guidance where Cards wrote it, box price from `sealed-seed.json` or the roster), SetIntro where Cards wrote one else the roster's `EN · D MMM YYYY` line, SearchField, sort, All-first RarityTabs, grid.
+- **Seeded checklist (all 23 sets)** — unchanged depth from PR #5: SealedStrip (EN / JP box lines derived from the intro dates and JP title, box price from the roster), SetIntro (EN / JP dates, JP title, Bandai card-types count; theme line where Cards wrote one), SearchField, sort, All-first RarityTabs, grid.
 - **Pending checklist** — BackBar (code + name); SealedStrip only if it has something to say (guidance or a price); SetIntro if Cards wrote one, else an optional `EN · D MMM YYYY` line from the roster only; **no search, sort or rarity tabs**; then one empty panel:
   - **Checklist not seeded yet**
   - “Card list for this set is coming. Sealed notes above still apply.”

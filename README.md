@@ -24,8 +24,8 @@ npm run preview   # serve the production build locally
 | --- | --- |
 | `/` | Sets — every EN set on the roster, oldest EN release first |
 | `/sets/:setCode` | Set detail — every roster set is seeded: sealed strip (box price), set intro or EN date, search, sort (`?sort=`), rarity tabs with All first (`?rarity=`), card grid (e.g. `/sets/OP-09?sort=price-desc`). A roster set whose row is flipped back to `pending` shows sealed notes / EN date, then “Checklist not seeded yet”. Unknown code: “Set not found” |
-| `/cards/:cardNumber` | Card detail — Mark owned / Remove from collection; once owned, Add cost basis / Edit cost / Clear cost (e.g. `/cards/OP09-001p1`) |
-| `/collection` | Owned cards, with a muted `Paid …` line where a cost exists |
+| `/cards/:cardNumber` | Card detail — star to watch; Market (seed) with a price-history line once two or more dated points exist; Mark owned / Remove from collection; once owned, Add cost basis / Edit cost / Clear cost (e.g. `/cards/OP09-001p1`) |
+| `/collection` | Watching (starred sets and cards), then owned cards with a muted `Paid …` line where a cost exists |
 | `/portfolio` | Market value, Cost basis, Unrealized P/L from seed prices; Top owned |
 
 ## Data
@@ -33,16 +33,18 @@ npm run preview   # serve the production build locally
 - **Catalog** is the read-only seed under `data/`: one `{code}-en-seed.csv` per roster set (23 files, 3,503 rows; see `docs/seed-sources.md`). Every `*-en-seed.csv` is picked up by `import.meta.glob`, bundled into its own `seed` chunk at build time and parsed in the browser. Regular sets load same-set numbered rows only (a row's `card_number` must carry its `set_code`, e.g. `OP17-001` under `OP-17`); PRB premium boosters are reprint products and list every print in the box, so a card has one home set but can also appear in a PRB checklist. See `data/SEED-VERSION.txt`. Adding a set is a CSV drop-in plus flipping its roster row to `ready`.
 - **Prices** are the seed `market_usd` values with their `as_of` date. There is no live price feed; every price in the UI is labelled as seed. Card cells show the bare `market_usd` muted under the name; card detail carries the `as_of` date.
 - **Parallels** are detected from the card number (`OP09-001p1`) and shown in their own Parallels tab; the All tab includes them too.
-- **Set intros** come from `data/set-intros.json` (Cards): a one-line theme, EN/JP release dates and packs-per-box / cards-per-pack. Missing fields are simply omitted; nothing is inferred.
+- **Set intros** come from `data/set-intros.json`: for every set the EN release date (Bandai EN product page), JP release date and Japanese title (Bandai JP product page), Bandai's EN card-types count, and packs-per-box / cards-per-pack where Bandai states them; the one-line theme is Cards' copy (OP-09, OP-16 so far). Missing fields are simply omitted; nothing is inferred.
 - **Search and sort** on Set detail run in the browser over the seed. Search matches name or number (`004`, `op09-004`, `OP09-004`). Sort is Name A to Z (default), Name Z to A, Price high to low, Price low to high; cards without a seed price sort last. Sort lives in the URL as `?sort=`.
-- **Sealed guidance** is not yet a CSV column, so the short EN/JP notes per set live in `src/data/sealed.ts`.
-- **Sealed prices** come from `data/sealed-seed.json` (Cards): per set, the EN booster box SG ask in SGD, the TCGPlayer US market in USD, the `asOf` date and a `boxArtUrl` for the closed box front shown on the set tile. Box art is vendored under `public/box-art/` and referenced by local path, not hotlinked. Set tiles fall back to type-first (big OP code) when the URL is missing or the image fails to load.
+- **Sealed guidance** (the EN / JP box lines on set detail) is derived in `src/data/sealed.ts` from the intro dates and JP title: `Box feeds this set · 13 Dec 2024` / `Box (新たなる皇帝) · 31 Aug 2024`. EB-04 overrides the EN line because it has no EN box.
+- **Sealed prices** live on the roster (below): per set, the EN booster box SG ask in SGD with its `sgSource`, the TCGPlayer US market in USD with its `usSource`, the `asOf` date and a `boxArtUrl` for the closed box front shown on the set tile. Box art is vendored under `public/box-art/` and referenced by local path, not hotlinked; the roster value `vendored` resolves to `/box-art/{code}-en-white.jpg`. Set tiles fall back to type-first (big OP code) when there is no art or the image fails to load. Only OP-09 has cleared art so far; adding more needs a closed-box front cleared by Cards / Design, not a scrape.
 - **Sets roster** is `data/sets-roster-en.json` (Cards): `{ asOf, note, sets }` with the 23 EN sets (OP-01…OP-17, EB-01…04, PRB-01…02; EB-04 has no EN box and carries null prices), each with `product: booster_box`, EN release date, `cardSeedStatus` (`ready` / `pending`), the EN booster box TCGPlayer US market price with its `asOf` date and `usSource` URL (all 22 sets), an SG ask only where verified (OP-09, OP-16), and optional box art. The roster decides which tiles appear on Sets home and in what order; the card CSVs only decide whether a set has a browsable checklist. `boxArtUrl: "vendored"` means “use the front already under `public/box-art/`”; anything that is not a local path is treated as no art.
+- **Price history** is `data/price-history/{code}.csv` (`card_number,as_of,market_usd`, one row per card per day). It is loaded lazily per set only on card detail and drawn as a quiet line once a card has two or more dated points. Points come from `npm run seed:refresh` runs; there is still no live feed.
+- **Refreshing the seed**: `npm run seed:refresh` (Node 18+, no dependencies) re-pulls every roster set from Limitless with the rules in `docs/seed-sources.md`, rewrites the CSVs, appends today's prices to the history and repins `data/SEED-VERSION.txt`. `--sets OP-17,EB-04`, `--dry-run`, `--as-of YYYY-MM-DD`, `--no-history`. It never edits Cards' roster JSON. Parsing all 23 CSVs at startup costs ~4 ms; the seed chunk is ~55 kB gzipped.
 - **Portfolio math** runs in the browser over your owned cards: market value is Σ seed `market_usd × qty` (USD); cost basis is summed per currency (SGD, USD) and never converted; unrealized P/L is only computed for cards with a USD cost, against the USD seed market. Nothing is live.
 
 ## Your data is local-only
 
-Owned flags, quantities and cost basis are stored in your browser's `localStorage` under the key `piecebook.v1`, one entry per owned card: `{ qty, ownedAt, cost?: { amount, currency: 'SGD' | 'USD', paidOn, note? } }`. A cost can only exist on an owned card; removing the card from your collection clears it. There are no accounts and nothing is sent anywhere. Clearing site data for the app wipes your collection.
+Owned flags, quantities and cost basis are stored in your browser's `localStorage` under the key `piecebook.v1`, one entry per owned card: `{ qty, ownedAt, cost?: { amount, currency: 'SGD' | 'USD', paidOn, note? } }`. A cost can only exist on an owned card; removing the card from your collection clears it. The watchlist (starred cards and sets) is stored separately under `piecebook.watchlist.v1`. There are no accounts and nothing is sent anywhere. Clearing site data for the app wipes both.
 
 ## Deploying
 
@@ -50,4 +52,4 @@ The build in `dist/` is a static single-page app. Configure your host to serve `
 
 ## Not in V1
 
-Live prices, charts, alerts, FX conversion, global search across sets, scanning, accounts or sync, marketplace or affiliate links, dark mode.
+Live prices, alerts, FX conversion, global search across sets, scanning, accounts or sync, marketplace or affiliate links, dark mode.
