@@ -19,12 +19,14 @@ Sets home should show every EN booster set a collector might own, not only the t
 | `enReleased` | ISO EN release date; drives tile order |
 | `cardSeedStatus` | `ready` when the card CSV is in the repo, `pending` otherwise |
 | `sgAskSgd`, `usMarketUsd` | EN booster box SG ask / US market, or `null` |
+| `asOf`, `usSource`, `priceNote` | Per-row price date, TCGPlayer product URL the US figure was read from (provenance, not rendered), optional caveat |
 | `boxArtUrl` | Local path under `public/box-art/`, or `null`. Cards writes `vendored` for a set whose front is already in the repo (OP-09 → `/box-art/op09-en-white.jpg`). Anything else is treated as no art; nothing is hotlinked |
 
-Key rows:
-- **Most sets**: `pending`, prices `null`, `boxArtUrl` `null`.
+Key rows (Cards' verified roster, 4 Sep 2026):
+- **All 22 sets**: `usMarketUsd` filled, `asOf` `2026-09-04`, `usSource` set.
 - **OP-09** `ready`: `sgAskSgd` 750, `usMarketUsd` 669.52, art vendored.
 - **OP-16** `ready`: `sgAskSgd` 295, `usMarketUsd` 207.42, `boxArtUrl` `null`.
+- **Every other set**: `pending`, `sgAskSgd` `null` (no verified SG ask; never derived from USD), `boxArtUrl` `null`.
 
 Code and Design do not invent prices, art or intro copy. The roster wins membership: a set is on Sets home iff it is on the roster.
 
@@ -32,8 +34,12 @@ Code and Design do not invent prices, art or intro copy. The roster wins members
 - Subline **EN booster boxes**.
 - Tiles ordered by `enReleased` ascending.
 - Tile per row: art band (box art when `boxArtUrl` resolves, otherwise type-first big code), `EN set · OP-01`, set name, then:
-  - `ready` → `{n} cards in seed` and the sealed price block when a price exists.
-  - `pending` → **Checklist soon**; price block omitted when prices are `null`.
+  - `ready` → `{n} cards in seed` and the sealed price block.
+  - `pending` → **Checklist soon**, then the sealed price block. Omitted only when both prices are `null`.
+- Price block:
+  - `sgAskSgd` present → primary `Box · S$750`, muted secondary `US $669.52 · as of 4 Sep 2026`.
+  - `usMarketUsd` only → one quiet line `Box · US $1,468.78 · as of 4 Sep 2026`. No SGD is invented.
+  - both `null` → no price line.
 
 ## Set detail
 - **Seeded checklist (OP-09, OP-16)** — unchanged depth from PR #5: SealedStrip, SetIntro, SearchField, sort, All-first RarityTabs, grid.
