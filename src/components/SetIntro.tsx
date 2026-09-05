@@ -12,8 +12,8 @@ interface Part {
 }
 
 /**
- * Short "About this set" block under the SealedStrip: Cards' one-line theme,
- * then EN / JP release dates, then Bandai's card-type count and pack structure.
+ * Short "About this set" block under the BoxCard: Cards' one-line theme,
+ * then EN / JP release dates, then Bandai's card-type count.
  * Every line is optional and disappears when the seed does not carry it;
  * nothing is inferred.
  */
@@ -22,10 +22,9 @@ export function SetIntro({ intro }: Props) {
   if (intro.enReleased) dates.push({ text: 'EN', strong: true }, { text: formatDate(intro.enReleased) })
   if (intro.jpReleased) dates.push({ text: 'JP', strong: true }, { text: formatDate(intro.jpReleased) })
 
+  // Packs per box and cards per pack are box facts and live on the BoxCard above.
   const packs: Part[] = []
   if (intro.cardTypes) packs.push({ text: `${intro.cardTypes} card types` })
-  if (intro.packsPerBox) packs.push({ text: `${intro.packsPerBox} packs` })
-  if (intro.cardsPerPack) packs.push({ text: `${intro.cardsPerPack} cards per pack` })
 
   return (
     <section aria-label="About this set" className="mt-5 px-1">

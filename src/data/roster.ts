@@ -135,7 +135,8 @@ export function rosterSealedProduct(set: RosterSet): SealedProduct | undefined {
     language: set.language,
     product: set.product,
     boxArtUrl: set.boxArtUrl,
-    sgAskSgd: set.sgAskSgd,
+    // The SG ask has no automated source and is not shown (3.2); the roster keeps the field as provenance.
+    sgAskSgd: null,
     sgSource: set.sgSource,
     usMarketUsd,
     usSource: set.usSource,

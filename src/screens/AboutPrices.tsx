@@ -45,10 +45,10 @@ export function AboutPricesScreen() {
 
         <Section title="Booster box prices">
           <p>
-            The US figure for every English booster box is TCGPlayer's market price, pulled once a day by the same refresh
-            that prices the cards, from TCGCSV, a public daily mirror of TCGPlayer's own data. It carries the date it was
-            read. Where a clean, verified Singapore asking price was found, it is shown too, with its own date. A set with
-            no English box, such as EB-04, shows none.
+            The price of every English booster box is TCGPlayer's market price, pulled once a day by the same refresh that
+            prices the cards, from TCGCSV, a public daily mirror of TCGPlayer's own data. It carries the date it was read,
+            and once two days exist, how far it has moved. The box image is TCGPlayer's official product render. A set with
+            no English box, such as EB-04, shows neither.
           </p>
         </Section>
 
