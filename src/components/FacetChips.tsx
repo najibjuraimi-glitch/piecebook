@@ -61,8 +61,13 @@ export function FacetChips({ query, onChange, attrs, className = '' }: Props) {
   const traits = useMemo(() => traitList(attrs), [attrs])
   const parsed = useMemo(() => parseQuery(query, traits), [query, traits])
   const [open, setOpen] = useState<Opener | null>(null)
+  const empty = !query.trim()
+  // A cleared field folds any open row away, so the next search starts on one line.
+  useEffect(() => {
+    if (empty) setOpen(null)
+  }, [empty])
 
-  if (!query.trim()) return null
+  if (empty) return null
 
   const lit: Facet[] = []
   for (const h of parsed.hits) if (!lit.some((f) => sameFacet(f, h.facet))) lit.push(h.facet)
