@@ -164,6 +164,40 @@ if (existsSync(historyDir)) {
   }
 }
 
+// Box prices: daily TCGplayer market via TCGCSV (decision 3.1), one row per set per day.
+const BOX_STALE_DAYS = 3
+const boxHistory = join(DATA, 'box-price-history.csv')
+if (existsSync(boxHistory)) {
+  const { header, rows } = parseCsv(readFileSync(boxHistory, 'utf8'))
+  if (header !== 'set_code,as_of,market_usd,low_usd,source') fail(`box-price-history.csv: header "${header}"`)
+  const seen = new Set()
+  let newest = ''
+  rows.forEach((r, i) => {
+    const [setCode, asOf, market, low, source] = r
+    const key = `${setCode}|${asOf}`
+    if (seen.has(key)) fail(`box-price-history.csv:${i + 2}: duplicate ${key}`)
+    seen.add(key)
+    const set = roster.find((s) => s.setCode === setCode)
+    if (!set) fail(`box-price-history.csv:${i + 2}: unknown set ${setCode}`)
+    else if (!set.tcgplayerProductId) fail(`box-price-history.csv:${i + 2}: ${setCode} has no tcgplayerProductId on the roster`)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf)) fail(`box-price-history.csv:${i + 2}: as_of "${asOf}"`)
+    if (!/^\d+(\.\d{1,2})?$/.test(market) || Number(market) <= 0) fail(`box-price-history.csv:${i + 2}: market_usd "${market}"`)
+    if (low !== '' && !/^\d+(\.\d{1,2})?$/.test(low)) fail(`box-price-history.csv:${i + 2}: low_usd "${low}"`)
+    if (source !== 'tcgcsv') fail(`box-price-history.csv:${i + 2}: source "${source}"`)
+    if (asOf > newest) newest = asOf
+  })
+  if (newest) {
+    const age = Math.floor((Date.now() - Date.parse(newest)) / 86_400_000)
+    if (age > BOX_STALE_DAYS) warn(`box prices: newest TCGCSV row is ${newest}, ${age} days old; the daily feed may have stopped`)
+  }
+  for (const s of roster) {
+    if (s.tcgplayerProductId && !rows.some((r) => r[0] === s.setCode)) warn(`box prices: ${s.setCode} has a tcgplayerProductId but no row in box-price-history.csv`)
+  }
+}
+for (const s of roster) {
+  if (s.usMarketUsd != null && !s.tcgplayerProductId) warn(`${s.setCode}: roster has a US box price but no tcgplayerProductId; the daily feed cannot update it`)
+}
+
 const productsFile = join(DATA, 'tcgplayer-products.csv')
 if (existsSync(productsFile)) {
   const { header, rows } = parseCsv(readFileSync(productsFile, 'utf8'))

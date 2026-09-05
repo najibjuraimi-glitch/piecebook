@@ -45,9 +45,10 @@ export function AboutPricesScreen() {
 
         <Section title="Booster box prices">
           <p>
-            Box prices on set tiles come from Cards' roster: a Singapore ask in SGD where a clean, verified asking price was
-            found, and the TCGPlayer US market price in USD for every box. Both carry their own <em>as of</em> date. A set
-            with no English box, such as EB-04, shows none.
+            The US figure for every English booster box is TCGPlayer's market price, pulled once a day by the same refresh
+            that prices the cards, from TCGCSV, a public daily mirror of TCGPlayer's own data. It carries the date it was
+            read. Where a clean, verified Singapore asking price was found, it is shown too, with its own date. A set with
+            no English box, such as EB-04, shows none.
           </p>
         </Section>
 

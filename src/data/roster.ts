@@ -1,4 +1,5 @@
 import rosterSeed from '../../data/sets-roster-en.json'
+import { latestBoxPrice } from './boxPrices'
 import type { SealedProduct } from './sealed'
 
 /**
@@ -105,12 +106,16 @@ export function getRosterSet(setCode: string | undefined): RosterSet | undefined
 }
 
 /**
- * The EN booster box price row for a roster set, straight from the roster (the
- * single source of sealed prices since `sealed-seed.json` was folded into it on
- * 5 Sep 2026). Undefined when neither price is set, so the tile omits the block.
+ * The EN booster box price row for a roster set. The US market figure and its
+ * date come from the daily TCGCSV feed (`data/box-price-history.csv`, newest
+ * row) and fall back to the roster's own read when the feed has no row for the
+ * set; the SG ask is the roster's. Undefined when there is no price at all, so
+ * the tile omits the block.
  */
 export function rosterSealedProduct(set: RosterSet): SealedProduct | undefined {
-  if (set.sgAskSgd === null && set.usMarketUsd === null) return undefined
+  const feed = latestBoxPrice(set.setCode)
+  const usMarketUsd = feed?.marketUsd ?? set.usMarketUsd
+  if (set.sgAskSgd === null && usMarketUsd === null) return undefined
   return {
     setCode: set.setCode,
     setName: set.setName,
@@ -119,8 +124,8 @@ export function rosterSealedProduct(set: RosterSet): SealedProduct | undefined {
     boxArtUrl: set.boxArtUrl,
     sgAskSgd: set.sgAskSgd,
     sgSource: set.sgSource,
-    usMarketUsd: set.usMarketUsd,
+    usMarketUsd,
     usSource: set.usSource,
-    asOf: set.asOf,
+    asOf: feed?.asOf ?? set.asOf,
   }
 }
