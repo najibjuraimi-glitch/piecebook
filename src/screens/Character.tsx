@@ -14,8 +14,8 @@ import { NotFoundScreen } from './NotFound'
  * owned and watched marks on each. Reached from search.
  */
 export function CharacterScreen() {
-  const { name: raw } = useParams()
-  const name = raw ? decodeURIComponent(raw) : ''
+  // useParams already decodes the segment ("Kid%20%26%20Killer" → "Kid & Killer").
+  const { name = '' } = useParams()
   const groups = useMemo(() => printsNamed(name), [name])
   const { isOwned, ownedQty } = useCollection()
   const watch = useWatchlist()
