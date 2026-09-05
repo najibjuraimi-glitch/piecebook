@@ -32,7 +32,11 @@ OP-09 and OP-16 first generated 2026-09-04 (Asia/Singapore); the other sets 2026
 
 3,504 rows in total. Row counts per file are also pinned in `data/SEED-VERSION.txt`.
 
-CSV header (exact): `set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of`
+CSV header (exact): `set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant`
+
+- `variant` (added 5 Sep 2026): the human name of a parallel print as Limitless labels it ("Alternate Art", "Manga Art", "Special Card", "Treasure Rare", "Pirate Foil", "Full Art", "Textured Foil"); Limitless's untranslated `card.style.*` keys and blank labels become the plain word "Parallel" rather than a guessed style. Blank on every base print. The rarity rule is unchanged: style labels inherit the base print's rarity, Special Card / Treasure Rare keep `SP` / `TR`.
+
+**Card attributes** (added 5 Sep 2026): `data/card-attributes/{code}.csv`, one row per seed row in the same order, header `card_number,variant,category,color,cost,life,power,counter,attribute,types,effect,trigger,artist,block,standard,extra`. Category (Leader / Character / Event / Stage), colour ("Red" or "Red/Green"), cost or life, power, counter, attribute, traits as printed (slash-separated), effect text and any `[Trigger]` text as printed (links and reminder text flattened to plain text), illustrator where Limitless credits one, regulation block number, Standard / Extra legality as Limitless publishes it. All read from the same `card-page-main` block as the price. Piecebook adds no words of its own; card text is Bandai's, shown as every card database shows it (accepted by Jib, 5 Sep 2026). Loaded lazily per set by `src/data/attributes.ts`.
 
 - `language` = `EN` on every row. `set_name` is Cards' roster name (`data/sets-roster-en.json`), which matches the Limitless set label on every set except PRB-01 (Limitless: “One Piece The Best”; roster / official Bandai: “One Piece Card The Best”).
 - Base checklist complete for every set: no gaps from 001 to the highest number Limitless lists (121 for OP-01 / OP-02, 123 for OP-03, 120 for OP-13 / OP-14, 61 / 61 / 62 for EB-01 / 02 / 03, 18 for PRB-02, 119 otherwise).

@@ -1,5 +1,5 @@
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 interface ScreenProps {
   children: React.ReactNode
@@ -51,16 +51,48 @@ export function ScreenTitle({ title, subline }: TitleProps) {
   )
 }
 
+export interface Crumb {
+  label: string
+  /** Omit on the current page. */
+  to?: string
+}
+
 interface BackBarProps {
   title?: string
   subline?: string
+  /** Path from home to here, e.g. Sets › OP-09 › OP09-004p1. Rendered in place of the title. */
+  crumbs?: Crumb[]
   fallbackTo: string
   /** Optional single quiet action on the right (e.g. the watchlist star). */
   action?: React.ReactNode
 }
 
-/** Detail-screen header: in-app chevron (uses history when available) + optional title + one right-side action. */
-export function BackBar({ title, subline, fallbackTo, action }: BackBarProps) {
+/** Quiet text breadcrumb: ink links, muted separators, current item in ink without a link. */
+function Breadcrumb({ crumbs }: { crumbs: Crumb[] }) {
+  return (
+    <nav aria-label="Breadcrumb" className="min-w-0 pt-3">
+      <ol className="tabular flex min-w-0 flex-wrap items-center gap-x-1.5 text-meta text-muted">
+        {crumbs.map((c, i) => (
+          <li key={`${c.label}-${i}`} className="flex min-w-0 items-center gap-x-1.5">
+            {i > 0 && <span aria-hidden="true">›</span>}
+            {c.to ? (
+              <Link to={c.to} className="truncate rounded-sm text-ink hover:underline">
+                {c.label}
+              </Link>
+            ) : (
+              <span aria-current="page" className="truncate text-ink">
+                {c.label}
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+/** Detail-screen header: in-app chevron (uses history when available) + optional title or breadcrumb + one right-side action. */
+export function BackBar({ title, subline, crumbs, fallbackTo, action }: BackBarProps) {
   const navigate = useNavigate()
   const goBack = () => {
     if (window.history.length > 1) navigate(-1)
@@ -84,7 +116,12 @@ export function BackBar({ title, subline, fallbackTo, action }: BackBarProps) {
           {subline && <p className="truncate text-meta text-muted">{subline}</p>}
         </div>
       )}
-      {action && <div className={`${title ? '' : 'ml-auto'} -mr-2 shrink-0`}>{action}</div>}
+      {!title && crumbs && (
+        <div className="min-w-0 flex-1">
+          <Breadcrumb crumbs={crumbs} />
+        </div>
+      )}
+      {action && <div className={`${title || crumbs ? '' : 'ml-auto'} -mr-2 shrink-0`}>{action}</div>}
     </header>
   )
 }

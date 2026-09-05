@@ -63,7 +63,12 @@ export function PortfolioScreen() {
               subline={plSubline}
             />
           </div>
-          <p className="mt-4 px-1 text-meta text-muted">Values use Cards’ seed prices, not live market.</p>
+          <p className="mt-4 px-1 text-meta text-muted">
+            Values use Cards’ seed prices, not live market.{' '}
+            <Link to="/about-prices" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+              How prices work
+            </Link>
+          </p>
 
           {top.length > 0 && (
             <section className="mt-8">

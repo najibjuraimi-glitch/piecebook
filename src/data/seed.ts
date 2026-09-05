@@ -24,6 +24,12 @@ export interface Card {
   marketUsd: number | null
   asOf: string | null
   isParallel: boolean
+  /**
+   * Human name for a parallel print as Limitless labels it ("Alternate Art",
+   * "Manga Art", "Special Card", "Pirate Foil", …; "Parallel" when the style
+   * has no published name). Null on base prints.
+   */
+  variant: string | null
 }
 
 export interface CardSet {
@@ -75,6 +81,7 @@ function toCard(row: Record<string, string>): Card | null {
     marketUsd: Number.isFinite(market) ? market : null,
     asOf: row.as_of || null,
     isParallel: isParallelNumber(cardNumber),
+    variant: row.variant || null,
   }
 }
 

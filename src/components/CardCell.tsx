@@ -56,7 +56,10 @@ export function CardCell({ card, owned = false, qty = 0, paid, watching = false 
         )}
       </div>
       <div className="mt-2 space-y-0.5 px-0.5">
-        <p className="truncate text-[15px] font-medium leading-5 text-ink">{card.name}</p>
+        <p className="truncate text-[15px] font-medium leading-5 text-ink">
+          {card.name}
+          {card.variant && <span className="font-normal text-muted"> · {card.variant}</span>}
+        </p>
         <div className="flex items-center gap-1.5">
           <span className="tabular truncate text-meta text-muted">{card.cardNumber}</span>
           <RarityChip rarity={card.rarity} />
