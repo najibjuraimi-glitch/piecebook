@@ -30,27 +30,29 @@ export function SetDetailScreen() {
   return <NotFoundScreen title="Set not found" message="That set isn’t on the roster." />
 }
 
+/** Cards' intro when they wrote one; otherwise the roster's EN date alone. Nothing else is inferred. */
+function introFor(roster: RosterSet | undefined, setCode: string, language: string): SetIntroData | undefined {
+  const intro = getSetIntro(setCode, language)
+  if (hasIntroContent(intro)) return intro
+  if (!roster?.enReleased) return undefined
+  return {
+    setCode: roster.setCode,
+    setName: roster.setName,
+    language: roster.language,
+    enReleased: roster.enReleased,
+    jpReleased: null,
+    packsPerBox: null,
+    cardsPerPack: null,
+    introTheme: null,
+    sources: [],
+    asOf: roster.asOf,
+  }
+}
+
 function PendingSetDetail({ roster }: { roster: RosterSet }) {
   const guidance = getSealedGuidance(roster.setCode)
   const product = rosterSealedProduct(roster)
-  const intro = getSetIntro(roster.setCode, roster.language)
-
-  // No intro from Cards: fall back to the roster's EN date alone. Nothing else is inferred.
-  const dateOnly: SetIntroData | undefined = roster.enReleased
-    ? {
-        setCode: roster.setCode,
-        setName: roster.setName,
-        language: roster.language,
-        enReleased: roster.enReleased,
-        jpReleased: null,
-        packsPerBox: null,
-        cardsPerPack: null,
-        introTheme: null,
-        sources: [],
-        asOf: roster.asOf,
-      }
-    : undefined
-  const shownIntro = hasIntroContent(intro) ? intro : dateOnly
+  const shownIntro = introFor(roster, roster.setCode, roster.language)
 
   return (
     <Screen>
@@ -106,17 +108,19 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   }
 
   const language = set.cards[0]?.language ?? 'EN'
+  const roster = getRosterSet(set.setCode)
   const sealed = getSealedGuidance(set.setCode)
-  const sealedProduct = getSealedProduct(set.setCode, language)
-  const intro = getSetIntro(set.setCode, language)
+  // Box price: Cards' sealed-seed row when present, else the roster's US market row.
+  const sealedProduct = getSealedProduct(set.setCode, language) ?? (roster ? rosterSealedProduct(roster) : undefined)
+  const intro = introFor(roster, set.setCode, language)
 
   return (
     <Screen>
       <BackBar title={set.setCode} subline={set.setName} fallbackTo="/" />
 
-      {sealed && <SealedStrip guidance={sealed} product={sealedProduct} />}
+      <SealedStrip guidance={sealed} product={sealedProduct} />
 
-      {hasIntroContent(intro) && <SetIntro intro={intro} />}
+      {intro && <SetIntro intro={intro} />}
 
       <SearchField value={query} onChange={setQuery} className="mt-5 tablet:max-w-[560px]" />
 

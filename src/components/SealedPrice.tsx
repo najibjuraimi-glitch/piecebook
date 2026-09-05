@@ -4,9 +4,11 @@ import { formatDate, formatSgd, formatUsMarketUsd } from '../lib/format'
 const SEP = ' · '
 
 /**
- * Two-line sealed price from Cards' seed: SG ask first (primary), US market and
- * as-of date muted underneath. Falls back to the US figure as primary when the
- * SG ask is missing. Renders nothing when neither price is seeded.
+ * Sealed price from Cards' seed.
+ * - SG ask seeded: primary `Box · S$750`, muted `US $669.52 · as of 4 Sep 2026` under it.
+ * - US market only: one quiet line `Box · US $337.14 · as of 4 Sep 2026`. SGD is never
+ *   derived from USD.
+ * - Neither: renders nothing.
  *
  * `withLanguage` controls the "EN" in "EN box"; pass false where the language
  * is already visible in the same stack (e.g. under an "EN set" meta line).
@@ -24,7 +26,7 @@ export function sealedPriceLines(
     const secondary = [us, asOf].filter(Boolean).join(SEP)
     return { primary: `${label}${SEP}${sg}`, secondary: secondary || null }
   }
-  if (us) return { primary: `${label}${SEP}${us}`, secondary: asOf }
+  if (us) return { primary: [label, us, asOf].filter(Boolean).join(SEP), secondary: null }
   return null
 }
 

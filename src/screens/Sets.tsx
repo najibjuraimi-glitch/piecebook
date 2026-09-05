@@ -7,7 +7,7 @@ import { EmptyState } from '../components/EmptyState'
 export function SetsScreen() {
   return (
     <Screen>
-      <ScreenTitle title="Sets" subline="EN booster boxes" />
+      <ScreenTitle title="Sets" subline="EN sets" />
       {ROSTER.length === 0 ? (
         <EmptyState message="No sets loaded yet." />
       ) : (

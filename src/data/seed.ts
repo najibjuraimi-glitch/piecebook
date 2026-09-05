@@ -1,6 +1,15 @@
-import op09Csv from '../../data/op09-en-seed.csv?raw'
-import op16Csv from '../../data/op16-en-seed.csv?raw'
 import { csvToObjects } from './csv'
+
+/**
+ * Every EN checklist CSV under data/ (one per set, `opXX-en-seed.csv`,
+ * `ebXX-…`, `prbXX-…`). Adding a set is a CSV drop-in plus flipping its roster
+ * row to `ready`; nothing here needs to change.
+ */
+const SEED_CSVS = import.meta.glob('../../data/*-en-seed.csv', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
 
 export interface Card {
   setCode: string
@@ -24,10 +33,25 @@ export interface CardSet {
 }
 
 /**
- * Only same-set numbered rows are part of the V1 catalog
- * (see data/SEED-VERSION.txt: cleaned-same-set-only).
+ * Only same-set numbered rows are part of a regular set (see
+ * data/SEED-VERSION.txt): a row belongs to its set when the card number carries
+ * that set's code, e.g. `OP17-001` under `OP-17`. Cross-set chase pulls
+ * Limitless files on a set page are dropped.
+ *
+ * Premium boosters (PRB-xx) are reprint products, so their CSVs list every
+ * print in the box, cross-set numbers included. A card keeps one home set (the
+ * first CSV that lists it, e.g. `OP01-024` → OP-01) and is additionally a
+ * member of the reprint set's checklist.
  */
-const ALLOWED_PREFIXES = [/^OP09-/, /^OP16-/]
+const REPRINT_SETS = /^PRB-/i
+
+function isSameSetRow(setCode: string, cardNumber: string): boolean {
+  return cardNumber.toUpperCase().startsWith(`${setCode.replace(/-/g, '').toUpperCase()}-`)
+}
+
+function isAllowedRow(setCode: string, cardNumber: string): boolean {
+  return REPRINT_SETS.test(setCode) || isSameSetRow(setCode, cardNumber)
+}
 
 const PARALLEL_RE = /p\d+$/i
 
@@ -37,7 +61,7 @@ export function isParallelNumber(cardNumber: string): boolean {
 
 function toCard(row: Record<string, string>): Card | null {
   const cardNumber = row.card_number
-  if (!cardNumber || !ALLOWED_PREFIXES.some((re) => re.test(cardNumber))) return null
+  if (!cardNumber || !row.set_code || !isAllowedRow(row.set_code, cardNumber)) return null
   const market = row.market_usd === '' ? NaN : Number(row.market_usd)
   return {
     setCode: row.set_code,
@@ -54,36 +78,59 @@ function toCard(row: Record<string, string>): Card | null {
   }
 }
 
-function numberSortKey(cardNumber: string): [number, number] {
-  const m = cardNumber.match(/-(\d+)(?:p(\d+))?$/i)
-  return [m ? Number(m[1]) : 0, m && m[2] ? Number(m[2]) : 0]
+function numberSortKey(cardNumber: string): [string, number, number] {
+  const m = cardNumber.match(/^([^-]*)-(\d+)(?:p(\d+))?$/i)
+  return [m ? m[1].toUpperCase() : cardNumber.toUpperCase(), m ? Number(m[2]) : 0, m && m[3] ? Number(m[3]) : 0]
 }
 
+/** Set prefix, then number, then parallel index; so mixed lists group by set. */
 export function compareCardNumbers(a: string, b: string): number {
-  const [an, ap] = numberSortKey(a)
-  const [bn, bp] = numberSortKey(b)
+  const [as, an, ap] = numberSortKey(a)
+  const [bs, bn, bp] = numberSortKey(b)
+  if (as !== bs) return as.localeCompare(bs)
   if (an !== bn) return an - bn
   if (ap !== bp) return ap - bp
   return a.localeCompare(b)
 }
 
 function buildCatalog(): { sets: CardSet[]; byNumber: Map<string, Card> } {
-  const rows = [...csvToObjects(op09Csv), ...csvToObjects(op16Csv)]
+  const rows = Object.keys(SEED_CSVS)
+    .sort()
+    .flatMap((path) => csvToObjects(SEED_CSVS[path]))
   const byNumber = new Map<string, Card>()
-  for (const row of rows) {
-    const card = toCard(row)
-    if (card && !byNumber.has(card.cardNumber)) byNumber.set(card.cardNumber, card)
-  }
-
   const setMap = new Map<string, CardSet>()
-  for (const card of byNumber.values()) {
-    const existing = setMap.get(card.setCode)
-    if (existing) existing.cards.push(card)
-    else setMap.set(card.setCode, { setCode: card.setCode, setName: card.setName, cards: [card] })
+  const membership = new Map<string, Set<string>>()
+
+  for (const row of rows) {
+    const parsed = toCard(row)
+    if (!parsed) continue
+    // First CSV to list a number owns the card; later rows (reprint sets) only add membership.
+    const card = byNumber.get(parsed.cardNumber) ?? parsed
+    if (!byNumber.has(card.cardNumber)) byNumber.set(card.cardNumber, card)
+
+    let set = setMap.get(parsed.setCode)
+    if (!set) {
+      set = { setCode: parsed.setCode, setName: parsed.setName, cards: [] }
+      setMap.set(parsed.setCode, set)
+      membership.set(parsed.setCode, new Set())
+    }
+    const members = membership.get(parsed.setCode)!
+    if (!members.has(card.cardNumber)) {
+      members.add(card.cardNumber)
+      set.cards.push(card)
+    }
   }
 
   const sets = [...setMap.values()].sort((a, b) => a.setCode.localeCompare(b.setCode))
-  for (const set of sets) set.cards.sort((a, b) => compareCardNumbers(a.cardNumber, b.cardNumber))
+  for (const set of sets) {
+    // A set's own numbers first (matters for reprint sets), then by prefix / number.
+    set.cards.sort((a, b) => {
+      const aOwn = isSameSetRow(set.setCode, a.cardNumber)
+      const bOwn = isSameSetRow(set.setCode, b.cardNumber)
+      if (aOwn !== bOwn) return aOwn ? -1 : 1
+      return compareCardNumbers(a.cardNumber, b.cardNumber)
+    })
+  }
   return { sets, byNumber }
 }
 
@@ -126,6 +173,9 @@ export const RARITY_LABELS: Record<string, string> = {
   R: 'Rare',
   UC: 'Uncommon',
   C: 'Common',
+  SP: 'Special',
+  TR: 'Treasure Rare',
+  P: 'Promo',
 }
 
 export function rarityLabel(rarity: string): string {
