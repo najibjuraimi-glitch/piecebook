@@ -56,12 +56,15 @@ function money(v: unknown): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null
 }
 
+/** Local public/ paths are served under the app's base URL ("/" locally, "/piecebook/" on GitHub Pages). */
+const PUBLIC_BASE = import.meta.env.BASE_URL.replace(/\/$/, '')
+
 function resolveBoxArt(setCode: string, language: string, raw: unknown): string | null {
   const value = text(raw)
   if (!value) return null
-  if (value.startsWith('/')) return value
+  if (value.startsWith('/')) return `${PUBLIC_BASE}${value}`
   if (value.toLowerCase() === 'vendored') {
-    return `/box-art/${setCode.replace(/-/g, '').toLowerCase()}-${language.toLowerCase()}-white.jpg`
+    return `${PUBLIC_BASE}/box-art/${setCode.replace(/-/g, '').toLowerCase()}-${language.toLowerCase()}-white.jpg`
   }
   return null
 }

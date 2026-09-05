@@ -1,0 +1,60 @@
+name: Pages
+
+# Publishes the production build to the gh-pages branch, which GitHub Pages serves at
+# https://najibjuraimi-glitch.github.io/piecebook/ once Settings → Pages → Source is
+# "Deploy from a branch" (gh-pages, / root). The app is built with base /piecebook/;
+# 404.html is a copy of index.html so deep links such as /piecebook/cards/OP09-118 load.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build for /piecebook/
+        run: npm run build
+        env:
+          PIECEBOOK_BASE: /piecebook/
+
+      - name: SPA fallback and no Jekyll
+        run: |
+          cp dist/index.html dist/404.html
+          touch dist/.nojekyll
+
+      - name: Check out gh-pages
+        uses: actions/checkout@v7
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Commit the build to gh-pages
+        run: |
+          rsync -a --delete --exclude .git dist/ gh-pages/
+          cd gh-pages
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Site unchanged."
+            exit 0
+          fi
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Deploy ${GITHUB_SHA::7} to GitHub Pages"
+          git push
