@@ -10,8 +10,8 @@ import { CheckIcon } from '../components/CardCell'
 import { DangerGhostButton, PrimaryButton } from '../components/Buttons'
 import { CostBasisPanel } from '../components/CostBasis'
 import { PriceChart } from '../components/PriceChart'
-import { usePriceHistory } from '../data/history'
-import { formatDate, formatUsd, pluralPoints } from '../lib/format'
+import { changeSince, usePriceHistory } from '../data/history'
+import { formatDate, formatSignedUsd, formatUsd, pluralPoints } from '../lib/format'
 import { NotFoundScreen } from './NotFound'
 
 export function CardDetailScreen() {
@@ -34,6 +34,7 @@ function CardDetail({ card }: { card: Card }) {
   const cost = costFor(card.cardNumber)
   const watch = useWatchlist()
   const history = usePriceHistory(card)
+  const change = history.loading ? null : changeSince(history.points, 30)
 
   return (
     <Screen>
@@ -82,6 +83,16 @@ function CardDetail({ card }: { card: Card }) {
                 </p>
                 {card.asOf && <p className="tabular text-meta text-muted">as of {formatDate(card.asOf)}</p>}
               </div>
+            )}
+
+            {/* Movement in words with its timeframe; colour only on the figure. Card detail is the one place this belongs. */}
+            {change && (
+              <p className="tabular mt-1 text-meta text-muted">
+                <span className={change.delta > 0 ? 'font-medium text-good' : change.delta < 0 ? 'font-medium text-bad' : 'text-ink'}>
+                  {change.delta === 0 ? 'Unchanged' : formatSignedUsd(change.delta)}
+                </span>{' '}
+                since {formatDate(change.since.asOf)}
+              </p>
             )}
 
             {/* History from dated seed points only. Two or more: a quiet line. One: say so, no chart. */}

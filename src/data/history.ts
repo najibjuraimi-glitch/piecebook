@@ -64,6 +64,32 @@ export async function priceHistoryFor(card: Card): Promise<PricePoint[]> {
   return points
 }
 
+export interface PriceChange {
+  /** Latest minus reference, in USD. */
+  delta: number
+  /** The reference point: the latest point at or before `days` before the newest one, else the oldest. */
+  since: PricePoint
+  latest: PricePoint
+}
+
+/**
+ * Movement over roughly the last `days` days, in words a collector can check:
+ * the reference is the newest point that is at least `days` old, or the oldest
+ * point when the history is shorter than that. Null with fewer than two points.
+ */
+export function changeSince(points: PricePoint[], days = 30): PriceChange | null {
+  if (points.length < 2) return null
+  const latest = points[points.length - 1]
+  const cutoff = Date.parse(latest.asOf) - days * 86_400_000
+  let since = points[0]
+  for (const p of points) {
+    if (Date.parse(p.asOf) <= cutoff) since = p
+    else break
+  }
+  if (since.asOf === latest.asOf) return null
+  return { delta: Math.round((latest.usd - since.usd) * 100) / 100, since, latest }
+}
+
 export function usePriceHistory(card: Card): { points: PricePoint[]; loading: boolean } {
   const [state, setState] = useState<{ key: string; points: PricePoint[] } | null>(null)
   useEffect(() => {
