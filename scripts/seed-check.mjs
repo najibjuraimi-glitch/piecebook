@@ -4,7 +4,9 @@
  * Fails (exit 1) on anything that would put wrong or invented data in front of
  * a collector; warns on the merely odd.
  *
- *   - every roster set with cardSeedStatus ready has a CSV, and vice versa
+ *   - every roster set with cardSeedStatus ready has a CSV, and vice versa (a
+ *     pending upcoming set has none; a provisional code is boolean-flagged,
+ *     only on pending rows, and warned about once its release date has passed)
  *   - CSV header is exactly the documented contract
  *   - set_code on every row equals the file's set; regular sets hold only
  *     same-set numbers (PRB reprint sets may hold any)
@@ -67,10 +69,19 @@ const roster = JSON.parse(readFileSync(join(DATA, 'sets-roster-en.json'), 'utf8'
 const files = readdirSync(DATA).filter((f) => f.endsWith('-en-seed.csv'))
 const counts = new Map()
 
+const today = new Date().toISOString().slice(0, 10)
 for (const set of roster) {
   const f = `${codeKey(set.setCode)}-en-seed.csv`
+  // A pending row with no seed file is the normal state of an upcoming set (7.5); only a ready row must have its CSV.
   if (set.cardSeedStatus === 'ready' && !files.includes(f)) fail(`${set.setCode} is ready on the roster but ${f} is missing`)
   if (set.cardSeedStatus !== 'ready' && files.includes(f)) warn(`${set.setCode} has ${f} but is not ready on the roster`)
+  // Provisional codes (7.5): a guess by sequence until Limitless lists the set; never displayed, so a stale one is worth a look.
+  if (set.codeProvisional !== undefined && typeof set.codeProvisional !== 'boolean') fail(`${set.setCode}: codeProvisional "${set.codeProvisional}" is not true / false`)
+  if (set.codeProvisional === true) {
+    if (set.cardSeedStatus === 'ready') fail(`${set.setCode}: codeProvisional is still true on a ready set (Limitless confirmed the code when it listed the set)`)
+    if (!set.tcgplayerProductId || !set.tcgplayerGroupId) fail(`${set.setCode}: an upcoming set needs tcgplayerProductId and tcgplayerGroupId (the refresh found it through TCGCSV)`)
+    if (set.enReleased && set.enReleased < today) warn(`${set.setCode}: provisional code and the release date ${set.enReleased} has passed; Limitless has not confirmed the set yet`)
+  }
 }
 for (const f of files) {
   const key = f.replace('-en-seed.csv', '')

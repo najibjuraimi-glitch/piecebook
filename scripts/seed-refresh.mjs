@@ -6,7 +6,7 @@
  *   npm run seed:refresh -- --sets OP-17,EB-04
  *   npm run seed:refresh -- --dry-run    # report only, write nothing
  *   npm run seed:refresh -- --as-of 2026-09-05
- *   npm run seed:refresh -- --boxes-only # only the box prices (TCGCSV) into data/box-price-history.csv
+ *   npm run seed:refresh -- --boxes-only # only the TCGCSV step: box prices, upcoming-set discovery, Limitless code probe
  *
  * Source: https://onepiece.limitlesstcg.com/cards/en/{slug}?display=full&show=all&per-page=all
  * (one `card-page-main` block per print). Rules, kept identical to the first
@@ -25,8 +25,16 @@
  * traits, effect and trigger text, artist, block, legality), appends today's
  * priced rows to data/price-history/{code}.csv (one row per card per day,
  * source=limitless), upserts data/tcgplayer-products.csv (card → TCGPlayer
- * product id) and repins the per-file counts in data/SEED-VERSION.txt. Cards'
- * roster JSON is never edited.
+ * product id) and repins the per-file counts in data/SEED-VERSION.txt.
+ *
+ * Upcoming sets (7.5): the TCGCSV step also scans every One Piece group for a
+ * "… Booster Box" product on presale that is not on the roster yet and adds it
+ * as a roster row with cardSeedStatus pending, TCGplayer's name, date, product
+ * and group ids, and a code assigned by sequence (Extra Booster → EB-nn,
+ * Premium Booster → PRB-nn, else OP-nn) marked codeProvisional until Limitless
+ * lists the set (probed each run at /cards/{code}). When a pending set's
+ * checklist seeds, its row turns ready. Those are the only edits ever made to
+ * Cards' roster JSON; prices and names on existing rows are never touched.
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -412,6 +420,126 @@ async function fetchBoxPrices(rosterSets) {
   return { asOf, changed, missing }
 }
 
+// ---------------------------------------------------------------- upcoming sets (7.5)
+
+const ROSTER_FILE = join(DATA, 'sets-roster-en.json')
+let rosterDirty = false
+
+function saveRoster(rosterFile) {
+  if (!rosterDirty || DRY) return
+  writeFileSync(ROSTER_FILE, JSON.stringify(rosterFile, null, 2) + '\n')
+  rosterDirty = false
+}
+
+/** Bandai's product families and the code series each one numbers: the only classification the refresh makes. */
+function seriesFor(productName) {
+  if (/extra booster/i.test(productName)) return 'EB'
+  if (/premium booster/i.test(productName)) return 'PRB'
+  return 'OP'
+}
+
+/** "Extra Booster: One Piece Heroines Edition Vol.2 - Booster Box" → the set's name as TCGplayer writes it. */
+const setNameFromBox = (productName) => productName.replace(/\s*[-–:]?\s*Booster Box$/i, '').trim()
+
+const isPresaleBox = (p) => /Booster Box$/i.test(p.name.trim()) && !/Case/i.test(p.name) && p.presaleInfo?.isPresale === true
+
+/**
+ * Scan every TCGCSV group in the One Piece category for a presale booster box
+ * whose group is not on the roster, and add it as a pending row. Only groups
+ * published within the last 30 days or in the future are probed for products:
+ * a presale ends at release, so anything older cannot be one, and the daily
+ * request count stays small. Groups without such a box (a Deck Set, promos,
+ * release event cards) are logged as warnings and never added.
+ */
+async function discoverUpcoming(roster) {
+  const groups = (await tcgcsvJson(`/tcgplayer/${TCGCSV_CATEGORY}/groups`)).results
+  const known = new Set(roster.map((s) => s.tcgplayerGroupId).filter(Boolean))
+  const horizon = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10)
+  const candidates = groups
+    .filter((g) => !known.has(g.groupId) && (!g.publishedOn || g.publishedOn.slice(0, 10) >= horizon))
+    .sort((a, b) => (a.publishedOn ?? '').localeCompare(b.publishedOn ?? '') || a.groupId - b.groupId)
+  const added = []
+  const warnings = []
+  // Next number per series counts the rows added in this run too, so two new OP sets get consecutive codes.
+  const nextNumber = (series) => {
+    const nums = roster.map((s) => s.setCode.match(new RegExp(`^${series}-(\\d+)$`))).filter(Boolean).map((m) => Number(m[1]))
+    return String(Math.max(0, ...nums) + 1).padStart(2, '0')
+  }
+  for (const g of candidates) {
+    const products = (await tcgcsvJson(`/tcgplayer/${TCGCSV_CATEGORY}/${g.groupId}/products`)).results
+    await sleep(120)
+    const box = products.find(isPresaleBox)
+    if (!box) {
+      warnings.push(`TCGCSV group ${g.groupId} "${g.name}" (${g.publishedOn?.slice(0, 10) ?? 'no date'}) has no booster box on presale; not classifiable as a set, not added`)
+      continue
+    }
+    const series = seriesFor(box.name)
+    const setCode = `${series}-${nextNumber(series)}`
+    const enReleased = (box.presaleInfo?.releasedOn ?? g.publishedOn ?? '').slice(0, 10) || null
+    const row = {
+      setCode,
+      setName: setNameFromBox(box.name),
+      product: 'booster_box',
+      language: 'EN',
+      enReleased,
+      cardSeedStatus: 'pending',
+      codeProvisional: true,
+      sgAskSgd: null,
+      usMarketUsd: null,
+      boxArtUrl: null,
+      asOf: AS_OF,
+      usSource: `https://www.tcgplayer.com/product/${box.productId}/one-piece-card-game?Language=English`,
+      tcgplayerProductId: box.productId,
+      tcgplayerGroupId: g.groupId,
+      tcgplayerProductName: box.name,
+    }
+    // Boosters stay together in the file: the new row goes after the last booster, before the starter decks.
+    let at = roster.length
+    for (let i = roster.length - 1; i >= 0; i--) if (roster[i].product !== 'starter_deck') { at = i + 1; break }
+    roster.splice(at, 0, row)
+    rosterDirty = true
+    // TCGCSV's own abbreviation is a hint, not a source: noted in the log so a wrong guess is visible the same day.
+    const hint = g.abbreviation ? ` · TCGCSV abbreviation ${g.abbreviation}` : ''
+    added.push(`${setCode} (provisional) "${row.setName}" · ${enReleased ?? 'no date'} · box ${box.productId} · group ${g.groupId}${hint}`)
+  }
+  return { added, warnings, probed: candidates.length }
+}
+
+/**
+ * Limitless confirms a provisional code: `/cards/{code}` answers 200 with the
+ * set's title carrying the code once the set is listed (`… (OP18) – Limitless
+ * One Piece`), 404 until then. A 200 whose title carries another set's name
+ * means the sequence guessed wrong and is reported, not written.
+ */
+async function probeLimitless(roster) {
+  const confirmed = []
+  const pending = []
+  const warnings = []
+  for (const s of roster) {
+    if (s.codeProvisional !== true) continue
+    const key = codeKey(s.setCode)
+    const res = await fetch(`${BASE}/cards/${key}`, { headers: { 'User-Agent': UA } })
+    await sleep(DELAY_MS)
+    if (res.status === 404) {
+      pending.push(s.setCode)
+      continue
+    }
+    if (!res.ok) {
+      warnings.push(`${s.setCode}: Limitless answered HTTP ${res.status} for /cards/${key}; left provisional`)
+      continue
+    }
+    const title = decode((await res.text()).match(/<title>(.*?)<\/title>/s)?.[1] ?? '')
+    if (title.includes(`(${key.toUpperCase()})`)) {
+      s.codeProvisional = false
+      rosterDirty = true
+      confirmed.push(`${s.setCode} · Limitless title "${title.replace(/\s*–\s*Limitless.*$/, '')}"`)
+    } else {
+      warnings.push(`${s.setCode}: Limitless /cards/${key} is live but titled "${title}"; the code guess may be wrong, left provisional`)
+    }
+  }
+  return { confirmed, pending, warnings }
+}
+
 function repinSeedVersion(counts) {
   const file = join(DATA, 'SEED-VERSION.txt')
   const lines = readFileSync(file, 'utf8').split('\n')
@@ -429,10 +557,28 @@ function repinSeedVersion(counts) {
 
 // ---------------------------------------------------------------- main
 
-const rosterFile = JSON.parse(readFileSync(join(DATA, 'sets-roster-en.json'), 'utf8'))
+const rosterFile = JSON.parse(readFileSync(ROSTER_FILE, 'utf8'))
 const roster = rosterFile.sets
 
+/** The TCGCSV step: discover upcoming sets, probe Limitless for their codes, then snapshot every roster box's price (new rows included). */
 async function refreshBoxes() {
+  try {
+    const found = await discoverUpcoming(roster)
+    for (const a of found.added) console.log(`  upcoming: added ${a}`)
+    for (const w of found.warnings) console.warn(`  warn: ${w}`)
+    if (!found.added.length) console.log(`  upcoming: no new presale booster box in ${found.probed} unlisted group(s)`)
+  } catch (e) {
+    console.error(`  upcoming: discovery skipped (${e.message})`)
+  }
+  try {
+    const probe = await probeLimitless(roster)
+    for (const c of probe.confirmed) console.log(`  upcoming: code confirmed ${c}`)
+    for (const w of probe.warnings) console.warn(`  warn: ${w}`)
+    if (probe.pending.length) console.log(`  upcoming: not on Limitless yet: ${probe.pending.join(' ')}`)
+  } catch (e) {
+    console.error(`  upcoming: Limitless probe skipped (${e.message})`)
+  }
+  saveRoster(rosterFile)
   const { asOf, changed, missing } = await fetchBoxPrices(roster)
   console.log(`  box-price-history.csv: ${changed} row(s) added or changed for ${asOf} (TCGCSV)${missing.length ? ' · no price: ' + missing.join(' ') : ''}`)
 }
@@ -494,6 +640,11 @@ for (const set of targets) {
   printsBySet.set(set.setCode, prints)
   const { rows, unmapped, noPrice } = buildRows(set, prints, seededBase)
   if (rows.length === 0) {
+    // An upcoming set (7.5) has nothing on Limitless until the day it is listed; that is the expected state, not a failure.
+    if (set.cardSeedStatus === 'pending') {
+      console.log(`  ${set.setCode}: not on Limitless yet, still pending`)
+      continue
+    }
     console.log(`  ${set.setCode}: no rows found, skipped`)
     failures++
     continue
@@ -501,6 +652,12 @@ for (const set of targets) {
   const file = join(DATA, `${codeKey(set.setCode)}-en-seed.csv`)
   const before = existsSync(file) ? parseCsv(readFileSync(file, 'utf8')).length : 0
   if (!DRY) writeFileSync(file, toCsv(rows, FIELDS))
+  if (set.cardSeedStatus === 'pending') {
+    // The checklist exists now: the roster row turns ready on its own (7.5).
+    set.cardSeedStatus = 'ready'
+    rosterDirty = true
+    console.log(`  ${set.setCode}: checklist seeded, roster row now ready`)
+  }
   const added = NO_HISTORY ? 0 : appendHistory(set.setCode, rows)
   const noCategory = writeAttributes(set.setCode, rows, prints)
   counts.set(codeKey(set.setCode), rows.length)
@@ -514,6 +671,7 @@ for (const set of targets) {
 repinSeedVersion(counts)
 const ids = upsertProductIds(printsBySet)
 if (ids) console.log(`  tcgplayer-products.csv: ${ids} product id(s) added or changed`)
+saveRoster(rosterFile)
 if (!NO_HISTORY) {
   try {
     await refreshBoxes()
