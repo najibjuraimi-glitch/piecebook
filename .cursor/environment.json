@@ -1,0 +1,10 @@
+{
+  "name": "Piecebook",
+  "install": "npm install",
+  "terminals": [
+    {
+      "name": "vite-dev",
+      "command": "npm run dev"
+    }
+  ]
+}
