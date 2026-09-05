@@ -1,4 +1,5 @@
-import { useParams } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { getCard, type Card } from '../data/seed'
 import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
@@ -7,12 +8,14 @@ import { BackBar, BLEED, Screen } from '../components/Screen'
 import { CardArt } from '../components/CardArt'
 import { RarityChip } from '../components/RarityChip'
 import { CheckIcon } from '../components/CardCell'
+import { ChevronRight } from '../components/SetTile'
 import { DangerGhostButton, PrimaryButton } from '../components/Buttons'
 import { CostBasisPanel } from '../components/CostBasis'
 import { PriceChart } from '../components/PriceChart'
 import { PlayBlock } from '../components/PlayBlock'
 import { changeSince, usePriceHistory } from '../data/history'
 import { useCardAttributes } from '../data/attributes'
+import { printsNamed } from '../lib/search'
 import { playsetLine } from '../lib/playsets'
 import { formatDate, formatSignedUsd, formatUsd, pluralPoints } from '../lib/format'
 import { NotFoundScreen } from './NotFound'
@@ -41,6 +44,8 @@ function CardDetail({ card }: { card: Card }) {
   const history = usePriceHistory(card)
   const change = history.loading ? null : changeSince(history.points, 30)
   const attrs = useCardAttributes(card)
+  // Every print of this name across sets (7.4); the door only opens when there is more than this one.
+  const prints = useMemo(() => printsNamed(card.name).reduce((n, g) => n + g.cards.length, 0), [card.name])
 
   return (
     <Screen>
@@ -78,6 +83,18 @@ function CardDetail({ card }: { card: Card }) {
             </div>
             {/* Artist credit where Limitless carries one; a page per illustrator comes with 7.3. */}
             {attrs?.artist && <p className="mt-1 text-meta text-muted">Illustrated by {attrs.artist}</p>}
+            {/* Door to the character page (7.4): only a name printed more than once has anywhere to go. */}
+            {prints > 1 && (
+              <Link
+                to={`/characters/${encodeURIComponent(card.name)}`}
+                className="-ml-1 mt-1 inline-flex min-h-[44px] items-center gap-0.5 rounded-lg px-1 text-[15px] font-medium text-ink transition-colors duration-150 ease-out hover:bg-white active:bg-[#F0ECE4]"
+              >
+                <span className="tabular">
+                  All prints of {card.name} · {prints}
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted" />
+              </Link>
+            )}
           </section>
 
           <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4">

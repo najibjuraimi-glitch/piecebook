@@ -34,6 +34,13 @@ export function formatSignedUsd(value: number): string {
   return usd.format(0)
 }
 
+/** Signed movement with the country prefix, e.g. "+US $12.40" / "−US $3.10", for lines that name a market. */
+export function formatSignedUsMarketUsd(value: number): string {
+  if (value > 0) return `+US ${usd.format(value)}`
+  if (value < 0) return `−US ${usd.format(Math.abs(value))}`
+  return `US ${usd.format(0)}`
+}
+
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 /** Formats an ISO date (YYYY-MM-DD) as "4 Sep 2026" without timezone drift. */
@@ -43,6 +50,13 @@ export function formatDate(iso: string): string {
   const month = MONTHS[Number(m[2]) - 1]
   if (!month) return iso
   return `${Number(m[3])} ${month} ${m[1]}`
+}
+
+/** "5 Sep" within the current year, "5 Sep 2025" otherwise: for "since …" phrases where the year is usually noise. */
+export function formatShortDate(iso: string): string {
+  const full = formatDate(iso)
+  const year = String(new Date().getFullYear())
+  return full.endsWith(` ${year}`) ? full.slice(0, -(year.length + 1)) : full
 }
 
 export function todayIso(): string {

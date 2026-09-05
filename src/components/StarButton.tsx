@@ -1,8 +1,8 @@
 interface Props {
   active: boolean
   onToggle: () => void
-  /** What is being watched, for the accessible label: "card" or "set". */
-  subject: 'card' | 'set'
+  /** What is being watched, for the accessible label: "card", "set" or "character". */
+  subject: 'card' | 'set' | 'character'
   className?: string
 }
 

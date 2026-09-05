@@ -2,21 +2,43 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { compareCardNumbers, getCard, getSet, type Card } from '../data/seed'
 import { getRosterSet } from '../data/roster'
-import { changeSinceDate, usePriceHistories } from '../data/history'
+import { changeSinceDate, usePriceHistories, type PriceChange, type PricePoint } from '../data/history'
 import { PLAYSET, isPlayset } from '../lib/playsets'
+import { printsNamed } from '../lib/search'
 import { useCollection, type CostBasis } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { CardCell, CardGrid } from '../components/CardCell'
 import { ChevronRight } from '../components/SetTile'
 import { EmptyState } from '../components/EmptyState'
-import { formatMoney, pluralCards } from '../lib/format'
+import { formatMoney, formatShortDate, formatSignedUsMarketUsd, pluralCards } from '../lib/format'
 
 interface OwnedCard {
   card: Card
   qty: number
   ownedAt: string
   cost?: CostBasis
+}
+
+interface WatchedCharacter {
+  name: string
+  /** Every print of the name across sets. */
+  prints: Card[]
+}
+
+/**
+ * The print of a watched name that moved most since the star (7.4): a watched
+ * name is a question about movement, not a sum. Null when no print has a
+ * history point from before the star, or nothing has moved.
+ */
+function biggestMover(prints: Card[], since: string, byCard: Map<string, PricePoint[]>): { card: Card; change: PriceChange } | null {
+  let best: { card: Card; change: PriceChange } | null = null
+  for (const card of prints) {
+    const change = changeSinceDate(byCard.get(card.cardNumber) ?? [], since)
+    if (!change || change.delta === 0) continue
+    if (!best || Math.abs(change.delta) > Math.abs(best.change.delta)) best = { card, change }
+  }
+  return best
 }
 
 export function CollectionScreen() {
@@ -38,9 +60,15 @@ export function CollectionScreen() {
 
   const watchedSets = useMemo(() => watch.sets.map((code) => getRosterSet(code)).filter((s) => s !== undefined), [watch.sets])
   const watchedCards = useMemo(() => watch.cards.map((n) => getCard(n)).filter((c): c is Card => c !== undefined), [watch.cards])
-  const watching = watchedSets.length > 0 || watchedCards.length > 0
+  const watchedCharacters = useMemo<WatchedCharacter[]>(
+    () => watch.characters.map((name) => ({ name, prints: printsNamed(name).flatMap((g) => g.cards) })).filter((c) => c.prints.length > 0),
+    [watch.characters],
+  )
+  const watching = watchedSets.length > 0 || watchedCards.length > 0 || watchedCharacters.length > 0
   // Movement since each star, from the same dated seed points as the card page.
   const watchedHistory = usePriceHistories(watchedCards)
+  const characterPrints = useMemo(() => watchedCharacters.flatMap((c) => c.prints), [watchedCharacters])
+  const characterHistory = usePriceHistories(characterPrints)
 
   // Playsets view: owned cards held four or more times (leaders are one per deck and stay out of it).
   const [view, setView] = useState<'all' | 'playsets'>('all')
@@ -80,8 +108,47 @@ export function CollectionScreen() {
             </ul>
           )}
 
+          {watchedCharacters.length > 0 && (
+            <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
+              {watchedCharacters.map(({ name, prints }) => {
+                const at = watch.characterWatchedAt(name)
+                const mover = at && !characterHistory.loading ? biggestMover(prints, at, characterHistory.byCard) : null
+                return (
+                  <li key={name}>
+                    <Link
+                      to={`/characters/${encodeURIComponent(name)}`}
+                      className="flex min-h-[56px] items-center gap-3 px-4 py-3 transition-colors duration-150 ease-out hover:bg-paper/60 active:bg-paper"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="tabular block truncate text-[15px] font-medium leading-5 text-ink">
+                          {name} · {prints.length} {prints.length === 1 ? 'print' : 'prints'}
+                        </span>
+                        <span className="tabular block text-meta text-muted">
+                          {characterHistory.loading ? (
+                            '\u00a0'
+                          ) : mover ? (
+                            <>
+                              {mover.card.cardNumber}{' '}
+                              <span className={mover.change.delta > 0 ? 'font-medium text-good' : 'font-medium text-bad'}>
+                                {formatSignedUsMarketUsd(mover.change.delta)}
+                              </span>{' '}
+                              since {formatShortDate(mover.change.since.asOf)}
+                            </>
+                          ) : (
+                            'no price change yet'
+                          )}
+                        </span>
+                      </span>
+                      <ChevronRight />
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+
           {watchedCards.length > 0 && (
-            <CardGrid className={watchedSets.length > 0 ? 'mt-4' : 'mt-3'}>
+            <CardGrid className={watchedSets.length > 0 || watchedCharacters.length > 0 ? 'mt-4' : 'mt-3'}>
               {watchedCards.map((card) => {
                 const at = watch.watchedAt(card.cardNumber)
                 const moved = at ? changeSinceDate(watchedHistory.byCard.get(card.cardNumber) ?? [], at) : null

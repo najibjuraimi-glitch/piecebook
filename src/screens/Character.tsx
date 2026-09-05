@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { BackBar, Screen } from '../components/Screen'
 import { CardCell, CardGrid } from '../components/CardCell'
+import { StarButton } from '../components/StarButton'
 import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
 import { printsNamed } from '../lib/search'
@@ -11,7 +12,9 @@ import { NotFoundScreen } from './NotFound'
 /**
  * Every print that carries one card name, grouped by home set in release
  * order: a character's whole print history in one place, with the collector's
- * owned and watched marks on each. Reached from search.
+ * owned and watched marks on each. Reached from search and from the card's own
+ * page. The star watches the name (7.4): Watching then shows the print that
+ * moved most since the star, not a sum.
  */
 export function CharacterScreen() {
   // useParams already decodes the segment ("Kid%20%26%20Killer" → "Kid & Killer").
@@ -27,7 +30,11 @@ export function CharacterScreen() {
 
   return (
     <Screen>
-      <BackBar fallbackTo="/" crumbs={[{ label: 'Sets', to: '/' }, { label: name }]} />
+      <BackBar
+        fallbackTo="/"
+        crumbs={[{ label: 'Sets', to: '/' }, { label: name }]}
+        action={<StarButton subject="character" active={watch.isWatchingCharacter(name)} onToggle={() => watch.toggleCharacter(name)} />}
+      />
 
       <header className="mb-6">
         <h1 className="text-display text-ink">{name}</h1>
