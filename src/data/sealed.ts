@@ -34,8 +34,8 @@ export function getSealedGuidance(setCode: string, language = 'EN'): SealedGuida
 /**
  * The sealed product a set's box prices describe. Built from the roster row
  * (`data/sets-roster-en.json`): SG ask in SGD, US market in USD, both as of
- * `asOf`; there is no live feed. `boxArtUrl` is a local path under
- * `public/box-art/` or null; the UI stays type-first meanwhile.
+ * `asOf`, the US figure from the daily TCGCSV feed. `boxArtUrl` is the official
+ * TCGplayer render (or a local path Cards wrote), null for type-first.
  */
 export interface SealedProduct {
   setCode: string
