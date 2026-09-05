@@ -17,7 +17,7 @@
  *     inherit the base print's rarity; promo numbers (P-xxx) take P
  *   - market_usd from the `tr.current` prints row; blank when Limitless shows
  *     none (never invented); as_of = today for priced rows
- *   - regular sets keep same-set numbers only; PRB reprint sets keep every
+ *   - regular sets keep same-set numbers only; PRB and ST reprint products keep every
  *     print in the box; a set with no Limitless page of its own (EB-04) is
  *     assembled from its numbers on the other sets' pages
  * Writes data/{code}-en-seed.csv (identity, rarity, image, price, variant),
@@ -49,7 +49,7 @@ const RARITY = {
   'Special Card': 'SP',
   'Treasure Rare': 'TR',
 }
-const REPRINT_SETS = /^PRB-/
+const REPRINT_SETS = /^(PRB|ST)-/ // premium boosters and starter decks are reprint products: every print on the page belongs
 const FIELDS = ['set_code', 'set_name', 'card_number', 'name', 'rarity', 'language', 'image_url', 'market_usd', 'as_of', 'variant']
 const ATTR_DIR = join(DATA, 'card-attributes')
 const ATTR_FIELDS = [

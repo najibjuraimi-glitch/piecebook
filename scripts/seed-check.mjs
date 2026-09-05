@@ -29,7 +29,7 @@ const ATTR_HEADER = 'card_number,variant,category,color,cost,life,power,counter,
 const CATEGORIES = new Set(['Leader', 'Character', 'Event', 'Stage'])
 const RARITIES = new Set(['L', 'C', 'UC', 'R', 'SR', 'SEC', 'SP', 'TR', 'P'])
 const CDN = 'https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/'
-const REPRINT = /^PRB-/
+const REPRINT = /^(PRB|ST)-/
 
 const errors = []
 const warnings = []

@@ -49,7 +49,7 @@ export interface CardSet {
  * first CSV that lists it, e.g. `OP01-024` → OP-01) and is additionally a
  * member of the reprint set's checklist.
  */
-const REPRINT_SETS = /^PRB-/i
+const REPRINT_SETS = /^(PRB|ST)-/i
 
 function isSameSetRow(setCode: string, cardNumber: string): boolean {
   return cardNumber.toUpperCase().startsWith(`${setCode.replace(/-/g, '').toUpperCase()}-`)
