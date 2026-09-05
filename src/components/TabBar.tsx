@@ -4,10 +4,13 @@ import { isSetsSection } from './TopBar'
 const TABS = [
   { to: '/', label: 'Sets', icon: SetsIcon, match: isSetsSection },
   { to: '/collection', label: 'Collection', icon: CollectionIcon, match: (p: string) => p.startsWith('/collection') },
+  { to: '/decks', label: 'Decks', icon: DecksIcon, match: (p: string) => p.startsWith('/decks') },
   { to: '/portfolio', label: 'Portfolio', icon: PortfolioIcon, match: (p: string) => p.startsWith('/portfolio') },
 ]
 
 export function TabBar({ pathname }: { pathname: string }) {
+  const underCollection = typeof window !== 'undefined' && window.localStorage.getItem('piecebook.draft.decksUnderCollection') === '1' // DRAFT ONLY
+  const tabs = underCollection ? TABS.filter((t) => t.to !== '/decks') : TABS
   return (
     <nav
       aria-label="Primary"
@@ -15,7 +18,7 @@ export function TabBar({ pathname }: { pathname: string }) {
       style={{ paddingBottom: 'var(--safe-bottom)' }}
     >
       <ul className="mx-auto flex h-[var(--tabbar-h)] max-w-phone items-stretch">
-        {TABS.map(({ to, label, icon: Icon, match }) => {
+        {tabs.map(({ to, label, icon: Icon, match }) => {
           const active = match(pathname)
           return (
             <li key={to} className="flex-1">
@@ -61,6 +64,15 @@ function PortfolioIcon({ active }: { active: boolean }) {
     <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
       <circle cx="12" cy="12" r="8.25" stroke="currentColor" strokeWidth="1.75" fill={active ? 'currentColor' : 'none'} />
       <path d="M12 7.5v9M9.75 10.25c0-.9.9-1.5 2.25-1.5s2.25.6 2.25 1.5c0 2.25-4.5 1.25-4.5 3.5 0 .9.9 1.5 2.25 1.5s2.25-.6 2.25-1.5" stroke={active ? '#F7F5F0' : 'currentColor'} strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function DecksIcon({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
+      <rect x="7" y="4" width="11" height="15" rx="2" transform="rotate(8 12.5 11.5)" stroke="currentColor" strokeWidth="1.75" fill={active ? 'currentColor' : 'none'} />
+      <rect x="4.5" y="6" width="11" height="15" rx="2" transform="rotate(-6 10 13.5)" stroke="currentColor" strokeWidth="1.75" fill={active ? '#F7F5F0' : 'none'} />
     </svg>
   )
 }
