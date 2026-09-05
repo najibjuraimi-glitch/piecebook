@@ -13,6 +13,7 @@ import { PriceChart } from '../components/PriceChart'
 import { PlayBlock } from '../components/PlayBlock'
 import { changeSince, usePriceHistory } from '../data/history'
 import { useCardAttributes } from '../data/attributes'
+import { playsetLine } from '../lib/playsets'
 import { formatDate, formatSignedUsd, formatUsd, pluralPoints } from '../lib/format'
 import { NotFoundScreen } from './NotFound'
 
@@ -127,6 +128,8 @@ function CardDetail({ card }: { card: Card }) {
                   </div>
                   <QtyStepper value={qty} onChange={(n) => setQty(card.cardNumber, n)} />
                 </div>
+                {/* Copies against the four a deck may run; leaders are one per deck and get no line. */}
+                {playsetLine(card, qty) && <p className="tabular mt-2 text-meta text-muted">{playsetLine(card, qty)}</p>}
               </section>
 
               <CostBasisPanel

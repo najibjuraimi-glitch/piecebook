@@ -1,7 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { compareCardNumbers, getCard, getSet, type Card } from '../data/seed'
 import { getRosterSet } from '../data/roster'
+import { changeSinceDate, usePriceHistories } from '../data/history'
+import { PLAYSET, isPlayset } from '../lib/playsets'
 import { useCollection, type CostBasis } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
 import { Screen, ScreenTitle } from '../components/Screen'
@@ -37,6 +39,13 @@ export function CollectionScreen() {
   const watchedSets = useMemo(() => watch.sets.map((code) => getRosterSet(code)).filter((s) => s !== undefined), [watch.sets])
   const watchedCards = useMemo(() => watch.cards.map((n) => getCard(n)).filter((c): c is Card => c !== undefined), [watch.cards])
   const watching = watchedSets.length > 0 || watchedCards.length > 0
+  // Movement since each star, from the same dated seed points as the card page.
+  const watchedHistory = usePriceHistories(watchedCards)
+
+  // Playsets view: owned cards held four or more times (leaders are one per deck and stay out of it).
+  const [view, setView] = useState<'all' | 'playsets'>('all')
+  const playsets = useMemo(() => items.filter((i) => isPlayset(i.card, i.qty)), [items])
+  const shown = view === 'playsets' ? playsets : items
 
   return (
     <Screen>
@@ -73,11 +82,23 @@ export function CollectionScreen() {
 
           {watchedCards.length > 0 && (
             <CardGrid className={watchedSets.length > 0 ? 'mt-4' : 'mt-3'}>
-              {watchedCards.map((card) => (
-                <li key={card.cardNumber}>
-                  <CardCell card={card} owned={isOwned(card.cardNumber)} qty={ownedQty(card.cardNumber)} watching />
-                </li>
-              ))}
+              {watchedCards.map((card) => {
+                const at = watch.watchedAt(card.cardNumber)
+                const moved = at ? changeSinceDate(watchedHistory.byCard.get(card.cardNumber) ?? [], at) : null
+                // A card that has not moved since its star gets no line; the cell stays as it was.
+                const change = moved && moved.delta !== 0 ? moved : null
+                return (
+                  <li key={card.cardNumber}>
+                    <CardCell
+                      card={card}
+                      owned={isOwned(card.cardNumber)}
+                      qty={ownedQty(card.cardNumber)}
+                      watching
+                      change={change ? { delta: change.delta, since: change.since.asOf } : undefined}
+                    />
+                  </li>
+                )
+              })}
             </CardGrid>
           )}
         </section>
@@ -91,21 +112,55 @@ export function CollectionScreen() {
         )
       ) : (
         <>
-          {watching && <h2 className="mb-3 px-1 text-meta font-medium uppercase tracking-[0.08em] text-muted">Owned</h2>}
-          <CardGrid>
-            {items.map(({ card, qty, cost }) => (
-              <li key={card.cardNumber}>
-                {/* Paid line only when a cost exists; cells without one stay as they are. No nag. */}
-                <CardCell
-                  card={card}
-                  owned
-                  qty={qty}
-                  paid={cost ? formatMoney(cost.amount, cost.currency) : undefined}
-                  watching={watch.isWatchingCard(card.cardNumber)}
-                />
-              </li>
-            ))}
-          </CardGrid>
+          <div className="mb-3 flex items-center justify-between gap-3 px-1">
+            <h2 className="text-meta font-medium uppercase tracking-[0.08em] text-muted">Owned</h2>
+            <div role="group" aria-label="View" className="flex gap-1">
+              {(
+                [
+                  { key: 'all', label: 'All' },
+                  { key: 'playsets', label: 'Playsets' },
+                ] as const
+              ).map((v) => {
+                const selected = view === v.key
+                return (
+                  <button
+                    key={v.key}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setView(v.key)}
+                    className={`h-8 rounded-full px-3 text-[13px] font-medium transition-colors duration-150 ease-out ${
+                      selected ? 'bg-ink text-white' : 'text-muted hover:bg-white hover:text-ink'
+                    }`}
+                  >
+                    {v.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          {view === 'playsets' && (
+            <p className="tabular mb-3 px-1 text-meta text-muted">
+              {playsets.length === 0
+                ? `No playsets yet. ${PLAYSET} copies of a card make one.`
+                : `${playsets.length} ${playsets.length === 1 ? 'playset' : 'playsets'} · ${PLAYSET} or more copies`}
+            </p>
+          )}
+          {shown.length > 0 && (
+            <CardGrid>
+              {shown.map(({ card, qty, cost }) => (
+                <li key={card.cardNumber}>
+                  {/* Paid line only when a cost exists; cells without one stay as they are. No nag. */}
+                  <CardCell
+                    card={card}
+                    owned
+                    qty={qty}
+                    paid={cost ? formatMoney(cost.amount, cost.currency) : undefined}
+                    watching={watch.isWatchingCard(card.cardNumber)}
+                  />
+                </li>
+              ))}
+            </CardGrid>
+          )}
         </>
       )}
     </Screen>

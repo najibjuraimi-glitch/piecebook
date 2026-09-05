@@ -57,6 +57,8 @@ export interface WatchlistApi {
   sets: string[]
   isWatchingCard: (cardNumber: string) => boolean
   isWatchingSet: (setCode: string) => boolean
+  /** ISO timestamp the card was starred, or undefined when it is not watched. */
+  watchedAt: (cardNumber: string) => string | undefined
   toggleCard: (cardNumber: string) => void
   toggleSet: (setCode: string) => void
 }
@@ -93,6 +95,7 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
 
   const isWatchingCard = useCallback((n: string) => Boolean(state.cards[n]), [state.cards])
   const isWatchingSet = useCallback((c: string) => Boolean(state.sets[c]), [state.sets])
+  const watchedAt = useCallback((n: string) => state.cards[n]?.at, [state.cards])
   const toggleCard = useCallback((n: string) => setState((s) => ({ ...s, cards: toggle(s.cards, n) })), [])
   const toggleSet = useCallback((c: string) => setState((s) => ({ ...s, sets: toggle(s.sets, c) })), [])
 
@@ -102,10 +105,11 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
       sets: newestFirst(state.sets),
       isWatchingCard,
       isWatchingSet,
+      watchedAt,
       toggleCard,
       toggleSet,
     }),
-    [state, isWatchingCard, isWatchingSet, toggleCard, toggleSet],
+    [state, isWatchingCard, isWatchingSet, watchedAt, toggleCard, toggleSet],
   )
 
   return <WatchlistContext.Provider value={api}>{children}</WatchlistContext.Provider>
