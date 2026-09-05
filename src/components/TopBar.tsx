@@ -2,7 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { CONTENT_COLUMN, Wordmark } from './Screen'
 
 const LINKS = [
-  { to: '/', label: 'Sets', match: (p: string) => p === '/' || p.startsWith('/sets') || p.startsWith('/cards') },
+  { to: '/', label: 'Sets', match: (p: string) => p === '/' || p.startsWith('/sets') || p.startsWith('/cards') || p.startsWith('/characters') },
   { to: '/collection', label: 'Collection', match: (p: string) => p.startsWith('/collection') },
   { to: '/portfolio', label: 'Portfolio', match: (p: string) => p.startsWith('/portfolio') },
 ]

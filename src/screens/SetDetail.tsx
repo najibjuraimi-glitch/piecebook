@@ -89,7 +89,8 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   const [params, setParams] = useSearchParams()
   const { isOwned, ownedQty } = useCollection()
   const watch = useWatchlist()
-  const [query, setQuery] = useState('')
+  // Prefilled from `?q=` when arriving from global search ("All 14 in OP-09"); local afterwards.
+  const [query, setQuery] = useState(() => params.get('q') ?? '')
 
   const tabs = useMemo(() => rarityTabs(set.cards), [set])
 

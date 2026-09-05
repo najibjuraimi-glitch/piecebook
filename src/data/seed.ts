@@ -145,6 +145,9 @@ const catalog = buildCatalog()
 
 export const SETS: CardSet[] = catalog.sets
 
+/** Every distinct card once, by number (reprint-set memberships do not duplicate it). */
+export const ALL_CARDS: Card[] = [...catalog.byNumber.values()]
+
 export function getSet(setCode: string | undefined): CardSet | undefined {
   if (!setCode) return undefined
   return SETS.find((s) => s.setCode.toLowerCase() === setCode.toLowerCase())

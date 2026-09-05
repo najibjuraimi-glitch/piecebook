@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 
 const TABS = [
-  { to: '/', label: 'Sets', icon: SetsIcon, match: (p: string) => p === '/' || p.startsWith('/sets') || p.startsWith('/cards') },
+  { to: '/', label: 'Sets', icon: SetsIcon, match: (p: string) => p === '/' || p.startsWith('/sets') || p.startsWith('/cards') || p.startsWith('/characters') },
   { to: '/collection', label: 'Collection', icon: CollectionIcon, match: (p: string) => p.startsWith('/collection') },
   { to: '/portfolio', label: 'Portfolio', icon: PortfolioIcon, match: (p: string) => p.startsWith('/portfolio') },
 ]
