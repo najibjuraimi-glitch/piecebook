@@ -6,7 +6,7 @@
  *   npm run seed:refresh -- --sets OP-17,EB-04
  *   npm run seed:refresh -- --dry-run    # report only, write nothing
  *   npm run seed:refresh -- --as-of 2026-09-05
- *   npm run seed:refresh -- --boxes-only # snapshot the roster's box prices into data/box-price-history.csv, nothing else
+ *   npm run seed:refresh -- --boxes-only # only the box prices (TCGCSV) into data/box-price-history.csv
  *
  * Source: https://onepiece.limitlesstcg.com/cards/en/{slug}?display=full&show=all&per-page=all
  * (one `card-page-main` block per print). Rules, kept identical to the first
@@ -353,35 +353,63 @@ function upsertProductIds(rowsBySet) {
 }
 
 /**
- * data/box-price-history.csv: one row per set per hand read of the roster's box
- * prices (`asOf` on the roster row, else the file-level date). Decision 3.1
- * (5 Sep 2026): the roster is the only source of box prices and the workflow
- * never reads TCGPlayer; this file just remembers each read so the box card can
- * say "since". Re-running on the same read date replaces that row.
+ * data/box-price-history.csv: the EN booster box market price per set per day,
+ * from TCGCSV (https://tcgcsv.com, a once-a-day mirror of TCGplayer's own API;
+ * usage guidelines: identify with a User-Agent, pull once a day, sleep between
+ * requests). Decision 3.1 (5 Sep 2026): automated, no hand reads. Each roster
+ * row names its box with tcgplayerProductId / tcgplayerGroupId; the as_of is
+ * TCGCSV's build date, so a same-day re-run replaces that day's row.
  */
-const BOX_HISTORY_FIELDS = ['set_code', 'as_of', 'us_market_usd', 'sg_ask_sgd', 'source']
+const BOX_HISTORY_FIELDS = ['set_code', 'as_of', 'market_usd', 'low_usd', 'source']
+const TCGCSV = 'https://tcgcsv.com'
+const TCGCSV_CATEGORY = 68 // One Piece Card Game
+const TCGCSV_HEADERS = { 'User-Agent': 'Piecebook/1.0 (+https://github.com/najibjuraimi-glitch/piecebook)' }
 
-function snapshotBoxPrices(rosterFile) {
+async function tcgcsvJson(path) {
+  const res = await fetch(`${TCGCSV}${path}`, { headers: TCGCSV_HEADERS })
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
+  return res.json()
+}
+
+async function fetchBoxPrices(rosterSets) {
+  const built = (await fetch(`${TCGCSV}/last-updated.txt`, { headers: TCGCSV_HEADERS }).then((r) => r.text())).trim()
+  const asOf = built.slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf)) throw new Error(`TCGCSV last-updated unreadable: "${built}"`)
   const file = join(DATA, 'box-price-history.csv')
-  const fileAsOf = rosterFile.asOf ?? AS_OF
   const byKey = new Map((existsSync(file) ? parseCsv(readFileSync(file, 'utf8')) : []).map((r) => [`${r.set_code}|${r.as_of}`, r]))
+  const pricesByGroup = new Map()
   let changed = 0
-  for (const s of rosterFile.sets) {
-    const us = s.usMarketUsd == null ? '' : String(s.usMarketUsd)
-    const sg = s.sgAskSgd == null ? '' : String(s.sgAskSgd)
-    if (us === '' && sg === '') continue
-    const asOf = s.asOf ?? fileAsOf
-    const row = { set_code: s.setCode, as_of: asOf, us_market_usd: us, sg_ask_sgd: sg, source: 'roster' }
+  const missing = []
+  for (const s of rosterSets) {
+    if (!s.tcgplayerProductId || !s.tcgplayerGroupId) continue
+    if (!pricesByGroup.has(s.tcgplayerGroupId)) {
+      pricesByGroup.set(s.tcgplayerGroupId, (await tcgcsvJson(`/tcgplayer/${TCGCSV_CATEGORY}/${s.tcgplayerGroupId}/prices`)).results)
+      await new Promise((r) => setTimeout(r, 120))
+    }
+    const rows = pricesByGroup.get(s.tcgplayerGroupId).filter((r) => r.productId === s.tcgplayerProductId)
+    const price = rows.find((r) => r.subTypeName === 'Normal') ?? rows[0]
+    if (!price || price.marketPrice == null) {
+      missing.push(s.setCode)
+      continue
+    }
+    const row = {
+      set_code: s.setCode,
+      as_of: asOf,
+      market_usd: String(price.marketPrice),
+      low_usd: price.lowPrice == null ? '' : String(price.lowPrice),
+      source: 'tcgcsv',
+    }
     const prev = byKey.get(`${s.setCode}|${asOf}`)
-    if (prev && prev.us_market_usd === us && prev.sg_ask_sgd === sg) continue
+    if (prev && prev.market_usd === row.market_usd && prev.low_usd === row.low_usd) continue
     byKey.set(`${s.setCode}|${asOf}`, row)
     changed++
   }
-  if (changed === 0) return 0
-  const order = new Map(rosterFile.sets.map((s, i) => [s.setCode, i]))
-  const all = [...byKey.values()].sort((a, b) => (order.get(a.set_code) ?? 999) - (order.get(b.set_code) ?? 999) || a.as_of.localeCompare(b.as_of))
-  if (!DRY) writeFileSync(file, toCsv(all, BOX_HISTORY_FIELDS))
-  return changed
+  if (changed) {
+    const order = new Map(rosterSets.map((s, i) => [s.setCode, i]))
+    const all = [...byKey.values()].sort((a, b) => (order.get(a.set_code) ?? 999) - (order.get(b.set_code) ?? 999) || a.as_of.localeCompare(b.as_of))
+    if (!DRY) writeFileSync(file, toCsv(all, BOX_HISTORY_FIELDS))
+  }
+  return { asOf, changed, missing }
 }
 
 function repinSeedVersion(counts) {
@@ -404,9 +432,13 @@ function repinSeedVersion(counts) {
 const rosterFile = JSON.parse(readFileSync(join(DATA, 'sets-roster-en.json'), 'utf8'))
 const roster = rosterFile.sets
 
+async function refreshBoxes() {
+  const { asOf, changed, missing } = await fetchBoxPrices(roster)
+  console.log(`  box-price-history.csv: ${changed} row(s) added or changed for ${asOf} (TCGCSV)${missing.length ? ' · no price: ' + missing.join(' ') : ''}`)
+}
+
 if (BOXES_ONLY) {
-  const n = snapshotBoxPrices(rosterFile)
-  console.log(`  box-price-history.csv: ${n} row(s) added or changed`)
+  await refreshBoxes()
   console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
   process.exit(0)
 }
@@ -483,8 +515,12 @@ repinSeedVersion(counts)
 const ids = upsertProductIds(printsBySet)
 if (ids) console.log(`  tcgplayer-products.csv: ${ids} product id(s) added or changed`)
 if (!NO_HISTORY) {
-  const boxes = snapshotBoxPrices(rosterFile)
-  if (boxes) console.log(`  box-price-history.csv: ${boxes} row(s) added or changed`)
+  try {
+    await refreshBoxes()
+  } catch (e) {
+    console.error(`  box prices: ${e.message}`)
+    failures++
+  }
 }
 console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
 process.exit(failures ? 1 : 0)

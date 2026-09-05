@@ -28,7 +28,7 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 
 ## Decisions taken
 - 1.0 — Bandai's card text is shown as every card database shows it (Jib, 5 Sep 2026).
-- 3.1 — Box price feed: option (a). Cards' roster is the only source of box prices, read by hand from the TCGPlayer product page in `usSource` (plus a verified SG ask where one exists), each read dated; cadence monthly, as a normal PR. The daily refresh never reads TCGPlayer; it snapshots the roster's reads into `data/box-price-history.csv` so the box card can say "since", and `seed:check` warns when the newest read is over 45 days old. Limitless lists no sealed products, and TCGPlayer's terms rule out automated reads; option (b) waits for an official TCGPlayer API partnership. (Jib delegated to Code as interim Cards, 5 Sep 2026.)
+- 3.1 — Box price feed: automated. Every EN booster box's TCGplayer market price is pulled daily by the Seed refresh workflow from TCGCSV (tcgcsv.com, a once-a-day public mirror of TCGplayer's own API, used within its published guidelines: identified User-Agent, one pull a day, back-end only) and appended to `data/box-price-history.csv`; the roster names each box by `tcgplayerProductId` / `tcgplayerGroupId`. No hand reads: the roster's 4 Sep 2026 figures are only a fallback, and `seed:check` warns if the feed goes quiet for 3 days. Limitless lists no sealed products, and reading TCGplayer's site directly stays ruled out. This is how Collectr does it at its core — TCGplayer market daily — minus the eBay / Cardmarket blending we cannot license. (Jib: "anything manual should not be considered"; decided by Code as interim Cards, 5 Sep 2026.)
 
 ## Decisions parked on the board
 - 6.1 — where decks live (fourth tab vs under Collection)

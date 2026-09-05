@@ -16,7 +16,7 @@ Recreated in-repo from Jib's request ("Watchlist (star cards/sets you care about
 - Data: `data/price-history/{code}.csv` (`card_number,as_of,market_usd,source`), one row per card per day. `source=limitless` rows are appended by `npm run seed:refresh` (daily); `source=tcgplayer` rows are the one-off weekly backfill from TCGPlayer's chart data (`npm run seed:backfill`). Seed prices only; there is still no live feed.
 - Card detail, under Market (seed): with **two or more** dated points, a `PriceChart` — one ink line, dots on every point while sparse and only the end dots once dense, first / last date beneath, low / high at the right, then range chips **1M · 3M · 6M · 1Y · All** (text chips, ink when selected; a chip is dropped when its window would show the same points as the next wider one) and one muted provenance line (`Weekly points from TCGPlayer chart data; daily points read from Limitless. Seed, not live.`). No axes, fills, % change or sparklines elsewhere. With **one** point: `Tracked since 5 Sep 2026 · 1 dated point so far`. Cards without a seed price show nothing extra.
 - Loaded lazily per set on card detail only; the main bundle does not carry history.
-- Box (sealed) prices are not charted: the roster holds one dated point per set and is Cards' file.
+- Box (sealed) prices are not charted yet: since 5 Sep 2026 the daily feed appends one dated point per box (`data/box-price-history.csv`), so a box line becomes possible once points accumulate; see the 3.2 addendum.
 - One point reads `Tracked since 5 Sep 2026 · 1 dated point so far`, so a new collector sees why the line is missing rather than a bare date.
 
 ## Where history comes from, and why ours starts on 4 Sep 2026

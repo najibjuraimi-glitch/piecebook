@@ -164,34 +164,38 @@ if (existsSync(historyDir)) {
   }
 }
 
-// Box prices: hand reads on the roster (decision 3.1), remembered per read date.
-const BOX_STALE_DAYS = 45
+// Box prices: daily TCGplayer market via TCGCSV (decision 3.1), one row per set per day.
+const BOX_STALE_DAYS = 3
 const boxHistory = join(DATA, 'box-price-history.csv')
 if (existsSync(boxHistory)) {
   const { header, rows } = parseCsv(readFileSync(boxHistory, 'utf8'))
-  if (header !== 'set_code,as_of,us_market_usd,sg_ask_sgd,source') fail(`box-price-history.csv: header "${header}"`)
+  if (header !== 'set_code,as_of,market_usd,low_usd,source') fail(`box-price-history.csv: header "${header}"`)
   const seen = new Set()
+  let newest = ''
   rows.forEach((r, i) => {
-    const [setCode, asOf, us, sg, source] = r
+    const [setCode, asOf, market, low, source] = r
     const key = `${setCode}|${asOf}`
     if (seen.has(key)) fail(`box-price-history.csv:${i + 2}: duplicate ${key}`)
     seen.add(key)
-    if (!roster.some((s) => s.setCode === setCode)) fail(`box-price-history.csv:${i + 2}: unknown set ${setCode}`)
+    const set = roster.find((s) => s.setCode === setCode)
+    if (!set) fail(`box-price-history.csv:${i + 2}: unknown set ${setCode}`)
+    else if (!set.tcgplayerProductId) fail(`box-price-history.csv:${i + 2}: ${setCode} has no tcgplayerProductId on the roster`)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf)) fail(`box-price-history.csv:${i + 2}: as_of "${asOf}"`)
-    if (us === '' && sg === '') fail(`box-price-history.csv:${i + 2}: no price`)
-    if (us !== '' && !/^\d+(\.\d{1,2})?$/.test(us)) fail(`box-price-history.csv:${i + 2}: us_market_usd "${us}"`)
-    if (sg !== '' && !/^\d+(\.\d{1,2})?$/.test(sg)) fail(`box-price-history.csv:${i + 2}: sg_ask_sgd "${sg}"`)
-    if (source !== 'roster') fail(`box-price-history.csv:${i + 2}: source "${source}"`)
+    if (!/^\d+(\.\d{1,2})?$/.test(market) || Number(market) <= 0) fail(`box-price-history.csv:${i + 2}: market_usd "${market}"`)
+    if (low !== '' && !/^\d+(\.\d{1,2})?$/.test(low)) fail(`box-price-history.csv:${i + 2}: low_usd "${low}"`)
+    if (source !== 'tcgcsv') fail(`box-price-history.csv:${i + 2}: source "${source}"`)
+    if (asOf > newest) newest = asOf
   })
-}
-{
-  const rosterFile = JSON.parse(readFileSync(join(DATA, 'sets-roster-en.json'), 'utf8'))
-  const dates = roster.filter((s) => s.usMarketUsd != null || s.sgAskSgd != null).map((s) => s.asOf ?? rosterFile.asOf).filter(Boolean).sort()
-  const newest = dates[dates.length - 1]
   if (newest) {
     const age = Math.floor((Date.now() - Date.parse(newest)) / 86_400_000)
-    if (age > BOX_STALE_DAYS) warn(`box prices were last read by hand on ${newest}, ${age} days ago (over ${BOX_STALE_DAYS}); due for a re-read on the roster`)
+    if (age > BOX_STALE_DAYS) warn(`box prices: newest TCGCSV row is ${newest}, ${age} days old; the daily feed may have stopped`)
   }
+  for (const s of roster) {
+    if (s.tcgplayerProductId && !rows.some((r) => r[0] === s.setCode)) warn(`box prices: ${s.setCode} has a tcgplayerProductId but no row in box-price-history.csv`)
+  }
+}
+for (const s of roster) {
+  if (s.usMarketUsd != null && !s.tcgplayerProductId) warn(`${s.setCode}: roster has a US box price but no tcgplayerProductId; the daily feed cannot update it`)
 }
 
 const productsFile = join(DATA, 'tcgplayer-products.csv')
