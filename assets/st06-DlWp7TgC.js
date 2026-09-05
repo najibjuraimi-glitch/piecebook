@@ -1,0 +1,19 @@
+const a=`card_number,variant,category,color,cost,life,power,counter,attribute,types,effect,trigger,artist,block,standard,extra
+ST06-001,,Leader,Black,,5,5000,,Special,Navy,[Activate: Main] [Once Per Turn] ③ (You may rest the specified number of DON!! cards in your cost area.) You may trash 1 card from your hand: K.O. up to 1 of your opponent's Characters with a cost of 0.,,,1,not legal,legal
+ST06-002,,Character,Black,1,,2000,1000,Strike,Navy,[On Play] You may trash 1 card from your hand: K.O. up to 1 of your opponent's Characters with a cost of 0.,,BISAI,1,not legal,legal
+ST06-003,,Character,Black,1,,3000,1000,Slash,Navy,,,,1,not legal,legal
+ST06-004,,Character,Black,5,,7000,,Special,Navy,"This Character cannot be K.O.'d by effects. [DON!! x1] If there is a Character with a cost of 0, this Character gains [Double Attack]. (This card deals 2 damage.)",,Nijihayashi,1,not legal,legal
+ST06-005,,Character,Black,5,,6000,1000,Wisdom,Navy,[When Attacking] Give up to 1 of your opponent's Characters −4 cost during this turn.,,,1,not legal,legal
+ST06-006,,Character,Black,3,,4000,2000,Slash,Navy,[Activate: Main] You may rest this Character: Give up to 1 of your opponent's Characters −2 cost during this turn.,,,1,not legal,legal
+ST06-007,,Character,Black,2,,2000,1000,Wisdom,Navy,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",,,1,not legal,legal
+ST06-008,,Character,Black,3,,5000,,Special,Navy,[On Play] Give up to 1 of your opponent's Characters −4 cost during this turn.,,,4,legal,legal
+ST06-009,,Character,Black,2,,4000,1000,Strike,Navy,,,,1,not legal,legal
+ST06-010,,Character,Black,2,,3000,1000,Slash,Navy,[On Play] Give up to 1 of your opponent's Characters −3 cost during this turn.,,BISAI,1,not legal,legal
+ST06-011,,Character,Black,4,,6000,1000,Slash,Navy,,,HISASHI HUJIWARA,1,not legal,legal
+ST06-012,,Character,Black,5,,6000,,Strike,Navy,[Activate: Main] You may trash 1 card from your hand and rest this Character: K.O. up to 1 of your opponent's Characters with a cost of 4 or less.,,,1,not legal,legal
+ST06-013,,Character,Black,3,,5000,1000,Slash,Navy,,,HISASHI HUJIWARA,1,not legal,legal
+ST06-014,,Event,Black,2,,,,,Navy,"[Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, K.O. up to 1 of your opponent's active Characters with a cost of 3 or less. [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 4 or less.",,,1,not legal,legal
+ST06-015,,Event,Black,1,,,,,Navy,"[Main] Draw 1 card. Then, give up to 1 of your opponent's Characters −2 cost during this turn. [Trigger] Your opponent chooses 1 card from their hand and trashes it.",,,1,not legal,legal
+ST06-016,,Event,Black,1,,,,,Navy,[Counter] Up to 1 of your Leader or Character cards gains +2000 power during this battle. [Trigger] Draw 1 card and none of your Characters can be K.O.'d during this turn.,,,1,not legal,legal
+ST06-017,,Stage,Black,1,,,,,Navy,"[On Play] Give up to 1 of your opponent's Characters −1 cost during this turn. [Activate: Main] You may rest this Stage: If your Leader has the {Navy} type, give up to 1 of your opponent's Characters −1 cost during this turn.",,,1,not legal,legal
+`;export{a as default};

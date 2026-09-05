@@ -1,0 +1,19 @@
+const s=`card_number,as_of,market_usd,source
+ST03-001,2026-09-05,1.88,limitless
+ST03-002,2026-09-05,0.04,limitless
+ST03-003,2026-09-05,0.26,limitless
+ST03-004,2026-09-05,0.18,limitless
+ST03-005,2026-09-05,0.13,limitless
+ST03-006,2026-09-05,0.16,limitless
+ST03-007,2026-09-05,0.16,limitless
+ST03-008,2026-09-05,0.15,limitless
+ST03-009,2026-09-05,0.24,limitless
+ST03-010,2026-09-05,0.13,limitless
+ST03-011,2026-09-05,0.16,limitless
+ST03-012,2026-09-05,0.12,limitless
+ST03-013,2026-09-05,0.24,limitless
+ST03-014,2026-09-05,0.22,limitless
+ST03-015,2026-09-05,1.55,limitless
+ST03-016,2026-09-05,0.12,limitless
+ST03-017,2026-09-05,1.62,limitless
+`;export{s as default};

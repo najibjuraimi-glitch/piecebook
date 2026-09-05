@@ -1,0 +1,19 @@
+const e=`card_number,variant,category,color,cost,life,power,counter,attribute,types,effect,trigger,artist,block,standard,extra
+ST03-001,,Leader,Blue,,5,5000,,Special,The Seven Warlords of the Sea/Baroque Works,[Activate: Main] [Once Per Turn] DON!! −4 (You may return the specified number of DON!! cards from your field to your DON!! deck.): Return up to 1 Character with a cost of 5 or less to the owner's hand.,,,1,not legal,legal
+ST03-002,,Character,Blue,3,,5000,1000,Slash,The Seven Warlords of the Sea,,,,1,not legal,legal
+ST03-003,,Character,Blue,5,,6000,,Special,The Seven Warlords of the Sea/Baroque Works,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [DON!! x1] [On Block] Place up to 1 Character with a cost of 2 or less at the bottom of the owner's deck.",,,1,not legal,legal
+ST03-004,,Character,Blue,4,,5000,1000,Special,The Seven Warlords of the Sea/Thriller Bark Pirates,[On Play] Add up to 1 {The Seven Warlords of the Sea} or {Thriller Bark Pirates} type Character with a cost of 4 or less other than [Gecko Moria] from your trash to your hand.,,,1,not legal,legal
+ST03-005,,Character,Blue,4,,5000,2000,Slash,The Seven Warlords of the Sea,[DON!! x1] [When Attacking] Draw 2 cards and trash 2 cards from your hand.,,,1,not legal,legal
+ST03-006,,Character,Blue,2,,4000,1000,Strike,Fish-Man/The Seven Warlords of the Sea/The Sun Pirates,,,,1,not legal,legal
+ST03-007,,Character,Blue,3,,4000,1000,Slash,Navy,"[DON!! x1] [Activate: Main] [Once Per Turn] ➁ (You may rest the specified number of DON!! cards in your cost area.): Play up to 1 [Pacifista] with a cost of 4 or less from your deck, then shuffle your deck.",,,1,not legal,legal
+ST03-008,,Character,Blue,1,,1000,,Slash,The Seven Warlords of the Sea/Heart Pirates,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",,,1,not legal,legal
+ST03-009,,Character,Blue,7,,7000,,Special,The Seven Warlords of the Sea/Donquixote Pirates,[On Play] Return up to 1 Character with a cost of 7 or less to the owner's hand.,,,1,not legal,legal
+ST03-010,,Character,Blue,2,,3000,,Strike,The Seven Warlords of the Sea/Revolutionary Army,[On Play] Look at 3 cards from the top of your deck and return them to the top or bottom of the deck in any order. [Trigger] Play this card.,,,1,not legal,legal
+ST03-011,,Character,Blue,1,,3000,1000,Slash,The Seven Warlords of the Sea/Buggy&#039;s Delivery,,,,1,not legal,legal
+ST03-012,,Character,Blue,4,,6000,1000,Special,Biological Weapon/Navy,,,,1,not legal,legal
+ST03-013,,Character,Blue,3,,1000,1000,Special,The Seven Warlords of the Sea/Kuja Pirates,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [Trigger] Play this card.",,,1,not legal,legal
+ST03-014,,Character,Blue,4,,4000,1000,Special,The Seven Warlords of the Sea/Blackbeard Pirates,[On Play] Return up to 1 Character with a cost of 3 or less to the owner's hand.,,,1,not legal,legal
+ST03-015,,Event,Blue,4,,,,,The Seven Warlords of the Sea/Baroque Works,[Main] Return up to 1 Character with a cost of 7 or less to the owner's hand. [Trigger] Activate this card's [Main] effect.,,,1,not legal,legal
+ST03-016,,Event,Blue,2,,,,,The Seven Warlords of the Sea/Revolutionary Army,[Counter] Return up to 1 Character with a cost of 3 or less to the owner's hand. [Trigger] Activate this card's [Counter] effect.,,,1,not legal,legal
+ST03-017,,Event,Blue,2,,,,,The Seven Warlords of the Sea/Kuja Pirates,"[Counter] Up to 1 of your Leader or Character cards gains +4000 power during this battle. Then, draw 1 card if you have 3 or less cards in your hand.",,,1,not legal,legal
+`;export{e as default};

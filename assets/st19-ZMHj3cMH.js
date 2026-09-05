@@ -1,0 +1,17 @@
+const a=`card_number,variant,category,color,cost,life,power,counter,attribute,types,effect,trigger,artist,block,standard,extra
+ST19-001,,Character,Black,6,,8000,,Special,Navy,[On Play] You may trash 1 black {Navy} type card from your hand: Up to 2 of your opponent's Characters with a cost of 4 or less cannot attack until the end of your opponent's next turn.,,Morechand,3,legal,legal
+ST19-002,,Character,Black,1,,1000,1000,Wisdom,Navy,"[On Play] You may trash 2 black {Navy} type cards from your hand: If your Leader has the {Navy} type, draw 3 cards.",,kankurou,3,legal,legal
+ST19-003,,Character,Black,5,,6000,1000,Slash,Navy,"[On Play] If your Leader is [Smoker], give up to 1 of your opponent's Characters −4 cost during this turn. [Activate: Main] [Once Per Turn] If this Character was played on this turn, trash up to 1 of your opponent's Characters with a cost of 0.",,Romayasu,3,legal,legal
+ST19-004,,Character,Black,4,,6000,,Special,Navy,[DON!! x1] [Opponent's Turn] This Character gains +4 cost. [Activate: Main] [Once Per Turn] You may place 1 card from your trash at the bottom of your deck: Give up to 1 rested DON!! card to your Leader or 1 of your Characters.,,Yamada Rokkaku.,3,legal,legal
+ST19-005,,Character,Black,3,,4000,1000,Strike,Navy,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [Activate: Main] [Once Per Turn] You may place 1 card from your trash at the bottom of your deck: Give up to 1 of your opponent's Characters −1 cost during this turn.",,kankurou,3,legal,legal
+OP02-093p2,Leader,Leader,Black,,5,5000,,Special,Navy,"[DON!! x1] [Activate: Main] [Once Per Turn] Give up to 1 of your opponent's Characters −1 cost during this turn. Then, if there is a Character with a cost of 0, this Leader gains +1000 power during this turn.",,BISAI,1,not legal,legal
+OP02-098,,Character,Black,3,,4000,1000,Strike,Navy,[On Play] You may trash 1 card from your hand: K.O. up to 1 of your opponent's Characters with a cost of 3 or less.,,kankurou,,not legal,legal
+OP02-106,,Character,Black,1,,0,2000,Wisdom,Navy,[On Play] Give up to 1 of your opponent's Characters −2 cost during this turn.,,Nijihayashi,,not legal,legal
+OP02-108,,Character,Black,2,,2000,1000,Special,Navy/Donquixote Pirates,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.)",,Mitsuaki Matsumoto,,not legal,legal
+OP02-109,,Character,Black,4,,6000,1000,Strike,Giant/Navy,,,HISASHI HUJIWARA,,not legal,legal
+OP02-113,,Character,Black,3,,3000,1000,Slash,Navy,"[When Attacking] Give up to 1 of your opponent's Characters −2 cost during this turn. Then, if there is a Character with a cost of 0, this Character gains +2000 power during this battle. [Trigger] Play this card.",,Koushi Rokushiro,,not legal,legal
+OP02-116,,Character,Black,3,,5000,1000,Slash,Navy,,,touge369,,not legal,legal
+OP02-117,,Event,Black,1,,,,,Navy,[Main] Give up to 1 of your opponent's Characters −5 cost during this turn. [Trigger] K.O. up to 1 of your opponent's Characters with a cost of 3 or less.,,,,not legal,legal
+OP03-079,,Character,Black,5,,5000,2000,Strike,Navy/Donquixote Pirates,[DON!! x1] This Character cannot be K.O.'d in battle.,,shosuke,,not legal,legal
+OP03-089,,Character,Black,2,,3000,1000,Wisdom,Navy,"[On Play] Look at 3 cards from the top of your deck; reveal up to 1 {Navy} type card other than [Brannew] and add it to your hand. Then, trash the rest.",,HISASHI HUJIWARA,,not legal,legal
+`;export{a as default};

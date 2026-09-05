@@ -1,0 +1,33 @@
+const s=`card_number,as_of,market_usd,source
+ST29-001,2026-09-05,2.07,limitless
+ST29-001p1,2026-09-05,26.04,limitless
+ST29-002,2026-09-05,0.12,limitless
+ST29-002p1,2026-09-05,2.36,limitless
+ST29-003,2026-09-05,0.07,limitless
+ST29-003p1,2026-09-05,0.74,limitless
+ST29-004,2026-09-05,0.90,limitless
+ST29-004p1,2026-09-05,5.34,limitless
+ST29-005,2026-09-05,0.28,limitless
+ST29-005p1,2026-09-05,2.22,limitless
+ST29-006,2026-09-05,0.11,limitless
+ST29-006p1,2026-09-05,1.99,limitless
+ST29-007,2026-09-05,0.20,limitless
+ST29-007p1,2026-09-05,13.11,limitless
+ST29-008,2026-09-05,0.27,limitless
+ST29-008p1,2026-09-05,24.14,limitless
+ST29-009,2026-09-05,2.03,limitless
+ST29-009p1,2026-09-05,21.88,limitless
+ST29-010,2026-09-05,0.14,limitless
+ST29-010p1,2026-09-05,1.42,limitless
+ST29-011,2026-09-05,0.12,limitless
+ST29-011p1,2026-09-05,4.43,limitless
+ST29-012,2026-09-05,0.12,limitless
+ST29-012p1,2026-09-05,4.34,limitless
+ST29-013,2026-09-05,0.12,limitless
+ST29-013p1,2026-09-05,1.06,limitless
+ST29-014,2026-09-05,1.04,limitless
+ST29-014p1,2026-09-05,11.80,limitless
+ST29-015,2026-09-05,0.20,limitless
+ST29-016,2026-09-05,0.34,limitless
+ST29-017,2026-09-05,0.12,limitless
+`;export{s as default};

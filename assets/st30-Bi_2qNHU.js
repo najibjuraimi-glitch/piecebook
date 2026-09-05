@@ -1,0 +1,36 @@
+const s=`card_number,as_of,market_usd,source
+ST30-001,2026-09-05,3.67,limitless
+ST30-001p1,2026-09-05,59.81,limitless
+ST30-002,2026-09-05,0.19,limitless
+ST30-002p1,2026-09-05,1.65,limitless
+ST30-003,2026-09-05,0.16,limitless
+ST30-003p1,2026-09-05,0.92,limitless
+ST30-004,2026-09-05,0.21,limitless
+ST30-004p1,2026-09-05,1.66,limitless
+ST30-005,2026-09-05,0.10,limitless
+ST30-005p1,2026-09-05,1.11,limitless
+ST30-006,2026-09-05,0.10,limitless
+ST30-006p1,2026-09-05,1.28,limitless
+ST30-007,2026-09-05,0.54,limitless
+ST30-007p1,2026-09-05,3.90,limitless
+ST30-008,2026-09-05,0.09,limitless
+ST30-008p1,2026-09-05,1.14,limitless
+ST30-009,2026-09-05,0.10,limitless
+ST30-009p1,2026-09-05,0.84,limitless
+ST30-010,2026-09-05,0.16,limitless
+ST30-010p1,2026-09-05,1.25,limitless
+ST30-011,2026-09-05,0.16,limitless
+ST30-011p1,2026-09-05,2.02,limitless
+ST30-012,2026-09-05,2.33,limitless
+ST30-012p1,2026-09-05,14.28,limitless
+ST30-013,2026-09-05,0.09,limitless
+ST30-013p1,2026-09-05,0.81,limitless
+ST30-014,2026-09-05,2.55,limitless
+ST30-014p1,2026-09-05,4.05,limitless
+ST30-015,2026-09-05,0.10,limitless
+ST30-015p1,2026-09-05,0.50,limitless
+ST30-016,2026-09-05,0.27,limitless
+ST30-016p1,2026-09-05,2.48,limitless
+ST30-017,2026-09-05,0.14,limitless
+ST30-017p1,2026-09-05,0.67,limitless
+`;export{s as default};

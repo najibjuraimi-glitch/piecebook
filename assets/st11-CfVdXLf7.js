@@ -1,0 +1,17 @@
+const e=`card_number,variant,category,color,cost,life,power,counter,attribute,types,effect,trigger,artist,block,standard,extra
+ST11-001,,Leader,Green,,5,5000,,Special,FILM,"[DON!! x1] [When Attacking] [Once Per Turn] Reveal 1 card from the top of your deck and add up to 1 {FILM} type card to your hand. Then, place the rest at the bottom of your deck.",,,2,legal,legal
+ST11-002,,Character,Green,3,,4000,1000,Special,FILM,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [End of Your Turn] You may trash 1 Event from your hand: Set up to 1 of your {FILM} type Characters as active.",,Sunohara,2,legal,legal
+ST11-003,,Event,Green,2,,,,,Music/FILM,"[Main] If your Leader is [Uta], choose one: • Rest up to 1 of your opponent's Characters with a cost of 5 or less. • K.O. up to 1 of your opponent's rested Characters with a cost of 5 or less.",,,2,legal,legal
+ST11-004,,Event,Green,1,,,,,Music/FILM,"[Main] If your Leader is [Uta], look at 3 cards from the top of your deck; reveal up to 1 {FILM} type card other than [New Genesis] and add it to your hand. Then, place the rest at the bottom of your deck in any order and set up to 1 of your DON!! cards as active.",,,2,legal,legal
+ST11-005,,Event,Green,3,,,,,Music/FILM,[Main] Set up to 1 of your [Uta] Leader as active. [Trigger] Up to 1 of your Leader or Character cards gains +1000 power during this turn.,,,2,legal,legal
+OP02-028,,Character,Green,3,,5000,1000,Ranged,FILM/Straw Hat Crew,,,,,not legal,legal
+OP02-033,,Character,Green,2,,4000,1000,Strike,FILM/Fish-Man/Straw Hat Crew,,,,,not legal,legal
+OP02-034,,Character,Green,2,,2000,2000,Wisdom,FILM/Animal/Straw Hat Crew,[DON!! x1] [When Attacking] Rest up to 1 of your opponent's Characters with a cost of 2 or less.,,,,not legal,legal
+OP02-035,,Character,Green,2,,3000,1000,Slash,FILM/Supernovas/Heart Pirates,[Activate: Main] ➀ (You may rest the specified number of DON!! cards in your cost area.) You may return this Character to the owner's hand: Play up to 1 Character with a cost of 3 from your hand.,,,,not legal,legal
+OP02-037,,Character,Green,3,,4000,1000,Strike,FILM/Straw Hat Crew,[On Play] Play up to 1 {FILM} or {Straw Hat Crew} type Character card with a cost of 2 or less from your hand.,,,,not legal,legal
+OP02-039,,Character,Green,5,,7000,1000,Special,FILM/Straw Hat Crew,,,,,not legal,legal
+OP02-040,,Character,Green,4,,5000,1000,Slash,FILM/Straw Hat Crew,[On Play] Play up to 1 {FILM} or {Straw Hat Crew} type Character card with a cost of 3 or less from your hand.,,,,not legal,legal
+OP02-041,,Character,Green,7,,7000,,Strike,FILM/Supernovas/Straw Hat Crew,"[Blocker] (After your opponent declares an attack, you may rest this card to make it the new target of the attack.) [On Play] Play up to 1 {FILM} or {Straw Hat Crew} type Character card with a cost of 4 or less from your hand.",,,,not legal,legal
+OP02-043,,Character,Green,4,,6000,1000,Slash,FILM/Supernovas/Straw Hat Crew,,,,,not legal,legal
+OP02-045,,Event,Green,3,,,,,FILM/Supernovas/Straw Hat Crew,"[Counter] Up to 1 of your Leader or Character cards gains +6000 power during this battle. Then, play up to 1 Character card with a cost of 3 or less and no base effect from your hand. [Trigger] Rest up to 1 of your opponent's Leader or Character cards with a cost of 5 or less.",,,,not legal,legal
+`;export{e as default};
