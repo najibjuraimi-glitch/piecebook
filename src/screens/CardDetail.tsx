@@ -39,6 +39,11 @@ function CardDetail({ card }: { card: Card }) {
     <Screen>
       <BackBar
         fallbackTo={`/sets/${encodeURIComponent(card.setCode)}`}
+        crumbs={[
+          { label: 'Sets', to: '/' },
+          { label: card.setCode, to: `/sets/${encodeURIComponent(card.setCode)}` },
+          { label: card.cardNumber },
+        ]}
         action={<StarButton subject="card" active={watch.isWatchingCard(card.cardNumber)} onToggle={() => watch.toggleCard(card.cardNumber)} />}
       />
 
