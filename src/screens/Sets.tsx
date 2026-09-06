@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { ROSTER, UPCOMING } from '../data/roster'
+import { cheapestReleasedBox, ROSTER, UPCOMING } from '../data/roster'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { ChevronRight, SetTile } from '../components/SetTile'
 import { StarterDeckRow } from '../components/StarterDeckRow'
@@ -37,6 +37,7 @@ export function SetsScreen() {
   const boosters = ROSTER.filter((s) => s.product !== 'starter_deck')
   // Number order, newest number first: release dates scramble the numbering (ST-22 shipped after ST-23).
   const decks = [...ROSTER.filter((s) => s.product === 'starter_deck')].sort((a, b) => b.setCode.localeCompare(a.setCode, 'en', { numeric: true }))
+  const cheapestBox = cheapestReleasedBox()
   // Facets (2.3) read every set's attributes; they load on the first search and stay.
   const attrs = useSearchAttributes(searching)
   const { isOwned, owned } = useCollection()
@@ -85,6 +86,11 @@ export function SetsScreen() {
               , then <JumpLink href="#starter-decks">{decks.length} starter decks</JumpLink>
             </>
           )}
+          {cheapestBox && (
+            <>
+              , <JumpLink href="#cheapest-box">cheapest box</JumpLink>
+            </>
+          )}
           .
         </p>
       )}
@@ -115,7 +121,17 @@ export function SetsScreen() {
         <div role="tabpanel" id="panel-tiles" aria-labelledby="tab-tiles">
           <ul className="grid grid-cols-1 gap-4 tablet:grid-cols-2 wide:grid-cols-3">
             {boosters.map((set) => (
-              <li key={set.setCode} id={set.setCode === UPCOMING[0]?.setCode ? 'coming-soon' : undefined} className="scroll-mt-4">
+              <li
+                key={set.setCode}
+                id={
+                  set.setCode === UPCOMING[0]?.setCode
+                    ? 'coming-soon'
+                    : cheapestBox && set.setCode === cheapestBox.setCode
+                      ? 'cheapest-box'
+                      : undefined
+                }
+                className="scroll-mt-4"
+              >
                 <SetTile set={set} />
               </li>
             ))}

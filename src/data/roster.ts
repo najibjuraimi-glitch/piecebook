@@ -160,6 +160,21 @@ export function isUpcoming(set: RosterSet): boolean {
 /** Every upcoming booster in release order (the roster is already date-sorted). */
 export const UPCOMING: RosterSet[] = ROSTER.filter(isUpcoming)
 
+/** Released EN booster with the lowest dated box seed. Undefined when none have a figure. */
+export function cheapestReleasedBox(): RosterSet | undefined {
+  let best: RosterSet | undefined
+  let price = Infinity
+  for (const set of ROSTER) {
+    if (set.product === 'starter_deck') continue
+    if (UPCOMING.some((u) => u.setCode === set.setCode)) continue
+    const usd = rosterSealedProduct(set)?.usMarketUsd
+    if (usd == null || usd >= price) continue
+    price = usd
+    best = set
+  }
+  return best
+}
+
 /**
  * The one date line an upcoming set carries: `Coming 20 Nov 2026` until the
  * day, `Released 20 Nov 2026 · checklist soon` once it has passed and Limitless
