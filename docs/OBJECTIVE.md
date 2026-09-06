@@ -33,10 +33,13 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 5.4 — Currency display: re-opened (Jib, 5 Sep 2026). Three of ten users in the Phase 6 research thought in Singapore dollars and stumbled on a bare `$`. The PRD's "no FX" meant no invented rates; an official daily reference rate (ECB or MAS), pulled by the refresh with its date and shown as `S$… at the ECB rate of 5 Sep 2026`, is not invented. Design draft to follow through the approval loop; amends `V1-PRD.md`.
 - 5.2 (multiple collections) and 5.3 (graded prices, population) stay parked: nobody in the research asked for 5.2; 5.3 has no free licensed source (PriceCharting's paid API or PSA's population data would need a budget decision first).
 
+## Hypotheses, not taken as given
+- 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Next-phase interest only: ringgit, rupiah, and language translation *may* matter. Seat collectors in those markets in the next research round before any map row besides this decision opens. Same bar as 5.4 if a currency opens: dated official table, never invented. Translation, if it ever opens, is app chrome only — Bandai card text stays as published.
+
 ## Decisions parked on the board
 - 6.1 — where decks live (fourth tab vs under Collection)
 - 6.5 — starter decks on Cards' roster
 - 6.6 — decklists: link only, or import as a source
 
 ## Task list
-`docs/growth-map.csv` holds every task (48 rows) with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. Rows marked `NO (quota)` in the `In ClickUp` column (7.6 events) still need creating; 7.1–7.5, 7.7–7.11 and 8.1 shipped 6 Sep 2026. The dependencies to wire are in the `Depends on` column.
+`docs/growth-map.csv` holds every task (49 rows) with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. Rows marked `NO` (10.0) or `NO (quota)` (7.6 events) are not in ClickUp; do not create 10.0 until research in MY and ID asks. 7.1–7.5, 7.7–7.11 and 8.1 shipped 6 Sep 2026. The dependencies to wire are in the `Depends on` column.
