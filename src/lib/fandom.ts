@@ -1,4 +1,11 @@
-import { WIKI_ENTRIES, type WikiBirth, type WikiEntry } from '../data/wiki'
+import { ALL_CARDS, compareCardNumbers, type Card } from '../data/seed'
+import { getWiki, WIKI_ENTRIES, type WikiBirth, type WikiEntry } from '../data/wiki'
+
+/** UTC day number for an ISO date; used for Today's card so a pin is timezone-stable. */
+export function utcDay(iso: string): number {
+  const [y, m, d] = iso.split('-').map(Number)
+  return Date.UTC(y, m - 1, d) / 86_400_000
+}
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const MONTHS_LONG = [
@@ -74,4 +81,43 @@ export function isNameReveal(entry: WikiEntry): boolean {
 export function visibleLine(entry: WikiEntry | undefined): string | null {
   if (!entry?.line || isNameReveal(entry)) return null
   return entry.line
+}
+
+/**
+ * Last chapter of Arlong Park. A line whose debut is after this is safe on a
+ * character page the reader opened, and not safe as a Sets-tab card of the day.
+ */
+export const EAST_BLUE_LAST_CHAPTER = 95
+
+/**
+ * Base prints whose printed name has a visible line. `maxDebut` keeps the
+ * timeline pool inside a reader's finished arc (Arlong Park = 95). The
+ * feature ships only at ≥100; the sample East Blue pool is four names.
+ */
+export function todaysCardPool({ maxDebut }: { maxDebut?: number } = {}): Card[] {
+  return ALL_CARDS.filter((c) => {
+    if (c.isParallel) return false
+    const wiki = getWiki(c.name)
+    if (!visibleLine(wiki)) return false
+    if (maxDebut != null && (wiki?.debutChapter == null || wiki.debutChapter > maxDebut)) return false
+    return true
+  }).sort((a, b) => compareCardNumbers(a.cardNumber, b.cardNumber))
+}
+
+export const TODAYS_CARD_MIN_POOL = 100
+
+export interface TodaysCardPick {
+  card: Card
+  wiki: WikiEntry
+  poolSize: number
+}
+
+/** One base print for `iso`, days-since-epoch modulo the sorted pool. */
+export function todaysCard(iso: string, opts: { maxDebut?: number } = {}): TodaysCardPick | null {
+  const pool = todaysCardPool(opts)
+  if (pool.length === 0) return null
+  const card = pool[Math.abs(utcDay(iso)) % pool.length]
+  const wiki = getWiki(card.name)
+  if (!visibleLine(wiki) || !wiki) return null
+  return { card, wiki, poolSize: pool.length }
 }
