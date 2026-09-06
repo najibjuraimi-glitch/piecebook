@@ -1,0 +1,12 @@
+{
+  "asOf": "2026-09-04",
+  "base": "USD",
+  "quote": "SGD",
+  "rate": 1.2669,
+  "eurUsd": 1.1622,
+  "eurSgd": 1.4724,
+  "source": "ECB",
+  "sourceName": "European Central Bank euro foreign-exchange reference rates",
+  "sourceUrl": "https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml",
+  "note": "SGD per USD is EUR/SGD ÷ EUR/USD from the same ECB daily table. Not a bank quote."
+}
