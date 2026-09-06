@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ALL_TAB, getSet, rarityTabs, type CardSet } from '../data/seed'
-import { getRosterSet, rosterSealedProduct, type RosterSet } from '../data/roster'
+import { displayCode, displayName, getRosterSet, isUpcoming, releaseLine, rosterSealedProduct, type RosterSet } from '../data/roster'
 import { getSealedGuidance } from '../data/sealed'
 import { getSetIntro, hasIntroContent, type SetIntro as SetIntroData } from '../data/intros'
 import { DEFAULT_SORT, matchesSearch, parseSort, sortCards, type SortKey } from '../lib/query'
@@ -14,6 +14,8 @@ import { BackBar, BLEED, Screen } from '../components/Screen'
 import { BoxCard } from '../components/BoxCard'
 import { SetIntro } from '../components/SetIntro'
 import { SearchField } from '../components/SearchField'
+import { FacetChips, useSearchAttributes } from '../components/FacetChips'
+import { matchesFacets, parseQuery, traitList } from '../lib/search'
 import { SortControls } from '../components/SortControls'
 import { RarityTabs } from '../components/RarityTabs'
 import { CardCell, CardGrid } from '../components/CardCell'
@@ -30,8 +32,41 @@ export function SetDetailScreen() {
   const roster = getRosterSet(setCode)
 
   if (set) return <SeededSetDetail key={set.setCode} set={set} />
+  if (roster && isUpcoming(roster)) return <UpcomingSetDetail key={roster.setCode} roster={roster} />
   if (roster) return <PendingSetDetail roster={roster} />
   return <NotFoundScreen title="Set not found" message="That set isn’t on the roster." />
+}
+
+/**
+ * An upcoming booster (7.5): on the roster from TCGCSV's presale listing, not
+ * yet on Limitless. The code as the title like any set (read from TCGCSV's card
+ * numbers; only a code still guessed by sequence stays hidden and the name
+ * leads), the name without its "Extra Booster:" prefix, `US release 20 Nov 2026
+ * · TCGplayer's date`, the BoxCard with the pre-order market, one sentence about
+ * the checklist, and the star. No search, no rarity tabs.
+ */
+function UpcomingSetDetail({ roster }: { roster: RosterSet }) {
+  const product = rosterSealedProduct(roster)
+  const watch = useWatchlist()
+  const code = displayCode(roster)
+  const name = displayName(roster)
+
+  return (
+    <Screen>
+      <BackBar
+        title={code ?? name}
+        subline={code ? name : undefined}
+        meta={releaseLine(roster) ?? undefined}
+        wrapTitle={code === null}
+        fallbackTo="/"
+        action={<StarButton subject="set" name={name} active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}
+      />
+
+      <BoxCard set={roster} product={product} presale />
+
+      <p className="mt-6 px-1 text-body text-muted">The checklist appears here the day Limitless, our card source, publishes it.</p>
+    </Screen>
+  )
 }
 
 /** Cards' intro when they wrote one; otherwise the roster's EN date alone. Nothing else is inferred. */
@@ -65,9 +100,11 @@ function PendingSetDetail({ roster }: { roster: RosterSet }) {
     <Screen>
       <BackBar
         title={roster.setCode}
-        subline={roster.setName}
+        subline={displayName(roster)}
         fallbackTo="/"
-        action={<StarButton subject="set" active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}
+        action={
+          <StarButton subject="set" name={displayName(roster)} active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />
+        }
       />
 
       <BoxCard set={roster} product={product} intro={shownIntro} guidance={guidance} />
@@ -94,6 +131,10 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   // Search text lives in the URL as `?q=`, so "All 151 in OP-09" from global search
   // lands prefilled and the address stays truthful once the collector edits it.
   const query = params.get('q') ?? ''
+  // The same facets as global search (2.3): typed words become chips, the rest matches names.
+  const attrs = useSearchAttributes(query.trim() !== '')
+  const parsed = useMemo(() => parseQuery(query, traitList(attrs)), [query, attrs])
+  const loading = parsed.needsAttributes && !attrs
 
   const roster = getRosterSet(set.setCode)
   const isDeck = roster?.product === 'starter_deck'
@@ -108,10 +149,10 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   const visible = useMemo(() => {
     const bucket = tabs.find((t) => t.key === active)
     if (!bucket) return []
-    const sorted = sortCards(bucket.cards.filter((c) => matchesSearch(c, query)), sort)
+    const sorted = sortCards(bucket.cards.filter((c) => matchesSearch(c, parsed.text) && matchesFacets(c, parsed, attrs, isOwned)), sort)
     // On a deck page the leader leads, whatever the sort.
     return isDeck ? [...sorted.filter((c) => c.rarity === 'L'), ...sorted.filter((c) => c.rarity !== 'L')] : sorted
-  }, [tabs, active, query, sort, isDeck])
+  }, [tabs, active, parsed, attrs, isOwned, sort, isDeck])
 
   const update = (patch: { rarity?: string; sort?: SortKey; q?: string }) => {
     const next = new URLSearchParams(params)
@@ -143,7 +184,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
         subline={set.setName}
         meta={ownedInSet > 0 ? `You own ${ownedInSet} of ${set.cards.length}${isDeck ? ' different cards' : ''}` : undefined}
         fallbackTo="/"
-        action={<StarButton subject="set" active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
+        action={<StarButton subject="set" name={set.setName} active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
       />
 
       {roster && <BoxCard set={roster} product={sealedProduct} intro={intro} guidance={sealed} />}
@@ -152,6 +193,8 @@ function SeededSetDetail({ set }: { set: CardSet }) {
       {intro && <SetIntro intro={intro} />}
 
       <SearchField value={query} onChange={(q) => update({ q })} className="mt-5 tablet:max-w-[560px]" />
+      <FacetChips query={query} onChange={(q) => update({ q })} attrs={attrs} className="mt-2" />
+      {loading && <p className="mt-2 px-1 text-meta text-muted">Loading…</p>}
 
       <SortControls sort={sort} onChange={(s) => update({ sort: s })} count={visible.length} className="mt-3 px-1" />
 
@@ -159,7 +202,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
         <RarityTabs buckets={tabs} active={active} onChange={(key) => update({ rarity: key })} />
       </div>
 
-      {visible.length === 0 ? (
+      {loading ? null : visible.length === 0 ? (
         <p className="px-1 pt-10 text-center text-body text-muted">No cards match.</p>
       ) : (
         <CardGrid className="pt-2">

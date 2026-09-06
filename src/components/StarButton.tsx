@@ -1,22 +1,26 @@
 interface Props {
   active: boolean
   onToggle: () => void
-  /** What is being watched, for the accessible label: "card" or "set". */
-  subject: 'card' | 'set'
+  /** What is being watched, for the accessible label: "card", "set" or "character". */
+  subject: 'card' | 'set' | 'character'
+  /** The subject by name, so the button reads "Watch The Dominance of God" / "Stop watching Shanks", never "this set". */
+  name?: string
   className?: string
 }
 
 /**
  * Quiet 44px toggle for the watchlist. Outline star when off, filled ink when
  * on. Ink only, never the accent: watching is a secondary action, not a CTA.
+ * A toggle button: aria-pressed carries the state, the label names the subject.
  */
-export function StarButton({ active, onToggle, subject, className = '' }: Props) {
+export function StarButton({ active, onToggle, subject, name, className = '' }: Props) {
+  const who = name?.trim() || `this ${subject}`
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-pressed={active}
-      aria-label={active ? `Stop watching this ${subject}` : `Watch this ${subject}`}
+      aria-label={active ? `Stop watching ${who}` : `Watch ${who}`}
       title={active ? 'Watching' : 'Watch'}
       className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink transition-colors duration-150 ease-out hover:bg-white active:bg-[#F0ECE4] ${className}`}
     >

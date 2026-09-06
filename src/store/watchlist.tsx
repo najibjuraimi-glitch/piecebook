@@ -1,9 +1,9 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
 /**
- * Watchlist: cards and sets the collector wants to keep an eye on, independent
- * of ownership. Local-only, like the collection, under its own storage key so
- * clearing or migrating one never touches the other.
+ * Watchlist: cards, sets and characters (card names, 7.4) the collector wants
+ * to keep an eye on, independent of ownership. Local-only, like the collection,
+ * under its own storage key so clearing or migrating one never touches the other.
  */
 const STORAGE_KEY = 'piecebook.watchlist.v1'
 
@@ -15,9 +15,11 @@ interface WatchEntry {
 interface WatchlistState {
   cards: Record<string, WatchEntry>
   sets: Record<string, WatchEntry>
+  /** Keyed by card name exactly as the seed spells it ("Shanks", "Kid & Killer"). */
+  characters: Record<string, WatchEntry>
 }
 
-const EMPTY: WatchlistState = { cards: {}, sets: {} }
+const EMPTY: WatchlistState = { cards: {}, sets: {}, characters: {} }
 
 function cleanMap(v: unknown): Record<string, WatchEntry> {
   const out: Record<string, WatchEntry> = {}
@@ -36,7 +38,8 @@ function load(): WatchlistState {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (!raw) return EMPTY
     const parsed = JSON.parse(raw) as Partial<WatchlistState>
-    return { cards: cleanMap(parsed.cards), sets: cleanMap(parsed.sets) }
+    // Data stored before 7.4 has no `characters`; cleanMap turns the missing key into an empty map.
+    return { cards: cleanMap(parsed.cards), sets: cleanMap(parsed.sets), characters: cleanMap(parsed.characters) }
   } catch {
     return EMPTY
   }
@@ -55,12 +58,20 @@ export interface WatchlistApi {
   cards: string[]
   /** Set codes, newest starred first. */
   sets: string[]
+  /** Card names, newest starred first. */
+  characters: string[]
   isWatchingCard: (cardNumber: string) => boolean
   isWatchingSet: (setCode: string) => boolean
+  isWatchingCharacter: (name: string) => boolean
   /** ISO timestamp the card was starred, or undefined when it is not watched. */
   watchedAt: (cardNumber: string) => string | undefined
+  /** ISO timestamp the set was starred, or undefined when it is not watched. */
+  setWatchedAt: (setCode: string) => string | undefined
+  /** ISO timestamp the character was starred, or undefined when it is not watched. */
+  characterWatchedAt: (name: string) => string | undefined
   toggleCard: (cardNumber: string) => void
   toggleSet: (setCode: string) => void
+  toggleCharacter: (name: string) => void
 }
 
 const WatchlistContext = createContext<WatchlistApi | null>(null)
@@ -95,21 +106,30 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
 
   const isWatchingCard = useCallback((n: string) => Boolean(state.cards[n]), [state.cards])
   const isWatchingSet = useCallback((c: string) => Boolean(state.sets[c]), [state.sets])
+  const isWatchingCharacter = useCallback((name: string) => Boolean(state.characters[name]), [state.characters])
   const watchedAt = useCallback((n: string) => state.cards[n]?.at, [state.cards])
+  const setWatchedAt = useCallback((c: string) => state.sets[c]?.at, [state.sets])
+  const characterWatchedAt = useCallback((name: string) => state.characters[name]?.at, [state.characters])
   const toggleCard = useCallback((n: string) => setState((s) => ({ ...s, cards: toggle(s.cards, n) })), [])
   const toggleSet = useCallback((c: string) => setState((s) => ({ ...s, sets: toggle(s.sets, c) })), [])
+  const toggleCharacter = useCallback((name: string) => setState((s) => ({ ...s, characters: toggle(s.characters, name) })), [])
 
   const api = useMemo<WatchlistApi>(
     () => ({
       cards: newestFirst(state.cards),
       sets: newestFirst(state.sets),
+      characters: newestFirst(state.characters),
       isWatchingCard,
       isWatchingSet,
+      isWatchingCharacter,
       watchedAt,
+      setWatchedAt,
+      characterWatchedAt,
       toggleCard,
       toggleSet,
+      toggleCharacter,
     }),
-    [state, isWatchingCard, isWatchingSet, watchedAt, toggleCard, toggleSet],
+    [state, isWatchingCard, isWatchingSet, isWatchingCharacter, watchedAt, setWatchedAt, characterWatchedAt, toggleCard, toggleSet, toggleCharacter],
   )
 
   return <WatchlistContext.Provider value={api}>{children}</WatchlistContext.Provider>
