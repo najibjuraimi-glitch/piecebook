@@ -1,5 +1,5 @@
 # Piecebook V1 — Customer lenses (shop + learn)
-(Design addendum, draft v3 after Jib’s new-tab note, 6 Sep 2026. Not approved. Not for merge.)
+(Design addendum, draft v3 after Jib’s new-tab note; approved by Jib 6 Sep 2026 SGT)
 
 Owner: Code as interim Cards, from Jib’s 6 Sep instruction to review Collectr and Bandai how-to-play, then live Piecebook, 20 shop + 20 learn (10 new / 10 play each), then Jib as a new tab  
 For: Design (critique), then Jib  
@@ -58,7 +58,7 @@ No new feed. `cheapestReleasedBox()` reads `rosterSealedProduct` (TCGCSV newest 
 | 5 on v1 — search on Start | Built in v2: same Sets field, `/?q=` |
 | Jib as a new tab — Collect / Play / World are our words; Collectr and Bandai Asia name the place | v3: visitor titles, subline, existing box/card art on each door |
 
-## Decisions (draft v3 — for Jib)
+## Decisions (approved 6 Sep 2026)
 1. Play door is Learn. Decks stays the tab and the last line on Learn.
 2. Collect copy is find, then own. Not a shop. Start search is the existing Sets field.
 3. Cheapest box is a jump, not a new sort. Oldest-first tiles stay. The tile still says seed.
@@ -68,7 +68,6 @@ No new feed. `cheapestReleasedBox()` reads `rosterSealedProduct` (TCGCSV newest 
 7. World is still the chrome name and the `/belong` door. No World-only review wave.
 
 ## Not taken, noted for later
-- Search field on Start.
 - Newest box tile on Start.
 - Colour search defaulting to Price · low to high.
 - Variant facet (`Manga Art`).

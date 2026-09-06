@@ -1,4 +1,4 @@
-# Customer lenses — draft v3 (not approved)
+# Customer lenses — v3 (approved, PR #30)
 
 Phone 390 and wide 1280 against `npx vite preview` of `cursor/customer-lenses-f694`.
 
