@@ -202,6 +202,7 @@ async function parsePage(page, { section = 0, categories = false } = {}) {
 // ---------------------------------------------------------------- names
 
 const HONORIFIC = /(^|\s)(Mr|Ms|Mrs|Dr|Jr|Sr)$/i
+const INITIAL = /(^|\s)[A-Za-z]$/
 const CODENAME = /^(Mr|Ms|Mrs|Miss)\b/i
 
 /** Printed card name → wiki title to ask for, or null for a two-character card. */
@@ -219,7 +220,7 @@ function titleFor(name) {
     const parts = s.split('.').map((p) => p.trim())
     if (!parts.every((p) => p.length <= 1)) {
       s = parts
-        .map((p, i) => (i < parts.length - 1 && (/^[A-Za-z]$/.test(p) || HONORIFIC.test(p)) ? `${p}.` : p))
+        .map((p, i) => (i < parts.length - 1 && (INITIAL.test(p) || HONORIFIC.test(p)) ? `${p}.` : p))
         .filter(Boolean)
         .join(' ')
     }
@@ -641,7 +642,7 @@ const wordCount = (s) => (s ? s.split(/\s+/).filter(Boolean).length : 0)
  * citations, each clause tested against the cutoff, the longest passing
  * opening kept, death rule, word cap. Returns everything the audit wants.
  */
-function buildLine({ printedName, wikitext, defs, cutoff, gateRuns, statusChap }) {
+function buildLine({ printedName, wikitext, defs, cutoff, gateBlock, statusChap }) {
   const { text: paragraph, items } = firstParagraph(wikitext)
   const out = { rawSentence: null, clauses: [], line: null, lineWords: null, noLineReason: null }
   if (!paragraph) {
@@ -663,28 +664,24 @@ function buildLine({ printedName, wikitext, defs, cutoff, gateRuns, statusChap }
     const chapters = resolved.map((r) => r.chapter).filter((n) => n != null)
     const chapter = chapters.length ? Math.min(...chapters) : null
     const text = cleanText(restore(c.raw, items))
-    let pass = false
-    let why
-    if (!gateRuns) why = 'gate cannot run'
-    else if (c.cites.length === 0) why = 'uncited'
-    else if (chapter == null) why = resolved.map((r) => r.via).join('; ')
-    else if (chapter > limit) why = `chapter ${chapter} after cutoff ${cutoff}`
-    else pass = true
-    const entry = { text, chapter, pass }
-    if (!pass) entry.reason = why
-    else entry.via = resolved.filter((r) => r.chapter === chapter).map((r) => r.via).join('; ')
-    if (PAST.test(text) && pass) {
-      if (statusChap == null || statusChap > limit) {
-        entry.pass = false
-        entry.reason = statusChap == null ? 'past tense, status carries no cited chapter' : `past tense, status chapter ${statusChap} after cutoff ${cutoff}`
-      } else entry.via += `; status chapter ${statusChap}`
+    const entry = { text, chapter, pass: false }
+    if (gateBlock) entry.reason = `gate cannot run: ${gateBlock}`
+    else if (c.cites.length === 0) entry.reason = 'uncited'
+    else if (chapter == null) entry.reason = `unresolved citation: ${resolved.map((r) => r.via).join('; ')}`
+    else if (chapter > limit) entry.reason = `after cutoff: chapter ${chapter}, cutoff ${cutoff}`
+    else if (PAST.test(text) && (statusChap == null || statusChap > limit)) {
+      entry.reason = statusChap == null ? 'past tense: status carries no cited chapter' : `past tense: status chapter ${statusChap}, cutoff ${cutoff}`
+    } else {
+      entry.pass = true
+      entry.via = resolved.filter((r) => r.chapter === chapter).map((r) => r.via).join('; ')
+      if (PAST.test(text)) entry.via += `; status chapter ${statusChap}`
     }
     out.clauses.push(entry)
   }
   let kept = 0
   while (kept < out.clauses.length && out.clauses[kept].pass) kept++
   if (kept === 0) {
-    out.noLineReason = out.clauses.length ? `first clause fails: ${out.clauses[0].reason}` : 'no clauses'
+    out.noLineReason = out.clauses.length ? out.clauses[0].reason : 'no clauses'
     return out
   }
   const compose = (k) => cleanText(restore(clauses.slice(0, k).map((c) => c.raw).join(''), items)).replace(/[\s.,;:]+$/, '')
@@ -695,13 +692,13 @@ function buildLine({ printedName, wikitext, defs, cutoff, gateRuns, statusChap }
     line = k > 0 ? `${printedName} ${compose(k)}` : ''
   }
   if (k === 0) {
-    out.noLineReason = `first clause alone is over ${MAX_WORDS} words`
+    out.noLineReason = `over ${MAX_WORDS} words: the first clause alone is ${wordCount(`${printedName} ${compose(1)}`)} words`
     return out
   }
   if (k < kept) out.trimmedForLength = kept - k
   const words = wordCount(line)
   if (words < MIN_WORDS) {
-    out.noLineReason = `under ${MIN_WORDS} words ("${line}")`
+    out.noLineReason = `under ${MIN_WORDS} words: "${line}"`
     return out
   }
   if (!FINITE.test(line)) {
@@ -750,11 +747,8 @@ async function processName(name, arcs) {
   const birth = parseBirth(birthRaw)
   const statusRaw = (box.status ?? '').trim() || null
   const statusChap = statusChapter(box.status, defs)
-  const gateRuns = arcs != null && debut != null && holder != null
-  const built = buildLine({ printedName: name, wikitext: section0, defs, cutoff: holder?.cutoff ?? null, gateRuns, statusChap })
-  if (!gateRuns && !built.noLineReason?.startsWith('first clause')) {
-    built.noLineReason = arcs == null ? 'gate cannot run: no arc list' : debut == null ? 'gate cannot run: no debut chapter in first' : `gate cannot run: chapter ${debut} in no arc`
-  }
+  const gateBlock = arcs == null ? 'no arc list' : debut == null ? 'no debut chapter in first' : holder == null ? `chapter ${debut} is in no arc` : null
+  const built = buildLine({ printedName: name, wikitext: section0, defs, cutoff: holder?.cutoff ?? null, gateBlock, statusChap })
   return {
     entry: {
       name,
@@ -875,7 +869,8 @@ for (const name of names) {
     console.log(`  ${name} → ${e.title} (revid ${e.revid}, box in ${a.charBoxIn}) · ${gate} · ${birth}\n      line (${e.lineWords} words): ${e.line}`)
   } else {
     const reason = a.noLineReason ?? 'unknown'
-    tally.noLine[reason.split(/[:(]/)[0].trim()] = (tally.noLine[reason.split(/[:(]/)[0].trim()] ?? 0) + 1
+    const category = reason.split(':')[0].trim()
+    tally.noLine[category] = (tally.noLine[category] ?? 0) + 1
     console.log(`  ${name} → ${e.title} (revid ${e.revid}, box in ${a.charBoxIn}) · ${gate} · ${birth}\n      no line: ${reason}`)
   }
   if (process.env.WIKI_VERBOSE) {
