@@ -1,5 +1,5 @@
 # Piecebook V1 — Fandom page
-(Design addendum, draft 11, 6 Sep 2026. Not approved. Not for merge.)
+(Design addendum, draft 11 v2 after ten reviewers, 6 Sep 2026. Not approved. Not for merge.)
 
 Owner: Code as interim Cards, drafted from Jib’s instruction to put a fandom page like [One Piece Wiki](https://onepiece.fandom.com/wiki/One_Piece_Wiki) on Piecebook, and from rendered mockups on `cursor/fandom-page-draft-f694`  
 For: Design (critique), ten reviewers, then Jib  
@@ -53,12 +53,12 @@ The numbered chips are the last chapter of that arc on the wiki Story Arcs list 
 | Chip | Who-is on a name you open | Story paragraph | Fruits | People |
 |---|---|---|---|---|
 | Debut arc (default) | Stored debut-arc line (7.8) | Hidden | Hidden | Every printed name |
-| A saga chip | Clauses recomputed at that chapter | Arcs whose last chapter is ≤ the chip | Fruits whose earliest eater debuts ≤ the chip | Names whose stored debut is ≤ the chip; a name with no debut on file stays |
+| A saga chip | Clauses recomputed at that chapter | Arcs whose last chapter is ≤ the chip | Fruits whose earliest eater debuts ≤ the chip | Names whose stored debut is ≤ the chip; a name with no debut on file is hidden |
 | Now | Clauses at every chapter, late ones included | Every arc, including Elbaph | Every stored fruit | Every printed name |
 
 Uncited clauses still fail. Straw Hats still have no sentence. Imu still shows nothing on the character page (later-name reveal). A fruit later-name after a line break (Nika on Luffy) is not stored.
 
-Copy under the chips: *Summaries and fruits stay behind the last arc you have finished. A name you have not met yet is hidden. Who they are on a page you open follows the same chapter.*
+Copy under the chips, **on `/belong` only**: *Summaries and fruits stay behind the last arc you have finished. On a saga chip, a name we cannot place before that chapter is hidden. Who they are on a page you open follows the same chapter.* Story, People and Fruits keep the chips and drop the paragraph.
 
 ## Chapter or anime summaries
 **Source.** One fetch: the wiki [Story Arcs](https://onepiece.fandom.com/wiki/Story_Arcs) page (`npm run wiki:belong` → `data/wiki/summaries.json`). The paragraph under each `====[[Name]]====` heading, cleaned, never paraphrased. The same page’s `Chapters (a-b)` and `Episodes (c-d)` bullets. 33 main arcs, 6 Sep 2026, revid 2128192. Elbaph is open (`1126–`, `1156–`).
@@ -78,7 +78,7 @@ The four doors on `/belong` are the portal. They are Piecebook rooms, not links 
 Luffy’s row is `Gum-Gum Fruit · Gomu Gomu no Mi · Paramecia`. Not Nika.
 
 ## Second character book
-**People page.** Every EN print whose attributes say Character or Leader, A–Z, search, letter chips. A row is the printed name and `N prints · M sets`. Tap → the existing `/characters/:name` print page (7.4 / 7.8). That page stays the first book. This list is the second.
+**People page.** Every EN print whose attributes say Character or Leader, A–Z, search, letter chips. On a saga chip, only names with a stored debut chapter at or before that chip — a name we have not placed is hidden (v2; v1 leaked Absalom and Ace at East Blue because 540 printed names have no wiki debut on file). Debut arc and Now still list every printed name. A row is the printed name and `N prints · M sets`. Tap → the existing `/characters/:name` print page (7.4 / 7.8). That page stays the first book. This list is the second.
 
 Attributes load on first visit, as Decks does. A name with no category on file is left out rather than guessed.
 
@@ -97,9 +97,25 @@ Device date is still the only date for On This Day.
 3. Summaries are the wiki Story Arcs paragraph plus chapter and episode ranges, gated by a finished-arc cutoff. No authored blurbs. No official synopses. No chapter-page titles passed off as plot.
 4. The fruit dex is Char Box fields on asked names, first line only, no later-name, no Imu. Not a clone of every fruit on the wiki.
 5. The people book is printed Character / Leader names into the pages we already have.
-6. Default cutoff is Debut arc: who-is unchanged, summaries and fruits closed.
+6. Default cutoff is Debut arc: who-is unchanged, summaries and fruits closed. People is the full print book until a saga chip is on.
 7. No wiki images. No wiki article links. Licence URL only.
 8. Live on `main` waits on “approved” and “merge N”.
+
+## Research → response (ten reviewers: lore encyclopedist, Tokyo JP/EN collector, new fan mid-East-Blue, copy editor, product designer, phone reader, card collector, budget parent, low-vision collector, Singapore store owner)
+
+| Heard (of ten) | Response |
+|---|---|
+| 7 — People at East Blue still lists later names (A.O., Absalom, Ace & Newgate). 540 printed names have no wiki debut on file; v1 left them in | On a saga chip, a name with no stored debut is hidden. Debut arc and Now still list every printed name |
+| 5 — The three-line cutoff note repeats on Story, People and Fruits and reads as a terms wall | Explanation on `/belong` only. Rooms keep the chips |
+| 4 — “Pokédex” is a Pokémon word / a tone break / something a shop has to explain | Kept. Jib named the room. Noted, not taken at four |
+| 3 — Default Debut arc still shows every printed name, including people a new reader has not met | Kept. The second book is the print index until a saga chip is on. Copy now says the hide rule is on a saga chip |
+| 3 — The game is a door and a section of three rows | Kept. The door is the portal; the rows send into collect and play |
+| 3 — Who-is cutoff is invisible on the character page | Not taken. That page stays the Sets print book; the chip is remembered |
+| 2 — Fifth tab crowds Collection on 390 | Measured: Collection 51px in a 78px slot, one line. Kept |
+| 2 — On This Day can name someone you have not met | Already decided on 7.9; same component |
+| 2 — “the names we have asked” is pipeline talk | Kept. It is the honest gap (92 of the roster) |
+| Split — JP names on chips and people; ownership marks on people; confirm before Now; darker muted type | Noted for later |
+| Not taken — authored Straw Hat lines; wiki article links; lighting Belong on `/characters/:name`; Egghead as its own chip | Same as draft 11 |
 
 ## Not taken, noted for later
 - Fetching every remaining printed name so the fruit dex and who-is cover the whole roster.

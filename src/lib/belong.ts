@@ -42,9 +42,12 @@ export function fruitVisible(fruit: WikiFruit, reader: ReaderCutoff): boolean {
 }
 
 export function personVisible(name: string, reader: ReaderCutoff): boolean {
+  // Debut arc and Now: the full print book. A saga chip can only keep a name
+  // we have a debut chapter for, at or before that chapter — unknown debuts
+  // would otherwise leak later people (ten reviewers, draft 11).
   if (reader.finished || reader.chapter == null) return true
   const wiki = getWiki(name)
-  if (!wiki || wiki.debutChapter == null) return true
+  if (!wiki || wiki.debutChapter == null) return false
   return wiki.debutChapter <= reader.chapter
 }
 

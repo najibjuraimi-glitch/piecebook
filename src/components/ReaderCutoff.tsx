@@ -2,9 +2,10 @@ import { CUTOFFS, useReaderCutoff, type CutoffId } from '../store/readerCutoff'
 
 /**
  * How far the reader has finished. Hairline chips, 44px targets, wrapping.
- * Debut arc is the default and unlocks no summaries or fruits.
+ * Debut arc is the default and unlocks no summaries or fruits. The three-line
+ * explanation lives on the portal only — rooms keep the chips.
  */
-export function ReaderCutoff({ className = '' }: { className?: string }) {
+export function ReaderCutoff({ className = '', explain = false }: { className?: string; explain?: boolean }) {
   const { id, setId } = useReaderCutoff()
   return (
     <div className={className}>
@@ -31,10 +32,12 @@ export function ReaderCutoff({ className = '' }: { className?: string }) {
           )
         })}
       </div>
-      <p className="mt-2 max-w-[60ch] text-meta text-ink">
-        Summaries and fruits stay behind the last arc you have finished. A name you have not met yet is hidden. Who
-        they are on a page you open follows the same chapter.
-      </p>
+      {explain && (
+        <p className="mt-2 max-w-[60ch] text-meta text-ink">
+          Summaries and fruits stay behind the last arc you have finished. On a saga chip, a name we cannot place before
+          that chapter is hidden. Who they are on a page you open follows the same chapter.
+        </p>
+      )}
     </div>
   )
 }

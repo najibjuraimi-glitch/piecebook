@@ -39,8 +39,8 @@ export function BelongPeopleScreen() {
       <header className="mb-6">
         <h1 className="text-display text-ink">People</h1>
         <p className="mt-1 max-w-[60ch] text-body text-muted">
-          Every Character and Leader on an EN print. Tap a name for the prints. Who they are lives on that page, behind
-          the same chapter you picked.
+          Every Character and Leader on an EN print. On a saga chip, only names we can place at or before that chapter.
+          Tap a name for the prints. Who they are lives on that page.
         </p>
       </header>
       <ReaderCutoff className="mb-6" />

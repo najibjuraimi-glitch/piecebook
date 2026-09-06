@@ -33,7 +33,7 @@ export function BelongScreen() {
     <Screen>
       <ScreenTitle title="Belong" subline="The story, the people, the fruits, and the game." />
 
-      <ReaderCutoff className="mb-8" />
+      <ReaderCutoff className="mb-8" explain />
 
       <ul className="grid grid-cols-1 gap-3 tablet:grid-cols-2 wide:grid-cols-4">
         {ROOMS.map((d) => (
