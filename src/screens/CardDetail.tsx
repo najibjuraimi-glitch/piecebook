@@ -1,4 +1,5 @@
-import { useParams } from 'react-router-dom'
+import { useMemo } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { getCard, type Card } from '../data/seed'
 import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
@@ -7,12 +8,14 @@ import { BackBar, BLEED, Screen } from '../components/Screen'
 import { CardArt } from '../components/CardArt'
 import { RarityChip } from '../components/RarityChip'
 import { CheckIcon } from '../components/CardCell'
+import { ChevronRight } from '../components/SetTile'
 import { DangerGhostButton, PrimaryButton } from '../components/Buttons'
 import { CostBasisPanel } from '../components/CostBasis'
 import { PriceChart } from '../components/PriceChart'
 import { PlayBlock } from '../components/PlayBlock'
 import { changeSince, usePriceHistory } from '../data/history'
 import { useCardAttributes } from '../data/attributes'
+import { printsNamed } from '../lib/search'
 import { playsetLine } from '../lib/playsets'
 import { formatDate, formatSignedUsd, formatUsd, pluralPoints } from '../lib/format'
 import { NotFoundScreen } from './NotFound'
@@ -41,6 +44,8 @@ function CardDetail({ card }: { card: Card }) {
   const history = usePriceHistory(card)
   const change = history.loading ? null : changeSince(history.points, 30)
   const attrs = useCardAttributes(card)
+  // Every print of this name across sets (7.4); the door only opens when there is more than this one.
+  const prints = useMemo(() => printsNamed(card.name).reduce((n, g) => n + g.cards.length, 0), [card.name])
 
   return (
     <Screen>
@@ -51,7 +56,14 @@ function CardDetail({ card }: { card: Card }) {
           { label: card.setCode, to: `/sets/${encodeURIComponent(card.setCode)}` },
           { label: card.cardNumber },
         ]}
-        action={<StarButton subject="card" active={watch.isWatchingCard(card.cardNumber)} onToggle={() => watch.toggleCard(card.cardNumber)} />}
+        action={
+          <StarButton
+            subject="card"
+            name={`${card.name} ${card.cardNumber}`}
+            active={watch.isWatchingCard(card.cardNumber)}
+            onToggle={() => watch.toggleCard(card.cardNumber)}
+          />
+        }
       />
 
       {/* Stacked on phone/tablet; from desktop up, art on the left (~40%) and meta + actions on the right. */}
@@ -76,26 +88,45 @@ function CardDetail({ card }: { card: Card }) {
                 </>
               )}
             </div>
-            {/* Artist credit where Limitless carries one; a page per illustrator comes with 7.3. */}
-            {attrs?.artist && <p className="mt-1 text-meta text-muted">Illustrated by {attrs.artist}</p>}
+            {/* Artist credit where Limitless carries one; the name opens every print they drew (7.3). */}
+            {attrs?.artist && (
+              <p className="mt-1 text-meta text-muted">
+                Illustrated by{' '}
+                <Link to={`/artists/${encodeURIComponent(attrs.artist)}`} className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+                  {attrs.artist}
+                </Link>
+              </p>
+            )}
+            {/* Door to the character page (7.4): only a name printed more than once has anywhere to go. */}
+            {prints > 1 && (
+              <Link
+                to={`/characters/${encodeURIComponent(card.name)}`}
+                className="-ml-1 mt-1 inline-flex min-h-[44px] items-center gap-0.5 rounded-lg px-1 text-[15px] font-medium text-ink transition-colors duration-150 ease-out hover:bg-white active:bg-[#F0ECE4]"
+              >
+                <span className="tabular">
+                  All prints of {card.name} · {prints}
+                </span>
+                <ChevronRight className="h-4 w-4 text-muted" />
+              </Link>
+            )}
           </section>
 
           <section className="mt-6 rounded-2xl border border-line bg-surface px-5 py-4">
-            <p className="text-meta font-medium text-muted">Market (seed)</p>
+            <p className="text-meta font-medium text-muted">Market</p>
             {card.marketUsd === null ? (
-              <p className="mt-1 text-title text-muted">No seed price</p>
+              <p className="mt-1 text-title text-muted">No market price</p>
             ) : (
               <div className="mt-1 flex items-baseline justify-between gap-3">
                 <p className="tabular text-[28px] font-semibold leading-[34px] tracking-[-0.02em] text-ink">
                   {formatUsd(card.marketUsd)}
                 </p>
-                {card.asOf && <p className="tabular text-meta text-muted">as of {formatDate(card.asOf)}</p>}
+                {card.asOf && <p className="tabular text-meta text-ink">as of {formatDate(card.asOf)}</p>}
               </div>
             )}
 
             {/* Movement in words with its timeframe; colour only on the figure. Card detail is the one place this belongs. */}
             {change && (
-              <p className="tabular mt-1 text-meta text-muted">
+              <p className="tabular mt-1 text-meta text-ink">
                 <span className={change.delta > 0 ? 'font-medium text-good' : change.delta < 0 ? 'font-medium text-bad' : 'text-ink'}>
                   {change.delta === 0 ? 'Unchanged' : formatSignedUsd(change.delta)}
                 </span>{' '}
