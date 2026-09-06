@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom'
 import { getSet } from '../data/seed'
 import { useCollection } from '../store/collection'
 import { dateClauses, groupByYear, timelineRows, type TimelineRow } from '../lib/timeline'
+import { todayIso } from '../lib/format'
+import { OnThisDay } from './OnThisDay'
 
 /**
  * The release timeline (7.2): every booster, extra booster and premium booster
  * in English release order, under year rules, with a hairline Today rule
- * between what is out and what is coming. Each row is one link to the set:
+ * between what is out and what is coming, with On This Day birthdays under
+ * the rule (7.9). Each row is one link to the set:
  * code and name, `12 of 154` at the right edge only where the collector has
  * started the set, both dates in ink with the gap between them, the JP title
  * beneath. No prices, no stories; those live on the set page.
@@ -81,10 +84,13 @@ function YearRule({ year }: { year: string }) {
 /** The hairline between released and upcoming sets, named so the eye knows which side it is on. */
 function TodayRule() {
   return (
-    <div role="separator" aria-label="Today" className="flex items-center gap-3 py-3 text-meta font-semibold text-ink">
-      <span aria-hidden="true" className="h-px flex-1 bg-line" />
-      Today
-      <span aria-hidden="true" className="h-px flex-1 bg-line" />
+    <div className="py-3">
+      <div role="separator" aria-label="Today" className="flex items-center gap-3 text-meta font-semibold text-ink">
+        <span aria-hidden="true" className="h-px flex-1 bg-line" />
+        Today
+        <span aria-hidden="true" className="h-px flex-1 bg-line" />
+      </div>
+      <OnThisDay iso={todayIso()} className="mt-3" />
     </div>
   )
 }
