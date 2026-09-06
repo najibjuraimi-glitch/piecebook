@@ -21,6 +21,7 @@ import { matchesFacets, parseQuery, traitList } from '../lib/search'
 import { SortControls } from '../components/SortControls'
 import { RarityTabs } from '../components/RarityTabs'
 import { CardCell, CardGrid } from '../components/CardCell'
+import { gridMove, usePriceHistories } from '../data/history'
 import { NotFoundScreen } from './NotFound'
 
 /**
@@ -153,6 +154,8 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   const requested = params.get('rarity')
   const active = tabs.find((t) => t.key === requested)?.key ?? ALL_TAB
   const sort = parseSort(params.get('sort'))
+  // One history file per set, same cache as card detail. Feeds the week move on each cell.
+  const history = usePriceHistories(set.cards)
 
   // Search ∩ rarity ∩ sort. Search runs over the whole set so the count under
   // the sort select reflects what the grid actually shows for the active tab.
@@ -224,6 +227,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
                 owned={isOwned(card.cardNumber)}
                 qty={ownedQty(card.cardNumber)}
                 watching={watch.isWatchingCard(card.cardNumber)}
+                marketMove={history.loading ? undefined : gridMove(history.byCard.get(card.cardNumber) ?? []) ?? undefined}
               />
             </li>
           ))}

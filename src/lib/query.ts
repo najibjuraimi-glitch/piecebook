@@ -24,7 +24,7 @@ export function matchesSearch(card: Card, rawQuery: string): boolean {
 
 export type SortKey = 'name-asc' | 'name-desc' | 'price-desc' | 'price-asc'
 
-export const DEFAULT_SORT: SortKey = 'name-asc'
+export const DEFAULT_SORT: SortKey = 'price-desc'
 
 export const SORT_OPTIONS: ReadonlyArray<{ key: SortKey; label: string }> = [
   { key: 'name-asc', label: 'Name · A to Z' },

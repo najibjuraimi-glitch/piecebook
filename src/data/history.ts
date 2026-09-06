@@ -5,8 +5,8 @@ import { csvToObjects } from './csv'
 /**
  * Dated seed prices per card from `data/price-history/{code}.csv`
  * (`card_number,as_of,market_usd`, one row per card per day, appended by
- * `npm run seed:refresh`). Loaded lazily per set: only card detail needs it,
- * so the history never lands in the main bundle.
+ * `npm run seed:refresh`). Loaded lazily per set for card detail and the
+ * set-detail grid (week move on each cell). The history never lands in the main bundle.
  */
 export type PriceSource = 'limitless' | 'tcgplayer'
 
@@ -88,6 +88,20 @@ export function changeSince(points: PricePoint[], days = 30): PriceChange | null
   }
   if (since.asOf === latest.asOf) return null
   return { delta: Math.round((latest.usd - since.usd) * 100) / 100, since, latest }
+}
+
+export interface GridMove {
+  delta: number
+  /** Null when the reference price is zero (cannot divide). */
+  percent: number | null
+}
+
+/** Week move for a set-grid cell: signed dollars and percent from the same two points. */
+export function gridMove(points: PricePoint[], days = 7): GridMove | null {
+  const change = changeSince(points, days)
+  if (!change) return null
+  const percent = change.since.usd === 0 ? null : Math.round((change.delta / change.since.usd) * 10000) / 100
+  return { delta: change.delta, percent }
 }
 
 /**
