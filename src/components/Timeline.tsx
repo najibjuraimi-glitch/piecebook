@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getSet } from '../data/seed'
 import { useCollection } from '../store/collection'
 import { dateClauses, groupByYear, timelineRows, type TimelineRow } from '../lib/timeline'
+import { countdownPhrase } from '../lib/fandom'
 import { todayIso } from '../lib/format'
 import { OnThisDay } from './OnThisDay'
 
@@ -12,8 +13,9 @@ import { OnThisDay } from './OnThisDay'
  * between what is out and what is coming, with On This Day birthdays under
  * the rule (7.9). Each row is one link to the set:
  * code and name, `12 of 154` at the right edge only where the collector has
- * started the set, both dates in ink with the gap between them, the JP title
- * beneath. No prices, no stories; those live on the set page.
+ * started the set, both dates in ink with the gap between them (or
+ * `US date 30 Oct 2026 · in 54 days` where the day is TCGplayer's), the JP
+ * title beneath. No prices, no stories; those live on the set page.
  */
 export function Timeline({ className = '' }: { className?: string }) {
   const rows = useMemo(() => timelineRows(), [])
@@ -100,6 +102,10 @@ function Row({ row }: { row: TimelineRow }) {
   const catalog = row.set.cardSeedStatus === 'ready' ? getSet(row.set.setCode) : undefined
   const owned = catalog ? catalog.cards.filter((c) => isOwned(c.cardNumber)).length : 0
   const clauses = dateClauses(row)
+  if (row.upcoming) {
+    const count = countdownPhrase(row.enReleased, todayIso(), { namedDay: !row.usDate })
+    if (count) clauses.push(count)
+  }
   return (
     <Link
       to={`/sets/${encodeURIComponent(row.set.setCode)}`}

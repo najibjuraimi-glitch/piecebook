@@ -1,7 +1,8 @@
 import { ALL_CARDS, compareCardNumbers, type Card } from '../data/seed'
 import { getWiki, WIKI_ENTRIES, type WikiBirth, type WikiEntry } from '../data/wiki'
+import { todayIso } from './format'
 
-/** UTC day number for an ISO date; used for Today's card so a pin is timezone-stable. */
+/** UTC day number for an ISO date; used for Today's card and countdowns so a pin is timezone-stable. */
 export function utcDay(iso: string): number {
   const [y, m, d] = iso.split('-').map(Number)
   return Date.UTC(y, m - 1, d) / 86_400_000
@@ -120,4 +121,23 @@ export function todaysCard(iso: string, opts: { maxDebut?: number } = {}): Today
   const wiki = getWiki(card.name)
   if (!visibleLine(wiki) || !wiki) return null
   return { card, wiki, poolSize: pool.length }
+}
+
+/**
+ * Last clause on an upcoming row: `in 75 days`, and `tomorrow` / `today` only
+ * when the day is Bandai's. A TCGplayer US date never says today or tomorrow
+ * (a shop clock it is not); on that day the clause is omitted.
+ */
+export function countdownPhrase(
+  iso: string | null | undefined,
+  today = todayIso(),
+  { namedDay = true }: { namedDay?: boolean } = {},
+): string | null {
+  if (!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return null
+  const days = utcDay(iso) - utcDay(today)
+  if (days < 0) return null
+  if (!namedDay) return days === 0 ? null : `in ${days} day${days === 1 ? '' : 's'}`
+  if (days === 0) return 'today'
+  if (days === 1) return 'tomorrow'
+  return `in ${days} days`
 }
