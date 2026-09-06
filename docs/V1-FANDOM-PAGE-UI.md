@@ -17,6 +17,7 @@ Live `/belong` on main is the end state. This branch is the draft. Nothing merge
 - Clone the wiki’s ads, art, polls, or “On This Day” chrome. On This Day already lives under the timeline Today rule (7.9) and is reused here as the same component.
 - Invent plot. Official Viz / Toei / Crunchyroll synopses are not licensed and are not stored. Wiki chapter pages are titles (`Chapter 1 is titled "Romance Dawn —The Dawn of the Adventure—"`), not plots.
 - Pull wiki images. Render wiki article links. The licence URL is the only outbound wiki door, as in 7.8.
+- Put a picture of a fruit on Piecebook. Official fruit art is Toei / Shueisha / Viz; we have no licence. Jib locked this 6 Sep 2026: names, Japanese name, type, eaters. No picture. No card-print stand-in. No wiki still.
 - Write a fifth encyclopedia of authored chapter blurbs.
 - Skip the reader cutoff. A first visit does not unlock later fruits.
 
@@ -75,7 +76,7 @@ The four doors on `/belong` are the portal. They are Piecebook rooms, not links 
 ## Fruit log
 **Source.** Char Box `dfename` / `dfname` / `dftype` on each mapped printed name (`data/wiki/lines.json`, 188 names). First displayed line only; text after `<br>` or in `<small>` is a later name and is dropped. Localizer credits (`Viz`, `4Kids`, `Funimation`) are stripped. `Imu` / `The Devil's Fruit` is not stored. 6 Sep 2026: **92 fruits** on 99 eaters.
 
-**Fruits page.** Closed until a saga chip is on. Then A–Z chips, English name, Japanese name and type muted, eaters as links to `/characters/:name` (eaters still behind the same chapter). Caption names the gap: the rest of the roster has not been fetched.
+**Fruits page.** Closed until a saga chip is on. Then A–Z chips, English name, Japanese name and type muted, eaters as links to `/characters/:name` (eaters still behind the same chapter). Caption names the gap: the rest of the roster has not been fetched. **No picture of the fruit.** Not wiki art, not official stills, not a card that depicts it.
 
 Luffy’s row is `Gum-Gum Fruit · Gomu Gomu no Mi · Paramecia`. Not Nika.
 
@@ -97,7 +98,7 @@ Device date is still the only date for On This Day.
 1. `/belong` is the fandom home; the mock is the live route; fifth tab **World**.
 2. Start here World opens `/belong`. Start here names that Piecebook is unofficial.
 3. Story is an index: titles plus chapter and episode ranges. No wiki paragraphs. No authored blurbs. No official synopses. No chapter-page titles passed off as plot. Jib picked this 6 Sep 2026.
-4. The fruit log is Char Box fields on asked names, first line only, no later-name, no Imu. Not a clone of every fruit on the wiki. Not the word Pokédex.
+4. The fruit log is Char Box fields on asked names, first line only, no later-name, no Imu. Names, Japanese name, type, eaters. No picture (Jib, 6 Sep 2026). Not a clone of every fruit on the wiki. Not the word Pokédex.
 5. The people log is printed Character / Leader names with stored fruit and debut when we have them, into the print pages we already have.
 6. Default cutoff is Debut arc: who-is unchanged, fruits closed, story index open. People is the full print book until a saga chip is on.
 7. No wiki images. No wiki article links. Licence URL only. The licence line names the work and revid.
@@ -120,6 +121,7 @@ Device date is still the only date for On This Day.
 | Not taken — authored Straw Hat lines; wiki article links; lighting Belong on `/characters/:name`; Egghead as its own chip | Same as draft 11 |
 
 ## Not taken, noted for later
+- Pictures of fruits (locked 6 Sep 2026: text only).
 - Fetching every remaining printed name so the fruit log and who-is cover the whole roster.
 - Per-chapter or per-episode plot (no licensed, automatable source that is actually a plot).
 - A live link to the wiki article.
