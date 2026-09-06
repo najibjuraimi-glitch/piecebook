@@ -51,6 +51,18 @@ function known(v: string | undefined): string {
   return s === '?' || s.startsWith('card.') ? '' : s
 }
 
+const ENTITIES: Record<string, string> = { amp: '&', quot: '"', apos: "'", lt: '<', gt: '>' }
+
+/** A few traits reach the CSV HTML-escaped ("Buggy&#039;s Delivery"); the card says Buggy's. */
+function unescapeHtml(s: string): string {
+  if (!s.includes('&')) return s
+  return s.replace(/&(#(\d+)|#x([0-9a-f]+)|[a-z]+);/gi, (m, body: string, dec?: string, hex?: string) => {
+    if (dec) return String.fromCodePoint(Number(dec))
+    if (hex) return String.fromCodePoint(parseInt(hex, 16))
+    return ENTITIES[body.toLowerCase()] ?? m
+  })
+}
+
 function loadSet(setCode: string): Promise<Map<string, CardAttributes>> {
   const hit = cache.get(setCode)
   if (hit) return hit
@@ -69,10 +81,10 @@ function loadSet(setCode: string): Promise<Map<string, CardAttributes>> {
         power: num(r.power),
         counter: num(r.counter),
         attribute: known(r.attribute),
-        types: r.types ? r.types.split('/').map((t) => known(t)).filter(Boolean) : [],
-        effect: r.effect ?? '',
-        trigger: r.trigger ?? '',
-        artist: r.artist ?? '',
+        types: r.types ? r.types.split('/').map((t) => unescapeHtml(known(t))).filter(Boolean) : [],
+        effect: unescapeHtml(r.effect ?? ''),
+        trigger: unescapeHtml(r.trigger ?? ''),
+        artist: unescapeHtml(r.artist ?? ''),
         block: num(r.block),
         standard: legality(r.standard),
         extra: legality(r.extra),
