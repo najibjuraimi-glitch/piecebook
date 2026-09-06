@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { CONTENT_COLUMN, Wordmark } from './Screen'
 
-/** Sets is home for the whole box › cards tree, including the search cross-cuts into it (card and character views). */
+/** Sets is home for the whole box › cards tree, including the search cross-cuts into it (card, character and artist views). */
 export const isSetsSection = (p: string) =>
-  p === '/' || p.startsWith('/sets') || p.startsWith('/cards') || p.startsWith('/characters')
+  p === '/' || p.startsWith('/sets') || p.startsWith('/cards') || p.startsWith('/characters') || p.startsWith('/artists')
 
 const LINKS = [
   { to: '/', label: 'Sets', match: isSetsSection },
