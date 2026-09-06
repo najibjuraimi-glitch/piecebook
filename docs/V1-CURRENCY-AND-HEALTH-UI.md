@@ -28,7 +28,7 @@ Phase 6 research: 3 of 10 users thought in Singapore dollars and stumbled on a b
 
 **About prices.** Amend "Piecebook does not convert": costs never convert; a Portfolio S$ figure is the USD seed at the last European Central Bank table, dated; it is not a bank quote and not a Singapore ask.
 
-**Not taken.** A live quote. A bank / Wise / card-network rate. Converting SGD costs so P/L can include them. Showing S$ on every cell. Inventing a weekend rate. A yen market figure (Tokyo asked to log yen as a cost later; no JPY rate). MAS until its API returns a dated USD/SGD again.
+**Not taken.** A live quote. A bank / Wise / card-network rate. Converting SGD costs so P/L can include them. Showing S$ on every cell. Inventing a weekend rate. A yen market figure (Tokyo asked to log yen as a cost later; no JPY rate). MAS until its API returns a dated USD/SGD again. Ringgit and rupiah (and any translation) are a later-phase hypothesis — map 10.0 — not this addendum; do not take them as given until collectors in Malaysia and Indonesia ask.
 
 ## 9.1 Weekly data health
 **Where.** `/data`, reached from How prices work. One screen.
@@ -62,6 +62,7 @@ Prototyped on `/currency-preview` and `/health-preview` only. Live `Portfolio.ts
 | 2 — `seed`, `CI`, `cross`, `TARGET`, EUR triangle on a collector face | Cut from the screens. Legs stay in the cache and on How prices work |
 | 2 — Remembered S$ vs session-only | Kept remembered. Default remains US $ |
 | 1 — Yen | Noted for later: yen as a cost that never converts. No JPY rate |
+| — Jib, after v2: Malaysia / Indonesia may need MYR, IDR, and translation | Not this addendum. Map 10.0 is a research decision only; do not take as given |
 | Split — cells follow the switch | Kept: Portfolio reading only. Top owned on this screen follows. Card Market later if asked |
 | Not taken — convert SGD costs into P/L; default the app to S$; invent a weekend rate | Noted; each contradicts a non-negotiable |
 
@@ -72,3 +73,4 @@ Prototyped on `/currency-preview` and `/health-preview` only. Live `Portfolio.ts
 4. Preference remembered in localStorage; default US $.
 5. Data health is an in-app page of named facts and named gaps, written by the refresh, not a dashboard and not a shop clock.
 6. Prototype stays off the live screens until approved.
+7. This switch is `US $` / `S$` only. Ringgit, rupiah, and translation wait on map 10.0 and on collectors in those markets asking.
