@@ -6,15 +6,15 @@ import { OnThisDay } from '../components/OnThisDay'
 import { WikiLicence } from '../components/WikiLicence'
 import { useReaderCutoff } from '../store/readerCutoff'
 import { STORY_ARCS, WIKI_FRUITS } from '../data/wiki'
-import { arcTitle, featuredArc, mediaLine, summaryVisible } from '../lib/belong'
+import { arcTitle, featuredArc, mediaLine } from '../lib/belong'
 import { onThisDay } from '../lib/fandom'
 import { todayIso } from '../lib/format'
 
 const LINK = 'text-ink underline decoration-line underline-offset-2 transition-colors duration-150 ease-out hover:decoration-ink'
 
 const ROOMS = [
-  { to: '/belong/story', pillar: 'Story', question: 'Every main arc, its chapters and episodes, and the wiki’s paragraph once you have finished it.' },
-  { to: '/belong/people', pillar: 'People', question: 'A second book: every printed Character and Leader, A–Z, into the prints you already have.' },
+  { to: '/belong/story', pillar: 'Story', question: 'Every main arc, its chapters and episodes. Titles and ranges only — no plot.' },
+  { to: '/belong/people', pillar: 'People', question: 'A stored log of every printed Character and Leader, A–Z, into the prints you already have.' },
   { to: '/belong/fruits', pillar: 'Fruits', question: 'A stored log of Devil Fruits on the printed names we have asked: English, Japanese, type, who ate it.' },
   { to: '/?view=timeline', pillar: 'The game', question: 'Sets in English order, who drew each card, what is coming next.' },
 ]
@@ -27,7 +27,6 @@ export function BelongScreen() {
   const reader = useReaderCutoff()
   const featured = featuredArc(reader)
   const iso = todayIso()
-  const showLicence = Boolean(featured && summaryVisible(featured, reader) && featured.summary)
 
   return (
     <Screen>
@@ -65,20 +64,21 @@ export function BelongScreen() {
         <h2 id="featured-story" className="text-meta font-medium uppercase tracking-[0.08em] text-muted">
           Story
         </h2>
-        {featured && summaryVisible(featured, reader) && featured.summary ? (
+        {featured ? (
           <>
             <p className="mt-2 text-title text-ink">{arcTitle(featured.name)}</p>
             <p className="tabular mt-1 text-meta text-ink">{mediaLine(featured)}</p>
-            <p className="mt-2 text-body text-ink">{featured.summary}</p>
             <Link to="/belong/story" className={`mt-3 inline-flex h-11 items-center text-[15px] font-medium ${LINK}`}>
               All {STORY_ARCS.length} arcs
             </Link>
           </>
         ) : (
           <p className="mt-2 text-body text-ink">
-            {STORY_ARCS.length} main arcs, with chapter and episode numbers. Pick how far you have read to unlock the
-            wiki’s paragraph. Chapter pages on the wiki are titles, not plots; official episode synopses are not
-            licensed and are not here.
+            {STORY_ARCS.length} main arcs, with chapter and episode numbers. Titles and ranges only. Chapter pages on
+            the wiki are titles, not plots; official episode synopses are not licensed and are not here.{' '}
+            <Link to="/belong/story" className={`inline text-[15px] font-medium ${LINK}`}>
+              All {STORY_ARCS.length} arcs
+            </Link>
           </p>
         )}
       </section>
@@ -131,7 +131,7 @@ export function BelongScreen() {
           Play has the rules in five sentences.
         </Link>
       </p>
-      {showLicence && <WikiLicence className="mt-4" />}
+      <WikiLicence className="mt-4" />
     </Screen>
   )
 }

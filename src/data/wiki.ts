@@ -46,8 +46,6 @@ export interface StoryArc {
   lastChapter: number | null
   firstEpisode: number | null
   lastEpisode: number | null
-  summary: string
-  summaryWords: number
 }
 
 export interface FruitEater {
@@ -73,8 +71,6 @@ function toArc(row: Partial<StoryArc>): StoryArc | null {
     lastChapter: typeof row.lastChapter === 'number' ? row.lastChapter : null,
     firstEpisode: typeof row.firstEpisode === 'number' ? row.firstEpisode : null,
     lastEpisode: typeof row.lastEpisode === 'number' ? row.lastEpisode : null,
-    summary: typeof row.summary === 'string' ? row.summary.trim() : '',
-    summaryWords: typeof row.summaryWords === 'number' ? row.summaryWords : 0,
   }
 }
 

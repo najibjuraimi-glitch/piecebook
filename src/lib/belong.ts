@@ -25,14 +25,6 @@ export function mediaLine(arc: StoryArc): string {
   return ep ? `${chapterRange(arc)} · ${ep}` : chapterRange(arc)
 }
 
-/** An arc's paragraph prints only after the reader has finished it (or picked Now). */
-export function summaryVisible(arc: StoryArc, reader: ReaderCutoff): boolean {
-  if (!reader.unlocksStory) return false
-  if (reader.finished) return true
-  if (reader.chapter == null || arc.lastChapter == null) return false
-  return arc.lastChapter <= reader.chapter
-}
-
 export function fruitVisible(fruit: WikiFruit, reader: ReaderCutoff): boolean {
   if (!reader.unlocksStory) return false
   if (reader.finished) return true
@@ -51,7 +43,7 @@ export function personVisible(name: string, reader: ReaderCutoff): boolean {
   return wiki.debutChapter <= reader.chapter
 }
 
-/** The last finished arc at this cutoff — the portal's featured story. Now still uses the last closed arc, not Elbaph. */
+/** The last finished arc at this cutoff — the portal's featured index row. Now still uses the last closed arc, not Elbaph. */
 export function featuredArc(reader: ReaderCutoff): StoryArc | null {
   if (!reader.unlocksStory) return null
   const cap = reader.finished ? Number.POSITIVE_INFINITY : reader.chapter

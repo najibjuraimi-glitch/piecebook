@@ -319,9 +319,10 @@ if (existsSync(wikiPath)) {
   warn('wiki/lines.json is missing; run npm run wiki:refresh')
 }
 
-// Wiki belong rooms (11.1): Story Arcs summaries and fruit fields. Licence
-// required; 33 main arcs starting at chapter 1; no localizer junk in a fruit
-// name; Imu / "The Devil's Fruit" stay out.
+// Wiki belong rooms (11.1): Story Arcs index (titles and ranges, no plot) and
+// fruit fields. Licence required; 33 main arcs starting at chapter 1; a stored
+// paragraph fails; no localizer junk in a fruit name; Imu / "The Devil's Fruit"
+// stay out.
 const summariesPath = join(DATA, 'wiki/summaries.json')
 if (existsSync(summariesPath)) {
   const summaries = JSON.parse(readFileSync(summariesPath, 'utf8'))
@@ -333,8 +334,9 @@ if (existsSync(summariesPath)) {
   if (arcs.length !== 33) fail(`wiki/summaries.json: expected 33 main arcs, got ${arcs.length}`)
   if (arcs[0]?.firstChapter !== 1) fail('wiki/summaries.json: first arc must open at chapter 1')
   for (const a of arcs) {
-    const words = typeof a?.summary === 'string' ? a.summary.trim().split(/\s+/).filter(Boolean).length : 0
-    if (words < 6) fail(`wiki/summaries.json ${a?.name}: summary is under 6 words`)
+    if (typeof a?.summary === 'string' && a.summary.trim()) {
+      fail(`wiki/summaries.json ${a?.name}: plot paragraph must not be stored`)
+    }
     if (typeof a?.firstEpisode !== 'number') fail(`wiki/summaries.json ${a?.name}: missing firstEpisode`)
   }
 } else {

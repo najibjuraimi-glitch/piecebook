@@ -56,6 +56,9 @@ export function StartScreen() {
           Read how prices work.
         </Link>
       </p>
+      <p className="mt-3 max-w-[60ch] text-meta text-ink">
+        Piecebook is unofficial. Not affiliated with Eiichiro Oda, Shueisha, Toei Animation, or Bandai.
+      </p>
 
       <Link to="/" onClick={markStarted} className={`mt-6 inline-flex h-11 items-center text-[15px] font-medium ${LINK}`}>
         Just show me the sets

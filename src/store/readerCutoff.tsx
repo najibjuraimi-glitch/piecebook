@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 /**
  * How far the reader has finished (11.1). Remembered. Default is each name's
  * debut arc — the same gate the character page already uses — so a first visit
- * does not unlock later summaries or fruits.
+ * does not unlock later fruits.
  */
 const STORAGE_KEY = 'piecebook.readerCutoff.v1'
 
@@ -58,7 +58,7 @@ export interface ReaderCutoff {
   /** Last chapter finished, or null for the stored debut-arc line. */
   chapter: number | null
   finished: boolean
-  /** Summaries and fruits stay closed until a saga chip is picked. */
+  /** Fruits stay closed until a saga chip is picked. */
   unlocksStory: boolean
   setId: (id: CutoffId) => void
 }

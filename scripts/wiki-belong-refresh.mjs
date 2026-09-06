@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
- * Fetch the Belong page's wiki rooms (draft 11): arc summaries and episode
- * ranges from Story Arcs, and Devil Fruit fields from each mapped name's
- * Char Box. One Piece Wiki, CC BY-SA 3.0. Never an image.
+ * Fetch the Belong page's wiki rooms (draft 11): arc titles and episode
+ * ranges from Story Arcs (no plot), and Devil Fruit fields from each mapped
+ * name's Char Box. One Piece Wiki, CC BY-SA 3.0. Never an image.
  *
  *   npm run wiki:belong
  *   npm run wiki:belong -- --dry-run
@@ -211,22 +211,18 @@ function parseRangeList(body) {
 }
 
 /**
- * Main-story arcs on Story Arcs: heading, the paragraph under it, then
- * Chapters (a-b) and Episodes (c-d) bullets. Filler-only arcs are skipped
- * (they sit outside "Main Story Arcs").
+ * Main-story arcs on Story Arcs: heading, then Chapters (a-b) and
+ * Episodes (c-d) bullets. Plot paragraphs are not stored. Filler-only arcs
+ * are skipped (they sit outside "Main Story Arcs").
  */
 function parseStoryArcs(wikitext) {
   const arcs = []
   let inMain = false
   let current = null
-  let blurb = []
   const flush = () => {
     if (!current) return
-    current.summary = cleanText(blurb.join(' '))
-    current.summaryWords = current.summary ? current.summary.split(/\s+/).filter(Boolean).length : 0
     if (current.firstChapter != null) arcs.push(current)
     current = null
-    blurb = []
   }
   for (const line of wikitext.split('\n')) {
     const h2 = line.match(/^==([^=].*?)==\s*$/)
@@ -245,10 +241,7 @@ function parseStoryArcs(wikitext) {
         lastChapter: null,
         firstEpisode: null,
         lastEpisode: null,
-        summary: '',
-        summaryWords: 0,
       }
-      blurb = []
       continue
     }
     if (!current) continue
@@ -268,7 +261,6 @@ function parseStoryArcs(wikitext) {
     }
     if (line.startsWith('*') || line.startsWith('!') || line.startsWith('{|') || line.startsWith('|}')) continue
     if (line.trim() === '') continue
-    if (!current.firstChapter && !current.firstEpisode) blurb.push(line)
   }
   flush()
   return arcs.sort((a, b) => (a.firstChapter ?? 0) - (b.firstChapter ?? 0))
@@ -307,14 +299,13 @@ const arcs = parseStoryArcs(story.wikitext)
 if (arcs.length < 10 || arcs[0].firstChapter !== 1) {
   throw new Error(`${ARC_PAGE}: only ${arcs.length} arc(s) parsed`)
 }
-const withSummary = arcs.filter((a) => a.summaryWords >= 6).length
 const withEpisodes = arcs.filter((a) => a.firstEpisode != null).length
-console.log(`  Story Arcs revid ${story.revid}: ${arcs.length} arcs, ${withSummary} summaries, ${withEpisodes} episode ranges`)
+console.log(`  Story Arcs revid ${story.revid}: ${arcs.length} arcs, ${withEpisodes} episode ranges, no plot`)
 for (const a of arcs) {
   const ch = a.lastChapter == null ? `${a.firstChapter}–` : `${a.firstChapter}–${a.lastChapter}`
   const ep =
     a.firstEpisode == null ? 'no episodes' : a.lastEpisode == null ? `ep ${a.firstEpisode}–` : `ep ${a.firstEpisode}–${a.lastEpisode}`
-  console.log(`    ${a.name} · ch ${ch} · ${ep} · ${a.summaryWords} words`)
+  console.log(`    ${a.name} · ch ${ch} · ${ep}`)
 }
 
 const linesFile = join(WIKI_DIR, 'lines.json')
@@ -332,7 +323,7 @@ for (const entry of lines.entries ?? []) {
     continue
   }
   // Imu → Nerona Imu is a later-name reveal; the fruit field is "The Devil's Fruit".
-  // Polo Marco / Kurozumi Kanjuro stay: the printed name is what the dex lists.
+  // Polo Marco / Kurozumi Kanjuro stay: the printed name is what the log lists.
   if (!fruit || (isNameReveal(entry) && /devil/i.test(fruit.name))) continue
   withFruit++
   const key = fruit.jname || fruit.name
@@ -368,7 +359,7 @@ const summaries = {
   url: `${WIKI}${encodeURI(story.title.replace(/ /g, '_'))}?oldid=${story.revid}`,
   fetchedAt: TODAY,
   rules:
-    'Each summary is the paragraph under the arc on the wiki Story Arcs page, cleaned, never paraphrased. Episode numbers are the same page. Chapter pages are titles, not plots; official synopses are not stored. A later-name in a fruit field after a line break is dropped.',
+    'Index only: arc title plus Chapters (a-b) and Episodes (c-d) from the wiki Story Arcs page. No plot paragraph is stored. Chapter pages are titles, not plots; official synopses are not stored.',
   arcs,
 }
 

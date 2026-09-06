@@ -3,7 +3,7 @@
 
 Owner: Code as interim Cards, drafted from Jib’s instruction to put a fandom page like [One Piece Wiki](https://onepiece.fandom.com/wiki/One_Piece_Wiki) on Piecebook, and from rendered mockups on `cursor/fandom-page-draft-f694`  
 For: Design (critique), ten reviewers, then Jib  
-Covers growth-map **11.1** (fandom home): `/belong`, a fifth tab, chapter/anime summaries, a wiki portal, a fruit log, a second character book, a reader cutoff  
+Covers growth-map **11.1** (fandom home): `/belong`, a fifth tab, a story index (titles and ranges, no plot), a wiki portal, a fruit log, a second character book, a reader cutoff  
 Reads with: `V1-DESIGN-PACK.md`, `V1-FANDOM-UI.md` (7.7–7.11), `V1-BELONG-UI.md` (7.2 timeline, 8.1 Start here), `V1-FIND-UI.md` (7.4 character pages), `seed-sources.md`
 
 This is the page Jib asked for after the Belong-directory draft was the wrong shape. It is a One Piece fandom home in the wiki’s rooms (story, people, fruits, media), quiet paper and ink, with doors into collect and play. It is not a quieter Fandom skin, and it is not a table of contents for set stories.
@@ -18,7 +18,7 @@ Live `/belong` on main is the end state. This branch is the draft. Nothing merge
 - Invent plot. Official Viz / Toei / Crunchyroll synopses are not licensed and are not stored. Wiki chapter pages are titles (`Chapter 1 is titled "Romance Dawn —The Dawn of the Adventure—"`), not plots.
 - Pull wiki images. Render wiki article links. The licence URL is the only outbound wiki door, as in 7.8.
 - Write a fifth encyclopedia of authored chapter blurbs.
-- Skip the reader cutoff. A first visit does not unlock later paragraphs.
+- Skip the reader cutoff. A first visit does not unlock later fruits.
 
 ## 11.1 The page
 
@@ -34,12 +34,12 @@ Live `/belong` on main is the end state. This branch is the draft. Nothing merge
 
 | Door | Goes | Question |
 |---|---|---|
-| Story | `/belong/story` | Every main arc, its chapters and episodes, and the wiki’s paragraph once you have finished it. |
-| People | `/belong/people` | A second book: every printed Character and Leader, A–Z, into the prints you already have. |
+| Story | `/belong/story` | Every main arc, its chapters and episodes. Titles and ranges only — no plot. |
+| People | `/belong/people` | A stored log of every printed Character and Leader, A–Z, into the prints you already have. |
 | Fruits | `/belong/fruits` | A stored log of Devil Fruits on the printed names we have asked: English, Japanese, type, who ate it. |
 | The game | `/?view=timeline` | Sets in English order, who drew each card, what is coming next. |
 
-Under them: On This Day when the device date has a birthday (same rows as the timeline, under a muted **On This Day** heading so the date is not a floating line). Then a Story strip — the last finished arc’s paragraph when a saga chip is on (Now still uses the last closed arc, Egghead, not the open Elbaph paragraph), otherwise the honest gap. Then People and Fruits in one short block with counts. Then **The game** as three rows (What you own → `/`, Sets in order → timeline, Play → `/decks`). Then `Play has the rules in five sentences.` Attribution only when a wiki paragraph printed.
+Under them: On This Day when the device date has a birthday (same rows as the timeline, under a muted **On This Day** heading so the date is not a floating line). Then a Story strip — the last finished arc’s title and chapter/episode range when a saga chip is on (Now still uses the last closed arc, Egghead, not open Elbaph), otherwise the honest index. Then People and Fruits in one short block with counts. Then **The game** as three rows (What you own → `/`, Sets in order → timeline, Play → `/decks`). Then `Play has the rules in five sentences.` Attribution for the wiki index and fruit log.
 
 ## Reader cutoff
 **Storage.** `piecebook.readerCutoff.v1`, the chip id. Default `debut`.
@@ -52,22 +52,22 @@ The numbered chips are the last chapter of that arc on the wiki Story Arcs list 
 
 **What each chip unlocks.**
 
-| Chip | Who-is on a name you open | Story paragraph | Fruits | People |
+| Chip | Who-is on a name you open | Story index | Fruits | People |
 |---|---|---|---|---|
-| Debut arc (default) | Stored debut-arc line (7.8) | Hidden | Hidden | Every printed name |
-| A saga chip | Clauses recomputed at that chapter | Arcs whose last chapter is ≤ the chip | Fruits whose earliest eater debuts ≤ the chip | Names whose stored debut is ≤ the chip; a name with no debut on file is hidden |
-| Now | Clauses at every chapter, late ones included | Every arc, including Elbaph | Every stored fruit | Every printed name |
+| Debut arc (default) | Stored debut-arc line (7.8) | All 33 titles and ranges | Hidden | Every printed name |
+| A saga chip | Clauses recomputed at that chapter | All 33 titles and ranges; featured row is the last finished arc | Fruits whose earliest eater debuts ≤ the chip | Names whose stored debut is ≤ the chip; a name with no debut on file is hidden |
+| Now | Clauses at every chapter, late ones included | All 33 titles and ranges; featured row is the last closed arc | Every stored fruit | Every printed name |
 
 Uncited clauses still fail. Straw Hats still have no sentence. Imu still shows nothing on the character page (later-name reveal). A fruit later-name after a line break (Nika on Luffy) is not stored.
 
-Copy under the chips, **on `/belong` only**: *Summaries and fruits stay behind the last arc you have finished. On a saga chip, a name we cannot place before that chapter is hidden. Who they are on a page you open follows the same chapter.* Story, People and Fruits keep the chips and drop the paragraph.
+Copy under the chips, **on `/belong` only**: *Fruits stay behind the last arc you have finished. On a saga chip, a name we cannot place before that chapter is hidden. Who they are on a page you open follows the same chapter. The story list is titles and ranges only.* Story, People and Fruits keep the chips and drop the explanation.
 
-## Chapter or anime summaries
-**Source.** One fetch: the wiki [Story Arcs](https://onepiece.fandom.com/wiki/Story_Arcs) page (`npm run wiki:belong` → `data/wiki/summaries.json`). The paragraph under each `====[[Name]]====` heading, cleaned, never paraphrased. The same page’s `Chapters (a-b)` and `Episodes (c-d)` bullets. 33 main arcs, 6 Sep 2026, revid 2128192. Elbaph is open (`1126–`, `1156–`).
+## Story index (Jib, 6 Sep 2026: option 1)
+**Source.** One fetch: the wiki [Story Arcs](https://onepiece.fandom.com/wiki/Story_Arcs) page (`npm run wiki:belong` → `data/wiki/summaries.json`). Titles plus that page’s `Chapters (a-b)` and `Episodes (c-d)` bullets. **No plot paragraph is stored or shown.** 33 main arcs, 6 Sep 2026, revid 2128192. Elbaph is open (`1126–`, `1156–`).
 
-**Not taken, named.** Per-chapter plot (the wiki’s chapter lead is a title). Official episode synopses. Filler-only arcs. Wiki images in the Summary section.
+**Not taken, named.** Wiki Story Arcs paragraphs (the unofficial recap). Authored blurbs. Official episode synopses. Per-chapter plot. Filler-only arcs. Wiki images.
 
-**Story page.** Manga order. Heading is the name without the trailing “Arc”. Meta `Chapters 1–7 · Episodes 1–4`. The paragraph, or *Finish this arc to read the summary.* / *Pick how far you have read to unlock the summary.* Licence line when any paragraph printed.
+**Story page.** Manga order. Heading is the name without the trailing “Arc”. Meta `Chapters 1–7 · Episodes 1–4`. Always open. Licence line for the wiki index.
 
 ## Wiki portal
 The four doors on `/belong` are the portal. They are Piecebook rooms, not links to fandom.com. The wiki article is never a link.
@@ -90,16 +90,16 @@ Attributes load on first visit, as Decks does. A name with no category on file i
 Device date is still the only date for On This Day.
 
 ## Data
-- `scripts/wiki-belong-refresh.mjs` (`npm run wiki:belong`): Story Arcs once, then two parse calls per mapped name for the Char Box, 120 ms, same User-Agent. Writes `data/wiki/summaries.json` and `data/wiki/fruits.json` under CC BY-SA 3.0.
-- `seed:check` fails a missing licence, a summary under six words, a localizer credit in a fruit name, or Imu as an eater.
+- `scripts/wiki-belong-refresh.mjs` (`npm run wiki:belong`): Story Arcs once (titles and ranges only), then two parse calls per mapped name for the Char Box, 120 ms, same User-Agent. Writes `data/wiki/summaries.json` and `data/wiki/fruits.json` under CC BY-SA 3.0.
+- `seed:check` fails a missing licence, a stored plot paragraph, a localizer credit in a fruit name, or Imu as an eater.
 
 ## Decisions (draft — for reviewers, then Jib)
 1. `/belong` is the fandom home; the mock is the live route; fifth tab **World**.
-2. Start here World opens `/belong`.
-3. Summaries are the wiki Story Arcs paragraph plus chapter and episode ranges, gated by a finished-arc cutoff. No authored blurbs. No official synopses. No chapter-page titles passed off as plot.
+2. Start here World opens `/belong`. Start here names that Piecebook is unofficial.
+3. Story is an index: titles plus chapter and episode ranges. No wiki paragraphs. No authored blurbs. No official synopses. No chapter-page titles passed off as plot. Jib picked this 6 Sep 2026.
 4. The fruit log is Char Box fields on asked names, first line only, no later-name, no Imu. Not a clone of every fruit on the wiki. Not the word Pokédex.
 5. The people book is printed Character / Leader names into the pages we already have.
-6. Default cutoff is Debut arc: who-is unchanged, summaries and fruits closed. People is the full print book until a saga chip is on.
+6. Default cutoff is Debut arc: who-is unchanged, fruits closed, story index open. People is the full print book until a saga chip is on.
 7. No wiki images. No wiki article links. Licence URL only.
 8. Live on `main` waits on “approved” and “merge N”.
 
