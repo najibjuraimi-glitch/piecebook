@@ -158,11 +158,9 @@ export function FandomTimelinePreview() {
       <BackBar fallbackTo="/fandom-preview" crumbs={[{ label: 'Sets', to: '/' }, { label: 'Timeline draft' }]} />
       <div className="mb-6 flex items-end justify-between gap-4">
         <h1 className="text-display text-ink">Sets</h1>
-        <p className="text-[15px] font-medium text-ink">
+        <p className="flex items-baseline gap-4 text-[15px] font-medium">
           <span className="text-muted">Tiles</span>
-          <span className="mx-3 text-muted" aria-hidden="true">
-            Timeline
-          </span>
+          <span className="border-b border-ink pb-0.5 text-ink">Timeline</span>
         </p>
       </div>
       <p className="mb-4 text-body text-ink">
