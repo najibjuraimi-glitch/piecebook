@@ -30,8 +30,11 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 1.0 — Bandai's card text is shown as every card database shows it (Jib, 5 Sep 2026).
 - 3.1 — Box price feed: automated. Every EN booster box's TCGplayer market price is pulled daily by the Seed refresh workflow from TCGCSV (tcgcsv.com, a once-a-day public mirror of TCGplayer's own API, used within its published guidelines: identified User-Agent, one pull a day, back-end only) and appended to `data/box-price-history.csv`; the roster names each box by `tcgplayerProductId` / `tcgplayerGroupId`. No hand reads: the roster's 4 Sep 2026 figures are only a fallback, and `seed:check` warns if the feed goes quiet for 3 days. Limitless lists no sealed products, and reading TCGplayer's site directly stays ruled out. This is how Collectr does it at its core — TCGplayer market daily — minus the eBay / Cardmarket blending we cannot license. (Jib: "anything manual should not be considered"; decided by Code as interim Cards, 5 Sep 2026.)
 - 5.1 — SG asks for the other 20 boxes: closed as superseded (Jib, 5 Sep 2026). The SG ask was a hand-read Carousell figure with no automated source; since 3.1 / 3.2 every box price is TCGplayer market, read daily, and the SG line is retired from the UI. Nothing manual is added to the data.
-- 5.4 — Currency display: re-opened (Jib, 5 Sep 2026). Three of ten users in the Phase 6 research thought in Singapore dollars and stumbled on a bare `$`. The PRD's "no FX" meant no invented rates; an official daily reference rate (ECB or MAS), pulled by the refresh with its date and shown as `S$… at the ECB rate of 5 Sep 2026`, is not invented. Design draft to follow through the approval loop; amends `V1-PRD.md`.
+- 5.4 — Currency display: built 6 Sep 2026. Portfolio only. `US $` / `S$` chips, remembered, default US $. S$ is the USD seed at the dated ECB cross (`data/fx-usd-sgd.json`, EUR/SGD ÷ EUR/USD). Costs never convert. P/L stays in US dollars on both tabs. Amends the PRD's no-FX line: no invented rates; a dated central-bank table is not a bank quote.
 - 5.2 (multiple collections) and 5.3 (graded prices, population) stay parked: nobody in the research asked for 5.2; 5.3 has no free licensed source (PriceCharting's paid API or PSA's population data would need a budget decision first).
+
+## Hypotheses, not taken as given
+- 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Next-phase interest only: ringgit, rupiah, and language translation *may* matter. Seat collectors in those markets in the next research round before any map row besides this decision opens.
 
 ## Decisions parked on the board
 - 6.1 — where decks live (fourth tab vs under Collection)
@@ -39,4 +42,4 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 6.6 — decklists: link only, or import as a source
 
 ## Task list
-`docs/growth-map.csv` holds every task (48 rows) with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. Rows marked `NO (quota)` in the `In ClickUp` column (7.6 events) still need creating; 7.1–7.5, 7.7–7.11 and 8.1 shipped 6 Sep 2026. The dependencies to wire are in the `Depends on` column.
+`docs/growth-map.csv` holds every task (49 rows) with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. Rows marked `NO` (10.0) or `NO (quota)` (7.6 events) are not in ClickUp; do not create 10.0 until research in MY and ID asks. 5.4 and 9.1 built 6 Sep 2026. The dependencies to wire are in the `Depends on` column.
