@@ -27,6 +27,9 @@
  * source=limitless), upserts data/tcgplayer-products.csv (card → TCGPlayer
  * product id) and repins the per-file counts in data/SEED-VERSION.txt.
  *
+ * Currency (5.4): one pull of the ECB euro foreign-exchange reference rates
+ * writes data/fx-usd-sgd.json (SGD per USD = EUR/SGD ÷ EUR/USD, cube date).
+ *
  * Upcoming sets (7.5): the TCGCSV step also scans every One Piece group for a
  * "… Booster Box" product on presale that is not on the roster yet and adds it
  * as a roster row with cardSeedStatus pending, TCGplayer's name, date, product
@@ -376,6 +379,41 @@ const BOX_HISTORY_FIELDS = ['set_code', 'as_of', 'market_usd', 'low_usd', 'sourc
 const TCGCSV = 'https://tcgcsv.com'
 const TCGCSV_CATEGORY = 68 // One Piece Card Game
 const TCGCSV_HEADERS = { 'User-Agent': 'Piecebook/1.0 (+https://github.com/najibjuraimi-glitch/piecebook)' }
+const PIECEBOOK_UA = TCGCSV_HEADERS['User-Agent']
+const ECB_URL = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml'
+
+/**
+ * 5.4: dated USD→SGD from the ECB euro table. SGD per USD is EUR/SGD ÷ EUR/USD
+ * from the same daily cube. Never invent a Saturday or Sunday print; the cube's
+ * time is the as-of date. One pull a day, identified User-Agent.
+ */
+async function refreshFx() {
+  const res = await fetch(ECB_URL, { headers: { 'User-Agent': PIECEBOOK_UA } })
+  if (!res.ok) throw new Error(`ECB ${res.status}`)
+  const xml = await res.text()
+  const time = xml.match(/<Cube time=["'](\d{4}-\d{2}-\d{2})["']/)?.[1]
+  const rateOf = (code) => Number(xml.match(new RegExp(`<Cube currency=["']${code}["'] rate=["']([0-9.]+)["']`))?.[1])
+  const eurUsd = rateOf('USD')
+  const eurSgd = rateOf('SGD')
+  if (!time || !Number.isFinite(eurUsd) || !Number.isFinite(eurSgd) || eurUsd <= 0 || eurSgd <= 0) {
+    throw new Error('ECB table missing a dated USD or SGD rate')
+  }
+  const rate = Math.round((eurSgd / eurUsd) * 10000) / 10000
+  const out = {
+    asOf: time,
+    base: 'USD',
+    quote: 'SGD',
+    rate,
+    eurUsd,
+    eurSgd,
+    source: 'ECB',
+    sourceName: 'European Central Bank euro foreign-exchange reference rates',
+    sourceUrl: ECB_URL,
+    note: 'SGD per USD is EUR/SGD ÷ EUR/USD from the same ECB daily table. Not a bank quote.',
+  }
+  if (!DRY) writeFileSync(join(DATA, 'fx-usd-sgd.json'), `${JSON.stringify(out, null, 2)}\n`)
+  console.log(`  fx-usd-sgd.json: S$${rate.toFixed(4)} to US $1 · ECB ${time}`)
+}
 
 async function tcgcsvJson(path) {
   const res = await fetch(`${TCGCSV}${path}`, { headers: TCGCSV_HEADERS })
@@ -680,6 +718,11 @@ async function refreshBoxes() {
 
 if (BOXES_ONLY) {
   await refreshBoxes()
+  try {
+    await refreshFx()
+  } catch (e) {
+    console.error(`  fx: ${e.message}`)
+  }
   console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
   process.exit(0)
 }
@@ -779,6 +822,12 @@ if (!NO_HISTORY) {
     console.error(`  box prices: ${e.message}`)
     failures++
   }
+}
+try {
+  await refreshFx()
+} catch (e) {
+  console.error(`  fx: ${e.message}`)
+  if (!existsSync(join(DATA, 'fx-usd-sgd.json'))) failures++
 }
 console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
 process.exit(failures ? 1 : 0)
