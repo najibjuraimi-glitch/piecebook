@@ -1,7 +1,7 @@
 import { BackBar, Screen } from '../components/Screen'
 import { ReaderCutoff } from '../components/ReaderCutoff'
 import { WikiLicence } from '../components/WikiLicence'
-import { STORY_ARCS } from '../data/wiki'
+import { STORY_ARCS, WIKI_STORY_REVID, WIKI_STORY_TITLE } from '../data/wiki'
 import { arcTitle, mediaLine } from '../lib/belong'
 
 /**
@@ -27,7 +27,7 @@ export function BelongStoryScreen() {
           </li>
         ))}
       </ol>
-      <WikiLicence className="mt-8" />
+      <WikiLicence className="mt-8" work={WIKI_STORY_TITLE} revid={WIKI_STORY_REVID} />
     </Screen>
   )
 }

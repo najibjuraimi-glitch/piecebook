@@ -1,5 +1,5 @@
 import { ALL_CARDS } from '../data/seed'
-import { STORY_ARCS, getWiki, type StoryArc, type WikiFruit } from '../data/wiki'
+import { STORY_ARCS, WIKI_FRUITS, getWiki, type StoryArc, type WikiFruit } from '../data/wiki'
 import type { CardAttributes } from '../data/attributes'
 import type { ReaderCutoff } from '../store/readerCutoff'
 
@@ -31,6 +31,30 @@ export function fruitVisible(fruit: WikiFruit, reader: ReaderCutoff): boolean {
   if (reader.chapter == null) return false
   if (fruit.firstChapter == null) return false
   return fruit.firstChapter <= reader.chapter
+}
+
+/** The stored fruit on a printed name, if the Char Box gave us one. */
+export function fruitForPerson(name: string): WikiFruit | undefined {
+  return WIKI_FRUITS.find((f) => f.eaters.some((e) => e.name === name))
+}
+
+export function personDebut(name: string): number | null {
+  return getWiki(name)?.debutChapter ?? null
+}
+
+/**
+ * Stored log line for a printed name: fruit when the cutoff has opened
+ * fruits, debut chapter when we have one. Nothing is invented.
+ */
+export function personLogLine(name: string, reader: ReaderCutoff): string | null {
+  const parts: string[] = []
+  const fruit = fruitForPerson(name)
+  if (fruit && fruitVisible(fruit, reader)) parts.push(fruit.name)
+  const debut = personDebut(name)
+  if (debut != null && (reader.finished || reader.chapter == null || debut <= reader.chapter)) {
+    parts.push(`ch ${debut}`)
+  }
+  return parts.length ? parts.join(' · ') : null
 }
 
 export function personVisible(name: string, reader: ReaderCutoff): boolean {

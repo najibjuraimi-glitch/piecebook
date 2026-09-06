@@ -5,7 +5,7 @@ import { ReaderCutoff } from '../components/ReaderCutoff'
 import { OnThisDay } from '../components/OnThisDay'
 import { WikiLicence } from '../components/WikiLicence'
 import { useReaderCutoff } from '../store/readerCutoff'
-import { STORY_ARCS, WIKI_FRUITS } from '../data/wiki'
+import { STORY_ARCS, WIKI_FRUITS, WIKI_STORY_REVID, WIKI_STORY_TITLE } from '../data/wiki'
 import { arcTitle, featuredArc, mediaLine } from '../lib/belong'
 import { onThisDay } from '../lib/fandom'
 import { todayIso } from '../lib/format'
@@ -131,7 +131,7 @@ export function BelongScreen() {
           Play has the rules in five sentences.
         </Link>
       </p>
-      <WikiLicence className="mt-4" />
+      <WikiLicence className="mt-4" work={WIKI_STORY_TITLE} revid={WIKI_STORY_REVID} />
     </Screen>
   )
 }

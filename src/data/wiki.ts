@@ -39,6 +39,8 @@ export interface WikiEntry {
 export const WIKI_LICENCE = wikiSeed.licence
 export const WIKI_LICENCE_URL = wikiSeed.licenceUrl
 export const WIKI_SOURCE = wikiSeed.source
+export const WIKI_STORY_TITLE = typeof summariesSeed.title === 'string' ? summariesSeed.title : 'Story Arcs'
+export const WIKI_STORY_REVID = typeof summariesSeed.revid === 'number' ? summariesSeed.revid : null
 
 export interface StoryArc {
   name: string

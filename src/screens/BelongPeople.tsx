@@ -5,7 +5,7 @@ import { ReaderCutoff } from '../components/ReaderCutoff'
 import { SearchField } from '../components/SearchField'
 import { useAllAttributes } from '../data/attributes'
 import { useReaderCutoff } from '../store/readerCutoff'
-import { personVisible, printedPeople } from '../lib/belong'
+import { fruitForPerson, personLogLine, personVisible, printedPeople } from '../lib/belong'
 import { pluralPrints } from '../lib/search'
 
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
@@ -26,7 +26,10 @@ export function BelongPeopleScreen() {
     return people.filter((p) => {
       if (!personVisible(p.name, reader)) return false
       if (letter && p.letter !== letter) return false
-      if (q && !p.name.toLowerCase().includes(q)) return false
+      if (q) {
+        const fruit = reader.unlocksStory ? fruitForPerson(p.name)?.name.toLowerCase() : ''
+        if (!p.name.toLowerCase().includes(q) && !fruit?.includes(q)) return false
+      }
       return true
     })
   }, [people, reader, letter, query])
@@ -39,8 +42,8 @@ export function BelongPeopleScreen() {
       <header className="mb-6">
         <h1 className="text-display text-ink">People</h1>
         <p className="mt-1 max-w-[60ch] text-body text-muted">
-          A stored log of every Character and Leader on an EN print. On a saga chip, only names we can place at or before
-          that chapter. Tap a name for the prints. Who they are lives on that page.
+          A stored log of every Character and Leader on an EN print: name, fruit and debut chapter when we have them. On a
+          saga chip, only names we can place at or before that chapter. Tap a name for the prints.
         </p>
       </header>
       <ReaderCutoff className="mb-6" />
@@ -77,20 +80,26 @@ export function BelongPeopleScreen() {
             {people.length !== visible.length && ` · ${people.length} printed`}
           </p>
           <ol className="mt-2 divide-y divide-line">
-            {visible.map((p) => (
-              <li key={p.name} id={`letter-${p.letter}`} className="scroll-mt-4">
-                <Link
-                  to={`/characters/${encodeURIComponent(p.name)}`}
-                  className="-mx-1 flex min-h-11 items-baseline justify-between gap-3 rounded-lg px-1 py-2.5 text-ink hover:bg-white"
-                >
-                  <span className="min-w-0 text-[15px] font-medium">{p.name}</span>
-                  <span className="tabular shrink-0 text-meta text-muted">
-                    {pluralPrints(p.prints)}
-                    {p.sets > 1 && ` · ${p.sets} sets`}
-                  </span>
-                </Link>
-              </li>
-            ))}
+            {visible.map((p) => {
+              const log = personLogLine(p.name, reader)
+              return (
+                <li key={p.name} id={`letter-${p.letter}`} className="scroll-mt-4">
+                  <Link
+                    to={`/characters/${encodeURIComponent(p.name)}`}
+                    className="-mx-1 flex min-h-11 items-baseline justify-between gap-3 rounded-lg px-1 py-2.5 text-ink hover:bg-white"
+                  >
+                    <span className="min-w-0">
+                      <span className="block text-[15px] font-medium">{p.name}</span>
+                      {log && <span className="mt-0.5 block text-meta text-muted">{log}</span>}
+                    </span>
+                    <span className="tabular shrink-0 text-meta text-muted">
+                      {pluralPrints(p.prints)}
+                      {p.sets > 1 && ` · ${p.sets} sets`}
+                    </span>
+                  </Link>
+                </li>
+              )
+            })}
           </ol>
           {visible.length === 0 && (
             <p className="mt-6 text-body text-muted">

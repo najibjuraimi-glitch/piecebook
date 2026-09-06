@@ -3,7 +3,7 @@
 
 Owner: Code as interim Cards, drafted from Jib’s instruction to put a fandom page like [One Piece Wiki](https://onepiece.fandom.com/wiki/One_Piece_Wiki) on Piecebook, and from rendered mockups on `cursor/fandom-page-draft-f694`  
 For: Design (critique), ten reviewers, then Jib  
-Covers growth-map **11.1** (fandom home): `/belong`, a fifth tab, a story index (titles and ranges, no plot), a wiki portal, a fruit log, a second character book, a reader cutoff  
+Covers growth-map **9.1** (fandom home): `/belong`, a fifth tab, a story index (titles and ranges, no plot), a wiki portal, a fruit log, a second character book, a reader cutoff  
 Reads with: `V1-DESIGN-PACK.md`, `V1-FANDOM-UI.md` (7.7–7.11), `V1-BELONG-UI.md` (7.2 timeline, 8.1 Start here), `V1-FIND-UI.md` (7.4 character pages), `seed-sources.md`
 
 This is the page Jib asked for after the Belong-directory draft was the wrong shape. It is a One Piece fandom home in the wiki’s rooms (story, people, fruits, media), quiet paper and ink, with doors into collect and play. It is not a quieter Fandom skin, and it is not a table of contents for set stories.
@@ -20,7 +20,7 @@ Live `/belong` on main is the end state. This branch is the draft. Nothing merge
 - Write a fifth encyclopedia of authored chapter blurbs.
 - Skip the reader cutoff. A first visit does not unlock later fruits.
 
-## 11.1 The page
+## 9.1 The page
 
 **Route.** `/belong`. Sub-routes `/belong/story`, `/belong/people`, `/belong/fruits`. The mock is the page: there is no `/belong-preview`.
 
@@ -80,7 +80,7 @@ The four doors on `/belong` are the portal. They are Piecebook rooms, not links 
 Luffy’s row is `Gum-Gum Fruit · Gomu Gomu no Mi · Paramecia`. Not Nika.
 
 ## Second character book
-**People page.** Every EN print whose attributes say Character or Leader, A–Z, search, letter chips. On a saga chip, only names with a stored debut chapter at or before that chip — a name we have not placed is hidden (v2; v1 leaked Absalom and Ace at East Blue because 540 printed names have no wiki debut on file). Debut arc and Now still list every printed name. A row is the printed name and `N prints · M sets`. Tap → the existing `/characters/:name` print page (7.4 / 7.8). That page stays the first book. This list is the second.
+**People page.** Every EN print whose attributes say Character or Leader, A–Z, search, letter chips. On a saga chip, only names with a stored debut chapter at or before that chip — a name we have not placed is hidden (v2; v1 leaked Absalom and Ace at East Blue because 540 printed names have no wiki debut on file). Debut arc and Now still list every printed name. A row is the printed name, a stored log line (`Gum-Gum Fruit · ch 1` when the cutoff has opened fruits and we have a debut), and `N prints · M sets`. Fruit stays behind the same chip as the fruit log. Tap → the existing `/characters/:name` print page (7.4 / 7.8). That page stays the first book. This list is the stored log.
 
 Attributes load on first visit, as Decks does. A name with no category on file is left out rather than guessed.
 
@@ -98,9 +98,9 @@ Device date is still the only date for On This Day.
 2. Start here World opens `/belong`. Start here names that Piecebook is unofficial.
 3. Story is an index: titles plus chapter and episode ranges. No wiki paragraphs. No authored blurbs. No official synopses. No chapter-page titles passed off as plot. Jib picked this 6 Sep 2026.
 4. The fruit log is Char Box fields on asked names, first line only, no later-name, no Imu. Not a clone of every fruit on the wiki. Not the word Pokédex.
-5. The people book is printed Character / Leader names into the pages we already have.
+5. The people log is printed Character / Leader names with stored fruit and debut when we have them, into the print pages we already have.
 6. Default cutoff is Debut arc: who-is unchanged, fruits closed, story index open. People is the full print book until a saga chip is on.
-7. No wiki images. No wiki article links. Licence URL only.
+7. No wiki images. No wiki article links. Licence URL only. The licence line names the work and revid.
 8. Live on `main` waits on “approved” and “merge N”.
 
 ## Research → response (ten reviewers: lore encyclopedist, Tokyo JP/EN collector, new fan mid-East-Blue, copy editor, product designer, phone reader, card collector, budget parent, low-vision collector, Singapore store owner)
