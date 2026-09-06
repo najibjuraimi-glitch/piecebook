@@ -14,6 +14,7 @@ import { ArtistScreen } from './screens/Artist'
 import { DecksScreen } from './screens/Decks'
 import { DeckBuilderScreen } from './screens/DeckBuilder'
 import { LearnScreen } from './screens/Learn'
+import { FandomCharacterPreview, FandomPreviewScreen, FandomTimelinePreview } from './screens/FandomPreview'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -43,6 +44,9 @@ export default function App() {
         <Route path="/decks" element={<DecksScreen />} />
         <Route path="/decks/:id" element={<DeckBuilderScreen />} />
         <Route path="/learn" element={<LearnScreen />} />
+        <Route path="/fandom-preview" element={<FandomPreviewScreen />} />
+        <Route path="/fandom-preview/character/:name" element={<FandomCharacterPreview />} />
+        <Route path="/fandom-preview/timeline" element={<FandomTimelinePreview />} />
         <Route path="*" element={<NotFoundScreen />} />
       </Routes>
       <TabBar pathname={pathname} />
