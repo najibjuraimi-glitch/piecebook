@@ -1,0 +1,1237 @@
+{
+  "source": "One Piece Wiki (onepiece.fandom.com)",
+  "licence": "CC BY-SA 3.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+  "fetchedAt": "2026-09-06",
+  "asked": 188,
+  "withFruit": 96,
+  "rules": "English and Japanese names and the type are the first displayed line of the Char Box dfename / dfname / dftype on a mapped printed name. Text after a line break or in small print is a later name and is not stored. No images.",
+  "fruits": [
+    {
+      "name": "Age-Age Fruit",
+      "jname": "Toshi Toshi no Mi",
+      "type": "Paramecia",
+      "firstChapter": 498,
+      "eaters": [
+        {
+          "name": "Jewelry Bonney",
+          "debutChapter": 498,
+          "arc": "Sabaody Archipelago Arc"
+        }
+      ]
+    },
+    {
+      "name": "Barrier-Barrier Fruit",
+      "jname": "Bari Bari no Mi",
+      "type": "Paramecia",
+      "firstChapter": 705,
+      "eaters": [
+        {
+          "name": "Bartolomeo",
+          "debutChapter": 705,
+          "arc": "Dressrosa Arc"
+        },
+        {
+          "name": "Kurozumi Semimaru",
+          "debutChapter": 965,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Bis-Bis Fruit",
+      "jname": "Bisu Bisu no Mi",
+      "type": "Paramecia",
+      "firstChapter": 835,
+      "eaters": [
+        {
+          "name": "Charlotte Cracker",
+          "debutChapter": 835,
+          "arc": "Whole Cake Island Arc"
+        }
+      ]
+    },
+    {
+      "name": "Boing-Boing Fruit",
+      "jname": "Bane Bane no Mi",
+      "type": "Paramecia",
+      "firstChapter": 222,
+      "eaters": [
+        {
+          "name": "Bellamy",
+          "debutChapter": 222,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Bomb-Bomb Fruit",
+      "jname": "Bomu Bomu no Mi",
+      "type": "Paramecia",
+      "firstChapter": 450,
+      "eaters": [
+        {
+          "name": "Ganzui",
+          "debutChapter": 450,
+          "arc": "Thriller Bark Arc"
+        }
+      ]
+    },
+    {
+      "name": "Brain-Brain Fruit",
+      "jname": "Nomi Nomi no Mi",
+      "type": "Paramecia",
+      "firstChapter": 684,
+      "eaters": [
+        {
+          "name": "Vegapunk",
+          "debutChapter": 684,
+          "arc": "Punk Hazard Arc"
+        }
+      ]
+    },
+    {
+      "name": "Brush-Brush Fruit",
+      "jname": "Fude Fude no Mi",
+      "type": "Paramecia",
+      "firstChapter": 700,
+      "eaters": [
+        {
+          "name": "Kanjuro",
+          "debutChapter": 700,
+          "arc": "Dressrosa Arc"
+        },
+        {
+          "name": "Kurozumi Kanjuro",
+          "debutChapter": 700,
+          "arc": "Dressrosa Arc"
+        }
+      ]
+    },
+    {
+      "name": "Calm-Calm Fruit",
+      "jname": "Nagi Nagi no Mi",
+      "type": "Paramecia",
+      "firstChapter": 761,
+      "eaters": [
+        {
+          "name": "Donquixote Rosinante",
+          "debutChapter": 761,
+          "arc": "Dressrosa Arc"
+        }
+      ]
+    },
+    {
+      "name": "Castle-Castle Fruit",
+      "jname": "Shiro Shiro no Mi",
+      "type": "Paramecia",
+      "firstChapter": 498,
+      "eaters": [
+        {
+          "name": "Capone\"Gang\"Bege",
+          "debutChapter": 498,
+          "arc": "Sabaody Archipelago Arc"
+        }
+      ]
+    },
+    {
+      "name": "Cat-Cat Fruit",
+      "jname": "Neko Neko no Mi, Model: Leopard",
+      "type": "Zoan",
+      "firstChapter": 323,
+      "eaters": [
+        {
+          "name": "Rob Lucci",
+          "debutChapter": 323,
+          "arc": "Water 7 Arc"
+        }
+      ]
+    },
+    {
+      "name": "Cat-Cat Fruit, Saber-Toothed Tiger Model",
+      "jname": "Neko Neko no Mi, Model: Saber Tiger",
+      "type": "Ancient Zoan",
+      "firstChapter": 977,
+      "eaters": [
+        {
+          "name": "Who's.Who",
+          "debutChapter": 977,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Chop-Chop Fruit",
+      "jname": "Bara Bara no Mi",
+      "type": "Paramecia",
+      "firstChapter": 9,
+      "eaters": [
+        {
+          "name": "Buggy",
+          "debutChapter": 9,
+          "arc": "Orange Town Arc"
+        }
+      ]
+    },
+    {
+      "name": "Clear-Clear Fruit",
+      "jname": "Suke Suke no Mi",
+      "type": "Paramecia",
+      "firstChapter": 538,
+      "eaters": [
+        {
+          "name": "Shiryu",
+          "debutChapter": 538,
+          "arc": "Impel Down Arc"
+        }
+      ]
+    },
+    {
+      "name": "Clone-Clone Fruit",
+      "jname": "Mane Mane no Mi",
+      "type": "Paramecia",
+      "firstChapter": 129,
+      "eaters": [
+        {
+          "name": "Kurozumi Higurashi",
+          "debutChapter": 965,
+          "arc": "Wano Country Arc"
+        },
+        {
+          "name": "Mr.2.Bon.Kurei(Bentham)",
+          "debutChapter": 129,
+          "arc": "Little Garden Arc"
+        }
+      ]
+    },
+    {
+      "name": "Cook-Cook Fruit",
+      "jname": "Kuku Kuku no Mi",
+      "type": "Paramecia",
+      "firstChapter": 858,
+      "eaters": [
+        {
+          "name": "Streusen",
+          "debutChapter": 858,
+          "arc": "Whole Cake Island Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dark-Dark Fruit",
+      "jname": "Yami Yami no Mi",
+      "type": "Logia",
+      "firstChapter": 223,
+      "eaters": [
+        {
+          "name": "Marshall.D.Teach",
+          "debutChapter": 223,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dice-Dice Fruit",
+      "jname": "Supa Supa no Mi",
+      "type": "Paramecia",
+      "firstChapter": 160,
+      "eaters": [
+        {
+          "name": "Mr.1(Daz.Bonez)",
+          "debutChapter": 160,
+          "arc": "Arabasta Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dog-Dog Fruit, Model: Nine Tailed Fox",
+      "jname": "Inu Inu no Mi, Model: Kyubi no Kitsune",
+      "type": "Mythical Zoan",
+      "firstChapter": 575,
+      "eaters": [
+        {
+          "name": "Catarina Devon",
+          "debutChapter": 575,
+          "arc": "Marineford Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dog-Dog Fruit, Model: Okuchi-no-Makami",
+      "jname": "Inu Inu no Mi, Model: Okuchi no Makami",
+      "type": "Mythical Zoan",
+      "firstChapter": 971,
+      "eaters": [
+        {
+          "name": "Yamato",
+          "debutChapter": 971,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dragon-Dragon Fruit, Model: Allosaurus",
+      "jname": "Ryu Ryu no Mi, Model: Allosaurus",
+      "type": "Ancient Zoan",
+      "firstChapter": 498,
+      "eaters": [
+        {
+          "name": "X.Drake",
+          "debutChapter": 498,
+          "arc": "Sabaody Archipelago Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dragon-Dragon Fruit, Model: Brachiosaurus",
+      "jname": "Ryu Ryu no Mi, Model: Brachiosaurus",
+      "type": "Ancient Zoan",
+      "firstChapter": 920,
+      "eaters": [
+        {
+          "name": "Queen",
+          "debutChapter": 920,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dragon-Dragon Fruit, Model: Nidhöggr",
+      "jname": "Ryu Ryu no Mi, Model: Nidhöggr",
+      "type": "Mythical Zoan",
+      "firstChapter": 1130,
+      "eaters": [
+        {
+          "name": "Loki",
+          "debutChapter": 1130,
+          "arc": "Elbaph Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dragon-Dragon Fruit, Model: Pteranodon",
+      "jname": "Ryu Ryu no Mi, Model: Pteranodon",
+      "type": "Ancient Zoan",
+      "firstChapter": 920,
+      "eaters": [
+        {
+          "name": "King",
+          "debutChapter": 920,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dragon-Dragon Fruit, Model: Spinosaurus",
+      "jname": "Ryu Ryu no Mi, Model: Spinosaurus",
+      "type": "Ancient Zoan",
+      "firstChapter": 929,
+      "eaters": [
+        {
+          "name": "Page One",
+          "debutChapter": 929,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dragon-Dragon Fruit, Pachycephalosaurus Model",
+      "jname": "Ryu Ryu no Mi, Model: Pachycephalosaurus",
+      "type": "Ancient Zoan",
+      "firstChapter": 977,
+      "eaters": [
+        {
+          "name": "Ulti",
+          "debutChapter": 977,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Dragon-Dragon Fruit, Triceratops Model",
+      "jname": "Ryu Ryu no Mi, Model: Triceratops",
+      "type": "Ancient Zoan",
+      "firstChapter": 977,
+      "eaters": [
+        {
+          "name": "Sasaki",
+          "debutChapter": 977,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Elephant SMILE",
+      "jname": null,
+      "type": "Artificial Zoan",
+      "firstChapter": 934,
+      "eaters": [
+        {
+          "name": "Babanuki",
+          "debutChapter": 934,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Elephant-Elephant Fruit, Ancient Zoan Model: Mammoth, Eleph-Eleph Fruit",
+      "jname": "Zou Zou no Mi, Model: Mammoth",
+      "type": "Ancient Zoan",
+      "firstChapter": 801,
+      "eaters": [
+        {
+          "name": "Jack",
+          "debutChapter": 801,
+          "arc": "Dressrosa Arc"
+        }
+      ]
+    },
+    {
+      "name": "Fish-Fish Fruit, Model: Azure Dragon",
+      "jname": "Uo Uo no Mi, Model: Seiryu",
+      "type": "Mythical Zoan",
+      "firstChapter": 684,
+      "eaters": [
+        {
+          "name": "Kaido",
+          "debutChapter": 795,
+          "arc": "Dressrosa Arc"
+        },
+        {
+          "name": "Kouzuki Momonosuke",
+          "debutChapter": 684,
+          "arc": "Punk Hazard Arc"
+        }
+      ]
+    },
+    {
+      "name": "Flame-Flame Fruit",
+      "jname": "Mera Mera no Mi",
+      "type": "Logia",
+      "firstChapter": 154,
+      "eaters": [
+        {
+          "name": "Portgas.D.Ace",
+          "debutChapter": 154,
+          "arc": "Drum Island Arc"
+        },
+        {
+          "name": "Sabo",
+          "debutChapter": 583,
+          "arc": "Post-War Arc"
+        }
+      ]
+    },
+    {
+      "name": "Float-Float Fruit",
+      "jname": "Fuwa Fuwa no Mi",
+      "type": "Paramecia",
+      "firstChapter": 0,
+      "eaters": [
+        {
+          "name": "Shiki",
+          "debutChapter": 0,
+          "arc": null
+        }
+      ]
+    },
+    {
+      "name": "Flying Squirrel SMILE",
+      "jname": null,
+      "type": "Artificial Zoan",
+      "firstChapter": 979,
+      "eaters": [
+        {
+          "name": "Bao Huang",
+          "debutChapter": 979,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Garb-Garb Jutsu",
+      "jname": "Fuku Fuku no Mi",
+      "type": "Paramecia",
+      "firstChapter": 656,
+      "eaters": [
+        {
+          "name": "Kin'emon",
+          "debutChapter": 656,
+          "arc": "Punk Hazard Arc"
+        }
+      ]
+    },
+    {
+      "name": "Gas-Gas Fruit",
+      "jname": "Gasu Gasu no Mi",
+      "type": "Logia",
+      "firstChapter": 658,
+      "eaters": [
+        {
+          "name": "Caesar Clown",
+          "debutChapter": 658,
+          "arc": "Punk Hazard Arc"
+        }
+      ]
+    },
+    {
+      "name": "Glug-Glug Fruit",
+      "jname": "Gabu Gabu no Mi",
+      "type": "Paramecia",
+      "firstChapter": 575,
+      "eaters": [
+        {
+          "name": "Vasco Shot",
+          "debutChapter": 575,
+          "arc": "Marineford Arc"
+        }
+      ]
+    },
+    {
+      "name": "Gum-Gum Fruit",
+      "jname": "Gomu Gomu no Mi",
+      "type": "Paramecia",
+      "firstChapter": 1,
+      "eaters": [
+        {
+          "name": "Monkey.D.Luffy",
+          "debutChapter": 1,
+          "arc": "Romance Dawn Arc"
+        }
+      ]
+    },
+    {
+      "name": "Hana-Hana Fruit",
+      "jname": "Hana Hana no Mi",
+      "type": "Paramecia",
+      "firstChapter": 114,
+      "eaters": [
+        {
+          "name": "Nico Robin",
+          "debutChapter": 114,
+          "arc": "Whisky Peak Arc"
+        }
+      ]
+    },
+    {
+      "name": "Heat-Heat Fruit",
+      "jname": "Netsu Netsu no Mi",
+      "type": "Paramecia",
+      "firstChapter": 861,
+      "eaters": [
+        {
+          "name": "Charlotte Oven",
+          "debutChapter": 861,
+          "arc": "Whole Cake Island Arc"
+        }
+      ]
+    },
+    {
+      "name": "Hobby-Hobby Fruit",
+      "jname": "Hobi Hobi no Mi",
+      "type": "Paramecia",
+      "firstChapter": 682,
+      "eaters": [
+        {
+          "name": "Sugar",
+          "debutChapter": 682,
+          "arc": "Punk Hazard Arc"
+        }
+      ]
+    },
+    {
+      "name": "Hollow-Hollow Fruit",
+      "jname": "Horo Horo no Mi",
+      "type": "Paramecia",
+      "firstChapter": 443,
+      "eaters": [
+        {
+          "name": "Perona",
+          "debutChapter": 443,
+          "arc": "Thriller Bark Arc"
+        }
+      ]
+    },
+    {
+      "name": "Horm-Horm Fruit",
+      "jname": "Horu Horu no Mi",
+      "type": "Paramecia",
+      "firstChapter": 537,
+      "eaters": [
+        {
+          "name": "Emporio.Ivankov",
+          "debutChapter": 537,
+          "arc": "Impel Down Arc"
+        }
+      ]
+    },
+    {
+      "name": "Horse SMILE",
+      "jname": null,
+      "type": "Artificial Zoan",
+      "firstChapter": 917,
+      "eaters": [
+        {
+          "name": "Speed",
+          "debutChapter": 917,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Horse-Horse Fruit",
+      "jname": "Uma Uma no Mi",
+      "type": "Zoan",
+      "firstChapter": 237,
+      "eaters": [
+        {
+          "name": "Pierre",
+          "debutChapter": 237,
+          "arc": "Skypiea Arc"
+        }
+      ]
+    },
+    {
+      "name": "Horse-Horse Fruit, Pegasus Model",
+      "jname": "Uma Uma no Mi, Model: Pegasus",
+      "type": "Mythical Zoan",
+      "firstChapter": 223,
+      "eaters": [
+        {
+          "name": "Stronger",
+          "debutChapter": 223,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Human-Human Fruit",
+      "jname": "Hito Hito no Mi",
+      "type": "Zoan",
+      "firstChapter": 134,
+      "eaters": [
+        {
+          "name": "Tony Tony.Chopper",
+          "debutChapter": 134,
+          "arc": "Drum Island Arc"
+        }
+      ]
+    },
+    {
+      "name": "Human-Human Fruit, Model: Buddha",
+      "jname": "Hito Hito no Mi, Model: Daibutsu",
+      "type": "Mythical Zoan",
+      "firstChapter": 234,
+      "eaters": [
+        {
+          "name": "Sengoku",
+          "debutChapter": 234,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Ice-Ice Fruit",
+      "jname": "Hie Hie no Mi",
+      "type": "Logia",
+      "firstChapter": 303,
+      "eaters": [
+        {
+          "name": "Kuzan",
+          "debutChapter": 303,
+          "arc": "Long Ring Long Land Arc"
+        }
+      ]
+    },
+    {
+      "name": "Isle-Isle Fruit",
+      "jname": "Shima Shima no Mi",
+      "type": "Paramecia",
+      "firstChapter": 575,
+      "eaters": [
+        {
+          "name": "Avalo Pizarro",
+          "debutChapter": 575,
+          "arc": "Marineford Arc"
+        }
+      ]
+    },
+    {
+      "name": "Lick-Lick Fruit",
+      "jname": "Pero Pero no Mi",
+      "type": "Paramecia",
+      "firstChapter": 834,
+      "eaters": [
+        {
+          "name": "Charlotte Perospero",
+          "debutChapter": 834,
+          "arc": "Whole Cake Island Arc"
+        }
+      ]
+    },
+    {
+      "name": "Love-Love Fruit",
+      "jname": "Mero Mero no Mi",
+      "type": "Paramecia",
+      "firstChapter": 516,
+      "eaters": [
+        {
+          "name": "Boa Hancock",
+          "debutChapter": 516,
+          "arc": "Amazon Lily Arc"
+        }
+      ]
+    },
+    {
+      "name": "Mag-Mag Fruit",
+      "jname": "Magu Magu no Mi",
+      "type": "Logia",
+      "firstChapter": 397,
+      "eaters": [
+        {
+          "name": "Sakazuki",
+          "debutChapter": 397,
+          "arc": "Enies Lobby Arc"
+        }
+      ]
+    },
+    {
+      "name": "Magnet-Magnet Fruit",
+      "jname": "Jiki Jiki no Mi",
+      "type": "Paramecia",
+      "firstChapter": 450,
+      "eaters": [
+        {
+          "name": "Captain John",
+          "debutChapter": 450,
+          "arc": "Thriller Bark Arc"
+        },
+        {
+          "name": "Eustass\"Captain\"Kid",
+          "debutChapter": 498,
+          "arc": "Sabaody Archipelago Arc"
+        }
+      ]
+    },
+    {
+      "name": "Memo-Memo Fruit",
+      "jname": "Memo Memo no Mi",
+      "type": "Paramecia",
+      "firstChapter": 651,
+      "eaters": [
+        {
+          "name": "Charlotte Pudding",
+          "debutChapter": 651,
+          "arc": "Fish-Man Island Arc"
+        }
+      ]
+    },
+    {
+      "name": "Mirror-Mirror Fruit",
+      "jname": "Mira Mira no Mi",
+      "type": "Paramecia",
+      "firstChapter": 831,
+      "eaters": [
+        {
+          "name": "Charlotte Brulee",
+          "debutChapter": 831,
+          "arc": "Whole Cake Island Arc"
+        }
+      ]
+    },
+    {
+      "name": "Mochi-Mochi Fruit",
+      "jname": "Mochi Mochi no Mi",
+      "type": "Special Paramecia",
+      "firstChapter": 860,
+      "eaters": [
+        {
+          "name": "Charlotte Katakuri",
+          "debutChapter": 860,
+          "arc": "Whole Cake Island Arc"
+        }
+      ]
+    },
+    {
+      "name": "Paw-Paw Fruit",
+      "jname": "Nikyu Nikyu no Mi",
+      "type": "Paramecia",
+      "firstChapter": 233,
+      "eaters": [
+        {
+          "name": "Bartholomew Kuma",
+          "debutChapter": 233,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Pocket-Pocket Fruit",
+      "jname": "Poke Poke no Mi",
+      "type": "Paramecia",
+      "firstChapter": 553,
+      "eaters": [
+        {
+          "name": "Blamenco",
+          "debutChapter": 553,
+          "arc": "Marineford Arc"
+        }
+      ]
+    },
+    {
+      "name": "Press-Press Fruit",
+      "jname": "Zushi Zushi no Mi",
+      "type": "Paramecia",
+      "firstChapter": 701,
+      "eaters": [
+        {
+          "name": "Issho",
+          "debutChapter": 701,
+          "arc": "Dressrosa Arc"
+        }
+      ]
+    },
+    {
+      "name": "Puff-Puff Fruit",
+      "jname": "Hoya Hoya no Mi",
+      "type": "Paramecia",
+      "firstChapter": 861,
+      "eaters": [
+        {
+          "name": "Charlotte Daifuku",
+          "debutChapter": 861,
+          "arc": "Whole Cake Island Arc"
+        }
+      ]
+    },
+    {
+      "name": "Pump-Pump Fruit",
+      "jname": "Kobu Kobu no Mi",
+      "type": "Paramecia",
+      "firstChapter": 904,
+      "eaters": [
+        {
+          "name": "Belo Betty",
+          "debutChapter": 904,
+          "arc": "Levely Arc"
+        }
+      ]
+    },
+    {
+      "name": "Push-Push Fruit",
+      "jname": "Oshi Oshi no Mi",
+      "type": "Paramecia",
+      "firstChapter": 904,
+      "eaters": [
+        {
+          "name": "Morley",
+          "debutChapter": 904,
+          "arc": "Levely Arc"
+        }
+      ]
+    },
+    {
+      "name": "Revive-Revive Fruit",
+      "jname": "Yomi Yomi no Mi",
+      "type": "Paramecia",
+      "firstChapter": 442,
+      "eaters": [
+        {
+          "name": "Brook",
+          "debutChapter": 442,
+          "arc": "Thriller Bark Arc"
+        }
+      ]
+    },
+    {
+      "name": "Ripe-Ripe Enticement Jutsu",
+      "jname": "Juku Juku no Mi",
+      "type": "Paramecia",
+      "firstChapter": 921,
+      "eaters": [
+        {
+          "name": "Shinobu",
+          "debutChapter": 921,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Rumble-Rumble Fruit",
+      "jname": "Goro Goro no Mi",
+      "type": "Logia",
+      "firstChapter": 254,
+      "eaters": [
+        {
+          "name": "Enel",
+          "debutChapter": 254,
+          "arc": "Skypiea Arc"
+        }
+      ]
+    },
+    {
+      "name": "Sala-Sala Fruit, Model: Axolotl",
+      "jname": "Sara Sara no Mi, Model: Axolotl",
+      "type": "Zoan",
+      "firstChapter": 668,
+      "eaters": [
+        {
+          "name": "Smiley",
+          "debutChapter": 668,
+          "arc": "Punk Hazard Arc"
+        }
+      ]
+    },
+    {
+      "name": "Sand-Sand Fruit",
+      "jname": "Suna Suna no Mi",
+      "type": "Logia",
+      "firstChapter": 126,
+      "eaters": [
+        {
+          "name": "Crocodile",
+          "debutChapter": 126,
+          "arc": "Little Garden Arc"
+        }
+      ]
+    },
+    {
+      "name": "Scrolling Jutsu",
+      "jname": "Maki Maki no Mi",
+      "type": "Paramecia",
+      "firstChapter": 817,
+      "eaters": [
+        {
+          "name": "Raizo",
+          "debutChapter": 817,
+          "arc": "Zou Arc"
+        }
+      ]
+    },
+    {
+      "name": "Shadow-Shadow Fruit",
+      "jname": "Kage Kage no Mi",
+      "type": "Paramecia",
+      "firstChapter": 449,
+      "eaters": [
+        {
+          "name": "Gecko Moria",
+          "debutChapter": 449,
+          "arc": "Thriller Bark Arc"
+        }
+      ]
+    },
+    {
+      "name": "Sick-Sick Fruit",
+      "jname": "Shiku Shiku no Mi",
+      "type": "Paramecia",
+      "firstChapter": 223,
+      "eaters": [
+        {
+          "name": "Doc Q",
+          "debutChapter": 223,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Sing-Sing Fruit",
+      "jname": "Uta Uta no Mi",
+      "type": "Paramecia",
+      "firstChapter": 1055,
+      "eaters": [
+        {
+          "name": "Uta",
+          "debutChapter": 1055,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Slip-Slip Fruit",
+      "jname": "Sube Sube no Mi",
+      "type": "Paramecia",
+      "firstChapter": 2,
+      "eaters": [
+        {
+          "name": "Alvida",
+          "debutChapter": 2,
+          "arc": "Romance Dawn Arc"
+        }
+      ]
+    },
+    {
+      "name": "Slow-Slow Fruit",
+      "jname": "Noro Noro no Mi",
+      "type": "Paramecia",
+      "firstChapter": 305,
+      "eaters": [
+        {
+          "name": "Foxy",
+          "debutChapter": 305,
+          "arc": "Long Ring Long Land Arc"
+        }
+      ]
+    },
+    {
+      "name": "Smoke-Smoke Fruit",
+      "jname": "Moku Moku no Mi",
+      "type": "Logia",
+      "firstChapter": 97,
+      "eaters": [
+        {
+          "name": "Smoker",
+          "debutChapter": 97,
+          "arc": "Loguetown Arc"
+        }
+      ]
+    },
+    {
+      "name": "Snake-Snake Fruit, Model: Eight Headed Serpent",
+      "jname": "Hebi Hebi no Mi, Model: Yamata no Orochi",
+      "type": "Mythical Zoan",
+      "firstChapter": 927,
+      "eaters": [
+        {
+          "name": "Kurozumi Orochi",
+          "debutChapter": 927,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Snow-Snow Fruit",
+      "jname": "Yuki Yuki no Mi",
+      "type": "Logia",
+      "firstChapter": 657,
+      "eaters": [
+        {
+          "name": "Monet",
+          "debutChapter": 657,
+          "arc": "Punk Hazard Arc"
+        }
+      ]
+    },
+    {
+      "name": "Soot-Soot Fruit",
+      "jname": "Susu Susu no Mi",
+      "type": "Logia",
+      "firstChapter": 593,
+      "eaters": [
+        {
+          "name": "Karasu",
+          "debutChapter": 593,
+          "arc": "Post-War Arc"
+        }
+      ]
+    },
+    {
+      "name": "Soul-Soul Fruit",
+      "jname": "Soru Soru no Mi",
+      "type": "Paramecia",
+      "firstChapter": 651,
+      "eaters": [
+        {
+          "name": "Charlotte Linlin",
+          "debutChapter": 651,
+          "arc": "Fish-Man Island Arc"
+        }
+      ]
+    },
+    {
+      "name": "Spider-Spider Fruit, Rosamygale grauvogeli Model",
+      "jname": "Kumo Kumo no Mi, Model: Rosamygale Grauvogeli",
+      "type": "Ancient Zoan",
+      "firstChapter": 977,
+      "eaters": [
+        {
+          "name": "Black Maria",
+          "debutChapter": 977,
+          "arc": "Wano Country Arc"
+        }
+      ]
+    },
+    {
+      "name": "Spike-Spike Fruit",
+      "jname": "Toge Toge no Mi",
+      "type": "Paramecia",
+      "firstChapter": 155,
+      "eaters": [
+        {
+          "name": "Miss Doublefinger(Zala)",
+          "debutChapter": 155,
+          "arc": "Arabasta Arc"
+        }
+      ]
+    },
+    {
+      "name": "Straw-Straw Fruit",
+      "jname": "Wara Wara no Mi",
+      "type": "Paramecia",
+      "firstChapter": 498,
+      "eaters": [
+        {
+          "name": "Basil Hawkins",
+          "debutChapter": 498,
+          "arc": "Sabaody Archipelago Arc"
+        }
+      ]
+    },
+    {
+      "name": "String-String Fruit",
+      "jname": "Ito Ito no Mi",
+      "type": "Paramecia",
+      "firstChapter": 233,
+      "eaters": [
+        {
+          "name": "Donquixote Doflamingo",
+          "debutChapter": 233,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Strong-Strong Fruit",
+      "jname": "Riki Riki no Mi",
+      "type": "Paramecia",
+      "firstChapter": 222,
+      "eaters": [
+        {
+          "name": "Jesus Burgess",
+          "debutChapter": 222,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Swamp-Swamp Fruit",
+      "jname": "Numa Numa no Mi",
+      "type": "Logia",
+      "firstChapter": 600,
+      "eaters": [
+        {
+          "name": "Caribou",
+          "debutChapter": 600,
+          "arc": "Return to Sabaody Arc"
+        }
+      ]
+    },
+    {
+      "name": "Tone-Tone Fruit",
+      "jname": "Oto Oto no Mi",
+      "type": "Paramecia",
+      "firstChapter": 498,
+      "eaters": [
+        {
+          "name": "Scratchmen Apoo",
+          "debutChapter": 498,
+          "arc": "Sabaody Archipelago Arc"
+        }
+      ]
+    },
+    {
+      "name": "Tremor-Tremor Fruit",
+      "jname": "Gura Gura no Mi",
+      "type": "Paramecia",
+      "firstChapter": 159,
+      "eaters": [
+        {
+          "name": "Edward.Newgate",
+          "debutChapter": 159,
+          "arc": "Arabasta Arc"
+        }
+      ]
+    },
+    {
+      "name": "Tweet-Tweet Fruit, Phoenix Model",
+      "jname": "Tori Tori no Mi, Model: Phoenix",
+      "type": "Mythical Zoan",
+      "firstChapter": 234,
+      "eaters": [
+        {
+          "name": "Marco",
+          "debutChapter": 234,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Twinkle-Twinkle Fruit",
+      "jname": "Kira Kira no Mi",
+      "type": "Paramecia",
+      "firstChapter": 234,
+      "eaters": [
+        {
+          "name": "Jozu",
+          "debutChapter": 234,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Venom-Venom Fruit",
+      "jname": "Doku Doku no Mi",
+      "type": "Paramecia",
+      "firstChapter": 528,
+      "eaters": [
+        {
+          "name": "Magellan",
+          "debutChapter": 528,
+          "arc": "Impel Down Arc"
+        }
+      ]
+    },
+    {
+      "name": "Warp-Warp Fruit",
+      "jname": "Wapu Wapu no Mi",
+      "type": "Paramecia",
+      "firstChapter": 222,
+      "eaters": [
+        {
+          "name": "Van Augur",
+          "debutChapter": 222,
+          "arc": "Jaya Arc"
+        }
+      ]
+    },
+    {
+      "name": "Wax-Wax Fruit",
+      "jname": "Doru Doru no Mi",
+      "type": "Paramecia",
+      "firstChapter": 117,
+      "eaters": [
+        {
+          "name": "Mr.3(Galdino)",
+          "debutChapter": 117,
+          "arc": "Little Garden Arc"
+        }
+      ]
+    },
+    {
+      "name": "Woods-Woods Fruit",
+      "jname": "Mori Mori no Mi",
+      "type": "Logia",
+      "firstChapter": 905,
+      "eaters": [
+        {
+          "name": "Aramaki",
+          "debutChapter": 905,
+          "arc": "Levely Arc"
+        }
+      ]
+    },
+    {
+      "name": "Wring-Wring Fruit",
+      "jname": "Shibo Shibo no Mi",
+      "type": "Paramecia",
+      "firstChapter": 846,
+      "eaters": [
+        {
+          "name": "Charlotte Smoothie",
+          "debutChapter": 846,
+          "arc": "Whole Cake Island Arc"
+        }
+      ]
+    }
+  ]
+}

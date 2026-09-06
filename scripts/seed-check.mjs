@@ -319,6 +319,49 @@ if (existsSync(wikiPath)) {
   warn('wiki/lines.json is missing; run npm run wiki:refresh')
 }
 
+// Wiki belong rooms (11.1): Story Arcs summaries and fruit fields. Licence
+// required; 33 main arcs starting at chapter 1; no localizer junk in a fruit
+// name; Imu / "The Devil's Fruit" stay out.
+const summariesPath = join(DATA, 'wiki/summaries.json')
+if (existsSync(summariesPath)) {
+  const summaries = JSON.parse(readFileSync(summariesPath, 'utf8'))
+  if (summaries.licence !== 'CC BY-SA 3.0') fail('wiki/summaries.json: licence must be CC BY-SA 3.0')
+  if (typeof summaries.licenceUrl !== 'string' || !summaries.licenceUrl.includes('creativecommons.org')) {
+    fail('wiki/summaries.json: licenceUrl must point at the Creative Commons licence')
+  }
+  const arcs = Array.isArray(summaries.arcs) ? summaries.arcs : []
+  if (arcs.length !== 33) fail(`wiki/summaries.json: expected 33 main arcs, got ${arcs.length}`)
+  if (arcs[0]?.firstChapter !== 1) fail('wiki/summaries.json: first arc must open at chapter 1')
+  for (const a of arcs) {
+    const words = typeof a?.summary === 'string' ? a.summary.trim().split(/\s+/).filter(Boolean).length : 0
+    if (words < 6) fail(`wiki/summaries.json ${a?.name}: summary is under 6 words`)
+    if (typeof a?.firstEpisode !== 'number') fail(`wiki/summaries.json ${a?.name}: missing firstEpisode`)
+  }
+} else {
+  warn('wiki/summaries.json is missing; run npm run wiki:belong')
+}
+
+const fruitsPath = join(DATA, 'wiki/fruits.json')
+if (existsSync(fruitsPath)) {
+  const fruits = JSON.parse(readFileSync(fruitsPath, 'utf8'))
+  if (fruits.licence !== 'CC BY-SA 3.0') fail('wiki/fruits.json: licence must be CC BY-SA 3.0')
+  if (typeof fruits.licenceUrl !== 'string' || !fruits.licenceUrl.includes('creativecommons.org')) {
+    fail('wiki/fruits.json: licenceUrl must point at the Creative Commons licence')
+  }
+  const list = Array.isArray(fruits.fruits) ? fruits.fruits : []
+  if (list.length < 1) fail('wiki/fruits.json: no fruits')
+  for (const f of list) {
+    const name = typeof f?.name === 'string' ? f.name : ''
+    if (/\b(viz|4kids|funimation|odex)\b/i.test(name)) fail(`wiki/fruits.json ${name}: localizer credit leaked into the name`)
+    if (/devil'?s fruit/i.test(name)) fail(`wiki/fruits.json ${name}: later-name reveal fruit must not be stored`)
+    const eaters = Array.isArray(f?.eaters) ? f.eaters : []
+    if (eaters.some((e) => e?.name === 'Imu')) fail(`wiki/fruits.json ${name}: Imu must not be listed as an eater`)
+    if (eaters.length === 0) fail(`wiki/fruits.json ${name}: no eaters`)
+  }
+} else {
+  warn('wiki/fruits.json is missing; run npm run wiki:belong')
+}
+
 // FX (5.4): dated ECB USD→SGD. Missing or older than 4 weekdays fails
 // (the table is not published on TARGET holidays; weekends do not count).
 const FX_WEEKDAYS = 4

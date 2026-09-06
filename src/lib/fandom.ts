@@ -78,9 +78,54 @@ export function isNameReveal(entry: WikiEntry): boolean {
   return words(entry.title).length > words(entry.name).length
 }
 
+const MIN_LINE_WORDS = 6
+const MAX_LINE_WORDS = 22
+const FINITE = /\b(is|are|was|were|has|have|had)\b/
+const wordCount = (s: string) => (s ? s.split(/\s+/).filter(Boolean).length : 0)
+
+/**
+ * Recompute a who-is line from stored clauses at a reader cutoff.
+ * `cutoff` null means the gate cannot run; Infinity is an open / finished story.
+ * Uncited clauses still fail. Late clauses pass only when `finished`.
+ */
+export function lineFromClauses(
+  clauses: WikiEntry['clauses'],
+  cutoff: number | null,
+  finished = false,
+): string | null {
+  if (cutoff == null || clauses.length === 0) return null
+  let kept = 0
+  while (kept < clauses.length) {
+    const c = clauses[kept]
+    if (c.chapter == null || c.chapter > cutoff || (c.late && !finished)) break
+    kept++
+  }
+  const compose = (k: number) =>
+    clauses
+      .slice(0, k)
+      .map((c) => c.text)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .replace(/[\s.,;:]+$/, '')
+  let k = kept
+  while (k > 0 && wordCount(compose(k)) > MAX_LINE_WORDS) k--
+  if (k === 0) return null
+  const line = compose(k)
+  return wordCount(line) < MIN_LINE_WORDS || !FINITE.test(line) ? null : line
+}
+
+export interface ReaderLineOpts {
+  /** Last chapter finished. Null keeps the stored debut-arc line. */
+  chapter?: number | null
+  /** Late clauses (deaths, "former") pass. */
+  finished?: boolean
+}
+
 /** The gated line we will print, or null when the title is a later-name reveal. */
-export function visibleLine(entry: WikiEntry | undefined): string | null {
-  if (!entry?.line || isNameReveal(entry)) return null
+export function visibleLine(entry: WikiEntry | undefined, reader?: ReaderLineOpts): string | null {
+  if (!entry || isNameReveal(entry)) return null
+  if (reader?.finished) return lineFromClauses(entry.clauses, Number.POSITIVE_INFINITY, true)
+  if (reader?.chapter != null) return lineFromClauses(entry.clauses, reader.chapter, false)
   return entry.line
 }
 

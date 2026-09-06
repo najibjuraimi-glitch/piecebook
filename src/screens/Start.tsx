@@ -11,7 +11,7 @@ import { markStarted } from '../store/started'
 const DOORS = [
   { pillar: 'Collect', question: 'What you have and what it is worth today.', to: '/' },
   { pillar: 'Play', question: 'Learn the game in five sentences, build a deck from your cards, check it against the rules.', to: '/decks' },
-  { pillar: 'Belong', question: 'Every set in order, who drew each card, who is on it, what is coming next.', to: '/?view=timeline' },
+  { pillar: 'Belong', question: 'The story, the people, the fruits, and the game — as far as you have read.', to: '/belong' },
 ]
 
 const LINK = 'text-ink underline decoration-line underline-offset-2 transition-colors duration-150 ease-out hover:decoration-ink'

@@ -1,4 +1,6 @@
 import wikiSeed from '../../data/wiki/lines.json'
+import summariesSeed from '../../data/wiki/summaries.json'
+import fruitsSeed from '../../data/wiki/fruits.json'
 
 /**
  * One mapped name from `data/wiki/lines.json`: the wiki title, a revid
@@ -37,6 +39,78 @@ export interface WikiEntry {
 export const WIKI_LICENCE = wikiSeed.licence
 export const WIKI_LICENCE_URL = wikiSeed.licenceUrl
 export const WIKI_SOURCE = wikiSeed.source
+
+export interface StoryArc {
+  name: string
+  firstChapter: number
+  lastChapter: number | null
+  firstEpisode: number | null
+  lastEpisode: number | null
+  summary: string
+  summaryWords: number
+}
+
+export interface FruitEater {
+  name: string
+  debutChapter: number | null
+  arc: string | null
+}
+
+export interface WikiFruit {
+  name: string
+  jname: string | null
+  type: string | null
+  firstChapter: number | null
+  eaters: FruitEater[]
+}
+
+function toArc(row: Partial<StoryArc>): StoryArc | null {
+  if (typeof row.name !== 'string' || !row.name) return null
+  if (typeof row.firstChapter !== 'number') return null
+  return {
+    name: row.name,
+    firstChapter: row.firstChapter,
+    lastChapter: typeof row.lastChapter === 'number' ? row.lastChapter : null,
+    firstEpisode: typeof row.firstEpisode === 'number' ? row.firstEpisode : null,
+    lastEpisode: typeof row.lastEpisode === 'number' ? row.lastEpisode : null,
+    summary: typeof row.summary === 'string' ? row.summary.trim() : '',
+    summaryWords: typeof row.summaryWords === 'number' ? row.summaryWords : 0,
+  }
+}
+
+function toFruit(row: Partial<WikiFruit>): WikiFruit | null {
+  if (typeof row.name !== 'string' || !row.name) return null
+  const eaters = Array.isArray(row.eaters)
+    ? row.eaters.flatMap((e) => {
+        if (!e || typeof e.name !== 'string' || !e.name) return []
+        return [
+          {
+            name: e.name,
+            debutChapter: typeof e.debutChapter === 'number' ? e.debutChapter : null,
+            arc: typeof e.arc === 'string' ? e.arc : null,
+          },
+        ]
+      })
+    : []
+  if (eaters.length === 0) return null
+  return {
+    name: row.name,
+    jname: typeof row.jname === 'string' && row.jname ? row.jname : null,
+    type: typeof row.type === 'string' && row.type ? row.type : null,
+    firstChapter: typeof row.firstChapter === 'number' ? row.firstChapter : null,
+    eaters,
+  }
+}
+
+export const STORY_ARCS: readonly StoryArc[] = (summariesSeed.arcs as Partial<StoryArc>[]).flatMap((a) => {
+  const arc = toArc(a)
+  return arc ? [arc] : []
+})
+
+export const WIKI_FRUITS: readonly WikiFruit[] = (fruitsSeed.fruits as Partial<WikiFruit>[]).flatMap((f) => {
+  const fruit = toFruit(f)
+  return fruit ? [fruit] : []
+})
 
 type Row = Partial<WikiEntry> & { name?: unknown }
 
