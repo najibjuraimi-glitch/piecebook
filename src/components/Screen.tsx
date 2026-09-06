@@ -38,14 +38,19 @@ export function Wordmark({ className = '' }: { className?: string }) {
 interface TitleProps {
   title: string
   subline?: string
+  /** Something small at the right of the title, on its line: the view tabs on Sets home. */
+  aside?: React.ReactNode
 }
 
-export function ScreenTitle({ title, subline }: TitleProps) {
+export function ScreenTitle({ title, subline, aside }: TitleProps) {
   return (
     <header className="mb-6">
       {/* The TopBar carries the wordmark from tablet up. */}
       <Wordmark className="tablet:hidden" />
-      <h1 className="mt-4 text-display text-ink tablet:mt-0">{title}</h1>
+      <div className="mt-4 flex items-end justify-between gap-4 tablet:mt-0">
+        <h1 className="text-display text-ink">{title}</h1>
+        {aside}
+      </div>
       {subline && <p className="mt-1 text-body text-muted">{subline}</p>}
     </header>
   )

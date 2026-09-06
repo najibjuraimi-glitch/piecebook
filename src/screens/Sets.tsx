@@ -8,21 +8,31 @@ import { EmptyState } from '../components/EmptyState'
 import { SearchField } from '../components/SearchField'
 import { SearchResults } from '../components/SearchResults'
 import { FacetChips, useSearchAttributes } from '../components/FacetChips'
+import { ViewTabs } from '../components/ViewTabs'
+import { Timeline } from '../components/Timeline'
 import { resolveCardNumber, searchAll } from '../lib/search'
 import { useCollection } from '../store/collection'
+
+/** The two views of Sets home (7.2): tiles by set, or every booster in English release order. The view lives in the URL only. */
+const VIEWS = [
+  { id: 'tiles', label: 'Tiles' },
+  { id: 'timeline', label: 'Timeline' },
+]
 
 /**
  * Every EN set on Cards' roster, oldest EN release first. The roster, not the
  * card CSVs, decides membership. One search field above the tiles searches
  * every set at once (`?q=`); the tiles step aside for as long as there is a
  * query, and results are grouped by set so the tree stays visible. Enter on a
- * full card number opens the card.
+ * full card number opens the card. `?view=timeline` shows the same sets as a
+ * release timeline (7.2); search and its chips stay put above either view.
  */
 export function SetsScreen() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const query = params.get('q') ?? ''
   const searching = query.trim() !== ''
+  const view = params.get('view') === 'timeline' ? 'timeline' : 'tiles'
   const boosters = ROSTER.filter((s) => s.product !== 'starter_deck')
   // Number order, newest number first: release dates scramble the numbering (ST-22 shipped after ST-23).
   const decks = [...ROSTER.filter((s) => s.product === 'starter_deck')].sort((a, b) => b.setCode.localeCompare(a.setCode, 'en', { numeric: true }))
@@ -39,6 +49,13 @@ export function SetsScreen() {
     setParams(next, { replace: true })
   }
 
+  const setView = (id: string) => {
+    const next = new URLSearchParams(params)
+    if (id === 'timeline') next.set('view', 'timeline')
+    else next.delete('view')
+    setParams(next)
+  }
+
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const card = resolveCardNumber(query)
@@ -47,8 +64,12 @@ export function SetsScreen() {
 
   return (
     <Screen>
-      <ScreenTitle title="Sets" subline="EN sets" />
-      {!searching && (
+      <ScreenTitle
+        title="Sets"
+        subline={view === 'tiles' ? 'EN sets' : undefined}
+        aside={<ViewTabs tabs={VIEWS} active={view} onChange={setView} label="Sets view" className="-mr-2" />}
+      />
+      {!searching && view === 'tiles' && (
         <p className="-mt-3 mb-6 text-meta text-muted">
           {boosters.length - UPCOMING.length} booster sets
           {/* Upcoming sets sit last in the date-ordered grid (7.5); this jumps to the first of them. */}
@@ -65,6 +86,12 @@ export function SetsScreen() {
           .
         </p>
       )}
+      {view === 'timeline' && (
+        // Whose dates these are qualifies every row, so the caption reads in ink.
+        <p className="-mt-3 mb-6 max-w-[60ch] text-meta text-ink">
+          English release order. EN dates are Bandai’s; TCGplayer’s US date where Bandai gives only a month.
+        </p>
+      )}
 
       <form role="search" onSubmit={onSubmit} className="mb-6">
         <SearchField value={query} onChange={setQuery} placeholder="Search cards, sets, artists" className="tablet:max-w-[560px]" />
@@ -78,8 +105,12 @@ export function SetsScreen() {
         <p className="px-1 pt-10 text-center text-body text-muted">Keep typing to search every set.</p>
       ) : ROSTER.length === 0 ? (
         <EmptyState message="No sets loaded yet." />
+      ) : view === 'timeline' ? (
+        <div role="tabpanel" id="panel-timeline" aria-labelledby="tab-timeline">
+          <Timeline />
+        </div>
       ) : (
-        <>
+        <div role="tabpanel" id="panel-tiles" aria-labelledby="tab-tiles">
           <ul className="grid grid-cols-1 gap-4 tablet:grid-cols-2 wide:grid-cols-3">
             {boosters.map((set) => (
               <li key={set.setCode} id={set.setCode === UPCOMING[0]?.setCode ? 'coming-soon' : undefined} className="scroll-mt-4">
@@ -103,11 +134,12 @@ export function SetsScreen() {
               </ul>
             </section>
           )}
-        </>
+        </div>
       )}
     </Screen>
   )
 }
+
 
 /** A same-page jump inside a sentence: the words stay on the line, the target is 44px tall around them. */
 function JumpLink({ href, children }: { href: string; children: React.ReactNode }) {
