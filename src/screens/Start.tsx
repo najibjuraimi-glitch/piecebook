@@ -1,6 +1,8 @@
-import { Link } from 'react-router-dom'
+import { useState, type FormEvent } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Screen } from '../components/Screen'
 import { ChevronRight } from '../components/SetTile'
+import { SearchField } from '../components/SearchField'
 import { markStarted } from '../store/started'
 
 /**
@@ -10,14 +12,23 @@ import { markStarted } from '../store/started'
  * nothing remembered but the fact that the visitor has been here.
  */
 const DOORS = [
-  { pillar: 'Collect', question: 'What you have and what it is worth today.', to: '/' },
-  { pillar: 'Play', question: 'Learn the game in five sentences, build a deck from your cards, check it against the rules.', to: '/decks' },
+  { pillar: 'Collect', question: 'Find a card or a box, then see what you have and what it is worth today.', to: '/' },
+  { pillar: 'Play', question: 'The rules in five sentences, then Bandai’s own. Build a deck from your cards.', to: '/learn' },
   { pillar: 'World', question: 'The story, the people, the fruits, and the game — as far as you have read.', to: '/belong' },
 ]
 
 const LINK = 'text-ink underline decoration-line underline-offset-2 transition-colors duration-150 ease-out hover:decoration-ink'
 
 export function StartScreen() {
+  const [query, setQuery] = useState('')
+  const navigate = useNavigate()
+  const find = (e: FormEvent) => {
+    e.preventDefault()
+    markStarted()
+    const q = query.trim()
+    navigate(q ? `/?q=${encodeURIComponent(q)}` : '/')
+  }
+
   return (
     <Screen>
       <header className="mb-8 pt-2">
@@ -25,6 +36,15 @@ export function StartScreen() {
           Piecebook
         </h1>
       </header>
+
+      <form role="search" onSubmit={find} className="mb-8">
+        <SearchField
+          value={query}
+          onChange={setQuery}
+          placeholder="Find a card or a box"
+          className="tablet:max-w-[560px]"
+        />
+      </form>
 
       <ul className="grid grid-cols-1 gap-3 tablet:grid-cols-3">
         {DOORS.map((d) => (

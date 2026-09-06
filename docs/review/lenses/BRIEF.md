@@ -4,8 +4,8 @@ Objective: improve Piecebook from shopper and learner eyes **before the next pha
 
 Piecebook is unofficial. Quiet paper and ink. **Not a shop:** no cart, no checkout, no marketplace. Prices are seed (TCGplayer via Limitless / TCGCSV). Do not invent a buy button. “Shop” here means: find the card or box, see what it costs, know what it is, then buy it somewhere else.
 
-Live: https://najibjuraimi-glitch.github.io/piecebook/
-World (the URL Jib sent reviewers to): https://najibjuraimi-glitch.github.io/piecebook/belong
+Live home (start here): https://najibjuraimi-glitch.github.io/piecebook/
+A first visit with nothing owned redirects `/` to `/start`. World is a tab and a door, not the assigned landing. No third wave of World-only seats.
 
 ## Collectr (shoppers review this first)
 URL: https://app.getcollectr.com/?sortType=price&sortOrder=DESC&cardType=cards&category=68
@@ -47,6 +47,6 @@ Tabs: Sets · Collection · Decks · Portfolio · World.
 **Not here:** cart, checkout, official shop locator, teaching app, video on the page, fruit pictures, plot, wiki article links.
 
 ## Reviewer return shape
-Seat · first impression of the reference site (2 sentences) · first impression of Piecebook `/belong` (2 sentences) · top 5 frictions on Piecebook for YOUR job (high/med/low) · 3 things that work · one trade · one concrete improvement (one sentence) that helps YOUR profile **find a card/box** or **learn the game** on Piecebook.
+Seat · first impression of the reference site (2 sentences) · first impression of Piecebook **home / Start** (2 sentences) · top 5 frictions on Piecebook for YOUR job (high/med/low) · 3 things that work · one trade · one concrete improvement (one sentence) that helps YOUR profile **find a card/box** or **learn the game** on Piecebook. Visit Sets, Learn, Decks, a set page, and World only as your job would.
 
 Do not recommend turning Piecebook into Collectr or into Bandai’s store. Check any “fact” against this brief.
