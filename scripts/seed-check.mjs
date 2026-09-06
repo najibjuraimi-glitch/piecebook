@@ -20,6 +20,11 @@
  *     category, numeric stats and legality values
  *   - price-history files parse, with one row per card per day and a known source
  *   - tcgplayer-products.csv: unique card numbers, roster sets, numeric ids
+ *   - set-intros.json stories (7.1): a ready booster set without a line is
+ *     warned about; a line must cite Bandai's EN page, run to 22 words at most,
+ *     be one sentence with no exclamation mark, avoid rarity / alt-art /
+ *     campaign / anniversary words and superlatives, and name every one of the
+ *     set's leaders or none of them
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -70,6 +75,8 @@ const codeKey = (c) => c.replace(/-/g, '').toLowerCase()
 const roster = JSON.parse(readFileSync(join(DATA, 'sets-roster-en.json'), 'utf8')).sets
 const files = readdirSync(DATA).filter((f) => f.endsWith('-en-seed.csv'))
 const counts = new Map()
+/** Leader names per set (base prints), collected from the seed and attributes for the story check. */
+const leaderNames = new Map()
 
 const today = new Date().toISOString().slice(0, 10)
 for (const set of roster) {
@@ -146,6 +153,10 @@ for (const f of files) {
       if (rows[i] && rows[i][2] !== num) fail(`card-attributes/${codeKey(set.setCode)}.csv:${line}: ${num} out of step with the seed (${rows[i][2]})`)
       if (rows[i] && rows[i][9] !== variant) fail(`card-attributes/${codeKey(set.setCode)}.csv:${line}: variant differs from the seed`)
       if (!CATEGORIES.has(category)) fail(`card-attributes/${codeKey(set.setCode)}.csv:${line}: category "${category}"`)
+      if (category === 'Leader' && variant === '' && rows[i] && num.startsWith(own)) {
+        if (!leaderNames.has(set.setCode)) leaderNames.set(set.setCode, new Set())
+        leaderNames.get(set.setCode).add(rows[i][3])
+      }
       for (const [label, v] of [['cost', cost], ['life', life], ['power', power], ['counter', counter], ['block', block]]) {
         if (v !== '' && !/^\d+$/.test(v)) fail(`card-attributes/${codeKey(set.setCode)}.csv:${line}: ${label} "${v}"`)
       }
@@ -229,6 +240,50 @@ if (existsSync(productsFile)) {
     if (!roster.some((s) => s.setCode === setCode)) fail(`tcgplayer-products.csv:${i + 2}: unknown set ${setCode}`)
     if (!/^\d+$/.test(id)) fail(`tcgplayer-products.csv:${i + 2}: product id "${id}"`)
   })
+}
+
+// Set stories (7.1): one line per booster set in set-intros.json, ours, written from Bandai's EN
+// product page (or its EN card list where Bandai has no page) and never quoted. The refresh never
+// writes prose, so a new set is warned about until someone writes its line.
+const STORY_WORDS = 22
+const STORY_BANNED = /\b(rare|rares|rarity|rarities|secret|parallel|parallels|alt-art|alt art|alternate|campaign|anniversary|treasure|foil|manga|SP|SEC|SR)\b/i
+const STORY_SUPERLATIVE = /\b(most|best|greatest|strongest|biggest|largest|highest|ultimate|ever|legendary)\b/i
+const BANDAI_EN = /^https:\/\/en\.onepiece-cardgame\.com\//
+const intros = JSON.parse(readFileSync(join(DATA, 'set-intros.json'), 'utf8'))
+for (const intro of intros) {
+  if (!roster.some((s) => s.setCode === intro.setCode)) warn(`set-intros.json: ${intro.setCode} is not on the roster`)
+}
+/** Does the story name this leader? Matches the printed name, the name without a quoted epithet (Eustass"Captain"Kid → Eustass Kid) and its last token (Luffy), on letter boundaries. */
+function namesLeader(story, name) {
+  const plain = name.replace(/"[^"]*"/g, ' ').replace(/\s+/g, ' ').trim()
+  const forms = new Set([name, plain, plain.split(/[. ]/).pop()])
+  return [...forms].some((f) => f && new RegExp(`(^|[^A-Za-z])${f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}($|[^A-Za-z])`).test(story))
+}
+for (const set of roster) {
+  if (set.product === 'starter_deck') continue
+  const intro = intros.find((i) => i.setCode === set.setCode)
+  const story = typeof intro?.introTheme === 'string' ? intro.introTheme.trim() : ''
+  if (!story) {
+    if (set.cardSeedStatus === 'ready') warn(`${set.setCode}: ready set without a story line (introTheme in set-intros.json)`)
+    continue
+  }
+  const where = `set-intros.json ${set.setCode}`
+  if (typeof intro.introSource !== 'string' || !BANDAI_EN.test(intro.introSource)) fail(`${where}: a story needs introSource, the Bandai EN page it was written from`)
+  const words = story.split(/\s+/).length
+  if (words > STORY_WORDS) fail(`${where}: story runs to ${words} words; the rule is ${STORY_WORDS}`)
+  if (story.includes('!')) fail(`${where}: story has an exclamation mark`)
+  if (!story.endsWith('.') || (story.match(/[.!?](\s|$)/g) ?? []).length !== 1) fail(`${where}: story must be one sentence ending in a full stop`)
+  const banned = story.match(STORY_BANNED)
+  if (banned) fail(`${where}: story uses "${banned[0]}" (no rarity, alt-art, campaign or anniversary words)`)
+  const superlative = story.match(STORY_SUPERLATIVE)
+  if (superlative) fail(`${where}: story uses the superlative "${superlative[0]}"`)
+  const leaders = leaderNames.get(set.setCode)
+  if (leaders && leaders.size > 0) {
+    const named = [...leaders].filter((n) => namesLeader(story, n))
+    if (named.length > 0 && named.length < leaders.size) {
+      fail(`${where}: story names ${named.join(', ')} but not ${[...leaders].filter((n) => !named.includes(n)).join(', ')}; name every leader or none`)
+    }
+  }
 }
 
 for (const w of warnings) console.warn(`warn: ${w}`)

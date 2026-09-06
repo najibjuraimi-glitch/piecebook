@@ -18,12 +18,18 @@ export interface SetIntro {
   cardTypes: string | null
   packsPerBox: number | null
   cardsPerPack: number | null
+  /**
+   * The set's story (7.1): one sentence of ours, at most 22 words, written from
+   * Bandai's EN product page and never quoted; `introSource` is that page. The
+   * refresh never writes it, so a new set has none until someone does.
+   */
   introTheme: string | null
+  introSource: string | null
   sources: string[]
   asOf: string | null
 }
 
-type Row = Partial<Record<keyof (typeof introSeed)[number] | 'jpName' | 'cardTypes', unknown>> & { setCode: string }
+type Row = Partial<Record<keyof (typeof introSeed)[number] | 'jpName' | 'cardTypes' | 'introSource', unknown>> & { setCode: string }
 
 function text(v: unknown): string | null {
   return typeof v === 'string' && v.trim() !== '' ? v.trim() : null
@@ -46,6 +52,7 @@ function toIntro(row: Row): SetIntro {
     packsPerBox: count(row.packsPerBox),
     cardsPerPack: count(row.cardsPerPack),
     introTheme: text(row.introTheme),
+    introSource: text(row.introSource),
     sources: Array.isArray(row.sources) ? row.sources.filter((s): s is string => typeof s === 'string') : [],
     asOf: text(row.asOf),
   }

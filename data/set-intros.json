@@ -9,12 +9,13 @@
     "cardTypes": "121",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "The opening booster grows the four starter crews and introduces two-colour leaders, so a deck can run two colours at once.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op01.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op01.php",
       "https://www.onepiece-cardgame.com/products/boosters/op01.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-02",
@@ -26,12 +27,13 @@
     "cardTypes": "121",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "The war at Marineford reaches the game, and black, which the Absolute Justice starter deck introduced, joins the boosters.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op02.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op02.php",
       "https://www.onepiece-cardgame.com/products/boosters/op02.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-03",
@@ -43,12 +45,13 @@
     "cardTypes": "127",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Enemies the Straw Hats fought in East Blue, Water Seven and Whole Cake Island gather, and yellow enters the game.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op03.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op03.php",
       "https://www.onepiece-cardgame.com/products/boosters/op03.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-04",
@@ -60,12 +63,13 @@
     "cardTypes": "124+1",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Alabasta and Dressrosa lead the cast, and every leader carries two colours: Nefeltari Vivi, Donquixote Doflamingo, Issho, Rebecca, Queen and Crocodile.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op04.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op04.php",
       "https://www.onepiece-cardgame.com/products/boosters/op04.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-05",
@@ -77,12 +81,13 @@
     "cardTypes": "126+1",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Skypiea and the Revolutionary Army join the game, Kaido returns from Wano, and Gear 5 arrives.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op05.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op05.php",
       "https://www.onepiece-cardgame.com/products/boosters/op05/"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-06",
@@ -94,12 +99,13 @@
     "cardTypes": "126+1",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Fish-Man Island, Thriller Bark and Germa join the game with six leaders: Uta, Hody Jones, Perona, Yamato, Vinsmoke Reiju and Gecko Moria.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op06.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op06.php",
       "https://www.onepiece-cardgame.com/products/boosters/op06.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "EB-01",
@@ -111,13 +117,14 @@
     "cardTypes": "61",
     "packsPerBox": 24,
     "cardsPerPack": 12,
-    "introTheme": null,
+    "introTheme": "The first extra booster looks back, strengthening older decks and adding three two-colour leaders: Kouzuki Oden, Hannyabal and Kyros.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/eb01.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/eb01.php",
       "https://www.onepiece-cardgame.com/products/boosters/eb01.php",
       "12 cards per pack, 24 packs per box (Bandai EN product page)"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-07",
@@ -129,12 +136,13 @@
     "cardTypes": "126+1",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Egghead's story reaches the game, and Monkey.D.Dragon, Jewelry Bonney, Boa Hancock, Foxy, Rob Lucci and Vegapunk lead six new decks.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op07.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op07.php",
       "https://www.onepiece-cardgame.com/products/boosters/op07.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-08",
@@ -146,12 +154,13 @@
     "cardTypes": "126+1",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Silvers Rayleigh, Roger's right hand, enters the game, and the Whitebeard, Animal Kingdom and Big Mom crews gain leaders.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op08.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op08.php",
       "https://www.onepiece-cardgame.com/products/boosters/op08.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "PRB-01",
@@ -163,12 +172,13 @@
     "cardTypes": "111+30",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Popular cards from earlier boosters return in one box, many with new illustrations, and Sanji gets a new leader card.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/prb01.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/prb01.php",
       "https://www.onepiece-cardgame.com/products/boosters/prb01.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-09",
@@ -180,14 +190,15 @@
     "cardTypes": "130+1",
     "packsPerBox": 24,
     "cardsPerPack": 12,
-    "introTheme": "Second English anniversary set built around the new Four Emperors: Luffy, Shanks, Blackbeard, and Buggy.",
+    "introTheme": "The new Four Emperors take the stage, Gol.D.Roger joins the game, and Shanks, Lim, Buggy, Monkey.D.Luffy, Nico Robin and Marshall.D.Teach lead.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op09.php",
     "sources": [
       "Bandai EN product materials / retail box print",
       "12 cards per pack, 24 packs per box",
       "https://en.onepiece-cardgame.com/products/boosters/op09.php",
       "https://www.onepiece-cardgame.com/products/boosters/op09/"
     ],
-    "asOf": "2026-09-04"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-10",
@@ -199,12 +210,13 @@
     "cardTypes": "126+1",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Punk Hazard enters the game, the Supernovas and Dressrosa grow, and Smoker, Caesar Clown, Sugar, Trafalgar Law, Usopp and Eustass Kid lead.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op10.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op10.php",
       "https://www.onepiece-cardgame.com/products/boosters/op10.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "EB-02",
@@ -216,12 +228,13 @@
     "cardTypes": "87",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Artists from the television anime draw every card, its theme songs become cards of their own, and Monkey.D.Luffy leads.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/eb02.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/eb02.php",
       "https://www.onepiece-cardgame.com/products/boosters/eb02.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-11",
@@ -233,12 +246,13 @@
     "cardTypes": "128+1",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "The Navy's SWORD unit enters the game, and the Whole Cake Island and Fish-Man Island crews grow.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op11.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op11.php",
       "https://www.onepiece-cardgame.com/products/boosters/op11.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-12",
@@ -250,12 +264,13 @@
     "cardTypes": "128+1",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Bonds between masters and students carry the set, and Silvers Rayleigh, Roronoa Zoro, Kuzan, Sanji, Donquixote Rosinante and Koala lead.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op12.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op12.php",
       "https://www.onepiece-cardgame.com/products/boosters/op12.php"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "PRB-02",
@@ -267,12 +282,13 @@
     "cardTypes": "129+30",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "A second collection of popular cards from earlier sets returns in one box, many with new illustrations.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/prb02.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/prb02.php",
       "https://www.onepiece-cardgame.com/products/boosters/prb02/"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-13",
@@ -284,12 +300,13 @@
     "cardTypes": "133+1",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Roger's will passes down the years, the Five Elders arrive, and Monkey.D.Luffy, Portgas.D.Ace, Gol.D.Roger, Sabo, Imu and Jewelry Bonney lead.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op13.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op13.php",
       "https://www.onepiece-cardgame.com/products/boosters/op13/"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "EB-04",
@@ -301,11 +318,13 @@
     "cardTypes": null,
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "The Navy descends on Vegapunk's island while the Straw Hats hold it, and Jewelry Bonney leads the set.",
+    "introSource": "https://en.onepiece-cardgame.com/cardlist/?series=569115",
     "sources": [
-      "https://www.onepiece-cardgame.com/products/boosters/eb04/"
+      "https://www.onepiece-cardgame.com/products/boosters/eb04/",
+      "introTheme written from Bandai's EN card list (series 569115 carries EB04-001…010 and 042…061, series 569114 the rest); Bandai has no EN product page for EB-04"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-14",
@@ -317,13 +336,14 @@
     "cardTypes": "163+2",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Every leader is a Warlord of the Sea: Trafalgar Law, Dracule Mihawk, Jinbe, Boa Hancock, Donquixote Doflamingo, Crocodile and Gecko Moria.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op14-eb04.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op14-eb04.php",
       "https://www.onepiece-cardgame.com/products/boosters/op14/",
       "EN card types count is for the combined OP14-EB04 / OP15-EB04 product"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "EB-03",
@@ -335,12 +355,13 @@
     "cardTypes": "71+4",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "The story's heroines fill the set, and Nefeltari Vivi leads it.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/eb03.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/eb03.php",
       "https://www.onepiece-cardgame.com/products/boosters/eb03/"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-15",
@@ -352,13 +373,14 @@
     "cardTypes": "159+1",
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Skypiea's arc unfolds in the clouds, where Monkey.D.Luffy faces Enel; Krieg, Sabo as Lucy, Brook and Rebecca lead alongside them.",
+    "introSource": "https://en.onepiece-cardgame.com/products/boosters/op15-eb04.php",
     "sources": [
       "https://en.onepiece-cardgame.com/products/boosters/op15-eb04.php",
       "https://www.onepiece-cardgame.com/products/boosters/op15/",
       "EN card types count is for the combined OP14-EB04 / OP15-EB04 product"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-16",
@@ -370,13 +392,14 @@
     "cardTypes": "126+1",
     "packsPerBox": 24,
     "cardsPerPack": 12,
-    "introTheme": "Paramount War set covering Impel Down and Marineford, with Admiral chase arts including Manga rares.",
+    "introTheme": "The war at Marineford returns by way of Impel Down, and Portgas.D.Ace, Monkey.D.Luffy, Buggy, Sengoku, Yamato and Marshall.D.Teach lead.",
+    "introSource": "https://en.onepiece-cardgame.com/products/op16.html",
     "sources": [
       "https://en.onepiece-cardgame.com/products/op16.html",
       "12 cards per pack, 24 packs per box",
       "https://www.onepiece-cardgame.com/products/boosters/op16/"
     ],
-    "asOf": "2026-09-04"
+    "asOf": "2026-09-06"
   },
   {
     "setCode": "OP-17",
@@ -388,10 +411,30 @@
     "cardTypes": null,
     "packsPerBox": null,
     "cardsPerPack": null,
-    "introTheme": null,
+    "introTheme": "Emperors past and present gather with the Rocks Pirates and Elbaph's giants, and Edward.Newgate, Shanks, Rocks.D.Xebec, Kaido, Monkey.D.Luffy and Charlotte Linlin lead.",
+    "introSource": "https://en.onepiece-cardgame.com/cardlist/?series=569117",
     "sources": [
-      "https://www.onepiece-cardgame.com/products/boosters/op17/"
+      "https://www.onepiece-cardgame.com/products/boosters/op17/",
+      "introTheme written from Bandai's EN card list: the EN product page (products/op17.html) is a title-only stub"
     ],
-    "asOf": "2026-09-05"
+    "asOf": "2026-09-06"
+  },
+  {
+    "setCode": "EB-05",
+    "setName": "One Piece Heroines Edition Vol.2",
+    "language": "EN",
+    "enReleased": null,
+    "jpReleased": null,
+    "jpName": null,
+    "cardTypes": null,
+    "packsPerBox": null,
+    "cardsPerPack": 12,
+    "introTheme": "The heroines return for a second extra booster, bringing new cards to existing decks.",
+    "introSource": "https://en.onepiece-cardgame.com/products/eb05.html",
+    "sources": [
+      "https://en.onepiece-cardgame.com/products/eb05.html",
+      "Bandai's EN page gives the release as October 2026 (no day) and 12 cards per pack; no JP page yet (404 on 6 Sep 2026)"
+    ],
+    "asOf": "2026-09-06"
   }
 ]
