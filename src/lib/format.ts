@@ -34,6 +34,14 @@ export function formatSignedUsd(value: number): string {
   return usd.format(0)
 }
 
+/** Signed percent with two decimals, e.g. "−5.54%" / "+1.20%". */
+export function formatSignedPercent(value: number): string {
+  const abs = Math.abs(value).toFixed(2)
+  if (value > 0) return `+${abs}%`
+  if (value < 0) return `−${abs}%`
+  return `${abs}%`
+}
+
 /** Signed movement with the country prefix, e.g. "+US $12.40" / "−US $3.10", for lines that name a market. */
 export function formatSignedUsMarketUsd(value: number): string {
   if (value > 0) return `+US ${usd.format(value)}`

@@ -1,7 +1,8 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import type { Card } from '../data/seed'
-import { formatShortDate, formatSignedUsd, formatUsd } from '../lib/format'
+import { formatShortDate, formatSignedPercent, formatSignedUsd, formatUsd } from '../lib/format'
+import type { GridMove } from '../data/history'
 import { CardArt } from './CardArt'
 import { RarityChip } from './RarityChip'
 import { StarIcon } from './StarButton'
@@ -16,6 +17,11 @@ interface Props {
   watching?: boolean
   /** Optional "+$1.20 since you starred 3 Sep" line under the market figure (watched cards in Collection); `since` is the star's day. */
   change?: { delta: number; since: string }
+  /**
+   * Week seed-price move on set-detail singles: dollars and percent, in ink.
+   * Omitted when history has fewer than two points.
+   */
+  marketMove?: GridMove
 }
 
 /** Art grid: 2 / 3 / 4 / 5 columns at phone / tablet / desktop / wide. Shared by Set detail and Collection. */
@@ -27,7 +33,7 @@ export function CardGrid({ children, className = '' }: { children: React.ReactNo
   )
 }
 
-export function CardCell({ card, owned = false, qty = 0, paid, watching = false, change }: Props) {
+export function CardCell({ card, owned = false, qty = 0, paid, watching = false, change, marketMove }: Props) {
   return (
     <Link
       to={`/cards/${encodeURIComponent(card.cardNumber)}`}
@@ -66,9 +72,14 @@ export function CardCell({ card, owned = false, qty = 0, paid, watching = false,
           <span className="tabular truncate text-meta text-muted">{card.cardNumber}</span>
           <RarityChip rarity={card.rarity} />
         </div>
-        {/* Seed market_usd only; no as-of, change or trend on cells. */}
         {card.marketUsd !== null && (
-          <p className="tabular text-meta text-muted">{formatUsd(card.marketUsd)}</p>
+          <p className="tabular text-[15px] font-medium leading-5 text-ink">{formatUsd(card.marketUsd)}</p>
+        )}
+        {marketMove && (
+          <p className="tabular text-meta text-ink">
+            {formatSignedUsd(marketMove.delta)}
+            {marketMove.percent != null && ` (${formatSignedPercent(marketMove.percent)})`}
+          </p>
         )}
         {paid && <p className="tabular truncate text-meta text-muted">Paid {paid}</p>}
         {/* Movement in ink, not red or green: the cell reports, it does not judge. */}

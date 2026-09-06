@@ -32,7 +32,9 @@ Quiet surface card. Whole tile taps to the set.
 Keep the EN / JP guidance lines. Add the same primary / secondary price row under them, as `EN box · S$750` (the strip also lists JP, so the price says which box). State the language once per line: the EN / JP badge carries it, so guidance copy reads `Box feeds this set · …`, not `EN box feeds…`.
 
 ## CardCell (set grid, collection)
-Under name + rarity, one muted `$12.50` from the seed `market_usd`. Omit the line when the value is missing. No `as_of` on cells, no % change, no sparklines. Art stays first.
+Under name + rarity, the seed `market_usd` in ink at body size (`$12.50`), omitted when missing. Art stays first. No `as_of` on cells, no sparklines, no buy / qty / plus chrome.
+
+**Set-detail singles (Jib, 6 Sep 2026).** Under the price, the week seed-price move from the same history the card page uses: `−$15.99 (−5.54%)` in ink (not red or green). The percent is the dollar move over the reference price, two decimals, unicode minus. Omitted when the set’s history has fewer than two dated points. Collection and search cells keep the price without that line.
 
 ## Out of scope
 Live prices, new sets, marketplace links, inventing `boxArtUrl`.

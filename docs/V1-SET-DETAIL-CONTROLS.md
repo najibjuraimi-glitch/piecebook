@@ -23,9 +23,9 @@ Sort options, in this order:
 
 | Option | Default |
 | --- | --- |
-| Name · A to Z | **yes** |
+| Name · A to Z | |
 | Name · Z to A | |
-| Price · high to low | |
+| Price · high to low | **yes** |
 | Price · low to high | |
 
 Cards with a null `market_usd` always sort last. Prefer keeping the sort in the URL as `?sort=` so a sorted view can be shared and survives reload.
@@ -36,4 +36,4 @@ Cards with a null `market_usd` always sort last. Prefer keeping the sort in the 
 ## Result
 Grid = active rarity ∩ search ∩ sort.
 
-Success path: open OP-09 → All → type Shanks → see Shanks → sort Price · high to low → chase cards rise → Mark owned → card appears in Collection.
+Success path: open OP-09 → All is already Price · high to low → type Shanks → see Shanks → Mark owned → card appears in Collection.
