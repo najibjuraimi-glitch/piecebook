@@ -15,7 +15,7 @@ const LINK = 'text-ink underline decoration-line underline-offset-2 transition-c
 const ROOMS = [
   { to: '/belong/story', pillar: 'Story', question: 'Every main arc, its chapters and episodes, and the wiki’s paragraph once you have finished it.' },
   { to: '/belong/people', pillar: 'People', question: 'A second book: every printed Character and Leader, A–Z, into the prints you already have.' },
-  { to: '/belong/fruits', pillar: 'Fruits', question: 'A Pokédex of Devil Fruits the wiki records on a name we have asked.' },
+  { to: '/belong/fruits', pillar: 'Fruits', question: 'A stored log of Devil Fruits on the printed names we have asked: English, Japanese, type, who ate it.' },
   { to: '/?view=timeline', pillar: 'The game', question: 'Sets in English order, who drew each card, what is coming next.' },
 ]
 

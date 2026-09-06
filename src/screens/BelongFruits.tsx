@@ -10,7 +10,7 @@ import { fruitVisible, letterOf } from '../lib/belong'
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
 
 /**
- * Fruit Pokédex: Devil Fruits the wiki Char Box records on a mapped printed
+ * Fruit log: Devil Fruits the wiki Char Box records on a mapped printed
  * name. Later-names after a line break (Nika) are not stored.
  */
 export function BelongFruitsScreen() {
@@ -36,7 +36,7 @@ export function BelongFruitsScreen() {
       <ReaderCutoff className="mb-6" />
 
       {!reader.unlocksStory ? (
-        <p className="max-w-[60ch] text-body text-ink">Pick how far you have read to open the dex.</p>
+        <p className="max-w-[60ch] text-body text-ink">Pick how far you have read to open the log.</p>
       ) : (
         <>
           <nav aria-label="Jump to a letter" className="flex flex-wrap items-center gap-x-1">

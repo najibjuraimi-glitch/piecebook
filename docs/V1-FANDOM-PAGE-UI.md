@@ -3,13 +3,13 @@
 
 Owner: Code as interim Cards, drafted from Jib’s instruction to put a fandom page like [One Piece Wiki](https://onepiece.fandom.com/wiki/One_Piece_Wiki) on Piecebook, and from rendered mockups on `cursor/fandom-page-draft-f694`  
 For: Design (critique), ten reviewers, then Jib  
-Covers growth-map **11.1** (fandom home): `/belong`, a fifth tab, chapter/anime summaries, a wiki portal, a fruit Pokédex, a second character book, a reader cutoff  
+Covers growth-map **11.1** (fandom home): `/belong`, a fifth tab, chapter/anime summaries, a wiki portal, a fruit log, a second character book, a reader cutoff  
 Reads with: `V1-DESIGN-PACK.md`, `V1-FANDOM-UI.md` (7.7–7.11), `V1-BELONG-UI.md` (7.2 timeline, 8.1 Start here), `V1-FIND-UI.md` (7.4 character pages), `seed-sources.md`
 
 This is the page Jib asked for after the Belong-directory draft was the wrong shape. It is a One Piece fandom home in the wiki’s rooms (story, people, fruits, media), quiet paper and ink, with doors into collect and play. It is not a quieter Fandom skin, and it is not a table of contents for set stories.
 
 ## Why this page
-The three pillars are up. Fandom is the weakest. Jib’s journey is manga → anime → collect → play. He wants a dedicated fandom page that sends people into collect and play, and he named the rooms this draft had been refusing: chapter or anime summaries, a wiki portal, a fruit Pokédex, a second character book, a reader cutoff, a fifth tab, live `/belong` on main.
+The three pillars are up. Fandom is the weakest. Jib’s journey is manga → anime → collect → play. He wants a dedicated fandom page that sends people into collect and play, and he named the rooms this draft had been refusing: chapter or anime summaries, a wiki portal, a stored log of fruits and people (he said “Pokédex” as the example of that job, not the word on the glass), a reader cutoff, a fifth tab, live `/belong` on main.
 
 Live `/belong` on main is the end state. This branch is the draft. Nothing merges until Jib says approved and then “merge N”.
 
@@ -36,7 +36,7 @@ Live `/belong` on main is the end state. This branch is the draft. Nothing merge
 |---|---|---|
 | Story | `/belong/story` | Every main arc, its chapters and episodes, and the wiki’s paragraph once you have finished it. |
 | People | `/belong/people` | A second book: every printed Character and Leader, A–Z, into the prints you already have. |
-| Fruits | `/belong/fruits` | A Pokédex of Devil Fruits the wiki records on a name we have asked. |
+| Fruits | `/belong/fruits` | A stored log of Devil Fruits on the printed names we have asked: English, Japanese, type, who ate it. |
 | The game | `/?view=timeline` | Sets in English order, who drew each card, what is coming next. |
 
 Under them: On This Day when the device date has a birthday (same rows as the timeline, under a muted **On This Day** heading so the date is not a floating line). Then a Story strip — the last finished arc’s paragraph when a saga chip is on (Now still uses the last closed arc, Egghead, not the open Elbaph paragraph), otherwise the honest gap. Then People and Fruits in one short block with counts. Then **The game** as three rows (What you own → `/`, Sets in order → timeline, Play → `/decks`). Then `Play has the rules in five sentences.` Attribution only when a wiki paragraph printed.
@@ -72,7 +72,7 @@ Copy under the chips, **on `/belong` only**: *Summaries and fruits stay behind t
 ## Wiki portal
 The four doors on `/belong` are the portal. They are Piecebook rooms, not links to fandom.com. The wiki article is never a link.
 
-## Fruit Pokédex
+## Fruit log
 **Source.** Char Box `dfename` / `dfname` / `dftype` on each mapped printed name (`data/wiki/lines.json`, 188 names). First displayed line only; text after `<br>` or in `<small>` is a later name and is dropped. Localizer credits (`Viz`, `4Kids`, `Funimation`) are stripped. `Imu` / `The Devil's Fruit` is not stored. 6 Sep 2026: **92 fruits** on 99 eaters.
 
 **Fruits page.** Closed until a saga chip is on. Then A–Z chips, English name, Japanese name and type muted, eaters as links to `/characters/:name` (eaters still behind the same chapter). Caption names the gap: the rest of the roster has not been fetched.
@@ -97,7 +97,7 @@ Device date is still the only date for On This Day.
 1. `/belong` is the fandom home; the mock is the live route; fifth tab **World**.
 2. Start here World opens `/belong`.
 3. Summaries are the wiki Story Arcs paragraph plus chapter and episode ranges, gated by a finished-arc cutoff. No authored blurbs. No official synopses. No chapter-page titles passed off as plot.
-4. The fruit dex is Char Box fields on asked names, first line only, no later-name, no Imu. Not a clone of every fruit on the wiki.
+4. The fruit log is Char Box fields on asked names, first line only, no later-name, no Imu. Not a clone of every fruit on the wiki. Not the word Pokédex.
 5. The people book is printed Character / Leader names into the pages we already have.
 6. Default cutoff is Debut arc: who-is unchanged, summaries and fruits closed. People is the full print book until a saga chip is on.
 7. No wiki images. No wiki article links. Licence URL only.
@@ -109,7 +109,7 @@ Device date is still the only date for On This Day.
 |---|---|
 | 7 — People at East Blue still lists later names (A.O., Absalom, Ace & Newgate). 540 printed names have no wiki debut on file; v1 left them in | On a saga chip, a name with no stored debut is hidden. Debut arc and Now still list every printed name |
 | 5 — The three-line cutoff note repeats on Story, People and Fruits and reads as a terms wall | Explanation on `/belong` only. Rooms keep the chips |
-| 4 — “Pokédex” is a Pokémon word / a tone break / something a shop has to explain | Kept. Jib named the room. Noted, not taken at four |
+| 4 — “Pokédex” is a Pokémon word / a tone break / something a shop has to explain | Cut. Jib used it as an example of a stored log of fruits and people, not as the word on the glass. Door copy is now that log. |
 | 3 — Default Debut arc still shows every printed name, including people a new reader has not met | Kept. The second book is the print index until a saga chip is on. Copy now says the hide rule is on a saga chip |
 | 3 — The game is a door and a section of three rows | Kept. The door is the portal; the rows send into collect and play |
 | 3 — Who-is cutoff is invisible on the character page | Not taken. That page stays the Sets print book; the chip is remembered |
@@ -120,7 +120,7 @@ Device date is still the only date for On This Day.
 | Not taken — authored Straw Hat lines; wiki article links; lighting Belong on `/characters/:name`; Egghead as its own chip | Same as draft 11 |
 
 ## Not taken, noted for later
-- Fetching every remaining printed name so the fruit dex and who-is cover the whole roster.
+- Fetching every remaining printed name so the fruit log and who-is cover the whole roster.
 - Per-chapter or per-episode plot (no licensed, automatable source that is actually a plot).
 - A live link to the wiki article.
 - Lighting World on `/characters/:name` (those pages stay the Sets print book).

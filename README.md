@@ -38,7 +38,7 @@ npm run preview   # serve the production build locally
 | `/belong` | Fandom home (draft 11) — cutoff chips (Debut arc default), four doors (Story, People, Fruits, The game → timeline), On This Day when the device date has a birthday, the last finished arc’s paragraph once a saga chip is on, doors into collect and play. Fifth tab **World**. Not approved |
 | `/belong/story` | Main arcs in manga order: name, `Chapters a–b · Episodes c–d`, the wiki Story Arcs paragraph after the reader finishes that arc |
 | `/belong/people` | Second character book — every printed Character and Leader, A–Z, search and letter chips, into `/characters/:name` |
-| `/belong/fruits` | Fruit dex — Char Box first line on asked names (92 fruits). Closed until a saga chip is on. Luffy is Gum-Gum Fruit; Nika is not stored |
+| `/belong/fruits` | Fruit log — Char Box first line on asked names (92 fruits). Closed until a saga chip is on. Luffy is Gum-Gum Fruit; Nika is not stored |
 
 ## Data
 
