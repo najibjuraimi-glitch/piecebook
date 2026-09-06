@@ -62,7 +62,8 @@ async function run(size, prefix) {
   const next = await open({ ...size, started: true })
   await go(next.page, '/learn')
   await shot(next.page, `${prefix}-learn.png`)
-  await go(next.page, '/')
+  await go(next.page, '/sets')
+  await shot(next.page, `${prefix}-sets-fold.png`, { fullPage: false })
   await shot(next.page, `${prefix}-sets.png`)
   await next.context.close()
 }
