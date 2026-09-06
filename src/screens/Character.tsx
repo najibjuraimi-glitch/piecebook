@@ -6,6 +6,9 @@ import { StarButton } from '../components/StarButton'
 import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
 import { pluralPrints, printsNamed } from '../lib/search'
+import { WhoIs } from '../components/WhoIs'
+import { WikiAttribution } from '../components/WikiAttribution'
+import { getWiki } from '../data/wiki'
 import { NotFoundScreen } from './NotFound'
 
 /**
@@ -26,6 +29,7 @@ export function CharacterScreen() {
 
   const prints = groups.reduce((n, g) => n + g.cards.length, 0)
   const owned = groups.reduce((n, g) => n + g.cards.filter((c) => isOwned(c.cardNumber)).length, 0)
+  const wiki = getWiki(name)
 
   return (
     <Screen>
@@ -37,10 +41,12 @@ export function CharacterScreen() {
 
       <header className="mb-6">
         <h1 className="text-display text-ink">{name}</h1>
-        <p className="tabular mt-1 text-body text-muted">
+        <WhoIs name={name} className="mt-2" />
+        <p className="tabular mt-2 text-body text-muted">
           {prints} {prints === 1 ? 'print' : 'prints'} across {groups.length} {groups.length === 1 ? 'set' : 'sets'}
           {owned > 0 && ` · you own ${owned}`}
         </p>
+        {wiki && <WikiAttribution entry={wiki} className="mt-1" />}
       </header>
 
       <div className="space-y-8">
