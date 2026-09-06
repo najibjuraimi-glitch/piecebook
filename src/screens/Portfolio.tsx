@@ -84,7 +84,7 @@ export function PortfolioScreen() {
       />
       {holdings.length === 0 ? (
         <>
-          <EmptyState message="No owned cards yet." ctaLabel="Browse sets" ctaTo="/" />
+          <EmptyState message="No owned cards yet." ctaLabel="Browse sets" ctaTo="/sets" />
           {moverCards.length > 0 && <Movers cards={moverCards} byCard={histories.byCard} loading={histories.loading} className="mt-8" />}
         </>
       ) : (

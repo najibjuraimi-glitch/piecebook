@@ -66,7 +66,7 @@ function UpcomingSetDetail({ roster }: { roster: RosterSet }) {
         subline={code ? name : undefined}
         meta={meta}
         wrapTitle={code === null}
-        fallbackTo="/"
+        fallbackTo="/sets"
         action={<StarButton subject="set" name={name} active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}
       />
 
@@ -112,7 +112,7 @@ function PendingSetDetail({ roster }: { roster: RosterSet }) {
       <BackBar
         title={roster.setCode}
         subline={displayName(roster)}
-        fallbackTo="/"
+        fallbackTo="/sets"
         action={
           <StarButton subject="set" name={displayName(roster)} active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />
         }
@@ -196,7 +196,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
         title={set.setCode}
         subline={set.setName}
         meta={ownedInSet > 0 ? `You own ${ownedInSet} of ${set.cards.length}${isDeck ? ' different cards' : ''}` : undefined}
-        fallbackTo="/"
+        fallbackTo="/sets"
         action={<StarButton subject="set" name={set.setName} active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
       />
 

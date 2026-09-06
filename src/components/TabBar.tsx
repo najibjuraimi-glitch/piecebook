@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { isBelongSection, isSetsSection } from './TopBar'
 
 const TABS = [
-  { to: '/', label: 'Sets', icon: SetsIcon, match: isSetsSection },
+  { to: '/sets', label: 'Sets', icon: SetsIcon, match: isSetsSection },
   { to: '/collection', label: 'Collection', icon: CollectionIcon, match: (p: string) => p.startsWith('/collection') },
   { to: '/decks', label: 'Decks', icon: DecksIcon, match: (p: string) => p.startsWith('/decks') },
   { to: '/portfolio', label: 'Portfolio', icon: PortfolioIcon, match: (p: string) => p.startsWith('/portfolio') },

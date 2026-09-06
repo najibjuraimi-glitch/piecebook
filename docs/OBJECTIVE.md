@@ -6,7 +6,7 @@ Pinned copy also lives in ClickUp: Team Space › Piecebook › "Piecebook — O
 ## Objective
 **Piecebook is an all-in-one platform for a human being to become a One Piece card collector, a One Piece card player, and a member of the One Piece fandom.**
 
-Every phase, task and design call is checked against these three pillars. Still true from the design pack: quiet paper, ink, one accent for primary CTAs, no marketplace chrome, no invented data. Sets (box › cards) stays home; search, watchlist, movers and decks are the cross-cuts into that tree.
+Every phase, task and design call is checked against these three pillars. Still true from the design pack: quiet paper, ink, one accent for primary CTAs, no marketplace chrome, no invented data. **`/` is Start** (the three jobs). Sets (box › cards) is the catalog at `/sets`; search, watchlist, movers and decks are the cross-cuts into that tree.
 
 ## Pillar matrix
 Bold entries were added after the audit on 5 Sep 2026; before them the map was a collector's map.

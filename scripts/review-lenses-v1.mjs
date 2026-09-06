@@ -54,7 +54,7 @@ const wide = { width: 1280, height: 800, scale: 1 }
 
 async function run(size, prefix) {
   const { context, page } = await open({ ...size, started: false })
-  await go(page, '/start')
+  await go(page, '/')
   await shot(page, `${prefix}-start-fold.png`, { fullPage: false })
   await shot(page, `${prefix}-start.png`)
   await context.close()
@@ -62,7 +62,8 @@ async function run(size, prefix) {
   const next = await open({ ...size, started: true })
   await go(next.page, '/learn')
   await shot(next.page, `${prefix}-learn.png`)
-  await go(next.page, '/')
+  await go(next.page, '/sets')
+  await shot(next.page, `${prefix}-sets-fold.png`, { fullPage: false })
   await shot(next.page, `${prefix}-sets.png`)
   await next.context.close()
 }

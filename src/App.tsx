@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigationType, useSearchParams } from 'react-router-dom'
 import { TabBar } from './components/TabBar'
 import { TopBar } from './components/TopBar'
 import { SetsScreen } from './screens/Sets'
@@ -31,6 +31,18 @@ function ScrollToTop() {
   return null
 }
 
+/**
+ * `/` is Start every visit. Old Sets deep links (`/?q=`, `/?view=timeline`)
+ * still open the catalog, now at `/sets`.
+ */
+function HomeScreen() {
+  const [params] = useSearchParams()
+  if (params.has('q') || params.has('view')) {
+    return <Navigate to={{ pathname: '/sets', search: params.toString() }} replace />
+  }
+  return <StartScreen />
+}
+
 export default function App() {
   const { pathname } = useLocation()
   return (
@@ -38,7 +50,8 @@ export default function App() {
       <ScrollToTop />
       <TopBar pathname={pathname} />
       <Routes>
-        <Route path="/" element={<SetsScreen />} />
+        <Route path="/" element={<HomeScreen />} />
+        <Route path="/sets" element={<SetsScreen />} />
         <Route path="/sets/:setCode" element={<SetDetailScreen />} />
         <Route path="/cards/:cardNumber" element={<CardDetailScreen />} />
         <Route path="/collection" element={<CollectionScreen />} />
@@ -50,7 +63,7 @@ export default function App() {
         <Route path="/decks" element={<DecksScreen />} />
         <Route path="/decks/:id" element={<DeckBuilderScreen />} />
         <Route path="/learn" element={<LearnScreen />} />
-        <Route path="/start" element={<StartScreen />} />
+        <Route path="/start" element={<Navigate to="/" replace />} />
         <Route path="/belong" element={<BelongScreen />} />
         <Route path="/belong/story" element={<BelongStoryScreen />} />
         <Route path="/belong/people" element={<BelongPeopleScreen />} />

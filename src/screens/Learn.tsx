@@ -11,7 +11,7 @@ const LINK = 'text-ink underline decoration-line underline-offset-2 hover:decora
 export function LearnScreen() {
   return (
     <Screen>
-      <BackBar title="Learn to play" subline="Five sentences, then Bandai’s own rules" fallbackTo="/start" />
+      <BackBar title="Learn to play" subline="Five sentences, then Bandai’s own rules" fallbackTo="/" />
 
       <dl className="mb-8 max-w-[60ch] divide-y divide-line rounded-2xl border border-line bg-surface">
         <div className="flex min-h-[52px] items-baseline gap-4 px-4 py-3">
@@ -45,7 +45,7 @@ export function LearnScreen() {
 
       <p className="mt-6 max-w-[60ch] text-body text-ink">
         A first fifty is a starter deck Bandai already sells.{' '}
-        <Link to={{ pathname: '/', hash: 'starter-decks' }} className={LINK}>
+        <Link to={{ pathname: '/sets', hash: 'starter-decks' }} className={LINK}>
           36 starter decks
         </Link>
         .

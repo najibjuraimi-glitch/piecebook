@@ -45,8 +45,10 @@ interface TitleProps {
 export function ScreenTitle({ title, subline, aside }: TitleProps) {
   return (
     <header className="mb-6">
-      {/* The TopBar carries the wordmark from tablet up. */}
-      <Wordmark className="tablet:hidden" />
+      {/* The TopBar carries the wordmark from tablet up. On phone it is the way home. */}
+      <Link to="/" className="tablet:hidden rounded-md" aria-label="Piecebook">
+        <Wordmark />
+      </Link>
       <div className="mt-4 flex items-end justify-between gap-4 tablet:mt-0">
         <h1 className="text-display text-ink">{title}</h1>
         {aside}
