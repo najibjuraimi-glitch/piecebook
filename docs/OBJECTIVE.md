@@ -34,8 +34,8 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 5.2 (multiple collections) and 5.3 (graded prices, population) stay parked: nobody in the research asked for 5.2; 5.3 has no free licensed source (PriceCharting's paid API or PSA's population data would need a budget decision first).
 
 ## Hypotheses, not taken as given
-- 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Next-phase interest only: ringgit, rupiah, and language translation *may* matter. Seat collectors in those markets in the next research round before any map row besides this decision opens.
-- 11.1 — Fandom page (Jib, 6 Sep 2026). A dedicated `/belong` like the One Piece Wiki: chapter/anime summaries, a wiki portal, a stored log of fruits and people, a reader cutoff, a fifth tab **World**. Draft 11 is in flight, not approved. ClickUp: https://app.clickup.com/t/86eyuqatu. See `docs/V1-FANDOM-PAGE-UI.md`.
+- 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Next-phase interest only: ringgit, rupiah, and language translation *may* matter. Seat collectors in those markets before any map row besides this decision opens. Parked on ClickUp as Phase 10 so the board reads 9 · 10 · 11: https://app.clickup.com/t/86eyuqbbq. Not work to start.
+- 11.1 — Fandom page (Jib, 6 Sep 2026). A dedicated `/belong` like the One Piece Wiki: a story index, a wiki portal, a stored log of fruits and people, a reader cutoff, a fifth tab **World**. Jib picked the index: titles, chapter/episode ranges, people, fruit names — no plot paragraphs. Draft 11 is in flight, not approved. ClickUp Phase 11: https://app.clickup.com/t/86eyuqatu. See `docs/V1-FANDOM-PAGE-UI.md`.
 
 ## Decisions parked on the board
 - 6.1 — where decks live (fourth tab vs under Collection)
@@ -43,4 +43,4 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 6.6 — decklists: link only, or import as a source
 
 ## Task list
-`docs/growth-map.csv` holds every task with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. 11.1 is in ClickUp as a draft (`86eyuqatu`). 10.0 stays off ClickUp until research asks. 7.6 is already a low to-do. 5.4 and 9.1 built 6 Sep 2026. The dependencies to wire are in the `Depends on` column.
+`docs/growth-map.csv` holds every task with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. ClickUp Team Space › Piecebook lists are Phase 0–11. 9.1/9.2 sit in Phase 9 · Ongoing. 10.0 is parked in Phase 10. 11.1 is the draft in Phase 11 (`86eyuqatu`). 7.6 is already a low to-do. 5.4 and 9.1 built 6 Sep 2026. The dependencies to wire are in the `Depends on` column.
