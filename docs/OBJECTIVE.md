@@ -35,7 +35,7 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 
 ## Hypotheses, not taken as given
 - 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Next-phase interest only: ringgit, rupiah, and language translation *may* matter. Seat collectors in those markets in the next research round before any map row besides this decision opens.
-- 11.0 — Fandom is the thin pillar (Jib, 6 Sep 2026; Jib: challenge him). Proposed a story-arc map, chapter/anime summaries, fruit and character Pokédexes. Do not take manga→anime→collect→play as the user's journey. No chapter or anime summaries. No wiki portal. Character Pokédex is `/characters/:name`. See `docs/V1-FANDOM-REEVAL.md`. Seat four journeys before 11.1–11.5 open.
+- 11.0 — Fandom is the thin pillar (Jib, 6 Sep 2026; Jib: challenge him). He then asked for a dedicated Belong page into collect and play. No chapter or anime summaries. No wiki portal. No fifth tab. First candidate: `/belong` from shipped surfaces. See `docs/V1-FANDOM-REEVAL.md`.
 
 ## Decisions parked on the board
 - 6.1 — where decks live (fourth tab vs under Collection)
