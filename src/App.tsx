@@ -14,6 +14,7 @@ import { ArtistScreen } from './screens/Artist'
 import { DecksScreen } from './screens/Decks'
 import { DeckBuilderScreen } from './screens/DeckBuilder'
 import { LearnScreen } from './screens/Learn'
+import { StartScreen } from './screens/Start'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/decks" element={<DecksScreen />} />
         <Route path="/decks/:id" element={<DeckBuilderScreen />} />
         <Route path="/learn" element={<LearnScreen />} />
+        <Route path="/start" element={<StartScreen />} />
         <Route path="*" element={<NotFoundScreen />} />
       </Routes>
       <TabBar pathname={pathname} />
