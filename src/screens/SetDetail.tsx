@@ -50,6 +50,8 @@ function UpcomingSetDetail({ roster }: { roster: RosterSet }) {
   const watch = useWatchlist()
   const code = displayCode(roster)
   const name = displayName(roster)
+  // The story (7.1) where Bandai already has an EN page for the coming set; the dates stay TCGplayer's, in the header.
+  const intro = getSetIntro(roster.setCode, roster.language)
 
   return (
     <Screen>
@@ -61,6 +63,8 @@ function UpcomingSetDetail({ roster }: { roster: RosterSet }) {
         fallbackTo="/"
         action={<StarButton subject="set" name={name} active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}
       />
+
+      {intro?.introTheme && <SetIntro intro={{ ...intro, enReleased: null, jpReleased: null, cardTypes: null }} className="mb-5" />}
 
       <BoxCard set={roster} product={product} presale />
 
@@ -85,6 +89,7 @@ function introFor(roster: RosterSet | undefined, setCode: string, language: stri
     packsPerBox: null,
     cardsPerPack: null,
     introTheme: null,
+    introSource: null,
     sources: [],
     asOf: roster.asOf,
   }
@@ -107,9 +112,9 @@ function PendingSetDetail({ roster }: { roster: RosterSet }) {
         }
       />
 
-      <BoxCard set={roster} product={product} intro={shownIntro} guidance={guidance} />
+      {shownIntro && <SetIntro intro={shownIntro} className="mb-5" />}
 
-      {shownIntro && <SetIntro intro={shownIntro} />}
+      <BoxCard set={roster} product={product} intro={shownIntro} guidance={guidance} />
 
       <section
         aria-label="Checklist"
@@ -187,10 +192,11 @@ function SeededSetDetail({ set }: { set: CardSet }) {
         action={<StarButton subject="set" name={set.setName} active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
       />
 
+      {/* The set in words comes first (7.1): story, dates JP then EN, Bandai's count against our prints; the box follows. */}
+      {intro && <SetIntro intro={intro} prints={isDeck ? undefined : set.cards.length} className="mb-5" />}
+
       {roster && <BoxCard set={roster} product={sealedProduct} intro={intro} guidance={sealed} />}
       {roster && isDeck && <StarterDeckActions set={set} roster={roster} />}
-
-      {intro && <SetIntro intro={intro} />}
 
       <SearchField value={query} onChange={(q) => update({ q })} className="mt-5 tablet:max-w-[560px]" />
       <FacetChips query={query} onChange={(q) => update({ q })} attrs={attrs} className="mt-2" />
