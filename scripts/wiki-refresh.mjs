@@ -33,7 +33,13 @@
  *     Monkey.D.Luffy → Monkey D. Luffy, Tony Tony.Chopper → Tony Tony Chopper,
  *     X.Drake → X. Drake, Mr.9 → Mr. 9; a name that is only initials (A.O.)
  *     stays as written
- *   - redirects=1 does the rest (Kaido → Kaidou, Ms. Wednesday → Nefertari Vivi)
+ *   - redirects=1 does the rest (Kaido → Kaidou, Hordy Jones → Hody Jones)
+ *   - a redirect whose target is not a spelling of the printed name is an
+ *     identity reveal (Ms. Wednesday → Nefertari Vivi, Komurasaki → Kouzuki
+ *     Hiyori) and nothing is stored, not even the attribution: unmapped
+ *     "alias reveal". Spelling variant: both names lowercased, diacritics,
+ *     punctuation, spaces, a leading St./Mr./Ms./Miss and anything quoted or
+ *     parenthesised removed; one contains the other or edit distance ≤ 2.
  * A missing title is data (unmapped "no page"), not an error.
  *
  * Gate (docs: the PM memo's spoiler policy, implemented as written):
@@ -45,7 +51,9 @@
  *      wiki's Story Arcs page (data/wiki/arcs.json); an ongoing arc passes
  *      everything. No D or no arc: the gate cannot run, no line, birth kept.
  *   3. The bold subject and its aliases before the first finite verb go with
- *      their citations, and the printed card name becomes the subject. The
+ *      their citations, and the printed card name becomes the subject, less
+ *      its quoted epithet or parenthetical (Eustass"Captain"Kid → Eustass Kid,
+ *      Mr.1(Daz.Bonez) → Mr.1; the name field keeps the printed form). The
  *      predicate splits at each {{Qref}}; a clause passes iff its closing
  *      citation resolves to a chapter ≤ C: chap=N directly, name=X through a
  *      {{Qref|name=X|chap=N…}} definition in section 0 or Tabs Top (a name
@@ -53,15 +61,24 @@
  *      citations count as one group, the earliest chapter of the group is the
  *      one tested). Keep the longest passing run from the start.
  *   4. A past-tense main verb (was, were) claims a death and passes only if
- *      `status` carries a chap= ≤ C; else that clause and the rest go.
+ *      `status` carries a chap= ≤ C; else that clause and the rest go. A time
+ *      word (former, formerly, late, previous, previously, then-, deceased,
+ *      ex-, before their downfall, years ago) places the clause in the past
+ *      the same way and fails under the same test (reason "time word: …").
+ *      The wiki's status field is a code (1, 2, …) with no chapter, so today
+ *      no death claim passes; a death chapter would need another field.
  *   5. Trailing clauses go until the line is ≤ 22 words; under six words or
- *      no finite verb, no line. Never paraphrase, never add a word.
+ *      no finite verb, no line. Never paraphrase, never add a word. A
+ *      predicate about the name rather than the character ("is the epithet
+ *      of", "is the name of", "is a group", …) stores no line.
  * Cleaning: templates go, except the ones that wrap a displayed word, which
  * keep it ({{Nihongo|X|…}} and {{Ruby|X|…}} keep X, the wiki wraps words such
  * as Zoro's "master swordsman" in Nihongo; {{W|target|label}} is a Wikipedia
  * link and keeps its label, as Urashima's "yokozuna"); links keep their
- * label, bold and italics go, parenthetical Japanese goes, comma-set "also
- * known as …" asides go, trailing commas and double spaces go.
+ * label, bold and italics go, parenthetical Japanese goes, comma-set alias
+ * asides go ("also known as …", "reputed as …", "referred to as …",
+ * "nicknamed …", "called …", "known by …", up to the next comma), trailing
+ * commas and double spaces go.
  *
  * Writes data/wiki/lines.json (slim, bundled by the app: name, title, revid
  * permalink, fetch date, debut, cutoff, arc, line, word count, birth) under a
@@ -578,6 +595,18 @@ function firstSentence(text) {
 
 const FINITE = /\b(is|are|was|were|has|have|had)\b/
 const PAST = /\b(was|were)\b/
+/** Words that place a clause in the past without a past-tense verb; they fail like "was" (policy 4). */
+const TIME_WORDS = /\b(before their downfall|(?:\w+ )?years ago|formerly|former|previously|previous|deceased|late|then-\w+|ex-\w+)\b/i
+/** Predicates about the name rather than the character. */
+const TAUTOLOGY = /^(is the epithet of|is the name of|is a name|is the title of|is the alias of|is a group|are a group)\b/i
+
+/** The printed name as a sentence subject: Bandai's quoted epithet and parenthetical go (Eustass"Captain"Kid → Eustass Kid, Mr.1(Daz.Bonez) → Mr.1). */
+const subjectOf = (name) =>
+  name
+    .replace(/"[^"]*"/g, ' ')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 
 /** Clauses of a protected predicate, split at each Qref; adjacent Qrefs form one citation group. */
 function splitClauses(predicate, items) {
@@ -635,7 +664,10 @@ function cleanText(raw) {
   s = s.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '')
   s = decode(s).replace(/'''''|'''|''/g, '')
   s = s.replace(/\s*\([^()]*[\u3000-\u30ff\u3400-\u9fff\uff00-\uffef][^()]*\)/g, '')
-  s = s.replace(/,\s*(?:(?:more|most)\s+)?(?:commonly|also|better|simply|otherwise|formerly|originally|widely|popularly|often)?\s*(?:known|referred to|called)\s+(?:as|simply as|just)\s+[^,.;]+(?=[,.;]|$)/gi, '')
+  s = s.replace(
+    /,\s*(?:(?:more|most)\s+)?(?:commonly|also|better|simply|otherwise|formerly|originally|widely|popularly|often|usually)?\s*(?:known\s+(?:(?:simply|just|only)\s+)?(?:as|by)|referred\s+to\s+as|reputed\s+as|renowned\s+as|nicknamed|called)\s+(?:(?:just|simply)\s+)?[^,.;]+(?=[,.;]|$)/gi,
+    '',
+  )
   s = s.replace(/\s+([,.;:])/g, '$1').replace(/([,;:])(?=[,;:])/g, '').replace(/\s+/g, ' ').trim()
   return s
 }
@@ -674,12 +706,20 @@ function buildLine({ printedName, wikitext, defs, cutoff, gateBlock, statusChap 
     else if (c.cites.length === 0) entry.reason = 'uncited'
     else if (chapter == null) entry.reason = `unresolved citation: ${resolved.map((r) => r.via).join('; ')}`
     else if (chapter > limit) entry.reason = `after cutoff: chapter ${chapter}, cutoff ${cutoff}`
-    else if (PAST.test(text) && (statusChap == null || statusChap > limit)) {
-      entry.reason = statusChap == null ? 'past tense: status carries no cited chapter' : `past tense: status chapter ${statusChap}, cutoff ${cutoff}`
-    } else {
-      entry.pass = true
-      entry.via = resolved.filter((r) => r.chapter === chapter).map((r) => r.via).join('; ')
-      if (PAST.test(text)) entry.via += `; status chapter ${statusChap}`
+    else {
+      // A death claim ("was") or a time word ("former", "late", …) needs a cited death chapter within the cutoff.
+      const past = PAST.test(text)
+      const time = TIME_WORDS.exec(text)
+      const deathOk = statusChap != null && statusChap <= limit
+      if (past && !deathOk) {
+        entry.reason = statusChap == null ? 'past tense: status carries no cited chapter' : `past tense: status chapter ${statusChap}, cutoff ${cutoff}`
+      } else if (time && !deathOk) {
+        entry.reason = `time word: ${time[1].toLowerCase()}`
+      } else {
+        entry.pass = true
+        entry.via = resolved.filter((r) => r.chapter === chapter).map((r) => r.via).join('; ')
+        if (past || time) entry.via += `; status chapter ${statusChap}`
+      }
     }
     out.clauses.push(entry)
   }
@@ -689,15 +729,20 @@ function buildLine({ printedName, wikitext, defs, cutoff, gateBlock, statusChap 
     out.noLineReason = out.clauses.length ? out.clauses[0].reason : 'no clauses'
     return out
   }
+  const subject = subjectOf(printedName)
   const compose = (k) => cleanText(restore(clauses.slice(0, k).map((c) => c.raw).join(''), items)).replace(/[\s.,;:]+$/, '')
+  if (TAUTOLOGY.test(compose(1))) {
+    out.noLineReason = 'about the name, not the character'
+    return out
+  }
   let k = kept
-  let line = `${printedName} ${compose(k)}`
+  let line = `${subject} ${compose(k)}`
   while (k > 0 && wordCount(line) > MAX_WORDS) {
     k--
-    line = k > 0 ? `${printedName} ${compose(k)}` : ''
+    line = k > 0 ? `${subject} ${compose(k)}` : ''
   }
   if (k === 0) {
-    out.noLineReason = `over ${MAX_WORDS} words: the first clause alone is ${wordCount(`${printedName} ${compose(1)}`)} words`
+    out.noLineReason = `over ${MAX_WORDS} words: the first clause alone is ${wordCount(`${subject} ${compose(1)}`)} words`
     return out
   }
   if (k < kept) out.trimmedForLength = kept - k
@@ -719,6 +764,38 @@ function buildLine({ printedName, wikitext, defs, cutoff, gateBlock, statusChap 
 
 const tabsTopOf = (wikitext) => /\{\{\s*([^{}|]+?)\s+Tabs Top\s*\}\}/i.exec(wikitext)?.[1]?.trim() ?? null
 
+/** Lowercase letters and digits only: no diacritics, punctuation, spaces, honorific, quoted epithet or parenthetical. */
+function normalisedName(s) {
+  return s
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/"[^"]*"/g, ' ')
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/^\s*(?:st|saint|mr|ms|mrs|miss)\b\.?\s*/, '')
+    .replace(/[^a-z0-9]/g, '')
+}
+
+function levenshtein(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i)
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i]
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+    }
+    prev = cur
+  }
+  return prev[b.length]
+}
+
+/** Kaido → Kaidou, Brulee → Brûlée, Nefeltari → Nefertari, Hordy → Hody: same name, different spelling. Ms. Wednesday → Nefertari Vivi is not. */
+function spellingVariant(printed, title) {
+  const a = normalisedName(printed)
+  const b = normalisedName(title)
+  if (!a || !b) return false
+  return a.includes(b) || b.includes(a) || levenshtein(a, b) <= 2
+}
+
 async function processName(name, arcs) {
   const title = titleFor(name)
   if (title === null) return { unmapped: 'pair' }
@@ -726,6 +803,8 @@ async function processName(name, arcs) {
   if (!page) return { unmapped: 'no page', title }
   const resolved = page.title
   if (page.categories.some((c) => /^Unreleased Content$/i.test(c))) return { unmapped: 'unreleased', title: resolved }
+  // A redirect to a differently named page is an identity reveal (Komurasaki → Kouzuki Hiyori); even the attribution would spoil it.
+  if (page.redirects.length && !spellingVariant(name, resolved)) return { unmapped: 'alias reveal', title: resolved, askedTitle: title }
   const section0 = page.wikitext
   let tabsName = tabsTopOf(section0)
   if (!tabsName && !/\{\{\s*Char Box\b/i.test(section0)) tabsName = resolved
@@ -814,6 +893,7 @@ function writeOutputs(results, skipped) {
       auditEntries.delete(name)
       const u = { name, reason: r.unmapped, fetchedAt: TODAY }
       if (r.title) u.title = r.title
+      if (r.askedTitle) u.askedTitle = r.askedTitle
       unmapped.set(name, u)
     } else {
       unmapped.delete(name)

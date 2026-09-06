@@ -77,8 +77,8 @@
       "debutChapter": 553,
       "cutoffChapter": 580,
       "arc": "Marineford Arc",
-      "line": "Atmos is the former 13th division commander of the Whitebeard Pirates",
-      "lineWords": 11,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 3,
         "day": 19
@@ -292,8 +292,8 @@
       "debutChapter": 553,
       "cutoffChapter": 580,
       "arc": "Marineford Arc",
-      "line": "Blenheim is the former 9th division commander of the Whitebeard Pirates",
-      "lineWords": 11,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 8,
         "day": 6
@@ -539,8 +539,8 @@
       "debutChapter": 825,
       "cutoffChapter": 902,
       "arc": "Whole Cake Island Arc",
-      "line": "Charlotte Chiffon is the 22nd daughter and the 52nd child of the Charlotte Family and Totto Land's former Minister of Puff",
-      "lineWords": 21,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 1,
         "day": 27
@@ -840,8 +840,8 @@
       "debutChapter": 254,
       "cutoffChapter": 302,
       "arc": "Skypiea Arc",
-      "line": "Enel is the former tyrannical \"God\" of Skypiea",
-      "lineWords": 8,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 5,
         "day": 6
@@ -856,8 +856,8 @@
       "debutChapter": 498,
       "cutoffChapter": 513,
       "arc": "Sabaody Archipelago Arc",
-      "line": "Eustass\"Captain\"Kid is a notorious pirate from the South Blue and the captain of the Kid Pirates",
-      "lineWords": 16,
+      "line": "Eustass Kid is a notorious pirate from the South Blue and the captain of the Kid Pirates",
+      "lineWords": 17,
       "birth": {
         "month": 1,
         "day": 10
@@ -872,8 +872,8 @@
       "debutChapter": 553,
       "cutoffChapter": 580,
       "arc": "Marineford Arc",
-      "line": "Fossa is the former 15th division commander of the Whitebeard Pirates",
-      "lineWords": 11,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 4,
         "day": 15
@@ -933,8 +933,8 @@
       "debutChapter": 931,
       "cutoffChapter": 1057,
       "arc": "Wano Country Arc",
-      "line": "Fukurokuju is a ninja and the previous captain of the Orochi Oniwabanshu before they joined the Beasts Pirates following Orochi's deposition",
-      "lineWords": 21,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 3,
         "day": 29
@@ -962,8 +962,8 @@
       "debutChapter": 449,
       "cutoffChapter": 489,
       "arc": "Thriller Bark Arc",
-      "line": "Gecko Moria is the captain of the Thriller Bark Pirates and a former member of the Seven Warlords of the Sea",
-      "lineWords": 21,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 9,
         "day": 6
@@ -1071,8 +1071,8 @@
       "debutChapter": 553,
       "cutoffChapter": 580,
       "arc": "Marineford Arc",
-      "line": "Haruta is the former 12th division commander of the Whitebeard Pirates",
-      "lineWords": 11,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 2,
         "day": 4
@@ -1103,8 +1103,8 @@
       "debutChapter": 608,
       "cutoffChapter": 653,
       "arc": "Fish-Man Island Arc",
-      "line": "Hody Jones is a great white shark fish-man, the captain of the New Fish-Man Pirates before their downfall",
-      "lineWords": 18,
+      "line": "Hody Jones is a great white shark fish-man",
+      "lineWords": 8,
       "birth": {
         "month": 4,
         "day": 14
@@ -1254,8 +1254,8 @@
       "debutChapter": 392,
       "cutoffChapter": 430,
       "arc": "Enies Lobby Arc",
-      "line": "Jaguar.D.Saul is a giant and former Vice Admiral who deserted the Marines and happened to wash ashore on Ohara",
-      "lineWords": 19,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 3,
         "day": 6
@@ -1531,22 +1531,6 @@
       "birth": null
     },
     {
-      "name": "Komurasaki",
-      "title": "Kouzuki Hiyori",
-      "revid": 2126010,
-      "url": "https://onepiece.fandom.com/wiki/Kouzuki_Hiyori?oldid=2126010",
-      "fetchedAt": "2026-09-06",
-      "debutChapter": 909,
-      "cutoffChapter": 1057,
-      "arc": "Wano Country Arc",
-      "line": "Komurasaki is the daughter of the late Kouzuki Oden and Kouzuki Toki and the younger sister of Kouzuki Momonosuke",
-      "lineWords": 19,
-      "birth": {
-        "month": 12,
-        "day": 23
-      }
-    },
-    {
       "name": "Kouzuki Momonosuke",
       "title": "Kouzuki Momonosuke",
       "revid": 2126017,
@@ -1587,8 +1571,8 @@
       "debutChapter": 45,
       "cutoffChapter": 68,
       "arc": "Baratie Arc",
-      "line": "Krieg is the admiral of the Krieg Pirates, widely reputed as Foul-Play Krieg for his underhanded methods",
-      "lineWords": 17,
+      "line": "Krieg is the admiral of the Krieg Pirates",
+      "lineWords": 8,
       "birth": {
         "month": 9,
         "day": 19
@@ -2013,8 +1997,8 @@
       "debutChapter": 160,
       "cutoffChapter": 217,
       "arc": "Arabasta Arc",
-      "line": "Mr.1(Daz.Bonez) is a former bounty hunter",
-      "lineWords": 6,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 1,
         "day": 1
@@ -2045,27 +2029,11 @@
       "debutChapter": 117,
       "cutoffChapter": 129,
       "arc": "Little Garden Arc",
-      "line": "Mr.3(Galdino) is a former officer agent of Baroque Works, partnered with \"Miss Goldenweek\" Marianne",
-      "lineWords": 14,
-      "birth": {
-        "month": 3,
-        "day": 3
-      }
-    },
-    {
-      "name": "Ms. All Sunday",
-      "title": "Nico Robin",
-      "revid": 2131354,
-      "url": "https://onepiece.fandom.com/wiki/Nico_Robin?oldid=2131354",
-      "fetchedAt": "2026-09-06",
-      "debutChapter": 114,
-      "cutoffChapter": 114,
-      "arc": "Whisky Peak Arc",
       "line": null,
       "lineWords": null,
       "birth": {
-        "month": 2,
-        "day": 6
+        "month": 3,
+        "day": 3
       }
     },
     {
@@ -2109,8 +2077,8 @@
       "debutChapter": 809,
       "cutoffChapter": 824,
       "arc": "Zou Arc",
-      "line": "Nekomamushi is a feline mink and the former guardian of the Whale Forest on Zou",
-      "lineWords": 15,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 11,
         "day": 22
@@ -2149,54 +2117,6 @@
       }
     },
     {
-      "name": "Okiku",
-      "title": "Kikunojo",
-      "revid": 2124015,
-      "url": "https://onepiece.fandom.com/wiki/Kikunojo?oldid=2124015",
-      "fetchedAt": "2026-09-06",
-      "debutChapter": 913,
-      "cutoffChapter": 1057,
-      "arc": "Wano Country Arc",
-      "line": null,
-      "lineWords": null,
-      "birth": {
-        "month": 9,
-        "day": 9
-      }
-    },
-    {
-      "name": "Otama",
-      "title": "Kurozumi Tama",
-      "revid": 2126023,
-      "url": "https://onepiece.fandom.com/wiki/Kurozumi_Tama?oldid=2126023",
-      "fetchedAt": "2026-09-06",
-      "debutChapter": 911,
-      "cutoffChapter": 1057,
-      "arc": "Wano Country Arc",
-      "line": null,
-      "lineWords": null,
-      "birth": {
-        "month": 3,
-        "day": 3
-      }
-    },
-    {
-      "name": "Otsuru",
-      "title": "Tsurujo",
-      "revid": 2125105,
-      "url": "https://onepiece.fandom.com/wiki/Tsurujo?oldid=2125105",
-      "fetchedAt": "2026-09-06",
-      "debutChapter": 912,
-      "cutoffChapter": 1057,
-      "arc": "Wano Country Arc",
-      "line": "Otsuru is a tea house owner from the Wano Country, as well as the wife of Kin'emon",
-      "lineWords": 17,
-      "birth": {
-        "month": 9,
-        "day": 15
-      }
-    },
-    {
       "name": "Page One",
       "title": "Page One",
       "revid": 2127543,
@@ -2205,8 +2125,8 @@
       "debutChapter": 929,
       "cutoffChapter": 1057,
       "arc": "Wano Country Arc",
-      "line": "Page One is a former member of the Tobiroppo, the strongest Shinuchi of the Beasts Pirates",
-      "lineWords": 16,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 2,
         "day": 10
@@ -2221,8 +2141,8 @@
       "debutChapter": 904,
       "cutoffChapter": 908,
       "arc": "Levely Arc",
-      "line": "Peachbeard is the epithet of the captain of the Peachbeard Pirates, who are subordinates of the Emperor Blackbeard",
-      "lineWords": 18,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 3,
         "day": 27
@@ -2410,8 +2330,8 @@
       "debutChapter": 234,
       "cutoffChapter": 236,
       "arc": "Jaya Arc",
-      "line": "Rockstar is a member of the Red Hair Pirates, being relatively new in the crew two years ago",
-      "lineWords": 18,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 6,
         "day": 9
@@ -2554,8 +2474,8 @@
       "debutChapter": 234,
       "cutoffChapter": 236,
       "arc": "Jaya Arc",
-      "line": "Sengoku is a former Fleet Admiral of the Marines",
-      "lineWords": 9,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 5,
         "day": 9
@@ -2714,8 +2634,8 @@
       "debutChapter": 917,
       "cutoffChapter": 1057,
       "arc": "Wano Country Arc",
-      "line": "Speed is a former Shinuchi of the Beasts Pirates stationed in Bakura Town",
-      "lineWords": 13,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 12,
         "day": 11
@@ -2786,22 +2706,6 @@
       }
     },
     {
-      "name": "Trafalgar Law",
-      "title": "Trafalgar D. Water Law",
-      "revid": 2131639,
-      "url": "https://onepiece.fandom.com/wiki/Trafalgar_D._Water_Law?oldid=2131639",
-      "fetchedAt": "2026-09-06",
-      "debutChapter": 498,
-      "cutoffChapter": 513,
-      "arc": "Sabaody Archipelago Arc",
-      "line": "Trafalgar Law is a pirate from the North Blue and the captain and doctor of the Heart Pirates",
-      "lineWords": 18,
-      "birth": {
-        "month": 10,
-        "day": 6
-      }
-    },
-    {
       "name": "Ulti",
       "title": "Ulti",
       "revid": 2130867,
@@ -2810,8 +2714,8 @@
       "debutChapter": 977,
       "cutoffChapter": 1057,
       "arc": "Wano Country Arc",
-      "line": "Ulti is a former member of the Tobiroppo, the six strongest Shinuchi of the Beasts Pirates",
-      "lineWords": 16,
+      "line": null,
+      "lineWords": null,
       "birth": {
         "month": 1,
         "day": 4
@@ -2941,19 +2845,6 @@
         "month": 11,
         "day": 30
       }
-    },
-    {
-      "name": "Wang Zhi",
-      "title": "Ochoku",
-      "revid": 2108955,
-      "url": "https://onepiece.fandom.com/wiki/Ochoku?oldid=2108955",
-      "fetchedAt": "2026-09-06",
-      "debutChapter": 1155,
-      "cutoffChapter": null,
-      "arc": "Elbaph Arc",
-      "line": "Wang Zhi is a former member of the Rocks Pirates",
-      "lineWords": 10,
-      "birth": null
     },
     {
       "name": "Whitey Bay",
