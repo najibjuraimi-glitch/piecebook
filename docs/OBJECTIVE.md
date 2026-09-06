@@ -35,7 +35,7 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 
 ## Hypotheses, not taken as given
 - 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Next-phase interest only: ringgit, rupiah, and language translation *may* matter. Seat collectors in those markets in the next research round before any map row besides this decision opens.
-- 11.1 — Fandom page (Jib, 6 Sep 2026). A dedicated `/belong` like the One Piece Wiki: chapter/anime summaries, a wiki portal, a fruit Pokédex, a second character book, a reader cutoff, a fifth tab **World**. Draft 11 is in flight, not approved. No ClickUp until Jib asks. See `docs/V1-FANDOM-PAGE-UI.md`.
+- 11.1 — Fandom page (Jib, 6 Sep 2026). A dedicated `/belong` like the One Piece Wiki: chapter/anime summaries, a wiki portal, a fruit Pokédex, a second character book, a reader cutoff, a fifth tab **World**. Draft 11 is in flight, not approved. ClickUp: https://app.clickup.com/t/86eyuqatu. See `docs/V1-FANDOM-PAGE-UI.md`.
 
 ## Decisions parked on the board
 - 6.1 — where decks live (fourth tab vs under Collection)
@@ -43,4 +43,4 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 6.6 — decklists: link only, or import as a source
 
 ## Task list
-`docs/growth-map.csv` holds every task (50 rows) with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. Rows marked `NO` (10.0, 11.1) or `NO (quota)` (7.6 events) are not in ClickUp; do not create 10.0 or 11.1 until Jib asks. 5.4 and 9.1 built 6 Sep 2026. The dependencies to wire are in the `Depends on` column.
+`docs/growth-map.csv` holds every task with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. 11.1 is in ClickUp as a draft (`86eyuqatu`). 10.0 stays off ClickUp until research asks. 7.6 is already a low to-do. 5.4 and 9.1 built 6 Sep 2026. The dependencies to wire are in the `Depends on` column.
