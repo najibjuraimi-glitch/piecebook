@@ -25,6 +25,8 @@
  *     be one sentence with no exclamation mark, avoid rarity / alt-art /
  *     campaign / anniversary words and superlatives, and name every one of the
  *     set's leaders or none of them
+ *   - wiki/lines.json (7.7): CC BY-SA 3.0 notice, fetchedAt an ISO day (warn
+ *     after 3 silent days), every stored line ≤22 words and without !
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -284,6 +286,34 @@ for (const set of roster) {
       fail(`${where}: story names ${named.join(', ')} but not ${[...leaders].filter((n) => !named.includes(n)).join(', ')}; name every leader or none`)
     }
   }
+}
+
+// Wiki lines (7.7): the gated first sentence cache. The refresh writes it;
+// a line over 22 words fails the build; three silent days is a warning.
+const WIKI_WORDS = 22
+const wikiPath = join(DATA, 'wiki/lines.json')
+if (existsSync(wikiPath)) {
+  const wiki = JSON.parse(readFileSync(wikiPath, 'utf8'))
+  if (wiki.licence !== 'CC BY-SA 3.0') fail('wiki/lines.json: licence must be CC BY-SA 3.0')
+  if (typeof wiki.licenceUrl !== 'string' || !wiki.licenceUrl.includes('creativecommons.org')) {
+    fail('wiki/lines.json: licenceUrl must point at the Creative Commons licence')
+  }
+  const fetched = typeof wiki.fetchedAt === 'string' ? wiki.fetchedAt : ''
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fetched)) fail('wiki/lines.json: fetchedAt must be an ISO day')
+  else {
+    const age = (Date.now() - Date.parse(`${fetched}T00:00:00Z`)) / 86_400_000
+    if (age > 3) warn(`wiki/lines.json last fetched ${fetched}, ${Math.floor(age)} days ago`)
+  }
+  const entries = Array.isArray(wiki.entries) ? wiki.entries : []
+  for (const e of entries) {
+    const line = typeof e?.line === 'string' ? e.line.trim() : ''
+    if (!line) continue
+    const words = line.split(/\s+/).length
+    if (words > WIKI_WORDS) fail(`wiki/lines.json ${e.name}: line runs to ${words} words; the rule is ${WIKI_WORDS}`)
+    if (line.includes('!')) fail(`wiki/lines.json ${e.name}: line has an exclamation mark`)
+  }
+} else {
+  warn('wiki/lines.json is missing; run npm run wiki:refresh')
 }
 
 for (const w of warnings) console.warn(`warn: ${w}`)
