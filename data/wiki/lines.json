@@ -1,0 +1,3068 @@
+{
+  "source": "One Piece Wiki (onepiece.fandom.com)",
+  "licence": "CC BY-SA 3.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+  "fetchedAt": "2026-09-06",
+  "entries": [
+    {
+      "name": "Alvida",
+      "title": "Alvida",
+      "revid": 2122963,
+      "url": "https://onepiece.fandom.com/wiki/Alvida?oldid=2122963",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 2,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 14
+      }
+    },
+    {
+      "name": "Aramaki",
+      "title": "Aramaki",
+      "revid": 2119796,
+      "url": "https://onepiece.fandom.com/wiki/Aramaki?oldid=2119796",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 905,
+      "cutoffChapter": 908,
+      "arc": "Levely Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 29
+      }
+    },
+    {
+      "name": "Arlong",
+      "title": "Arlong",
+      "revid": 2122049,
+      "url": "https://onepiece.fandom.com/wiki/Arlong?oldid=2122049",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 69,
+      "cutoffChapter": 95,
+      "arc": "Arlong Park Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 5,
+        "day": 3
+      }
+    },
+    {
+      "name": "Ashura Doji",
+      "title": "Ashura Doji",
+      "revid": 2124914,
+      "url": "https://onepiece.fandom.com/wiki/Ashura_Doji?oldid=2124914",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 920,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 10
+      }
+    },
+    {
+      "name": "Atmos",
+      "title": "Atmos",
+      "revid": 2123746,
+      "url": "https://onepiece.fandom.com/wiki/Atmos?oldid=2123746",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 553,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": "Atmos is the former 13th division commander of the Whitebeard Pirates",
+      "lineWords": 11,
+      "birth": {
+        "month": 3,
+        "day": 19
+      }
+    },
+    {
+      "name": "Avalo Pizarro",
+      "title": "Avalo Pizarro",
+      "revid": 2125949,
+      "url": "https://onepiece.fandom.com/wiki/Avalo_Pizarro?oldid=2125949",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 575,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 30
+      }
+    },
+    {
+      "name": "Babanuki",
+      "title": "Babanuki",
+      "revid": 2122886,
+      "url": "https://onepiece.fandom.com/wiki/Babanuki?oldid=2122886",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 934,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Bao Huang",
+      "title": "Bao Huang",
+      "revid": 2127556,
+      "url": "https://onepiece.fandom.com/wiki/Bao_Huang?oldid=2127556",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 979,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Barbell",
+      "title": "Barbel",
+      "revid": 2130204,
+      "url": "https://onepiece.fandom.com/wiki/Barbel?oldid=2130204",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1096,
+      "cutoffChapter": 1125,
+      "arc": "Egghead Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Bartholomew Kuma",
+      "title": "Bartholomew Kuma",
+      "revid": 2125812,
+      "url": "https://onepiece.fandom.com/wiki/Bartholomew_Kuma?oldid=2125812",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 233,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 9
+      }
+    },
+    {
+      "name": "Bartolomeo",
+      "title": "Bartolomeo",
+      "revid": 2125337,
+      "url": "https://onepiece.fandom.com/wiki/Bartolomeo?oldid=2125337",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 705,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": "Bartolomeo is a Super Rookie, the captain of the Barto Club",
+      "lineWords": 11,
+      "birth": {
+        "month": 10,
+        "day": 6
+      }
+    },
+    {
+      "name": "Basil Hawkins",
+      "title": "Basil Hawkins",
+      "revid": 2128695,
+      "url": "https://onepiece.fandom.com/wiki/Basil_Hawkins?oldid=2128695",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 9
+      }
+    },
+    {
+      "name": "Bellamy",
+      "title": "Bellamy",
+      "revid": 2131044,
+      "url": "https://onepiece.fandom.com/wiki/Bellamy?oldid=2131044",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 222,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 7
+      }
+    },
+    {
+      "name": "Belo Betty",
+      "title": "Belo Betty",
+      "revid": 2127610,
+      "url": "https://onepiece.fandom.com/wiki/Belo_Betty?oldid=2127610",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 904,
+      "cutoffChapter": 908,
+      "arc": "Levely Arc",
+      "line": "Belo Betty is the commander of the East Army in the Revolutionary Army",
+      "lineWords": 13,
+      "birth": {
+        "month": 6,
+        "day": 15
+      }
+    },
+    {
+      "name": "Benn.Beckman",
+      "title": "Benn Beckman",
+      "revid": 2125947,
+      "url": "https://onepiece.fandom.com/wiki/Benn_Beckman?oldid=2125947",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 11,
+        "day": 9
+      }
+    },
+    {
+      "name": "Bepo",
+      "title": "Bepo",
+      "revid": 2117470,
+      "url": "https://onepiece.fandom.com/wiki/Bepo?oldid=2117470",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 11,
+        "day": 20
+      }
+    },
+    {
+      "name": "Black Maria",
+      "title": "Black Maria",
+      "revid": 2129657,
+      "url": "https://onepiece.fandom.com/wiki/Black_Maria?oldid=2129657",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 977,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Black Maria is one of the Tobiroppo, the strongest six Shinuchi of the Beasts Pirates",
+      "lineWords": 15,
+      "birth": {
+        "month": 9,
+        "day": 24
+      }
+    },
+    {
+      "name": "Blamenco",
+      "title": "Blamenco",
+      "revid": 2123755,
+      "url": "https://onepiece.fandom.com/wiki/Blamenco?oldid=2123755",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 553,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 5
+      }
+    },
+    {
+      "name": "Blenheim",
+      "title": "Blenheim",
+      "revid": 2123756,
+      "url": "https://onepiece.fandom.com/wiki/Blenheim?oldid=2123756",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 553,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": "Blenheim is the former 9th division commander of the Whitebeard Pirates",
+      "lineWords": 11,
+      "birth": {
+        "month": 8,
+        "day": 6
+      }
+    },
+    {
+      "name": "Boa Hancock",
+      "title": "Boa Hancock",
+      "revid": 2126794,
+      "url": "https://onepiece.fandom.com/wiki/Boa_Hancock?oldid=2126794",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 516,
+      "cutoffChapter": 524,
+      "arc": "Amazon Lily Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 2
+      }
+    },
+    {
+      "name": "Bonk Punch",
+      "title": "Bonk Punch",
+      "revid": 2125994,
+      "url": "https://onepiece.fandom.com/wiki/Bonk_Punch?oldid=2125994",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Brogy",
+      "title": "Brogy",
+      "revid": 2131177,
+      "url": "https://onepiece.fandom.com/wiki/Brogy?oldid=2131177",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 115,
+      "cutoffChapter": 129,
+      "arc": "Little Garden Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 1
+      }
+    },
+    {
+      "name": "Brook",
+      "title": "Brook",
+      "revid": 2130845,
+      "url": "https://onepiece.fandom.com/wiki/Brook?oldid=2130845",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 442,
+      "cutoffChapter": 489,
+      "arc": "Thriller Bark Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 3
+      }
+    },
+    {
+      "name": "Buggy",
+      "title": "Buggy",
+      "revid": 2131405,
+      "url": "https://onepiece.fandom.com/wiki/Buggy?oldid=2131405",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 9,
+      "cutoffChapter": 21,
+      "arc": "Orange Town Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 8
+      }
+    },
+    {
+      "name": "Building Snake",
+      "title": "Building Snake",
+      "revid": 2125961,
+      "url": "https://onepiece.fandom.com/wiki/Building_Snake?oldid=2125961",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 41,
+      "cutoffChapter": 41,
+      "arc": "Syrup Village Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Cabaji",
+      "title": "Cabaji",
+      "revid": 2121930,
+      "url": "https://onepiece.fandom.com/wiki/Cabaji?oldid=2121930",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 9,
+      "cutoffChapter": 21,
+      "arc": "Orange Town Arc",
+      "line": "Cabaji is the Buggy Pirates chief of staff",
+      "lineWords": 8,
+      "birth": {
+        "month": 9,
+        "day": 8
+      }
+    },
+    {
+      "name": "Caesar Clown",
+      "title": "Caesar Clown",
+      "revid": 2128709,
+      "url": "https://onepiece.fandom.com/wiki/Caesar_Clown?oldid=2128709",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 658,
+      "cutoffChapter": 699,
+      "arc": "Punk Hazard Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 9
+      }
+    },
+    {
+      "name": "Capone\"Gang\"Bege",
+      "title": "Capone Bege",
+      "revid": 2125958,
+      "url": "https://onepiece.fandom.com/wiki/Capone_Bege?oldid=2125958",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 1,
+        "day": 17
+      }
+    },
+    {
+      "name": "Captain John",
+      "title": "John",
+      "revid": 2121896,
+      "url": "https://onepiece.fandom.com/wiki/John?oldid=2121896",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 450,
+      "cutoffChapter": 489,
+      "arc": "Thriller Bark Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Caribou",
+      "title": "Caribou",
+      "revid": 2122954,
+      "url": "https://onepiece.fandom.com/wiki/Caribou?oldid=2122954",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 600,
+      "cutoffChapter": 602,
+      "arc": "Return to Sabaody Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 7,
+        "day": 4
+      }
+    },
+    {
+      "name": "Carrot",
+      "title": "Carrot",
+      "revid": 2124860,
+      "url": "https://onepiece.fandom.com/wiki/Carrot?oldid=2124860",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 804,
+      "cutoffChapter": 824,
+      "arc": "Zou Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 5,
+        "day": 24
+      }
+    },
+    {
+      "name": "Catarina Devon",
+      "title": "Catarina Devon",
+      "revid": 2125951,
+      "url": "https://onepiece.fandom.com/wiki/Catarina_Devon?oldid=2125951",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 575,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 29
+      }
+    },
+    {
+      "name": "Cavendish",
+      "title": "Cavendish",
+      "revid": 2121692,
+      "url": "https://onepiece.fandom.com/wiki/Cavendish?oldid=2121692",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 704,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 31
+      }
+    },
+    {
+      "name": "Charlotte Brulee",
+      "title": "Charlotte Brûlée",
+      "revid": 2126117,
+      "url": "https://onepiece.fandom.com/wiki/Charlotte_Br%C3%BBl%C3%A9e?oldid=2126117",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 831,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": "Charlotte Brulee is the eighth daughter and 19th child of the Charlotte Family and the older twin sister of Broyé",
+      "lineWords": 20,
+      "birth": {
+        "month": 3,
+        "day": 6
+      }
+    },
+    {
+      "name": "Charlotte Chiffon",
+      "title": "Charlotte Chiffon",
+      "revid": 2126059,
+      "url": "https://onepiece.fandom.com/wiki/Charlotte_Chiffon?oldid=2126059",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 825,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": "Charlotte Chiffon is the 22nd daughter and the 52nd child of the Charlotte Family and Totto Land's former Minister of Puff",
+      "lineWords": 21,
+      "birth": {
+        "month": 1,
+        "day": 27
+      }
+    },
+    {
+      "name": "Charlotte Cracker",
+      "title": "Charlotte Cracker",
+      "revid": 2130658,
+      "url": "https://onepiece.fandom.com/wiki/Charlotte_Cracker?oldid=2130658",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 835,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 28
+      }
+    },
+    {
+      "name": "Charlotte Daifuku",
+      "title": "Charlotte Daifuku",
+      "revid": 2126111,
+      "url": "https://onepiece.fandom.com/wiki/Charlotte_Daifuku?oldid=2126111",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 861,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": "Charlotte Daifuku is the third son and fourth child of the Charlotte Family",
+      "lineWords": 13,
+      "birth": {
+        "month": 11,
+        "day": 25
+      }
+    },
+    {
+      "name": "Charlotte Katakuri",
+      "title": "Charlotte Katakuri",
+      "revid": 2126112,
+      "url": "https://onepiece.fandom.com/wiki/Charlotte_Katakuri?oldid=2126112",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 860,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": "Charlotte Katakuri is the second son and third child of the Charlotte Family",
+      "lineWords": 13,
+      "birth": {
+        "month": 11,
+        "day": 25
+      }
+    },
+    {
+      "name": "Charlotte Linlin",
+      "title": "Charlotte Linlin",
+      "revid": 2126115,
+      "url": "https://onepiece.fandom.com/wiki/Charlotte_Linlin?oldid=2126115",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 651,
+      "cutoffChapter": 653,
+      "arc": "Fish-Man Island Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 15
+      }
+    },
+    {
+      "name": "Charlotte Oven",
+      "title": "Charlotte Oven",
+      "revid": 2126110,
+      "url": "https://onepiece.fandom.com/wiki/Charlotte_Oven?oldid=2126110",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 861,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": "Charlotte Oven is the fourth son and fifth child of the Charlotte Family",
+      "lineWords": 13,
+      "birth": {
+        "month": 11,
+        "day": 25
+      }
+    },
+    {
+      "name": "Charlotte Perospero",
+      "title": "Charlotte Perospero",
+      "revid": 2126114,
+      "url": "https://onepiece.fandom.com/wiki/Charlotte_Perospero?oldid=2126114",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 834,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 14
+      }
+    },
+    {
+      "name": "Charlotte Pudding",
+      "title": "Charlotte Pudding",
+      "revid": 2126051,
+      "url": "https://onepiece.fandom.com/wiki/Charlotte_Pudding?oldid=2126051",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 651,
+      "cutoffChapter": 653,
+      "arc": "Fish-Man Island Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 6,
+        "day": 25
+      }
+    },
+    {
+      "name": "Charlotte Smoothie",
+      "title": "Charlotte Smoothie",
+      "revid": 2126074,
+      "url": "https://onepiece.fandom.com/wiki/Charlotte_Smoothie?oldid=2126074",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 846,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": "Charlotte Smoothie is the 14th daughter and 35th child of the Charlotte Family",
+      "lineWords": 13,
+      "birth": {
+        "month": 10,
+        "day": 12
+      }
+    },
+    {
+      "name": "Crocodile",
+      "title": "Crocodile",
+      "revid": 2129546,
+      "url": "https://onepiece.fandom.com/wiki/Crocodile?oldid=2129546",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 126,
+      "cutoffChapter": 129,
+      "arc": "Little Garden Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 5
+      }
+    },
+    {
+      "name": "Denjiro",
+      "title": "Denjiro",
+      "revid": 2087016,
+      "url": "https://onepiece.fandom.com/wiki/Denjiro?oldid=2087016",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 919,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Denjiro is a samurai from Wano Country and one of the Nine Red Scabbards who served as Kouzuki Oden's retainers",
+      "lineWords": 20,
+      "birth": {
+        "month": 10,
+        "day": 26
+      }
+    },
+    {
+      "name": "Doc Q",
+      "title": "Doc Q",
+      "revid": 2127748,
+      "url": "https://onepiece.fandom.com/wiki/Doc_Q?oldid=2127748",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 223,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 18
+      }
+    },
+    {
+      "name": "Don Marlon",
+      "title": "Marlon",
+      "revid": 2093560,
+      "url": "https://onepiece.fandom.com/wiki/Marlon?oldid=2093560",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1155,
+      "cutoffChapter": null,
+      "arc": "Elbaph Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Donquixote Doflamingo",
+      "title": "Donquixote Doflamingo",
+      "revid": 2125807,
+      "url": "https://onepiece.fandom.com/wiki/Donquixote_Doflamingo?oldid=2125807",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 233,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 23
+      }
+    },
+    {
+      "name": "Donquixote Rosinante",
+      "title": "Donquixote Rosinante",
+      "revid": 2125814,
+      "url": "https://onepiece.fandom.com/wiki/Donquixote_Rosinante?oldid=2125814",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 761,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 7,
+        "day": 15
+      }
+    },
+    {
+      "name": "Dorry",
+      "title": "Dorry",
+      "revid": 2131176,
+      "url": "https://onepiece.fandom.com/wiki/Dorry?oldid=2131176",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 116,
+      "cutoffChapter": 129,
+      "arc": "Little Garden Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 2
+      }
+    },
+    {
+      "name": "Dracule Mihawk",
+      "title": "Dracule Mihawk",
+      "revid": 2131277,
+      "url": "https://onepiece.fandom.com/wiki/Dracule_Mihawk?oldid=2131277",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 49,
+      "cutoffChapter": 68,
+      "arc": "Baratie Arc",
+      "line": "Dracule Mihawk is a world-famous pirate currently recognized as the strongest swordsman in the world",
+      "lineWords": 15,
+      "birth": {
+        "month": 3,
+        "day": 9
+      }
+    },
+    {
+      "name": "Edward.Newgate",
+      "title": "Edward Newgate",
+      "revid": 2131406,
+      "url": "https://onepiece.fandom.com/wiki/Edward_Newgate?oldid=2131406",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 159,
+      "cutoffChapter": 217,
+      "arc": "Arabasta Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 6
+      }
+    },
+    {
+      "name": "Emporio.Ivankov",
+      "title": "Emporio Ivankov",
+      "revid": 2127609,
+      "url": "https://onepiece.fandom.com/wiki/Emporio_Ivankov?oldid=2127609",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 537,
+      "cutoffChapter": 549,
+      "arc": "Impel Down Arc",
+      "line": "Emporio.Ivankov is the queen of the Kamabakka Kingdom",
+      "lineWords": 8,
+      "birth": {
+        "month": 1,
+        "day": 8
+      }
+    },
+    {
+      "name": "Enel",
+      "title": "Enel",
+      "revid": 2131552,
+      "url": "https://onepiece.fandom.com/wiki/Enel?oldid=2131552",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 254,
+      "cutoffChapter": 302,
+      "arc": "Skypiea Arc",
+      "line": "Enel is the former tyrannical \"God\" of Skypiea",
+      "lineWords": 8,
+      "birth": {
+        "month": 5,
+        "day": 6
+      }
+    },
+    {
+      "name": "Eustass\"Captain\"Kid",
+      "title": "Eustass Kid",
+      "revid": 2121462,
+      "url": "https://onepiece.fandom.com/wiki/Eustass_Kid?oldid=2121462",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": "Eustass\"Captain\"Kid is a notorious pirate from the South Blue and the captain of the Kid Pirates",
+      "lineWords": 16,
+      "birth": {
+        "month": 1,
+        "day": 10
+      }
+    },
+    {
+      "name": "Fossa",
+      "title": "Fossa",
+      "revid": 2123988,
+      "url": "https://onepiece.fandom.com/wiki/Fossa?oldid=2123988",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 553,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": "Fossa is the former 15th division commander of the Whitebeard Pirates",
+      "lineWords": 11,
+      "birth": {
+        "month": 4,
+        "day": 15
+      }
+    },
+    {
+      "name": "Foxy",
+      "title": "Foxy",
+      "revid": 2125492,
+      "url": "https://onepiece.fandom.com/wiki/Foxy?oldid=2125492",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 305,
+      "cutoffChapter": 321,
+      "arc": "Long Ring Long Land Arc",
+      "line": "Foxy is the captain of the Foxy Pirates, and the main antagonist of the Long Ring Long Land Arc",
+      "lineWords": 19,
+      "birth": {
+        "month": 4,
+        "day": 4
+      }
+    },
+    {
+      "name": "Franky",
+      "title": "Franky",
+      "revid": 2130787,
+      "url": "https://onepiece.fandom.com/wiki/Franky?oldid=2130787",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 329,
+      "cutoffChapter": 374,
+      "arc": "Water 7 Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 9
+      }
+    },
+    {
+      "name": "Fugar",
+      "title": "Fugar",
+      "revid": 2119274,
+      "url": "https://onepiece.fandom.com/wiki/Fugar?oldid=2119274",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1079,
+      "cutoffChapter": 1125,
+      "arc": "Egghead Arc",
+      "line": "Fugar is the bandmaster of the Social Club, a subordinate pirate crew of the Red Hair Pirates",
+      "lineWords": 17,
+      "birth": null
+    },
+    {
+      "name": "Fukurokuju",
+      "title": "Fukurokuju",
+      "revid": 2087084,
+      "url": "https://onepiece.fandom.com/wiki/Fukurokuju?oldid=2087084",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 931,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Fukurokuju is a ninja and the previous captain of the Orochi Oniwabanshu before they joined the Beasts Pirates following Orochi's deposition",
+      "lineWords": 21,
+      "birth": {
+        "month": 3,
+        "day": 29
+      }
+    },
+    {
+      "name": "Ganzui",
+      "title": "Ganzui",
+      "revid": 2121885,
+      "url": "https://onepiece.fandom.com/wiki/Ganzui?oldid=2121885",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 450,
+      "cutoffChapter": 489,
+      "arc": "Thriller Bark Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Gecko Moria",
+      "title": "Gecko Moria",
+      "revid": 2124733,
+      "url": "https://onepiece.fandom.com/wiki/Gecko_Moria?oldid=2124733",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 449,
+      "cutoffChapter": 489,
+      "arc": "Thriller Bark Arc",
+      "line": "Gecko Moria is the captain of the Thriller Bark Pirates and a former member of the Seven Warlords of the Sea",
+      "lineWords": 21,
+      "birth": {
+        "month": 9,
+        "day": 6
+      }
+    },
+    {
+      "name": "Gerd",
+      "title": "Gerd",
+      "revid": 2130719,
+      "url": "https://onepiece.fandom.com/wiki/Gerd?oldid=2130719",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 866,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": "Gerd is a giant from Elbaph",
+      "lineWords": 6,
+      "birth": {
+        "month": 2,
+        "day": 25
+      }
+    },
+    {
+      "name": "Gloriosa",
+      "title": "Gloriosa",
+      "revid": 2124363,
+      "url": "https://onepiece.fandom.com/wiki/Gloriosa?oldid=2124363",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 514,
+      "cutoffChapter": 524,
+      "arc": "Amazon Lily Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 4
+      }
+    },
+    {
+      "name": "Gol.D.Roger",
+      "title": "Gol D. Roger",
+      "revid": 2131607,
+      "url": "https://onepiece.fandom.com/wiki/Gol_D._Roger?oldid=2131607",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 12,
+        "day": 31
+      }
+    },
+    {
+      "name": "Gordon",
+      "title": "Gordon",
+      "revid": 2112013,
+      "url": "https://onepiece.fandom.com/wiki/Gordon?oldid=2112013",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": null,
+      "cutoffChapter": null,
+      "arc": null,
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Hajrudin",
+      "title": "Hajrudin",
+      "revid": 2131188,
+      "url": "https://onepiece.fandom.com/wiki/Hajrudin?oldid=2131188",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 706,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": "Hajrudin is a giant warrior described as being from the \"new generation\" of Elbaph",
+      "lineWords": 14,
+      "birth": {
+        "month": 8,
+        "day": 12
+      }
+    },
+    {
+      "name": "Hannyabal",
+      "title": "Hannyabal",
+      "revid": 2109611,
+      "url": "https://onepiece.fandom.com/wiki/Hannyabal?oldid=2109611",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 525,
+      "cutoffChapter": 549,
+      "arc": "Impel Down Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 28
+      }
+    },
+    {
+      "name": "Haruta",
+      "title": "Haruta",
+      "revid": 2129685,
+      "url": "https://onepiece.fandom.com/wiki/Haruta?oldid=2129685",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 553,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": "Haruta is the former 12th division commander of the Whitebeard Pirates",
+      "lineWords": 11,
+      "birth": {
+        "month": 2,
+        "day": 4
+      }
+    },
+    {
+      "name": "Heat",
+      "title": "Heat",
+      "revid": 2085957,
+      "url": "https://onepiece.fandom.com/wiki/Heat?oldid=2085957",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 500,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": "Heat is a member of the Kid Pirates",
+      "lineWords": 8,
+      "birth": {
+        "month": 12,
+        "day": 1
+      }
+    },
+    {
+      "name": "Hody Jones",
+      "title": "Hody Jones",
+      "revid": 2121870,
+      "url": "https://onepiece.fandom.com/wiki/Hody_Jones?oldid=2121870",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 608,
+      "cutoffChapter": 653,
+      "arc": "Fish-Man Island Arc",
+      "line": "Hody Jones is a great white shark fish-man, the captain of the New Fish-Man Pirates before their downfall",
+      "lineWords": 18,
+      "birth": {
+        "month": 4,
+        "day": 14
+      }
+    },
+    {
+      "name": "Hongo",
+      "title": "Hongo",
+      "revid": 2124002,
+      "url": "https://onepiece.fandom.com/wiki/Hongo?oldid=2124002",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Howling Gab",
+      "title": "Gab",
+      "revid": 2123992,
+      "url": "https://onepiece.fandom.com/wiki/Gab?oldid=2123992",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 580,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": "Howling Gab is one of the Senior Officers of the Red Hair Pirates",
+      "lineWords": 13,
+      "birth": null
+    },
+    {
+      "name": "Hyogoro",
+      "title": "Hyougoro",
+      "revid": 2126911,
+      "url": "https://onepiece.fandom.com/wiki/Hyougoro?oldid=2126911",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 926,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 14
+      }
+    },
+    {
+      "name": "Iceburg",
+      "title": "Iceburg",
+      "revid": 2105773,
+      "url": "https://onepiece.fandom.com/wiki/Iceburg?oldid=2105773",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 323,
+      "cutoffChapter": 374,
+      "arc": "Water 7 Arc",
+      "line": "Iceburg is the president of the Galley-La Company and the mayor of Water 7",
+      "lineWords": 14,
+      "birth": {
+        "month": 1,
+        "day": 3
+      }
+    },
+    {
+      "name": "Imu",
+      "title": "Nerona Imu",
+      "revid": 2131386,
+      "url": "https://onepiece.fandom.com/wiki/Nerona_Imu?oldid=2131386",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 906,
+      "cutoffChapter": 908,
+      "arc": "Levely Arc",
+      "line": "Imu is the King of the World who occupies the Empty Throne, giving him sole authority over the World Government",
+      "lineWords": 20,
+      "birth": null
+    },
+    {
+      "name": "Inuarashi",
+      "title": "Inuarashi",
+      "revid": 2124005,
+      "url": "https://onepiece.fandom.com/wiki/Inuarashi?oldid=2124005",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 808,
+      "cutoffChapter": 824,
+      "arc": "Zou Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 11
+      }
+    },
+    {
+      "name": "Issho",
+      "title": "Issho",
+      "revid": 2118807,
+      "url": "https://onepiece.fandom.com/wiki/Issho?oldid=2118807",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 701,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": "Issho is an Admiral in the Marines",
+      "lineWords": 7,
+      "birth": {
+        "month": 8,
+        "day": 10
+      }
+    },
+    {
+      "name": "Izo",
+      "title": "Izou",
+      "revid": 2129677,
+      "url": "https://onepiece.fandom.com/wiki/Izou?oldid=2129677",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 553,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 13
+      }
+    },
+    {
+      "name": "Jack",
+      "title": "Jack",
+      "revid": 2119924,
+      "url": "https://onepiece.fandom.com/wiki/Jack?oldid=2119924",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 801,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 28
+      }
+    },
+    {
+      "name": "Jaguar.D.Saul",
+      "title": "Jaguar D. Saul",
+      "revid": 2131172,
+      "url": "https://onepiece.fandom.com/wiki/Jaguar_D._Saul?oldid=2131172",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 392,
+      "cutoffChapter": 430,
+      "arc": "Enies Lobby Arc",
+      "line": "Jaguar.D.Saul is a giant and former Vice Admiral who deserted the Marines and happened to wash ashore on Ohara",
+      "lineWords": 19,
+      "birth": {
+        "month": 3,
+        "day": 6
+      }
+    },
+    {
+      "name": "Jean Bart",
+      "title": "Jean Bart",
+      "revid": 2086852,
+      "url": "https://onepiece.fandom.com/wiki/Jean_Bart?oldid=2086852",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 497,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 6
+      }
+    },
+    {
+      "name": "Jesus Burgess",
+      "title": "Jesus Burgess",
+      "revid": 2124008,
+      "url": "https://onepiece.fandom.com/wiki/Jesus_Burgess?oldid=2124008",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 222,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 12,
+        "day": 25
+      }
+    },
+    {
+      "name": "Jewelry Bonney",
+      "title": "Jewelry Bonney",
+      "revid": 2131165,
+      "url": "https://onepiece.fandom.com/wiki/Jewelry_Bonney?oldid=2131165",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": "Jewelry Bonney is a pirate from the South Blue and the captain of the Bonney Pirates",
+      "lineWords": 16,
+      "birth": {
+        "month": 9,
+        "day": 1
+      }
+    },
+    {
+      "name": "Jinbe",
+      "title": "Jinbe",
+      "revid": 2130854,
+      "url": "https://onepiece.fandom.com/wiki/Jinbe?oldid=2130854",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 528,
+      "cutoffChapter": 549,
+      "arc": "Impel Down Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 2
+      }
+    },
+    {
+      "name": "Jozu",
+      "title": "Jozu",
+      "revid": 2124011,
+      "url": "https://onepiece.fandom.com/wiki/Jozu?oldid=2124011",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 234,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 11,
+        "day": 11
+      }
+    },
+    {
+      "name": "Kaido",
+      "title": "Kaidou",
+      "revid": 2124853,
+      "url": "https://onepiece.fandom.com/wiki/Kaidou?oldid=2124853",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 795,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 5,
+        "day": 1
+      }
+    },
+    {
+      "name": "Kalgara",
+      "title": "Kalgara",
+      "revid": 2121721,
+      "url": "https://onepiece.fandom.com/wiki/Kalgara?oldid=2121721",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 286,
+      "cutoffChapter": 302,
+      "arc": "Skypiea Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 4
+      }
+    },
+    {
+      "name": "Kanjuro",
+      "title": "Kurozumi Kanjuro",
+      "revid": 2125976,
+      "url": "https://onepiece.fandom.com/wiki/Kurozumi_Kanjuro?oldid=2125976",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 700,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 7,
+        "day": 21
+      }
+    },
+    {
+      "name": "Karasu",
+      "title": "Karasu",
+      "revid": 2116767,
+      "url": "https://onepiece.fandom.com/wiki/Karasu?oldid=2116767",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 593,
+      "cutoffChapter": 597,
+      "arc": "Post-War Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 18
+      }
+    },
+    {
+      "name": "Kawamatsu",
+      "title": "Kawamatsu",
+      "revid": 2124013,
+      "url": "https://onepiece.fandom.com/wiki/Kawamatsu?oldid=2124013",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 920,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 6,
+        "day": 14
+      }
+    },
+    {
+      "name": "Killer",
+      "title": "Killer",
+      "revid": 2125454,
+      "url": "https://onepiece.fandom.com/wiki/Killer?oldid=2125454",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 2
+      }
+    },
+    {
+      "name": "Kin'emon",
+      "title": "Kin'emon",
+      "revid": 2125547,
+      "url": "https://onepiece.fandom.com/wiki/Kin'emon?oldid=2125547",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 656,
+      "cutoffChapter": 699,
+      "arc": "Punk Hazard Arc",
+      "line": "Kin'emon is a samurai from the region of Kuri in Wano Country",
+      "lineWords": 12,
+      "birth": {
+        "month": 1,
+        "day": 29
+      }
+    },
+    {
+      "name": "King",
+      "title": "King",
+      "revid": 2124016,
+      "url": "https://onepiece.fandom.com/wiki/King?oldid=2124016",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 920,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 12,
+        "day": 1
+      }
+    },
+    {
+      "name": "Kingdew",
+      "title": "Kingdew",
+      "revid": 2124017,
+      "url": "https://onepiece.fandom.com/wiki/Kingdew?oldid=2124017",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 562,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 11,
+        "day": 13
+      }
+    },
+    {
+      "name": "Koala",
+      "title": "Koala",
+      "revid": 2125222,
+      "url": "https://onepiece.fandom.com/wiki/Koala?oldid=2125222",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 622,
+      "cutoffChapter": 653,
+      "arc": "Fish-Man Island Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 25
+      }
+    },
+    {
+      "name": "Koby",
+      "title": "Koby",
+      "revid": 2128511,
+      "url": "https://onepiece.fandom.com/wiki/Koby?oldid=2128511",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 2,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 5,
+        "day": 13
+      }
+    },
+    {
+      "name": "Komachiyo",
+      "title": "Komachiyo",
+      "revid": 2086040,
+      "url": "https://onepiece.fandom.com/wiki/Komachiyo?oldid=2086040",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 910,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Komachiyo is a komainu that resides in the Kuri region of Wano Country",
+      "lineWords": 13,
+      "birth": null
+    },
+    {
+      "name": "Komurasaki",
+      "title": "Kouzuki Hiyori",
+      "revid": 2126010,
+      "url": "https://onepiece.fandom.com/wiki/Kouzuki_Hiyori?oldid=2126010",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 909,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Komurasaki is the daughter of the late Kouzuki Oden and Kouzuki Toki and the younger sister of Kouzuki Momonosuke",
+      "lineWords": 19,
+      "birth": {
+        "month": 12,
+        "day": 23
+      }
+    },
+    {
+      "name": "Kouzuki Momonosuke",
+      "title": "Kouzuki Momonosuke",
+      "revid": 2126017,
+      "url": "https://onepiece.fandom.com/wiki/Kouzuki_Momonosuke?oldid=2126017",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 684,
+      "cutoffChapter": 699,
+      "arc": "Punk Hazard Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 7
+      }
+    },
+    {
+      "name": "Kouzuki Oden",
+      "title": "Kouzuki Oden",
+      "revid": 2129723,
+      "url": "https://onepiece.fandom.com/wiki/Kouzuki_Oden?oldid=2129723",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 920,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 22
+      }
+    },
+    {
+      "name": "Krieg",
+      "title": "Krieg",
+      "revid": 2122048,
+      "url": "https://onepiece.fandom.com/wiki/Krieg?oldid=2122048",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 45,
+      "cutoffChapter": 68,
+      "arc": "Baratie Arc",
+      "line": "Krieg is the admiral of the Krieg Pirates, widely reputed as Foul-Play Krieg for his underhanded methods",
+      "lineWords": 17,
+      "birth": {
+        "month": 9,
+        "day": 19
+      }
+    },
+    {
+      "name": "Kuro",
+      "title": "Kuro",
+      "revid": 2130436,
+      "url": "https://onepiece.fandom.com/wiki/Kuro?oldid=2130436",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 23,
+      "cutoffChapter": 41,
+      "arc": "Syrup Village Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 22
+      }
+    },
+    {
+      "name": "Kurozumi Higurashi",
+      "title": "Kurozumi Higurashi",
+      "revid": 2126021,
+      "url": "https://onepiece.fandom.com/wiki/Kurozumi_Higurashi?oldid=2126021",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 965,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 19
+      }
+    },
+    {
+      "name": "Kurozumi Kanjuro",
+      "title": "Kurozumi Kanjuro",
+      "revid": 2125976,
+      "url": "https://onepiece.fandom.com/wiki/Kurozumi_Kanjuro?oldid=2125976",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 700,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 7,
+        "day": 21
+      }
+    },
+    {
+      "name": "Kurozumi Orochi",
+      "title": "Kurozumi Orochi",
+      "revid": 2125871,
+      "url": "https://onepiece.fandom.com/wiki/Kurozumi_Orochi?oldid=2125871",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 927,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 23
+      }
+    },
+    {
+      "name": "Kurozumi Semimaru",
+      "title": "Kurozumi Semimaru",
+      "revid": 2126022,
+      "url": "https://onepiece.fandom.com/wiki/Kurozumi_Semimaru?oldid=2126022",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 965,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 23
+      }
+    },
+    {
+      "name": "Kuzan",
+      "title": "Kuzan",
+      "revid": 2124021,
+      "url": "https://onepiece.fandom.com/wiki/Kuzan?oldid=2124021",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 303,
+      "cutoffChapter": 321,
+      "arc": "Long Ring Long Land Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 21
+      }
+    },
+    {
+      "name": "Kyros",
+      "title": "Kyros",
+      "revid": 2127889,
+      "url": "https://onepiece.fandom.com/wiki/Kyros?oldid=2127889",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 702,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 22
+      }
+    },
+    {
+      "name": "Laffitte",
+      "title": "Laffitte",
+      "revid": 2124022,
+      "url": "https://onepiece.fandom.com/wiki/Laffitte?oldid=2124022",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 234,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 13
+      }
+    },
+    {
+      "name": "Lim",
+      "title": "Lim",
+      "revid": 2092448,
+      "url": "https://onepiece.fandom.com/wiki/Lim?oldid=2092448",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1053,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 2
+      }
+    },
+    {
+      "name": "Limejuice",
+      "title": "Limejuice",
+      "revid": 2119117,
+      "url": "https://onepiece.fandom.com/wiki/Limejuice?oldid=2119117",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": "Limejuice is one of the Senior Officers of the Red Hair Pirates",
+      "lineWords": 12,
+      "birth": null
+    },
+    {
+      "name": "Lindbergh",
+      "title": "Lindbergh",
+      "revid": 2121701,
+      "url": "https://onepiece.fandom.com/wiki/Lindbergh?oldid=2121701",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 904,
+      "cutoffChapter": 908,
+      "arc": "Levely Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 5,
+        "day": 21
+      }
+    },
+    {
+      "name": "Loki",
+      "title": "Loki",
+      "revid": 2131548,
+      "url": "https://onepiece.fandom.com/wiki/Loki?oldid=2131548",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1130,
+      "cutoffChapter": null,
+      "arc": "Elbaph Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Lucky.Roux",
+      "title": "Lucky Roux",
+      "revid": 2124024,
+      "url": "https://onepiece.fandom.com/wiki/Lucky_Roux?oldid=2124024",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 7,
+        "day": 6
+      }
+    },
+    {
+      "name": "Magellan",
+      "title": "Magellan",
+      "revid": 2122729,
+      "url": "https://onepiece.fandom.com/wiki/Magellan?oldid=2122729",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 528,
+      "cutoffChapter": 549,
+      "arc": "Impel Down Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 9
+      }
+    },
+    {
+      "name": "Marco",
+      "title": "Polo Marco",
+      "revid": 2125780,
+      "url": "https://onepiece.fandom.com/wiki/Polo_Marco?oldid=2125780",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 234,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 5
+      }
+    },
+    {
+      "name": "Marshall.D.Teach",
+      "title": "Marshall D. Teach",
+      "revid": 2129711,
+      "url": "https://onepiece.fandom.com/wiki/Marshall_D._Teach?oldid=2129711",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 223,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 3
+      }
+    },
+    {
+      "name": "Miss Buckingham Stussy",
+      "title": "Buckingham Stussy",
+      "revid": 2125959,
+      "url": "https://onepiece.fandom.com/wiki/Buckingham_Stussy?oldid=2125959",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 802,
+      "cutoffChapter": 824,
+      "arc": "Zou Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 12
+      }
+    },
+    {
+      "name": "Miss Doublefinger(Zala)",
+      "title": "Zala",
+      "revid": 2129294,
+      "url": "https://onepiece.fandom.com/wiki/Zala?oldid=2129294",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 155,
+      "cutoffChapter": 217,
+      "arc": "Arabasta Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 7,
+        "day": 30
+      }
+    },
+    {
+      "name": "Mocha",
+      "title": "Mocha",
+      "revid": 2120585,
+      "url": "https://onepiece.fandom.com/wiki/Mocha?oldid=2120585",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 657,
+      "cutoffChapter": 699,
+      "arc": "Punk Hazard Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 6,
+        "day": 28
+      }
+    },
+    {
+      "name": "Mohji",
+      "title": "Mohji",
+      "revid": 2121929,
+      "url": "https://onepiece.fandom.com/wiki/Mohji?oldid=2121929",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 9,
+      "cutoffChapter": 21,
+      "arc": "Orange Town Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 1
+      }
+    },
+    {
+      "name": "Monet",
+      "title": "Monet",
+      "revid": 2130868,
+      "url": "https://onepiece.fandom.com/wiki/Monet?oldid=2130868",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 657,
+      "cutoffChapter": 699,
+      "arc": "Punk Hazard Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 27
+      }
+    },
+    {
+      "name": "Monkey.D.Dragon",
+      "title": "Monkey D. Dragon",
+      "revid": 2127608,
+      "url": "https://onepiece.fandom.com/wiki/Monkey_D._Dragon?oldid=2127608",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 100,
+      "cutoffChapter": 100,
+      "arc": "Loguetown Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 5
+      }
+    },
+    {
+      "name": "Monkey.D.Garp",
+      "title": "Monkey D. Garp",
+      "revid": 2125935,
+      "url": "https://onepiece.fandom.com/wiki/Monkey_D._Garp?oldid=2125935",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 92,
+      "cutoffChapter": 95,
+      "arc": "Arlong Park Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 5,
+        "day": 2
+      }
+    },
+    {
+      "name": "Monkey.D.Luffy",
+      "title": "Monkey D. Luffy",
+      "revid": 2130780,
+      "url": "https://onepiece.fandom.com/wiki/Monkey_D._Luffy?oldid=2130780",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 5,
+        "day": 5
+      }
+    },
+    {
+      "name": "Monster",
+      "title": "Monster",
+      "revid": 2124044,
+      "url": "https://onepiece.fandom.com/wiki/Monster?oldid=2124044",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 31
+      }
+    },
+    {
+      "name": "Morley",
+      "title": "Morley",
+      "revid": 2122927,
+      "url": "https://onepiece.fandom.com/wiki/Morley?oldid=2122927",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 904,
+      "cutoffChapter": 908,
+      "arc": "Levely Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 11
+      }
+    },
+    {
+      "name": "Mr.1(Daz.Bonez)",
+      "title": "Daz Bonez",
+      "revid": 2129297,
+      "url": "https://onepiece.fandom.com/wiki/Daz_Bonez?oldid=2129297",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 160,
+      "cutoffChapter": 217,
+      "arc": "Arabasta Arc",
+      "line": "Mr.1(Daz.Bonez) is a former bounty hunter",
+      "lineWords": 6,
+      "birth": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    {
+      "name": "Mr.2.Bon.Kurei(Bentham)",
+      "title": "Bentham",
+      "revid": 2131533,
+      "url": "https://onepiece.fandom.com/wiki/Bentham?oldid=2131533",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 129,
+      "cutoffChapter": 129,
+      "arc": "Little Garden Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 15
+      }
+    },
+    {
+      "name": "Mr.3(Galdino)",
+      "title": "Galdino",
+      "revid": 2131000,
+      "url": "https://onepiece.fandom.com/wiki/Galdino?oldid=2131000",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 117,
+      "cutoffChapter": 129,
+      "arc": "Little Garden Arc",
+      "line": "Mr.3(Galdino) is a former officer agent of Baroque Works, partnered with \"Miss Goldenweek\" Marianne",
+      "lineWords": 14,
+      "birth": {
+        "month": 3,
+        "day": 3
+      }
+    },
+    {
+      "name": "Ms. All Sunday",
+      "title": "Nico Robin",
+      "revid": 2131354,
+      "url": "https://onepiece.fandom.com/wiki/Nico_Robin?oldid=2131354",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 114,
+      "cutoffChapter": 114,
+      "arc": "Whisky Peak Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 6
+      }
+    },
+    {
+      "name": "Nami",
+      "title": "Nami",
+      "revid": 2131356,
+      "url": "https://onepiece.fandom.com/wiki/Nami?oldid=2131356",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 8,
+      "cutoffChapter": 21,
+      "arc": "Orange Town Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 7,
+        "day": 3
+      }
+    },
+    {
+      "name": "Nefeltari Vivi",
+      "title": "Nefertari Vivi",
+      "revid": 2131446,
+      "url": "https://onepiece.fandom.com/wiki/Nefertari_Vivi?oldid=2131446",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 103,
+      "cutoffChapter": 105,
+      "arc": "Reverse Mountain Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 2
+      }
+    },
+    {
+      "name": "Nekomamushi",
+      "title": "Nekomamushi",
+      "revid": 2124046,
+      "url": "https://onepiece.fandom.com/wiki/Nekomamushi?oldid=2124046",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 809,
+      "cutoffChapter": 824,
+      "arc": "Zou Arc",
+      "line": "Nekomamushi is a feline mink and the former guardian of the Whale Forest on Zou",
+      "lineWords": 15,
+      "birth": {
+        "month": 11,
+        "day": 22
+      }
+    },
+    {
+      "name": "Nico Olvia",
+      "title": "Nico Olvia",
+      "revid": 2125813,
+      "url": "https://onepiece.fandom.com/wiki/Nico_Olvia?oldid=2125813",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 392,
+      "cutoffChapter": 430,
+      "arc": "Enies Lobby Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 6
+      }
+    },
+    {
+      "name": "Nico Robin",
+      "title": "Nico Robin",
+      "revid": 2131354,
+      "url": "https://onepiece.fandom.com/wiki/Nico_Robin?oldid=2131354",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 114,
+      "cutoffChapter": 114,
+      "arc": "Whisky Peak Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 6
+      }
+    },
+    {
+      "name": "Okiku",
+      "title": "Kikunojo",
+      "revid": 2124015,
+      "url": "https://onepiece.fandom.com/wiki/Kikunojo?oldid=2124015",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 913,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 9
+      }
+    },
+    {
+      "name": "Otama",
+      "title": "Kurozumi Tama",
+      "revid": 2126023,
+      "url": "https://onepiece.fandom.com/wiki/Kurozumi_Tama?oldid=2126023",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 911,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 3
+      }
+    },
+    {
+      "name": "Otsuru",
+      "title": "Tsurujo",
+      "revid": 2125105,
+      "url": "https://onepiece.fandom.com/wiki/Tsurujo?oldid=2125105",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 912,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Otsuru is a tea house owner from the Wano Country, as well as the wife of Kin'emon",
+      "lineWords": 17,
+      "birth": {
+        "month": 9,
+        "day": 15
+      }
+    },
+    {
+      "name": "Page One",
+      "title": "Page One",
+      "revid": 2127543,
+      "url": "https://onepiece.fandom.com/wiki/Page_One?oldid=2127543",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 929,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Page One is a former member of the Tobiroppo, the strongest Shinuchi of the Beasts Pirates",
+      "lineWords": 16,
+      "birth": {
+        "month": 2,
+        "day": 10
+      }
+    },
+    {
+      "name": "Peachbeard",
+      "title": "Peachbeard",
+      "revid": 2088305,
+      "url": "https://onepiece.fandom.com/wiki/Peachbeard?oldid=2088305",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 904,
+      "cutoffChapter": 908,
+      "arc": "Levely Arc",
+      "line": "Peachbeard is the epithet of the captain of the Peachbeard Pirates, who are subordinates of the Emperor Blackbeard",
+      "lineWords": 18,
+      "birth": {
+        "month": 3,
+        "day": 27
+      }
+    },
+    {
+      "name": "Penguin",
+      "title": "Penguin",
+      "revid": 2085953,
+      "url": "https://onepiece.fandom.com/wiki/Penguin?oldid=2085953",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": "Penguin is a member of the Heart Pirates",
+      "lineWords": 8,
+      "birth": {
+        "month": 4,
+        "day": 25
+      }
+    },
+    {
+      "name": "Perona",
+      "title": "Perona",
+      "revid": 2124641,
+      "url": "https://onepiece.fandom.com/wiki/Perona?oldid=2124641",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 443,
+      "cutoffChapter": 489,
+      "arc": "Thriller Bark Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 6,
+        "day": 7
+      }
+    },
+    {
+      "name": "Pierre",
+      "title": "Pierre",
+      "revid": 2115606,
+      "url": "https://onepiece.fandom.com/wiki/Pierre?oldid=2115606",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 237,
+      "cutoffChapter": 302,
+      "arc": "Skypiea Arc",
+      "line": "Pierre is a Sky Dot Bird belonging to Gan Fall",
+      "lineWords": 10,
+      "birth": {
+        "month": 10,
+        "day": 8
+      }
+    },
+    {
+      "name": "Portgas.D.Ace",
+      "title": "Portgas D. Ace",
+      "revid": 2127533,
+      "url": "https://onepiece.fandom.com/wiki/Portgas_D._Ace?oldid=2127533",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 154,
+      "cutoffChapter": 154,
+      "arc": "Drum Island Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 1,
+        "day": 1
+      }
+    },
+    {
+      "name": "Queen",
+      "title": "Queen",
+      "revid": 2128383,
+      "url": "https://onepiece.fandom.com/wiki/Queen?oldid=2128383",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 920,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Queen is an All-Star of the Beasts Pirates as one of Kaidou's three closest confidants",
+      "lineWords": 15,
+      "birth": {
+        "month": 7,
+        "day": 13
+      }
+    },
+    {
+      "name": "Raizo",
+      "title": "Raizo",
+      "revid": 2121702,
+      "url": "https://onepiece.fandom.com/wiki/Raizo?oldid=2121702",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 817,
+      "cutoffChapter": 824,
+      "arc": "Zou Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 26
+      }
+    },
+    {
+      "name": "Rakuyo",
+      "title": "Rakuyo",
+      "revid": 2124133,
+      "url": "https://onepiece.fandom.com/wiki/Rakuyo?oldid=2124133",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 553,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 9,
+        "day": 8
+      }
+    },
+    {
+      "name": "Rebecca",
+      "title": "Rebecca",
+      "revid": 2121768,
+      "url": "https://onepiece.fandom.com/wiki/Rebecca?oldid=2121768",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 704,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": "Rebecca is the daughter of Scarlett and Kyros, the niece of Viola and the granddaughter of Riku Doldo III",
+      "lineWords": 19,
+      "birth": {
+        "month": 8,
+        "day": 4
+      }
+    },
+    {
+      "name": "Richie",
+      "title": "Richie",
+      "revid": 2122005,
+      "url": "https://onepiece.fandom.com/wiki/Richie?oldid=2122005",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 9,
+      "cutoffChapter": 21,
+      "arc": "Orange Town Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 7,
+        "day": 23
+      }
+    },
+    {
+      "name": "Rob Lucci",
+      "title": "Rob Lucci",
+      "revid": 2130887,
+      "url": "https://onepiece.fandom.com/wiki/Rob_Lucci?oldid=2130887",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 323,
+      "cutoffChapter": 374,
+      "arc": "Water 7 Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 6,
+        "day": 2
+      }
+    },
+    {
+      "name": "Rocks.D.Xebec",
+      "title": "Rocks D. Xebec",
+      "revid": 2131390,
+      "url": "https://onepiece.fandom.com/wiki/Rocks_D._Xebec?oldid=2131390",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 957,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    },
+    {
+      "name": "Rockstar",
+      "title": "Rockstar",
+      "revid": 2115910,
+      "url": "https://onepiece.fandom.com/wiki/Rockstar?oldid=2115910",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 234,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": "Rockstar is a member of the Red Hair Pirates, being relatively new in the crew two years ago",
+      "lineWords": 18,
+      "birth": {
+        "month": 6,
+        "day": 9
+      }
+    },
+    {
+      "name": "Rodo",
+      "title": "Road",
+      "revid": 2130721,
+      "url": "https://onepiece.fandom.com/wiki/Road?oldid=2130721",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 898,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": "Rodo is a giant from Elbaph",
+      "lineWords": 6,
+      "birth": {
+        "month": 2,
+        "day": 19
+      }
+    },
+    {
+      "name": "Roronoa Zoro",
+      "title": "Roronoa Zoro",
+      "revid": 2131011,
+      "url": "https://onepiece.fandom.com/wiki/Roronoa_Zoro?oldid=2131011",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 3,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 11,
+        "day": 11
+      }
+    },
+    {
+      "name": "Sabo",
+      "title": "Sabo",
+      "revid": 2127001,
+      "url": "https://onepiece.fandom.com/wiki/Sabo?oldid=2127001",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 583,
+      "cutoffChapter": 597,
+      "arc": "Post-War Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 20
+      }
+    },
+    {
+      "name": "Sai",
+      "title": "Sai",
+      "revid": 2115933,
+      "url": "https://onepiece.fandom.com/wiki/Sai?oldid=2115933",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 704,
+      "cutoffChapter": 801,
+      "arc": "Dressrosa Arc",
+      "line": "Sai is a member of the Chinjao Family and the 13th leader of the Happo Navy",
+      "lineWords": 16,
+      "birth": {
+        "month": 8,
+        "day": 13
+      }
+    },
+    {
+      "name": "Sakazuki",
+      "title": "Sakazuki",
+      "revid": 2129695,
+      "url": "https://onepiece.fandom.com/wiki/Sakazuki?oldid=2129695",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 397,
+      "cutoffChapter": 430,
+      "arc": "Enies Lobby Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 16
+      }
+    },
+    {
+      "name": "Sanji",
+      "title": "Sanji",
+      "revid": 2130784,
+      "url": "https://onepiece.fandom.com/wiki/Sanji?oldid=2130784",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 43,
+      "cutoffChapter": 68,
+      "arc": "Baratie Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 2
+      }
+    },
+    {
+      "name": "Sasaki",
+      "title": "Sasaki",
+      "revid": 2127551,
+      "url": "https://onepiece.fandom.com/wiki/Sasaki?oldid=2127551",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 977,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 2,
+        "day": 3
+      }
+    },
+    {
+      "name": "Scratchmen Apoo",
+      "title": "Scratchmen Apoo",
+      "revid": 2122238,
+      "url": "https://onepiece.fandom.com/wiki/Scratchmen_Apoo?oldid=2122238",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": "Scratchmen Apoo is the captain of the On Air Pirates",
+      "lineWords": 10,
+      "birth": {
+        "month": 3,
+        "day": 19
+      }
+    },
+    {
+      "name": "Sengoku",
+      "title": "Sengoku",
+      "revid": 2129335,
+      "url": "https://onepiece.fandom.com/wiki/Sengoku?oldid=2129335",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 234,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": "Sengoku is a former Fleet Admiral of the Marines",
+      "lineWords": 9,
+      "birth": {
+        "month": 5,
+        "day": 9
+      }
+    },
+    {
+      "name": "Shachi",
+      "title": "Shachi",
+      "revid": 2129148,
+      "url": "https://onepiece.fandom.com/wiki/Shachi?oldid=2129148",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": "Shachi is a member of the Heart Pirates",
+      "lineWords": 8,
+      "birth": {
+        "month": 4,
+        "day": 7
+      }
+    },
+    {
+      "name": "Shanks",
+      "title": "Shanks",
+      "revid": 2130686,
+      "url": "https://onepiece.fandom.com/wiki/Shanks?oldid=2130686",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 9
+      }
+    },
+    {
+      "name": "Shiki",
+      "title": "Shiki",
+      "revid": 2129802,
+      "url": "https://onepiece.fandom.com/wiki/Shiki?oldid=2129802",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 0,
+      "cutoffChapter": null,
+      "arc": null,
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 20
+      }
+    },
+    {
+      "name": "Shinobu",
+      "title": "Shinobu",
+      "revid": 2100420,
+      "url": "https://onepiece.fandom.com/wiki/Shinobu?oldid=2100420",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 921,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Shinobu is a kunoichi from Wano Country and a retainer of the Kouzuki Family",
+      "lineWords": 14,
+      "birth": {
+        "month": 10,
+        "day": 23
+      }
+    },
+    {
+      "name": "Shirahoshi",
+      "title": "Shirahoshi",
+      "revid": 2121159,
+      "url": "https://onepiece.fandom.com/wiki/Shirahoshi?oldid=2121159",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 612,
+      "cutoffChapter": 653,
+      "arc": "Fish-Man Island Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 4
+      }
+    },
+    {
+      "name": "Shiryu",
+      "title": "Shiryu",
+      "revid": 2124158,
+      "url": "https://onepiece.fandom.com/wiki/Shiryu?oldid=2124158",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 538,
+      "cutoffChapter": 549,
+      "arc": "Impel Down Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 6,
+        "day": 11
+      }
+    },
+    {
+      "name": "Silvers Rayleigh",
+      "title": "Silvers Rayleigh",
+      "revid": 2131046,
+      "url": "https://onepiece.fandom.com/wiki/Silvers_Rayleigh?oldid=2131046",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 19,
+      "cutoffChapter": 21,
+      "arc": "Orange Town Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 5,
+        "day": 13
+      }
+    },
+    {
+      "name": "Smiley",
+      "title": "Smiley",
+      "revid": 2116762,
+      "url": "https://onepiece.fandom.com/wiki/Smiley?oldid=2116762",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 668,
+      "cutoffChapter": 699,
+      "arc": "Punk Hazard Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 7,
+        "day": 18
+      }
+    },
+    {
+      "name": "Smoker",
+      "title": "Smoker",
+      "revid": 2129110,
+      "url": "https://onepiece.fandom.com/wiki/Smoker?oldid=2129110",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 97,
+      "cutoffChapter": 100,
+      "arc": "Loguetown Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 14
+      }
+    },
+    {
+      "name": "Speed",
+      "title": "Speed",
+      "revid": 2131342,
+      "url": "https://onepiece.fandom.com/wiki/Speed?oldid=2131342",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 917,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Speed is a former Shinuchi of the Beasts Pirates stationed in Bakura Town",
+      "lineWords": 13,
+      "birth": {
+        "month": 12,
+        "day": 11
+      }
+    },
+    {
+      "name": "Streusen",
+      "title": "Streusen",
+      "revid": 2116847,
+      "url": "https://onepiece.fandom.com/wiki/Streusen?oldid=2116847",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 858,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": "Streusen is the executive chef of the Big Mom Pirates, and is also the co-founder of the crew alongside Big Mom herself",
+      "lineWords": 22,
+      "birth": {
+        "month": 4,
+        "day": 27
+      }
+    },
+    {
+      "name": "Stronger",
+      "title": "Stronger",
+      "revid": 2124167,
+      "url": "https://onepiece.fandom.com/wiki/Stronger?oldid=2124167",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 223,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 16
+      }
+    },
+    {
+      "name": "Sugar",
+      "title": "Sugar",
+      "revid": 2125410,
+      "url": "https://onepiece.fandom.com/wiki/Sugar?oldid=2125410",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 682,
+      "cutoffChapter": 699,
+      "arc": "Punk Hazard Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 22
+      }
+    },
+    {
+      "name": "Tony Tony.Chopper",
+      "title": "Tony Tony Chopper",
+      "revid": 2130929,
+      "url": "https://onepiece.fandom.com/wiki/Tony_Tony_Chopper?oldid=2130929",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 134,
+      "cutoffChapter": 154,
+      "arc": "Drum Island Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 12,
+        "day": 24
+      }
+    },
+    {
+      "name": "Trafalgar Law",
+      "title": "Trafalgar D. Water Law",
+      "revid": 2131639,
+      "url": "https://onepiece.fandom.com/wiki/Trafalgar_D._Water_Law?oldid=2131639",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": "Trafalgar Law is a pirate from the North Blue and the captain and doctor of the Heart Pirates",
+      "lineWords": 18,
+      "birth": {
+        "month": 10,
+        "day": 6
+      }
+    },
+    {
+      "name": "Ulti",
+      "title": "Ulti",
+      "revid": 2130867,
+      "url": "https://onepiece.fandom.com/wiki/Ulti?oldid=2130867",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 977,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Ulti is a former member of the Tobiroppo, the six strongest Shinuchi of the Beasts Pirates",
+      "lineWords": 16,
+      "birth": {
+        "month": 1,
+        "day": 4
+      }
+    },
+    {
+      "name": "Urashima",
+      "title": "Urashima",
+      "revid": 2086046,
+      "url": "https://onepiece.fandom.com/wiki/Urashima?oldid=2086046",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 913,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": "Urashima is a yokozuna-ranked sumo wrestler of Wano Country's Flower Capital",
+      "lineWords": 11,
+      "birth": null
+    },
+    {
+      "name": "Usopp",
+      "title": "Usopp",
+      "revid": 2130783,
+      "url": "https://onepiece.fandom.com/wiki/Usopp?oldid=2130783",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 23,
+      "cutoffChapter": 41,
+      "arc": "Syrup Village Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 4,
+        "day": 1
+      }
+    },
+    {
+      "name": "Uta",
+      "title": "Uta",
+      "revid": 2131380,
+      "url": "https://onepiece.fandom.com/wiki/Uta?oldid=2131380",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1055,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 1
+      }
+    },
+    {
+      "name": "Van Augur",
+      "title": "Van Augur",
+      "revid": 2124899,
+      "url": "https://onepiece.fandom.com/wiki/Van_Augur?oldid=2124899",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 222,
+      "cutoffChapter": 236,
+      "arc": "Jaya Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 5
+      }
+    },
+    {
+      "name": "Vasco Shot",
+      "title": "Vasco Shot",
+      "revid": 2124187,
+      "url": "https://onepiece.fandom.com/wiki/Vasco_Shot?oldid=2124187",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 575,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 5
+      }
+    },
+    {
+      "name": "Vegapunk",
+      "title": "Vegapunk",
+      "revid": 2126227,
+      "url": "https://onepiece.fandom.com/wiki/Vegapunk?oldid=2126227",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 684,
+      "cutoffChapter": 699,
+      "arc": "Punk Hazard Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 9
+      }
+    },
+    {
+      "name": "Vergo",
+      "title": "Vergo",
+      "revid": 2121704,
+      "url": "https://onepiece.fandom.com/wiki/Vergo?oldid=2121704",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 671,
+      "cutoffChapter": 699,
+      "arc": "Punk Hazard Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 7,
+        "day": 5
+      }
+    },
+    {
+      "name": "Vinsmoke Reiju",
+      "title": "Vinsmoke Reiju",
+      "revid": 2131014,
+      "url": "https://onepiece.fandom.com/wiki/Vinsmoke_Reiju?oldid=2131014",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 826,
+      "cutoffChapter": 902,
+      "arc": "Whole Cake Island Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 11,
+        "day": 30
+      }
+    },
+    {
+      "name": "Wang Zhi",
+      "title": "Ochoku",
+      "revid": 2108955,
+      "url": "https://onepiece.fandom.com/wiki/Ochoku?oldid=2108955",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1155,
+      "cutoffChapter": null,
+      "arc": "Elbaph Arc",
+      "line": "Wang Zhi is a former member of the Rocks Pirates",
+      "lineWords": 10,
+      "birth": null
+    },
+    {
+      "name": "Whitey Bay",
+      "title": "Whitey Bay",
+      "revid": 2129987,
+      "url": "https://onepiece.fandom.com/wiki/Whitey_Bay?oldid=2129987",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 556,
+      "cutoffChapter": 580,
+      "arc": "Marineford Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 31
+      }
+    },
+    {
+      "name": "Who's.Who",
+      "title": "Who's-Who",
+      "revid": 2127549,
+      "url": "https://onepiece.fandom.com/wiki/Who's-Who?oldid=2127549",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 977,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 3,
+        "day": 15
+      }
+    },
+    {
+      "name": "Wire",
+      "title": "Wire",
+      "revid": 2116975,
+      "url": "https://onepiece.fandom.com/wiki/Wire?oldid=2116975",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 500,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": "Wire is a member of the Kid Pirates",
+      "lineWords": 8,
+      "birth": {
+        "month": 7,
+        "day": 18
+      }
+    },
+    {
+      "name": "X.Drake",
+      "title": "X Drake",
+      "revid": 2128699,
+      "url": "https://onepiece.fandom.com/wiki/X_Drake?oldid=2128699",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 498,
+      "cutoffChapter": 513,
+      "arc": "Sabaody Archipelago Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 10,
+        "day": 24
+      }
+    },
+    {
+      "name": "Yamato",
+      "title": "Yamato",
+      "revid": 2124199,
+      "url": "https://onepiece.fandom.com/wiki/Yamato?oldid=2124199",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 971,
+      "cutoffChapter": 1057,
+      "arc": "Wano Country Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 11,
+        "day": 3
+      }
+    },
+    {
+      "name": "Yasopp",
+      "title": "Yasopp",
+      "revid": 2128258,
+      "url": "https://onepiece.fandom.com/wiki/Yasopp?oldid=2128258",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 1,
+      "cutoffChapter": 7,
+      "arc": "Romance Dawn Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": {
+        "month": 8,
+        "day": 2
+      }
+    },
+    {
+      "name": "Zephyr",
+      "title": "Z",
+      "revid": 2124785,
+      "url": "https://onepiece.fandom.com/wiki/Z?oldid=2124785",
+      "fetchedAt": "2026-09-06",
+      "debutChapter": 691,
+      "cutoffChapter": 699,
+      "arc": "Punk Hazard Arc",
+      "line": null,
+      "lineWords": null,
+      "birth": null
+    }
+  ]
+}

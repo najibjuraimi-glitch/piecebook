@@ -56,10 +56,12 @@
  *      `status` carries a chap= ≤ C; else that clause and the rest go.
  *   5. Trailing clauses go until the line is ≤ 22 words; under six words or
  *      no finite verb, no line. Never paraphrase, never add a word.
- * Cleaning: templates go ({{Nihongo|X|…}} keeps X, its English term, since
- * the wiki wraps words such as Zoro's "master swordsman" in it), links keep
- * their label, bold and italics go, parenthetical Japanese goes, comma-set
- * "also known as …" asides go, trailing commas and double spaces go.
+ * Cleaning: templates go, except the ones that wrap a displayed word, which
+ * keep it ({{Nihongo|X|…}} and {{Ruby|X|…}} keep X, the wiki wraps words such
+ * as Zoro's "master swordsman" in Nihongo; {{W|target|label}} is a Wikipedia
+ * link and keeps its label, as Urashima's "yokozuna"); links keep their
+ * label, bold and italics go, parenthetical Japanese goes, comma-set "also
+ * known as …" asides go, trailing commas and double spaces go.
  *
  * Writes data/wiki/lines.json (slim, bundled by the app: name, title, revid
  * permalink, fetch date, debut, cutoff, arc, line, word count, birth) under a
@@ -622,7 +624,10 @@ function cleanText(raw) {
     }
     const tpl = s.slice(m.index, end)
     const { name, positional } = parseTemplate(tpl)
-    const keep = /^nihongo$/i.test(name) ? positional[0] ?? '' : ''
+    // Templates that wrap a displayed word keep it; everything else (Qref, B, For, …) goes.
+    let keep = ''
+    if (/^(nihongo|ruby)$/i.test(name)) keep = positional[0] ?? ''
+    else if (/^(w|wp|wikipedia)$/i.test(name)) keep = (positional[1] ?? positional[0] ?? '').replace(/#.*$/, '')
     s = s.slice(0, m.index) + keep + s.slice(end)
   }
   s = s.replace(/\[\[\s*(?:File|Image|Category):[^\]]*\]\]/gi, '')
