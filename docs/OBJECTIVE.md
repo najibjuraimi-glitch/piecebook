@@ -35,6 +35,7 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 
 ## Hypotheses, not taken as given
 - 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Next-phase interest only: ringgit, rupiah, and language translation *may* matter. Seat collectors in those markets in the next research round before any map row besides this decision opens.
+- 11.0 — Fandom is the thin pillar (Jib, 6 Sep 2026; Jib: challenge him). He then asked for a dedicated Belong page into collect and play. No chapter or anime summaries. No wiki portal. No fifth tab. First candidate: `/belong` from shipped surfaces. See `docs/V1-FANDOM-REEVAL.md`.
 
 ## Decisions parked on the board
 - 6.1 — where decks live (fourth tab vs under Collection)
@@ -42,4 +43,4 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 6.6 — decklists: link only, or import as a source
 
 ## Task list
-`docs/growth-map.csv` holds every task (49 rows) with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. Rows marked `NO` (10.0) or `NO (quota)` (7.6 events) are not in ClickUp; do not create 10.0 until research in MY and ID asks. 5.4 and 9.1 built 6 Sep 2026. The dependencies to wire are in the `Depends on` column.
+`docs/growth-map.csv` holds every task (50 rows) with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. Rows marked `NO` (10.0, 11.0) or `NO (quota)` (7.6 events) are not in ClickUp; do not create 10.0 or 11.0 until research asks. 5.4 and 9.1 shipped 6 Sep 2026 as PR #26. The dependencies to wire are in the `Depends on` column.
