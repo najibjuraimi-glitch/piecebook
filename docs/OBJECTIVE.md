@@ -35,7 +35,7 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 
 ## Hypotheses, not taken as given
 - 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Next-phase interest only: ringgit, rupiah, and language translation *may* matter. Seat collectors in those markets in the next research round before any map row besides this decision opens.
-- 11.1 — Fandom page (Jib, 6 Sep 2026). A dedicated `/belong` like the One Piece Wiki: chapter/anime summaries, a wiki portal, a fruit Pokédex, a second character book, a reader cutoff, a fifth tab. Draft 11 is in flight, not approved. No ClickUp until Jib asks. See `docs/V1-FANDOM-PAGE-UI.md`.
+- 11.1 — Fandom page (Jib, 6 Sep 2026). A dedicated `/belong` like the One Piece Wiki: chapter/anime summaries, a wiki portal, a fruit Pokédex, a second character book, a reader cutoff, a fifth tab **World**. Draft 11 is in flight, not approved. No ClickUp until Jib asks. See `docs/V1-FANDOM-PAGE-UI.md`.
 
 ## Decisions parked on the board
 - 6.1 — where decks live (fourth tab vs under Collection)

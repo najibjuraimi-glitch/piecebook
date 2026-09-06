@@ -12,7 +12,7 @@ const LINKS = [
   { to: '/collection', label: 'Collection', match: (p: string) => p.startsWith('/collection') },
   { to: '/decks', label: 'Decks', match: (p: string) => p.startsWith('/decks') },
   { to: '/portfolio', label: 'Portfolio', match: (p: string) => p.startsWith('/portfolio') },
-  { to: '/belong', label: 'Belong', match: isBelongSection },
+  { to: '/belong', label: 'World', match: isBelongSection },
 ]
 
 /**

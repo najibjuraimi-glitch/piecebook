@@ -24,11 +24,13 @@ Live `/belong` on main is the end state. This branch is the draft. Nothing merge
 
 **Route.** `/belong`. Sub-routes `/belong/story`, `/belong/people`, `/belong/fruits`. The mock is the page: there is no `/belong-preview`.
 
-**Fifth tab.** TabBar and TopBar gain **Belong** after Portfolio. Active on `/belong` and its rooms. Phone 390 has five labels; they stay one line (`Collection` is the longest). The icon is an open book. `/start` still lights nothing. Character and artist pages stay in the Sets tree (the print book).
+**Fifth tab.** TabBar and TopBar gain **World** after Portfolio. Active on `/belong` and its rooms. Phone 390 has five labels; they stay one line (`Collection` is the longest). The icon is an open book. `/start` still lights nothing. Character and artist pages stay in the Sets tree (the print book).
 
-**Start here.** The Belong door goes to `/belong`, not `/?view=timeline`. Copy: *The story, the people, the fruits, and the game — as far as you have read.*
+**Name on the glass (Jib, 6 Sep 2026).** The fifth tab, the portal title, Start here’s third door, and the room crumbs are **World**. Wiki, Fandom, Story, and Belong are not chrome. Story stays a room. Belong stays the pillar in the docs. The route stays `/belong`.
 
-**Portal.** Title `Belong`. Subline `The story, the people, the fruits, and the game.` Then the cutoff chips. Then four doors in the Start-here card shape, no accent:
+**Start here.** The World door goes to `/belong`, not `/?view=timeline`. Copy: *The story, the people, the fruits, and the game — as far as you have read.*
+
+**Portal.** Title `World`. Subline `The story, the people, the fruits, and the game.` Then the cutoff chips. Then four doors in the Start-here card shape, no accent:
 
 | Door | Goes | Question |
 |---|---|---|
@@ -92,8 +94,8 @@ Device date is still the only date for On This Day.
 - `seed:check` fails a missing licence, a summary under six words, a localizer credit in a fruit name, or Imu as an eater.
 
 ## Decisions (draft — for reviewers, then Jib)
-1. `/belong` is the fandom home; the mock is the live route; fifth tab **Belong**.
-2. Start here Belong opens `/belong`.
+1. `/belong` is the fandom home; the mock is the live route; fifth tab **World**.
+2. Start here World opens `/belong`.
 3. Summaries are the wiki Story Arcs paragraph plus chapter and episode ranges, gated by a finished-arc cutoff. No authored blurbs. No official synopses. No chapter-page titles passed off as plot.
 4. The fruit dex is Char Box fields on asked names, first line only, no later-name, no Imu. Not a clone of every fruit on the wiki.
 5. The people book is printed Character / Leader names into the pages we already have.
@@ -121,6 +123,6 @@ Device date is still the only date for On This Day.
 - Fetching every remaining printed name so the fruit dex and who-is cover the whole roster.
 - Per-chapter or per-episode plot (no licensed, automatable source that is actually a plot).
 - A live link to the wiki article.
-- Lighting Belong on `/characters/:name` (those pages stay the Sets print book).
+- Lighting World on `/characters/:name` (those pages stay the Sets print book).
 - Egghead as its own cutoff chip (Wano is 1057; Egghead is 1125; Now covers both).
 - Authored Straw Hat lines.

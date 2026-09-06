@@ -6,7 +6,7 @@ const TABS = [
   { to: '/collection', label: 'Collection', icon: CollectionIcon, match: (p: string) => p.startsWith('/collection') },
   { to: '/decks', label: 'Decks', icon: DecksIcon, match: (p: string) => p.startsWith('/decks') },
   { to: '/portfolio', label: 'Portfolio', icon: PortfolioIcon, match: (p: string) => p.startsWith('/portfolio') },
-  { to: '/belong', label: 'Belong', icon: BelongIcon, match: isBelongSection },
+  { to: '/belong', label: 'World', icon: BelongIcon, match: isBelongSection },
 ]
 
 export function TabBar({ pathname }: { pathname: string }) {

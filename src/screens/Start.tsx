@@ -4,14 +4,15 @@ import { ChevronRight } from '../components/SetTile'
 import { markStarted } from '../store/started'
 
 /**
- * Start here (8.1): the wordmark, then one door per pillar with the pillar word
- * as eyebrow and its question in ink. No accent on any door, nothing lit in the
- * tab bar, nothing remembered but the fact that the visitor has been here.
+ * Start here (8.1 / 11.1): the wordmark, then three doors. Collect and Play keep
+ * the pillar words. The third door is World — the house name on the glass, not
+ * the pillar word Belong. No accent on any door, nothing lit in the tab bar,
+ * nothing remembered but the fact that the visitor has been here.
  */
 const DOORS = [
   { pillar: 'Collect', question: 'What you have and what it is worth today.', to: '/' },
   { pillar: 'Play', question: 'Learn the game in five sentences, build a deck from your cards, check it against the rules.', to: '/decks' },
-  { pillar: 'Belong', question: 'The story, the people, the fruits, and the game — as far as you have read.', to: '/belong' },
+  { pillar: 'World', question: 'The story, the people, the fruits, and the game — as far as you have read.', to: '/belong' },
 ]
 
 const LINK = 'text-ink underline decoration-line underline-offset-2 transition-colors duration-150 ease-out hover:decoration-ink'

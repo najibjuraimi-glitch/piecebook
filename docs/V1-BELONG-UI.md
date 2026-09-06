@@ -41,7 +41,7 @@ No prices, no stories, no art. `id="coming-soon"` sits on the first upcoming row
 **Screen.** The wordmark as the title, then three doors as cards, each with the pillar word as a muted eyebrow and its question in ink, a chevron, no accent on any of them:
 - **Collect** — What you have and what it is worth today. → `/`
 - **Play** — Learn the game in five sentences, build a deck from your cards, check it against the rules. → `/decks`
-- **Belong** — Every set in order, who drew each card, who is on it, what is coming next. → `/?view=timeline`
+- **Belong** — Every set in order, who drew each card, who is on it, what is coming next. → `/?view=timeline` (8.1 as shipped). Draft 11 replaces this door’s eyebrow with **World** and its destination with `/belong`.
 
 Under them, in ink: `New to the game? Play has the rules in five sentences.` (the sentence links to `/learn`) and the trust line `Nothing here is invented: prices from TCGplayer, cards from Limitless, dates from Bandai. Read how prices work.` (the last words link to `/about-prices`). Then `Just show me the sets`, a 44px link to `/`. The TopBar and TabBar light nothing on `/start`. A single quiet **Start here ›** row closes Sets home in the tiles view, under the starter decks, for whoever skipped it.
 

@@ -31,7 +31,7 @@ export function BelongScreen() {
 
   return (
     <Screen>
-      <ScreenTitle title="Belong" subline="The story, the people, the fruits, and the game." />
+      <ScreenTitle title="World" subline="The story, the people, the fruits, and the game." />
 
       <ReaderCutoff className="mb-8" explain />
 

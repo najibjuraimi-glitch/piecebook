@@ -15,7 +15,7 @@ export function BelongStoryScreen() {
 
   return (
     <Screen>
-      <BackBar crumbs={[{ label: 'Belong', to: '/belong' }, { label: 'Story' }]} fallbackTo="/belong" />
+      <BackBar crumbs={[{ label: 'World', to: '/belong' }, { label: 'Story' }]} fallbackTo="/belong" />
       <header className="mb-6">
         <h1 className="text-display text-ink">Story</h1>
         <p className="mt-1 max-w-[60ch] text-body text-muted">
