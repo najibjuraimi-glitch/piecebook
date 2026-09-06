@@ -11,7 +11,9 @@ import { markStarted } from '../store/started'
  * Start here (lenses v3): visitor language first. The wordmark names One Piece
  * cards; the doors are jobs a new tab can read (find, learn, story) — Collect,
  * Play and World stay muted house names, not the headline. Each door carries
- * art we already serve (TCGplayer box, Limitless card). No accent.
+ * art we already serve (TCGplayer box, Limitless card). On the phone the art
+ * is a 96px chip so all three jobs sit on the first fold; from tablet it is a
+ * 3:2 band like a set tile. No accent.
  */
 const FIND_BOX: RosterSet | undefined = cheapestReleasedBox() ?? ROSTER.find((s) => s.setCode === 'OP-01')
 const LEARN_BOX: RosterSet | undefined =
@@ -22,7 +24,7 @@ const DOORS = [
   {
     house: 'Collect',
     title: 'Find a card or a box',
-    question: 'Every English set, with dated seed prices. Then what you have and what it is worth today.',
+    question: 'Every English set, with dated prices. Then what you have and what it is worth today.',
     to: '/',
     art: { kind: 'box' as const, set: FIND_BOX },
   },
@@ -56,14 +58,14 @@ export function StartScreen() {
 
   return (
     <Screen>
-      <header className="mb-8 pt-2">
+      <header className="mb-6 pt-2">
         <h1 className="text-display tracking-[-0.01em] text-ink" aria-label="Piecebook">
           Piecebook
         </h1>
         <p className="mt-2 max-w-[40ch] text-body text-ink">One Piece cards. Prices, the game, and the story.</p>
       </header>
 
-      <form role="search" onSubmit={find} className="mb-8">
+      <form role="search" onSubmit={find} className="mb-6">
         <SearchField
           value={query}
           onChange={setQuery}
@@ -78,14 +80,16 @@ export function StartScreen() {
             <Link
               to={d.to}
               onClick={markStarted}
-              className="block h-full overflow-hidden rounded-2xl border border-line bg-surface shadow-paper transition-transform duration-150 ease-out active:scale-[0.99]"
+              className="flex h-full items-center gap-3 overflow-hidden rounded-2xl border border-line bg-surface p-3 shadow-paper transition-transform duration-150 ease-out active:scale-[0.99] tablet:flex-col tablet:items-stretch tablet:gap-0 tablet:p-0"
             >
               <DoorArt art={d.art} />
-              <span className="flex items-start justify-between gap-4 p-5">
+              <span className="flex min-w-0 flex-1 items-start justify-between gap-3 tablet:p-5">
                 <span className="min-w-0">
                   <span className="block text-meta font-medium uppercase tracking-[0.08em] text-muted">{d.house}</span>
-                  <span className="mt-1.5 block text-title text-ink">{d.title}</span>
-                  <span className="mt-1 block text-body text-ink">{d.question}</span>
+                  <span className="mt-1 block text-[17px] font-semibold leading-6 text-ink tablet:mt-1.5 tablet:text-title">
+                    {d.title}
+                  </span>
+                  <span className="mt-0.5 block text-meta text-ink tablet:mt-1 tablet:text-body">{d.question}</span>
                 </span>
                 <ChevronRight className="h-5 w-5 shrink-0 self-center text-muted" />
               </span>
@@ -122,8 +126,9 @@ type DoorArtProps =
   | { kind: 'card'; card: Card | undefined }
 
 /**
- * Top band of a Start door. Box renders letterbox on white like a set tile.
- * The story door uses a printed card we already show (not wiki or fruit art).
+ * Art on a Start door. Phone: 96px chip so all three jobs stay on the first
+ * fold. Tablet: 3:2 band, letterboxed on white like a set tile. The story door
+ * uses a printed card we already show (not wiki or fruit art).
  */
 function DoorArt({ art }: { art: DoorArtProps }) {
   const [loaded, setLoaded] = useState(false)
@@ -141,7 +146,11 @@ function DoorArt({ art }: { art: DoorArtProps }) {
         : ''
 
   return (
-    <div className={`relative aspect-[3/2] w-full overflow-hidden ${artShown ? 'bg-white' : 'bg-[#EFEBE3]'}`}>
+    <div
+      className={`relative h-24 w-24 shrink-0 overflow-hidden rounded-xl tablet:aspect-[3/2] tablet:h-auto tablet:w-full tablet:rounded-none ${
+        artShown ? 'bg-white' : 'bg-[#EFEBE3]'
+      }`}
+    >
       {showArt && src && (
         <img
           src={src}
@@ -150,13 +159,13 @@ function DoorArt({ art }: { art: DoorArtProps }) {
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}
           className={`h-full w-full transition-opacity duration-200 ease-out ${
-            art.kind === 'card' ? 'object-cover object-top' : 'object-contain p-3'
+            art.kind === 'card' ? 'object-cover object-top' : 'object-contain p-1.5 tablet:p-3'
           } ${loaded ? 'opacity-100' : 'opacity-0'}`}
         />
       )}
       {!artShown && (
-        <div className="absolute inset-0 flex items-end p-5" aria-hidden="true">
-          <p className="text-display text-ink">
+        <div className="absolute inset-0 flex items-end p-2 tablet:p-5" aria-hidden="true">
+          <p className="text-[13px] font-semibold leading-4 text-ink tablet:text-display">
             {art.kind === 'box' ? (art.set?.setCode ?? 'Box') : (art.card?.cardNumber ?? 'Card')}
           </p>
         </div>

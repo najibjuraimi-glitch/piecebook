@@ -25,7 +25,7 @@ Jib then sat as a new tab (6 Sep): Collect / Play / World are *our* words. Colle
 
 ## v3 on the glass
 
-**Start.** Wordmark, then a visitor subline: *One Piece cards. Prices, the game, and the story.* Search field: `Find a card or a box` → `/?q=` (existing Sets search) and marks started. Three doors as set-tile cards — art we already serve, visitor title as the big type, house name as a muted eyebrow only:
+**Start.** Wordmark, then a visitor subline: *One Piece cards. Prices, the game, and the story.* Search field: `Find a card or a box` → `/?q=` (existing Sets search) and marks started. Three doors — visitor title as the big type, house name as a muted eyebrow only. On the phone each door is a row with a 96px product chip so all three jobs sit on the first fold; from tablet each door is a set-tile card with a 3:2 art band. Art we already serve:
 
 | Eyebrow | Title | Art | Opens |
 |---|---|---|---|
