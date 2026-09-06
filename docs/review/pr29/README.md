@@ -1,4 +1,4 @@
-# PR #29 — Phase 9.1 Fandom page (draft)
+# PR #29 — Phase 9.1 Fandom page
 
 Phone 390 (deviceScaleFactor 2) and wide 1280 against `npx vite preview` of this branch. Console clean. Chrome says **World**. Route is `/belong`. Belong does not appear on the glass.
 
@@ -15,4 +15,4 @@ Phone 390 (deviceScaleFactor 2) and wide 1280 against `npx vite preview` of this
 | `phone-who-mihawk-wano.png` | Character page stays the Sets print book; who-is follows the chip |
 | `wide-start.png` | Start here doors on 1280 |
 
-Ten-reviewer notes: `REVIEWERS.md`. Spec: `docs/V1-FANDOM-PAGE-UI.md`. Not approved.
+Ten-reviewer notes: `REVIEWERS.md`. Spec: `docs/V1-FANDOM-PAGE-UI.md`. Approved and merged 6 Sep 2026.

@@ -1,6 +1,6 @@
 # Draft 11 — ten simulated reviewers (6 Sep 2026)
 
-Each seat: first impression · top 5 frictions with severity · 3 things that work · one trade. Domain expert is the lore encyclopedist. Non-English seat is the Tokyo JP/EN collector. Count-of-ten is in `docs/V1-FANDOM-PAGE-UI.md`. Not approved.
+Each seat: first impression · top 5 frictions with severity · 3 things that work · one trade. Domain expert is the lore encyclopedist. Non-English seat is the Tokyo JP/EN collector. Count-of-ten is in `docs/V1-FANDOM-PAGE-UI.md`. Approved 6 Sep 2026.
 
 ## 1. Lore encyclopedist (domain expert)
 **First impression.** A quiet Story Arcs index that knows a chapter page is a title, not a plot. Luffy’s fruit is Gum-Gum, not Nika.

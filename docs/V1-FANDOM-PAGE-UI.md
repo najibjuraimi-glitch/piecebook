@@ -1,8 +1,8 @@
 # Piecebook V1 — Fandom page
-(Design addendum, draft 11 v2 after ten reviewers, 6 Sep 2026. Not approved. Not for merge.)
+(Design addendum, draft 11 v2 after ten reviewers, 6 Sep 2026; approved by Jib 6 Sep 2026 SGT)
 
-Owner: Code as interim Cards, drafted from Jib’s instruction to put a fandom page like [One Piece Wiki](https://onepiece.fandom.com/wiki/One_Piece_Wiki) on Piecebook, and from rendered mockups on `cursor/fandom-page-draft-f694`  
-For: Design (critique), ten reviewers, then Jib  
+Owner: Code as interim Cards, drafted from Jib’s instruction to put a fandom page like [One Piece Wiki](https://onepiece.fandom.com/wiki/One_Piece_Wiki) on Piecebook, and from rendered mockups on `cursor/fandom-page-draft-f694`; approved by Jib 6 Sep 2026 SGT  
+For: Code (implement), Design (critique)  
 Covers growth-map **9.1** (fandom home): `/belong`, a fifth tab, a story index (titles and ranges, no plot), a wiki portal, a fruit log, a second character book, a reader cutoff  
 Reads with: `V1-DESIGN-PACK.md`, `V1-FANDOM-UI.md` (7.7–7.11), `V1-BELONG-UI.md` (7.2 timeline, 8.1 Start here), `V1-FIND-UI.md` (7.4 character pages), `seed-sources.md`
 
@@ -11,7 +11,7 @@ This is the page Jib asked for after the Belong-directory draft was the wrong sh
 ## Why this page
 The three pillars are up. Fandom is the weakest. Jib’s journey is manga → anime → collect → play. He wants a dedicated fandom page that sends people into collect and play, and he named the rooms this draft had been refusing: chapter or anime summaries, a wiki portal, a stored log of fruits and people (he said “Pokédex” as the example of that job, not the word on the glass), a reader cutoff, a fifth tab, live `/belong` on main.
 
-Live `/belong` on main is the end state. This branch is the draft. Nothing merges until Jib says approved and then “merge N”.
+Live `/belong` on main is the end state. Approved and merged 6 Sep 2026 as PR #29.
 
 ## What we will not do
 - Clone the wiki’s ads, art, polls, or “On This Day” chrome. On This Day already lives under the timeline Today rule (7.9) and is reused here as the same component.
@@ -94,7 +94,7 @@ Device date is still the only date for On This Day.
 - `scripts/wiki-belong-refresh.mjs` (`npm run wiki:belong`): Story Arcs once (titles and ranges only), then two parse calls per mapped name for the Char Box, 120 ms, same User-Agent. Writes `data/wiki/summaries.json` and `data/wiki/fruits.json` under CC BY-SA 3.0.
 - `seed:check` fails a missing licence, a stored plot paragraph, a localizer credit in a fruit name, or Imu as an eater.
 
-## Decisions (draft — for reviewers, then Jib)
+## Decisions (approved 6 Sep 2026)
 1. `/belong` is the fandom home; the mock is the live route; fifth tab **World**.
 2. Start here World opens `/belong`. Start here names that Piecebook is unofficial.
 3. Story is an index: titles plus chapter and episode ranges. No wiki paragraphs. No authored blurbs. No official synopses. No chapter-page titles passed off as plot. Jib picked this 6 Sep 2026.
@@ -102,7 +102,7 @@ Device date is still the only date for On This Day.
 5. The people log is printed Character / Leader names with stored fruit and debut when we have them, into the print pages we already have.
 6. Default cutoff is Debut arc: who-is unchanged, fruits closed, story index open. People is the full print book until a saga chip is on.
 7. No wiki images. No wiki article links. Licence URL only. The licence line names the work and revid.
-8. Live on `main` waits on “approved” and “merge N”.
+8. Live on `main` as PR #29, 6 Sep 2026.
 
 ## Research → response (ten reviewers: lore encyclopedist, Tokyo JP/EN collector, new fan mid-East-Blue, copy editor, product designer, phone reader, card collector, budget parent, low-vision collector, Singapore store owner)
 
