@@ -29,6 +29,7 @@
  *     after 3 silent days), every stored line ≤22 words and without !
  *   - fx-usd-sgd.json (5.4): ECB source, positive rate equal to EUR/SGD ÷
  *     EUR/USD, asOf an ISO day; missing or older than 4 weekdays fails
+ *   - health.json (9.1): asOf an ISO day; warn if missing or more than 8 days old
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -350,6 +351,24 @@ if (!existsSync(fxPath)) {
   const today = new Date().toISOString().slice(0, 10)
   const age = weekdaysAfter(fx.asOf, today)
   if (age > FX_WEEKDAYS) fail(`fx-usd-sgd.json last dated ${fx.asOf}, ${age} weekdays ago; run npm run seed:refresh`)
+}
+
+// Health (9.1): the weekly page. Warn if the file is missing or more than
+// 8 calendar days old; do not invent a figure to fill it.
+const HEALTH_STALE_DAYS = 8
+const healthPath = join(DATA, 'health.json')
+if (!existsSync(healthPath)) {
+  warn('health.json is missing; run npm run seed:refresh')
+} else {
+  const health = JSON.parse(readFileSync(healthPath, 'utf8'))
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(health.asOf ?? '')) fail('health.json: asOf must be an ISO day')
+  else {
+    const age = Math.floor((Date.now() - Date.parse(`${health.asOf}T00:00:00Z`)) / 86_400_000)
+    if (age > HEALTH_STALE_DAYS) warn(`health.json last dated ${health.asOf}, ${age} days ago; run npm run seed:refresh`)
+  }
+  if (!Array.isArray(health.unpriced)) fail('health.json: unpriced must be a list')
+  if (!Array.isArray(health.exclusions)) fail('health.json: exclusions must be a list')
+  if (!Array.isArray(health.warnings)) fail('health.json: warnings must be a list')
 }
 
 for (const w of warnings) console.warn(`warn: ${w}`)

@@ -5,8 +5,9 @@
  *   npm run seed:refresh                 # every set on the roster
  *   npm run seed:refresh -- --sets OP-17,EB-04
  *   npm run seed:refresh -- --dry-run    # report only, write nothing
- *   npm run seed:refresh -- --as-of 2026-09-05
+ *   npm run seed:refresh -- --as-of 2026-09-06
  *   npm run seed:refresh -- --boxes-only # only the TCGCSV step: box prices, upcoming-set discovery, Limitless code probe
+ *   npm run seed:refresh -- --health-only # rewrite data/health.json from the files we already hold
  *
  * Source: https://onepiece.limitlesstcg.com/cards/en/{slug}?display=full&show=all&per-page=all
  * (one `card-page-main` block per print). Rules, kept identical to the first
@@ -29,6 +30,8 @@
  *
  * Currency (5.4): one pull of the ECB euro foreign-exchange reference rates
  * writes data/fx-usd-sgd.json (SGD per USD = EUR/SGD ÷ EUR/USD, cube date).
+ * Health (9.1): writes data/health.json from the files — counts, named
+ * unpriced prints, named exclusions — never a guessed figure.
  *
  * Upcoming sets (7.5): the TCGCSV step also scans every One Piece group for a
  * "… Booster Box" product on presale that is not on the roster yet and adds it
@@ -82,6 +85,7 @@ const flag = (name) => {
 const DRY = args.includes('--dry-run')
 const NO_HISTORY = args.includes('--no-history')
 const BOXES_ONLY = args.includes('--boxes-only') // only snapshot the roster's box prices; no Limitless fetch
+const HEALTH_ONLY = args.includes('--health-only') // rewrite data/health.json from the files we already hold
 const AS_OF = flag('--as-of') ?? new Date().toISOString().slice(0, 10)
 const ONLY = flag('--sets')?.split(',').map((s) => s.trim().toUpperCase())
 
@@ -415,6 +419,104 @@ async function refreshFx() {
   console.log(`  fx-usd-sgd.json: S$${rate.toFixed(4)} to US $1 · ECB ${time}`)
 }
 
+function mondayOf(iso) {
+  const d = new Date(`${iso}T00:00:00Z`)
+  const back = d.getUTCDay() === 0 ? 6 : d.getUTCDay() - 1
+  d.setUTCDate(d.getUTCDate() - back)
+  return d.toISOString().slice(0, 10)
+}
+
+/**
+ * 9.1: named facts and named gaps from the files we hold. A gap is named,
+ * not filled. The page is the weekly read; this just writes the dated cache.
+ */
+function writeHealth(asOf) {
+  const files = readdirSync(DATA).filter((f) => f.endsWith('-en-seed.csv')).sort()
+  const unpriced = []
+  let rows = 0
+  let cardPricesAsOf = ''
+  for (const f of files) {
+    for (const r of parseCsv(readFileSync(join(DATA, f), 'utf8'))) {
+      rows++
+      if (r.as_of && r.as_of > cardPricesAsOf) cardPricesAsOf = r.as_of
+      if (r.market_usd === '' || r.market_usd == null) {
+        unpriced.push({ setCode: r.set_code, cardNumber: r.card_number, name: r.name })
+      }
+    }
+  }
+  unpriced.sort((a, b) => a.cardNumber.localeCompare(b.cardNumber))
+
+  let boxNewest = ''
+  const boxFile = join(DATA, 'box-price-history.csv')
+  if (existsSync(boxFile)) {
+    for (const r of parseCsv(readFileSync(boxFile, 'utf8'))) {
+      if (r.as_of && r.as_of > boxNewest) boxNewest = r.as_of
+    }
+  }
+
+  const versionNote = readFileSync(join(DATA, 'SEED-VERSION.txt'), 'utf8').split('\n')[0] ?? ''
+
+  let wiki = { fetchedAt: '', asked: 0, mapped: 0, lines: 0, births: 0 }
+  const wikiPath = join(DATA, 'wiki/lines.json')
+  if (existsSync(wikiPath)) {
+    const w = JSON.parse(readFileSync(wikiPath, 'utf8'))
+    const entries = Array.isArray(w.entries) ? w.entries : []
+    wiki = {
+      fetchedAt: typeof w.fetchedAt === 'string' ? w.fetchedAt : '',
+      asked: entries.length,
+      mapped: entries.filter((e) => e.title).length,
+      lines: entries.filter((e) => typeof e.line === 'string' && e.line).length,
+      births: entries.filter((e) => e.birth).length,
+    }
+  }
+
+  const intros = JSON.parse(readFileSync(join(DATA, 'set-intros.json'), 'utf8'))
+  const introBy = new Map((Array.isArray(intros) ? intros : []).map((i) => [i.setCode, i]))
+  const exclusions = []
+  for (const s of roster) {
+    if (s.product !== 'booster_box') continue
+    if (!introBy.get(s.setCode)?.introTheme) {
+      exclusions.push(`${s.setCode} has no story line: Bandai has no English product page yet.`)
+    }
+    if (typeof s.priceNote === 'string' && /no standalone EN booster box/i.test(s.priceNote)) {
+      exclusions.push(`${s.setCode} has no English box, so it has no box price.`)
+    }
+  }
+  exclusions.push('SG asks are not shown: there is no automated Singapore source.')
+  exclusions.push('Wiki images are never pulled.')
+
+  const warnings = []
+  const calendarAge = (iso) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return 0
+    return Math.floor((Date.parse(`${asOf}T00:00:00Z`) - Date.parse(`${iso}T00:00:00Z`)) / 86_400_000)
+  }
+  if (boxNewest && calendarAge(boxNewest) > 3) warnings.push(`Box prices stop at ${boxNewest}.`)
+  if (wiki.fetchedAt && calendarAge(wiki.fetchedAt) > 3) warnings.push(`Character lines stop at ${wiki.fetchedAt}.`)
+
+  const out = {
+    asOf,
+    weekOf: mondayOf(asOf),
+    seed: {
+      files: files.length,
+      rows,
+      cardPricesAsOf,
+      versionNote,
+    },
+    boxFeed: {
+      newest: boxNewest,
+      source: 'TCGCSV',
+      staleAfterDays: 3,
+    },
+    wiki,
+    unpriced,
+    exclusions,
+    warnings,
+    errors: 0,
+  }
+  if (!DRY) writeFileSync(join(DATA, 'health.json'), `${JSON.stringify(out, null, 2)}\n`)
+  console.log(`  health.json: ${rows} prints, ${unpriced.length} unpriced, ${warnings.length} warning(s), as of ${asOf}`)
+}
+
 async function tcgcsvJson(path) {
   const res = await fetch(`${TCGCSV}${path}`, { headers: TCGCSV_HEADERS })
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`)
@@ -692,6 +794,12 @@ function repinSeedVersion(counts) {
 const rosterFile = JSON.parse(readFileSync(ROSTER_FILE, 'utf8'))
 const roster = rosterFile.sets
 
+if (HEALTH_ONLY) {
+  writeHealth(AS_OF)
+  console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
+  process.exit(0)
+}
+
 /** The TCGCSV step: discover upcoming sets, probe Limitless for their codes, then snapshot every roster box's price (new rows included). */
 async function refreshBoxes() {
   try {
@@ -723,6 +831,7 @@ if (BOXES_ONLY) {
   } catch (e) {
     console.error(`  fx: ${e.message}`)
   }
+  writeHealth(AS_OF)
   console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
   process.exit(0)
 }
@@ -829,5 +938,6 @@ try {
   console.error(`  fx: ${e.message}`)
   if (!existsSync(join(DATA, 'fx-usd-sgd.json'))) failures++
 }
+writeHealth(AS_OF)
 console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
 process.exit(failures ? 1 : 0)

@@ -15,6 +15,7 @@ import { DecksScreen } from './screens/Decks'
 import { DeckBuilderScreen } from './screens/DeckBuilder'
 import { LearnScreen } from './screens/Learn'
 import { StartScreen } from './screens/Start'
+import { DataHealthScreen } from './screens/DataHealth'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/collection" element={<CollectionScreen />} />
         <Route path="/portfolio" element={<PortfolioScreen />} />
         <Route path="/about-prices" element={<AboutPricesScreen />} />
+        <Route path="/data" element={<DataHealthScreen />} />
         <Route path="/characters/:name" element={<CharacterScreen />} />
         <Route path="/artists/:name" element={<ArtistScreen />} />
         <Route path="/decks" element={<DecksScreen />} />

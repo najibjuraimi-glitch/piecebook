@@ -78,6 +78,10 @@ export function AboutPricesScreen() {
           >
             docs/seed-sources.md
           </a>
+          . What we hold this week:{' '}
+          <Link to="/data" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+            Data health
+          </Link>
           . Back to <Link to="/" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">Sets</Link>.
         </p>
       </div>
