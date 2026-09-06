@@ -1,10 +1,9 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getCard } from '../data/seed'
-import { FX_USD_SGD } from '../data/fx'
 import { summarisePortfolio } from '../lib/portfolio'
-import { formatMarket, formatSignedMarket, rateLine } from '../lib/fx'
-import { formatSgd, formatUsd } from '../lib/format'
+import { formatMarket, rateLine } from '../lib/fx'
+import { formatSgd, formatSignedUsd, formatUsd } from '../lib/format'
 import type { OwnedEntry } from '../store/collection'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { StatBlock } from '../components/StatBlock'
@@ -38,13 +37,14 @@ export function CurrencyPreviewScreen() {
   const { holdings, marketUsd, costSgd, costUsd, plUsd } = summary
   const top = holdings.filter((h) => (h.marketUsd ?? 0) > 0).slice(0, 5)
 
+  const usdCost = (n: number) => (display === 'sgd' ? `US ${formatUsd(n)}` : formatUsd(n))
   const costValue: string | string[] =
     costSgd !== null && costUsd !== null
-      ? [formatSgd(costSgd), formatUsd(costUsd)]
+      ? [formatSgd(costSgd), usdCost(costUsd)]
       : costSgd !== null
         ? formatSgd(costSgd)
         : costUsd !== null
-          ? formatUsd(costUsd)
+          ? usdCost(costUsd)
           : '—'
 
   const plTone = plUsd === null ? 'ink' : plUsd > 0 ? 'good' : plUsd < 0 ? 'bad' : 'ink'
@@ -65,21 +65,17 @@ export function CurrencyPreviewScreen() {
         <StatBlock label="Cost basis" value={costValue} subline="In the currency you paid. Never converted." />
         <StatBlock
           label="Unrealized P/L"
-          value={plUsd === null ? '—' : formatSignedMarket(plUsd, display)}
+          value={plUsd === null ? '—' : formatSignedUsd(plUsd)}
           tone={plTone}
-          subline={
-            display === 'sgd'
-              ? 'USD costs against US market, shown at the ECB rate. SGD costs stay out of P/L.'
-              : 'USD costs against market prices only.'
-          }
+          subline="US costs against US market only. What you paid in S$ is not in this figure."
         />
       </div>
 
-      <p className="mt-4 max-w-[60ch] px-1 text-meta text-ink">
+      <p className={`mt-4 max-w-[60ch] px-1 text-meta ${display === 'sgd' ? 'text-ink' : 'text-muted'}`}>
         {display === 'sgd'
-          ? `S$ figures use the ECB reference rate of the same day, not a bank quote. 1 EUR = US $${FX_USD_SGD.eurUsd.toFixed(4)} = S$${FX_USD_SGD.eurSgd.toFixed(4)}.`
+          ? 'A reading from the euro table, not a bank quote and not a local ask.'
           : 'Market prices are in US dollars because that is the currency of the source.'}{' '}
-        <Link to="/about-prices" className="underline decoration-line underline-offset-2 hover:decoration-ink">
+        <Link to="/about-prices" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
           How prices work
         </Link>
       </p>
