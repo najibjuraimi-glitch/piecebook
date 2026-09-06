@@ -2,6 +2,8 @@
   "source": "One Piece Wiki (onepiece.fandom.com)",
   "licence": "CC BY-SA 3.0",
   "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+  "defaultCutoff": "debut arc",
+  "rules": "A clause passes when its chapter is a number at or under the reader cutoff (the last chapter of the debut arc by default, every chapter when that arc is open) and it is not late, a late clause passing only for a reader who has finished the story; the line is the clauses from the first up to the first failure joined by a space, trailing clauses dropped until the line is 22 words or fewer, trailing punctuation dropped, and no line at all under six words or without a finite verb.",
   "fetchedAt": "2026-09-06",
   "entries": [
     {
@@ -18,7 +20,15 @@
       "birth": {
         "month": 3,
         "day": 14
-      }
+      },
+      "clauses": [
+        {
+          "text": "Alvida is the former captain of the Alvida Pirates, and the first enemy pirate Monkey D. Luffy encountered in his own pirate career",
+          "chapter": 2,
+          "late": true
+        }
+      ],
+      "sentenceWords": 23
     },
     {
       "name": "Aramaki",
@@ -34,7 +44,15 @@
       "birth": {
         "month": 2,
         "day": 29
-      }
+      },
+      "clauses": [
+        {
+          "text": "Aramaki is an Admiral in the Marines",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 7
     },
     {
       "name": "Arlong",
@@ -50,7 +68,15 @@
       "birth": {
         "month": 5,
         "day": 3
-      }
+      },
+      "clauses": [
+        {
+          "text": "Arlong is a sawshark fish-man",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 5
     },
     {
       "name": "Ashura Doji",
@@ -66,7 +92,15 @@
       "birth": {
         "month": 4,
         "day": 10
-      }
+      },
+      "clauses": [
+        {
+          "text": "Ashura Doji was a bandit, samurai from Wano Country and a retainer of the Kouzuki Family, serving as one of Kouzuki Oden's Nine Red Scabbards",
+          "chapter": 939,
+          "late": true
+        }
+      ],
+      "sentenceWords": 25
     },
     {
       "name": "Atmos",
@@ -82,7 +116,15 @@
       "birth": {
         "month": 3,
         "day": 19
-      }
+      },
+      "clauses": [
+        {
+          "text": "Atmos is the former 13th division commander of the Whitebeard Pirates",
+          "chapter": 556,
+          "late": true
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Avalo Pizarro",
@@ -98,7 +140,15 @@
       "birth": {
         "month": 9,
         "day": 30
-      }
+      },
+      "clauses": [
+        {
+          "text": "Avalo Pizarro is one of the Ten Titanic Captains of the Blackbeard Pirates, serving as the captain of the fourth ship of the fleet",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 24
     },
     {
       "name": "Babanuki",
@@ -111,7 +161,15 @@
       "arc": "Wano Country Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Babanuki is a Shinuchi of the Beasts Pirates who serves as the warden of the Prisoner Mine in Udon, a region of Wano Country",
+          "chapter": 935,
+          "late": false
+        }
+      ],
+      "sentenceWords": 24
     },
     {
       "name": "Bao Huang",
@@ -124,7 +182,15 @@
       "arc": "Wano Country Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Bao Huang is a Shinuchi of the Beasts Pirates, being part of the crew's surveillance division, the \"Marys\"",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 18
     },
     {
       "name": "Barbell",
@@ -137,7 +203,15 @@
       "arc": "Egghead Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Barbell is a catfish fish-man and former member of the Rocks Pirates",
+          "chapter": 1156,
+          "late": true
+        }
+      ],
+      "sentenceWords": 12
     },
     {
       "name": "Bartholomew Kuma",
@@ -153,7 +227,20 @@
       "birth": {
         "month": 2,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Bartholomew Kuma is a former Warlord of the Sea, the former king of the Sorbet Kingdom,",
+          "chapter": 908,
+          "late": true
+        },
+        {
+          "text": "and most notably an officer, as well as founding member of the Revolutionary Army with a bounty of 296,000,000",
+          "chapter": 234,
+          "late": false
+        }
+      ],
+      "sentenceWords": 35
     },
     {
       "name": "Bartolomeo",
@@ -169,7 +256,20 @@
       "birth": {
         "month": 10,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Bartolomeo is a Super Rookie, the captain of the Barto Club",
+          "chapter": 706,
+          "late": false
+        },
+        {
+          "text": "and the captain of the second ship of the Straw Hat Grand Fleet",
+          "chapter": 800,
+          "late": false
+        }
+      ],
+      "sentenceWords": 24
     },
     {
       "name": "Basil Hawkins",
@@ -185,7 +285,15 @@
       "birth": {
         "month": 9,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Basil Hawkins is an infamous pirate from North Blue known as the \"Magician\" and the captain of the Hawkins Pirates",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 20
     },
     {
       "name": "Bellamy",
@@ -201,7 +309,20 @@
       "birth": {
         "month": 8,
         "day": 7
-      }
+      },
+      "clauses": [
+        {
+          "text": "Bellamy is a dyer and retired pirate",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "hailing from the North Blue",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 12
     },
     {
       "name": "Belo Betty",
@@ -217,7 +338,15 @@
       "birth": {
         "month": 6,
         "day": 15
-      }
+      },
+      "clauses": [
+        {
+          "text": "Belo Betty is the commander of the East Army in the Revolutionary Army",
+          "chapter": 904,
+          "late": false
+        }
+      ],
+      "sentenceWords": 13
     },
     {
       "name": "Benn.Beckman",
@@ -233,7 +362,15 @@
       "birth": {
         "month": 11,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Benn.Beckman is the first mate of the Red Hair Pirates",
+          "chapter": 957,
+          "late": false
+        }
+      ],
+      "sentenceWords": 10
     },
     {
       "name": "Bepo",
@@ -249,7 +386,20 @@
       "birth": {
         "month": 11,
         "day": 20
-      }
+      },
+      "clauses": [
+        {
+          "text": "Bepo is a polar bear mink",
+          "chapter": 805,
+          "late": false
+        },
+        {
+          "text": "and the navigator of the Heart Pirates",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 13
     },
     {
       "name": "Black Maria",
@@ -265,7 +415,15 @@
       "birth": {
         "month": 9,
         "day": 24
-      }
+      },
+      "clauses": [
+        {
+          "text": "Black Maria is one of the Tobiroppo, the strongest six Shinuchi of the Beasts Pirates",
+          "chapter": 978,
+          "late": false
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Blamenco",
@@ -281,7 +439,15 @@
       "birth": {
         "month": 2,
         "day": 5
-      }
+      },
+      "clauses": [
+        {
+          "text": "Blamenco is the former 6th division commander of the Whitebeard Pirates",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Blenheim",
@@ -297,7 +463,15 @@
       "birth": {
         "month": 8,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Blenheim is the former 9th division commander of the Whitebeard Pirates",
+          "chapter": 573,
+          "late": true
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Boa Hancock",
@@ -313,7 +487,15 @@
       "birth": {
         "month": 9,
         "day": 2
-      }
+      },
+      "clauses": [
+        {
+          "text": "Boa Hancock is the current captain of the Kuja Pirates and was the only female Warlord of the Sea before the organization's disbandment",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 23
     },
     {
       "name": "Bonk Punch",
@@ -326,7 +508,20 @@
       "arc": "Romance Dawn Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Bonk Punch is one of the Senior Officers and musicians",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "of the Red Hair Pirates",
+          "chapter": 1,
+          "late": false
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Brogy",
@@ -342,7 +537,15 @@
       "birth": {
         "month": 2,
         "day": 1
-      }
+      },
+      "clauses": [
+        {
+          "text": "Brogy is a giant from Elbaph and one of the two captains of the Giant Warrior Pirates alongside Dorry",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 19
     },
     {
       "name": "Brook",
@@ -358,7 +561,15 @@
       "birth": {
         "month": 4,
         "day": 3
-      }
+      },
+      "clauses": [
+        {
+          "text": "Brook is the musician of the Straw Hat Pirates, one of their two swordsmen, and one of the Senior Officers of the Straw Hat Grand Fleet",
+          "chapter": 1058,
+          "late": false
+        }
+      ],
+      "sentenceWords": 26
     },
     {
       "name": "Buggy",
@@ -374,7 +585,15 @@
       "birth": {
         "month": 8,
         "day": 8
-      }
+      },
+      "clauses": [
+        {
+          "text": "Buggy is the nominal president of Cross Guild, and one of the current Four Emperors dominating the New World",
+          "chapter": 1053,
+          "late": false
+        }
+      ],
+      "sentenceWords": 19
     },
     {
       "name": "Building Snake",
@@ -387,7 +606,20 @@
       "arc": "Syrup Village Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Building Snake is one of the Senior Officers and the navigator",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "of the Red Hair Pirates",
+          "chapter": 580,
+          "late": false
+        }
+      ],
+      "sentenceWords": 16
     },
     {
       "name": "Cabaji",
@@ -403,7 +635,20 @@
       "birth": {
         "month": 9,
         "day": 8
-      }
+      },
+      "clauses": [
+        {
+          "text": "Cabaji is the Buggy Pirates chief of staff,",
+          "chapter": 15,
+          "late": false
+        },
+        {
+          "text": "as well as an acrobat swordsman",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 14
     },
     {
       "name": "Caesar Clown",
@@ -419,7 +664,25 @@
       "birth": {
         "month": 4,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Caesar Clown was referred to as \"Master\" by his subordinates,",
+          "chapter": 658,
+          "late": true
+        },
+        {
+          "text": "is a scientist, the leading expert on chemical weapons of mass destruction,",
+          "chapter": 663,
+          "late": false
+        },
+        {
+          "text": "and one of the co-founders of NEO MADS",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 30
     },
     {
       "name": "Capone\"Gang\"Bege",
@@ -435,7 +698,15 @@
       "birth": {
         "month": 1,
         "day": 17
-      }
+      },
+      "clauses": [
+        {
+          "text": "Capone Bege is a mafia don-turned-pirate and the captain of the Fire Tank Pirates",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 14
     },
     {
       "name": "Captain John",
@@ -448,7 +719,15 @@
       "arc": "Thriller Bark Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Captain John was a famous pirate captain who was once a member of the infamous Rocks Pirates prior to forming his own crew",
+          "chapter": 957,
+          "late": true
+        }
+      ],
+      "sentenceWords": 23
     },
     {
       "name": "Caribou",
@@ -464,7 +743,15 @@
       "birth": {
         "month": 7,
         "day": 4
-      }
+      },
+      "clauses": [
+        {
+          "text": "Caribou is an infamous rookie pirate who was at the Sabaody Archipelago around the time of the Straw Hat Pirates' reunion",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Carrot",
@@ -480,7 +767,25 @@
       "birth": {
         "month": 5,
         "day": 24
-      }
+      },
+      "clauses": [
+        {
+          "text": "Carrot is a rabbit mink, the current ruler of the Mokomo Dukedom,",
+          "chapter": 1056,
+          "late": false
+        },
+        {
+          "text": "and a former member of the Kingsbirds",
+          "chapter": 811,
+          "late": true
+        },
+        {
+          "text": "and Inuarashi Musketeer Squad",
+          "chapter": 809,
+          "late": false
+        }
+      ],
+      "sentenceWords": 23
     },
     {
       "name": "Catarina Devon",
@@ -496,7 +801,15 @@
       "birth": {
         "month": 3,
         "day": 29
-      }
+      },
+      "clauses": [
+        {
+          "text": "Catarina Devon is one of Ten Titanic Captains of the Blackbeard Pirates, serving as captain of the sixth ship of the fleet",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 22
     },
     {
       "name": "Cavendish",
@@ -512,7 +825,15 @@
       "birth": {
         "month": 8,
         "day": 31
-      }
+      },
+      "clauses": [
+        {
+          "text": "Cavendish is a famous Super Rookie and the captain of the Beautiful Pirates",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 13
     },
     {
       "name": "Charlotte Brulee",
@@ -528,7 +849,15 @@
       "birth": {
         "month": 3,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Charlotte Brulee is the eighth daughter and 19th child of the Charlotte Family and the older twin sister of Broyé",
+          "chapter": 832,
+          "late": false
+        }
+      ],
+      "sentenceWords": 20
     },
     {
       "name": "Charlotte Chiffon",
@@ -544,7 +873,20 @@
       "birth": {
         "month": 1,
         "day": 27
-      }
+      },
+      "clauses": [
+        {
+          "text": "Charlotte Chiffon is the 22nd daughter and the 52nd child of the Charlotte Family and Totto Land's former Minister of Puff",
+          "chapter": 880,
+          "late": true
+        },
+        {
+          "text": "having governed over Funwari Island until her defection",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 29
     },
     {
       "name": "Charlotte Cracker",
@@ -560,7 +902,15 @@
       "birth": {
         "month": 2,
         "day": 28
-      }
+      },
+      "clauses": [
+        {
+          "text": "Charlotte Cracker is the tenth son and 15th child of the Charlotte Family and the oldest triplet brother of Custard and Angel",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 22
     },
     {
       "name": "Charlotte Daifuku",
@@ -576,7 +926,20 @@
       "birth": {
         "month": 11,
         "day": 25
-      }
+      },
+      "clauses": [
+        {
+          "text": "Charlotte Daifuku is the third son and fourth child of the Charlotte Family",
+          "chapter": 861,
+          "late": false
+        },
+        {
+          "text": "and the middle triplet brother of Katakuri and Oven",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 22
     },
     {
       "name": "Charlotte Katakuri",
@@ -592,7 +955,20 @@
       "birth": {
         "month": 11,
         "day": 25
-      }
+      },
+      "clauses": [
+        {
+          "text": "Charlotte Katakuri is the second son and third child of the Charlotte Family",
+          "chapter": 860,
+          "late": false
+        },
+        {
+          "text": "and the elder triplet brother of Daifuku and Oven",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 22
     },
     {
       "name": "Charlotte Linlin",
@@ -608,7 +984,20 @@
       "birth": {
         "month": 2,
         "day": 15
-      }
+      },
+      "clauses": [
+        {
+          "text": "Charlotte Linlin is the captain of the Big Mom Pirates",
+          "chapter": 829,
+          "late": false
+        },
+        {
+          "text": "and was formerly one of the Four Emperors ruling over the New World, as the only female member of the group",
+          "chapter": 432,
+          "late": true
+        }
+      ],
+      "sentenceWords": 31
     },
     {
       "name": "Charlotte Oven",
@@ -624,7 +1013,20 @@
       "birth": {
         "month": 11,
         "day": 25
-      }
+      },
+      "clauses": [
+        {
+          "text": "Charlotte Oven is the fourth son and fifth child of the Charlotte Family",
+          "chapter": 861,
+          "late": false
+        },
+        {
+          "text": "and the younger triplet brother of Katakuri and Daifuku",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 22
     },
     {
       "name": "Charlotte Perospero",
@@ -640,7 +1042,20 @@
       "birth": {
         "month": 3,
         "day": 14
-      }
+      },
+      "clauses": [
+        {
+          "text": "Charlotte Perospero is the eldest child of the Charlotte Family",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "and an officer of the Big Mom Pirates",
+          "chapter": 930,
+          "late": false
+        }
+      ],
+      "sentenceWords": 18
     },
     {
       "name": "Charlotte Pudding",
@@ -656,7 +1071,25 @@
       "birth": {
         "month": 6,
         "day": 25
-      }
+      },
+      "clauses": [
+        {
+          "text": "Charlotte Pudding is the 35th daughter and the 76th child of the Charlotte Family,",
+          "chapter": 812,
+          "late": false
+        },
+        {
+          "text": "an officer of the Big Mom Pirates,",
+          "chapter": 930,
+          "late": false
+        },
+        {
+          "text": "and a hybrid between a human and a member of the Three-Eye Tribe",
+          "chapter": 853,
+          "late": false
+        }
+      ],
+      "sentenceWords": 34
     },
     {
       "name": "Charlotte Smoothie",
@@ -672,7 +1105,25 @@
       "birth": {
         "month": 10,
         "day": 12
-      }
+      },
+      "clauses": [
+        {
+          "text": "Charlotte Smoothie is the 14th daughter and 35th child of the Charlotte Family,",
+          "chapter": 846,
+          "late": false
+        },
+        {
+          "text": "the older triplet sister of Citron and Cinnamon,",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "and a longleg-human hybrid",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 25
     },
     {
       "name": "Crocodile",
@@ -688,7 +1139,20 @@
       "birth": {
         "month": 9,
         "day": 5
-      }
+      },
+      "clauses": [
+        {
+          "text": "Crocodile is a former Warlord of the Sea",
+          "chapter": 155,
+          "late": true
+        },
+        {
+          "text": "and former president—under the codename \"Mr. 0\"—of the mysterious crime syndicate Baroque Works",
+          "chapter": 111,
+          "late": true
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Denjiro",
@@ -704,7 +1168,15 @@
       "birth": {
         "month": 10,
         "day": 26
-      }
+      },
+      "clauses": [
+        {
+          "text": "Denjiro is a samurai from Wano Country and one of the Nine Red Scabbards who served as Kouzuki Oden's retainers",
+          "chapter": 939,
+          "late": false
+        }
+      ],
+      "sentenceWords": 20
     },
     {
       "name": "Doc Q",
@@ -720,7 +1192,20 @@
       "birth": {
         "month": 10,
         "day": 18
-      }
+      },
+      "clauses": [
+        {
+          "text": "Doc Q is the doctor,",
+          "chapter": 223,
+          "late": false
+        },
+        {
+          "text": "and one of the Ten Titanic Captains of the Blackbeard Pirates, serving as the captain of the ninth ship of the fleet",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 27
     },
     {
       "name": "Don Marlon",
@@ -733,7 +1218,15 @@
       "arc": "Elbaph Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Don Marlon was a member of the Rocks Pirates and a gangster from the West Blue",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 16
     },
     {
       "name": "Donquixote Doflamingo",
@@ -749,7 +1242,15 @@
       "birth": {
         "month": 10,
         "day": 23
-      }
+      },
+      "clauses": [
+        {
+          "text": "Donquixote Doflamingo is the captain of the Donquixote Pirates",
+          "chapter": 692,
+          "late": false
+        }
+      ],
+      "sentenceWords": 9
     },
     {
       "name": "Donquixote Rosinante",
@@ -765,7 +1266,20 @@
       "birth": {
         "month": 7,
         "day": 15
-      }
+      },
+      "clauses": [
+        {
+          "text": "Donquixote Rosinante was a former World Noble of the Donquixote Family descent,",
+          "chapter": 723,
+          "late": true
+        },
+        {
+          "text": "being the second son of Donquixote Homing and the younger brother of Donquixote Doflamingo",
+          "chapter": 760,
+          "late": false
+        }
+      ],
+      "sentenceWords": 26
     },
     {
       "name": "Dorry",
@@ -781,7 +1295,15 @@
       "birth": {
         "month": 10,
         "day": 2
-      }
+      },
+      "clauses": [
+        {
+          "text": "Dorry is a giant from Elbaph and one of the two captains of the Giant Warrior Pirates alongside Brogy",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 19
     },
     {
       "name": "Dracule Mihawk",
@@ -797,7 +1319,15 @@
       "birth": {
         "month": 3,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Dracule Mihawk is a world-famous pirate currently recognized as the strongest swordsman in the world",
+          "chapter": 50,
+          "late": false
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Edward.Newgate",
@@ -813,7 +1343,15 @@
       "birth": {
         "month": 4,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Edward.Newgate was a legendary pirate and the captain of the Whitebeard Pirates",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 12
     },
     {
       "name": "Emporio.Ivankov",
@@ -829,7 +1367,15 @@
       "birth": {
         "month": 1,
         "day": 8
-      }
+      },
+      "clauses": [
+        {
+          "text": "Emporio.Ivankov is the queen of the Kamabakka Kingdom",
+          "chapter": 532,
+          "late": false
+        }
+      ],
+      "sentenceWords": 8
     },
     {
       "name": "Enel",
@@ -845,7 +1391,15 @@
       "birth": {
         "month": 5,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Enel is the former tyrannical \"God\" of Skypiea",
+          "chapter": 254,
+          "late": true
+        }
+      ],
+      "sentenceWords": 8
     },
     {
       "name": "Eustass\"Captain\"Kid",
@@ -861,7 +1415,15 @@
       "birth": {
         "month": 1,
         "day": 10
-      }
+      },
+      "clauses": [
+        {
+          "text": "Eustass Kid is a notorious pirate from the South Blue and the captain of the Kid Pirates",
+          "chapter": 498,
+          "late": false
+        }
+      ],
+      "sentenceWords": 17
     },
     {
       "name": "Fossa",
@@ -877,7 +1439,15 @@
       "birth": {
         "month": 4,
         "day": 15
-      }
+      },
+      "clauses": [
+        {
+          "text": "Fossa is the former 15th division commander of the Whitebeard Pirates",
+          "chapter": 553,
+          "late": true
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Foxy",
@@ -893,7 +1463,15 @@
       "birth": {
         "month": 4,
         "day": 4
-      }
+      },
+      "clauses": [
+        {
+          "text": "Foxy is the captain of the Foxy Pirates, and the main antagonist of the Long Ring Long Land Arc",
+          "chapter": 305,
+          "late": false
+        }
+      ],
+      "sentenceWords": 19
     },
     {
       "name": "Franky",
@@ -909,7 +1487,15 @@
       "birth": {
         "month": 3,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Franky is the shipwright of the Straw Hat Pirates and one of the Senior Officers of the Straw Hat Grand Fleet",
+          "chapter": 1058,
+          "late": false
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Fugar",
@@ -922,7 +1508,15 @@
       "arc": "Egghead Arc",
       "line": "Fugar is the bandmaster of the Social Club, a subordinate pirate crew of the Red Hair Pirates",
       "lineWords": 17,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Fugar is the bandmaster of the Social Club, a subordinate pirate crew of the Red Hair Pirates",
+          "chapter": 1079,
+          "late": false
+        }
+      ],
+      "sentenceWords": 17
     },
     {
       "name": "Fukurokuju",
@@ -938,7 +1532,20 @@
       "birth": {
         "month": 3,
         "day": 29
-      }
+      },
+      "clauses": [
+        {
+          "text": "Fukurokuju is a ninja and the previous captain of the Orochi Oniwabanshu",
+          "chapter": 931,
+          "late": true
+        },
+        {
+          "text": "before they joined the Beasts Pirates following Orochi's deposition",
+          "chapter": 986,
+          "late": false
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Ganzui",
@@ -951,7 +1558,15 @@
       "arc": "Thriller Bark Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Ganzui was a member of the Rocks Pirates",
+          "chapter": 1155,
+          "late": true
+        }
+      ],
+      "sentenceWords": 8
     },
     {
       "name": "Gecko Moria",
@@ -967,7 +1582,20 @@
       "birth": {
         "month": 9,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Gecko Moria is the captain of the Thriller Bark Pirates and a former member of the Seven Warlords of the Sea",
+          "chapter": 448,
+          "late": true
+        },
+        {
+          "text": "who resides on Thriller Bark, the largest ship in the world",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 32
     },
     {
       "name": "Gerd",
@@ -983,7 +1611,20 @@
       "birth": {
         "month": 2,
         "day": 25
-      }
+      },
+      "clauses": [
+        {
+          "text": "Gerd is a giant from Elbaph",
+          "chapter": 866,
+          "late": false
+        },
+        {
+          "text": "and the doctor of the New Giant Warrior Pirates",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Gloriosa",
@@ -999,7 +1640,15 @@
       "birth": {
         "month": 2,
         "day": 4
-      }
+      },
+      "clauses": [
+        {
+          "text": "Gloriosa is an advisor of sorts to the current empress of the Kuja tribe, Boa Hancock",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 16
     },
     {
       "name": "Gol.D.Roger",
@@ -1015,7 +1664,15 @@
       "birth": {
         "month": 12,
         "day": 31
-      }
+      },
+      "clauses": [
+        {
+          "text": "Gol.D.Roger was a legendary pirate who, as captain of the former Roger Pirates, held the title of Pirate King and possessed the legendary treasure known as the One Piece",
+          "chapter": 1,
+          "late": true
+        }
+      ],
+      "sentenceWords": 29
     },
     {
       "name": "Gordon",
@@ -1028,7 +1685,15 @@
       "arc": null,
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Gordon is the former king of the Elegia Kingdom and the foster parent of Uta",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Hajrudin",
@@ -1044,7 +1709,15 @@
       "birth": {
         "month": 8,
         "day": 12
-      }
+      },
+      "clauses": [
+        {
+          "text": "Hajrudin is a giant warrior described as being from the \"new generation\" of Elbaph",
+          "chapter": 714,
+          "late": false
+        }
+      ],
+      "sentenceWords": 14
     },
     {
       "name": "Hannyabal",
@@ -1060,7 +1733,15 @@
       "birth": {
         "month": 8,
         "day": 28
-      }
+      },
+      "clauses": [
+        {
+          "text": "Hannyabal is the warden of Impel Down",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 7
     },
     {
       "name": "Haruta",
@@ -1076,7 +1757,15 @@
       "birth": {
         "month": 2,
         "day": 4
-      }
+      },
+      "clauses": [
+        {
+          "text": "Haruta is the former 12th division commander of the Whitebeard Pirates",
+          "chapter": 553,
+          "late": true
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Heat",
@@ -1092,7 +1781,15 @@
       "birth": {
         "month": 12,
         "day": 1
-      }
+      },
+      "clauses": [
+        {
+          "text": "Heat is a member of the Kid Pirates",
+          "chapter": 500,
+          "late": false
+        }
+      ],
+      "sentenceWords": 8
     },
     {
       "name": "Hody Jones",
@@ -1108,7 +1805,25 @@
       "birth": {
         "month": 4,
         "day": 14
-      }
+      },
+      "clauses": [
+        {
+          "text": "Hody Jones is a great white shark fish-man,",
+          "chapter": 611,
+          "late": false
+        },
+        {
+          "text": "the captain of the New Fish-Man Pirates before their downfall,",
+          "chapter": 609,
+          "late": true
+        },
+        {
+          "text": "and a former soldier of the Neptune Army",
+          "chapter": 616,
+          "late": true
+        }
+      ],
+      "sentenceWords": 26
     },
     {
       "name": "Hongo",
@@ -1121,7 +1836,20 @@
       "arc": "Romance Dawn Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Hongo is the one of the Senior Officers and the doctor",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "of the Red Hair Pirates",
+          "chapter": 1,
+          "late": false
+        }
+      ],
+      "sentenceWords": 16
     },
     {
       "name": "Howling Gab",
@@ -1134,7 +1862,15 @@
       "arc": "Marineford Arc",
       "line": "Howling Gab is one of the Senior Officers of the Red Hair Pirates",
       "lineWords": 13,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Howling Gab is one of the Senior Officers of the Red Hair Pirates",
+          "chapter": 580,
+          "late": false
+        }
+      ],
+      "sentenceWords": 13
     },
     {
       "name": "Hyogoro",
@@ -1150,7 +1886,15 @@
       "birth": {
         "month": 2,
         "day": 14
-      }
+      },
+      "clauses": [
+        {
+          "text": "Hyogoro is the former yakuza boss of the Flower Capital and the most famous yakuza in Wano Country during the first Kouzuki Family's reign",
+          "chapter": 934,
+          "late": true
+        }
+      ],
+      "sentenceWords": 24
     },
     {
       "name": "Iceburg",
@@ -1166,7 +1910,15 @@
       "birth": {
         "month": 1,
         "day": 3
-      }
+      },
+      "clauses": [
+        {
+          "text": "Iceburg is the president of the Galley-La Company and the mayor of Water 7",
+          "chapter": 325,
+          "late": false
+        }
+      ],
+      "sentenceWords": 14
     },
     {
       "name": "Imu",
@@ -1179,7 +1931,15 @@
       "arc": "Levely Arc",
       "line": "Imu is the King of the World who occupies the Empty Throne, giving him sole authority over the World Government",
       "lineWords": 20,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Imu is the King of the World who occupies the Empty Throne, giving him sole authority over the World Government",
+          "chapter": 908,
+          "late": false
+        }
+      ],
+      "sentenceWords": 20
     },
     {
       "name": "Inuarashi",
@@ -1195,7 +1955,15 @@
       "birth": {
         "month": 10,
         "day": 11
-      }
+      },
+      "clauses": [
+        {
+          "text": "Inuarashi is a canine mink",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 5
     },
     {
       "name": "Issho",
@@ -1211,7 +1979,15 @@
       "birth": {
         "month": 8,
         "day": 10
-      }
+      },
+      "clauses": [
+        {
+          "text": "Issho is an Admiral in the Marines",
+          "chapter": 705,
+          "late": false
+        }
+      ],
+      "sentenceWords": 7
     },
     {
       "name": "Izo",
@@ -1227,7 +2003,20 @@
       "birth": {
         "month": 10,
         "day": 13
-      }
+      },
+      "clauses": [
+        {
+          "text": "Izo was the former 16th division commander of the Whitebeard Pirates",
+          "chapter": null,
+          "late": true
+        },
+        {
+          "text": "and prior to this, a retainer of the Wano Country daimyo Kouzuki Oden",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 24
     },
     {
       "name": "Jack",
@@ -1243,7 +2032,20 @@
       "birth": {
         "month": 9,
         "day": 28
-      }
+      },
+      "clauses": [
+        {
+          "text": "Jack is a giant grouper fish-man,",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "an All-Star of the Beasts Pirates as one of Kaidou's three closest confidants, and captain of the Mammoth, prior to its destruction",
+          "chapter": 808,
+          "late": false
+        }
+      ],
+      "sentenceWords": 28
     },
     {
       "name": "Jaguar.D.Saul",
@@ -1259,7 +2061,20 @@
       "birth": {
         "month": 3,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Jaguar.D.Saul is a giant and former Vice Admiral who deserted the Marines",
+          "chapter": 396,
+          "late": true
+        },
+        {
+          "text": "and happened to wash ashore on Ohara",
+          "chapter": 392,
+          "late": false
+        }
+      ],
+      "sentenceWords": 19
     },
     {
       "name": "Jean Bart",
@@ -1275,7 +2090,15 @@
       "birth": {
         "month": 4,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Jean Bart is a pirate who was originally introduced as Saint Rosward's slave, being part of his Pirate Captain Collection",
+          "chapter": 497,
+          "late": true
+        }
+      ],
+      "sentenceWords": 20
     },
     {
       "name": "Jesus Burgess",
@@ -1291,7 +2114,20 @@
       "birth": {
         "month": 12,
         "day": 25
-      }
+      },
+      "clauses": [
+        {
+          "text": "Jesus Burgess is the helmsman",
+          "chapter": 234,
+          "late": false
+        },
+        {
+          "text": "and one of the Ten Titanic Captains of the Blackbeard Pirates, serving as the captain of the first ship of the fleet",
+          "chapter": 704,
+          "late": false
+        }
+      ],
+      "sentenceWords": 27
     },
     {
       "name": "Jewelry Bonney",
@@ -1307,7 +2143,15 @@
       "birth": {
         "month": 9,
         "day": 1
-      }
+      },
+      "clauses": [
+        {
+          "text": "Jewelry Bonney is a pirate from the South Blue and the captain of the Bonney Pirates",
+          "chapter": 498,
+          "late": false
+        }
+      ],
+      "sentenceWords": 16
     },
     {
       "name": "Jinbe",
@@ -1323,7 +2167,15 @@
       "birth": {
         "month": 4,
         "day": 2
-      }
+      },
+      "clauses": [
+        {
+          "text": "Jinbe is the helmsman of the Straw Hat Pirates and one of the Senior Officers of the Straw Hat Grand Fleet",
+          "chapter": 1058,
+          "late": false
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Jozu",
@@ -1339,7 +2191,20 @@
       "birth": {
         "month": 11,
         "day": 11
-      }
+      },
+      "clauses": [
+        {
+          "text": "Jozu is the former 3rd division commander of the Whitebeard Pirates,",
+          "chapter": 434,
+          "late": true
+        },
+        {
+          "text": "serving as one of the crew's most prominent members",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 20
     },
     {
       "name": "Kaido",
@@ -1355,7 +2220,20 @@
       "birth": {
         "month": 5,
         "day": 1
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kaido is the Governor-General of the Beasts Pirates",
+          "chapter": 922,
+          "late": false
+        },
+        {
+          "text": "and was formerly one of the Four Emperors who ruled over the New World",
+          "chapter": 432,
+          "late": true
+        }
+      ],
+      "sentenceWords": 22
     },
     {
       "name": "Kalgara",
@@ -1371,7 +2249,15 @@
       "birth": {
         "month": 10,
         "day": 4
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kalgara was a warrior of the Shandia who lived on Jaya around 400 years ago",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Kanjuro",
@@ -1387,7 +2273,15 @@
       "birth": {
         "month": 7,
         "day": 21
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kanjuro was a samurai from the Kuri region of Wano Country and a member of the Kurozumi Family",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 18
     },
     {
       "name": "Karasu",
@@ -1403,7 +2297,15 @@
       "birth": {
         "month": 9,
         "day": 18
-      }
+      },
+      "clauses": [
+        {
+          "text": "Karasu is a member of the Revolutionary Army, serving as one of its executive officers and the commander of the North Army",
+          "chapter": 904,
+          "late": false
+        }
+      ],
+      "sentenceWords": 22
     },
     {
       "name": "Kawamatsu",
@@ -1419,7 +2321,20 @@
       "birth": {
         "month": 6,
         "day": 14
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kawamatsu is a Japanese puffer fish-man",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "who is a yokozuna-ranked sumo wrestler",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 12
     },
     {
       "name": "Killer",
@@ -1435,7 +2350,15 @@
       "birth": {
         "month": 2,
         "day": 2
-      }
+      },
+      "clauses": [
+        {
+          "text": "Killer is a pirate from the South Blue and a combatant of the Kid Pirates",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Kin'emon",
@@ -1451,7 +2374,20 @@
       "birth": {
         "month": 1,
         "day": 29
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kin'emon is a samurai from the region of Kuri in Wano Country",
+          "chapter": 657,
+          "late": false
+        },
+        {
+          "text": "who currently serves the shogunate as a great elder in the Flower Capital",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 25
     },
     {
       "name": "King",
@@ -1467,7 +2403,15 @@
       "birth": {
         "month": 12,
         "day": 1
-      }
+      },
+      "clauses": [
+        {
+          "text": "King is one of the three All-Stars of the Beasts Pirates and Kaidou's right-hand man",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Kingdew",
@@ -1483,7 +2427,15 @@
       "birth": {
         "month": 11,
         "day": 13
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kingdew is the former 11th division commander of the Whitebeard Pirates",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Koala",
@@ -1499,7 +2451,15 @@
       "birth": {
         "month": 10,
         "day": 25
-      }
+      },
+      "clauses": [
+        {
+          "text": "Koala is a high ranking officer of the Revolutionary Army, serving as the Fish-Man Karate assistant instructor",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 17
     },
     {
       "name": "Koby",
@@ -1515,7 +2475,20 @@
       "birth": {
         "month": 5,
         "day": 13
-      }
+      },
+      "clauses": [
+        {
+          "text": "Koby is a Marine Captain,",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "currently serving in the SWORD special forces unit",
+          "chapter": 956,
+          "late": false
+        }
+      ],
+      "sentenceWords": 13
     },
     {
       "name": "Komachiyo",
@@ -1528,7 +2501,15 @@
       "arc": "Wano Country Arc",
       "line": "Komachiyo is a komainu that resides in the Kuri region of Wano Country",
       "lineWords": 13,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Komachiyo is a komainu that resides in the Kuri region of Wano Country",
+          "chapter": 911,
+          "late": false
+        }
+      ],
+      "sentenceWords": 13
     },
     {
       "name": "Kouzuki Momonosuke",
@@ -1544,7 +2525,15 @@
       "birth": {
         "month": 10,
         "day": 7
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kouzuki Momonosuke is the current shogun of Wano Country",
+          "chapter": 1051,
+          "late": false
+        }
+      ],
+      "sentenceWords": 9
     },
     {
       "name": "Kouzuki Oden",
@@ -1560,7 +2549,15 @@
       "birth": {
         "month": 2,
         "day": 22
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kouzuki Oden was the daimyo of Kuri in Wano Country and the son of the former shogun Kouzuki Sukiyaki, being a member of the Kouzuki Family",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 26
     },
     {
       "name": "Krieg",
@@ -1576,7 +2573,15 @@
       "birth": {
         "month": 9,
         "day": 19
-      }
+      },
+      "clauses": [
+        {
+          "text": "Krieg is the admiral of the Krieg Pirates",
+          "chapter": 45,
+          "late": false
+        }
+      ],
+      "sentenceWords": 8
     },
     {
       "name": "Kuro",
@@ -1592,7 +2597,15 @@
       "birth": {
         "month": 4,
         "day": 22
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kuro is the captain of the Black Cat Pirates",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 9
     },
     {
       "name": "Kurozumi Higurashi",
@@ -1608,7 +2621,15 @@
       "birth": {
         "month": 8,
         "day": 19
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kurozumi Higurashi was a member of the Kurozumi Family and a major supporter of Kurozumi Orochi",
+          "chapter": 965,
+          "late": true
+        }
+      ],
+      "sentenceWords": 16
     },
     {
       "name": "Kurozumi Kanjuro",
@@ -1624,7 +2645,15 @@
       "birth": {
         "month": 7,
         "day": 21
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kurozumi Kanjuro was a samurai from the Kuri region of Wano Country and a member of the Kurozumi Family",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 19
     },
     {
       "name": "Kurozumi Orochi",
@@ -1640,7 +2669,15 @@
       "birth": {
         "month": 9,
         "day": 23
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kurozumi Orochi was the former shogun of Wano Country and one of the last members of the Kurozumi Family",
+          "chapter": 919,
+          "late": true
+        }
+      ],
+      "sentenceWords": 19
     },
     {
       "name": "Kurozumi Semimaru",
@@ -1656,7 +2693,15 @@
       "birth": {
         "month": 8,
         "day": 23
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kurozumi Semimaru was a member of the Kurozumi Family and a major supporter of Kurozumi Orochi",
+          "chapter": 965,
+          "late": true
+        }
+      ],
+      "sentenceWords": 16
     },
     {
       "name": "Kuzan",
@@ -1672,7 +2717,15 @@
       "birth": {
         "month": 9,
         "day": 21
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kuzan is one of the Ten Titanic Captains of the Blackbeard Pirates, serving as the captain of the tenth ship of the fleet",
+          "chapter": 793,
+          "late": false
+        }
+      ],
+      "sentenceWords": 23
     },
     {
       "name": "Kyros",
@@ -1688,7 +2741,15 @@
       "birth": {
         "month": 9,
         "day": 22
-      }
+      },
+      "clauses": [
+        {
+          "text": "Kyros is a legendary gladiator who fought in the Corrida Colosseum until he left to become captain of the royal army of Dressrosa",
+          "chapter": 742,
+          "late": false
+        }
+      ],
+      "sentenceWords": 23
     },
     {
       "name": "Laffitte",
@@ -1704,7 +2765,20 @@
       "birth": {
         "month": 3,
         "day": 13
-      }
+      },
+      "clauses": [
+        {
+          "text": "Laffitte is the navigator",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "and one of the Ten Titanic Captains of the Blackbeard Pirates, serving as the captain of the fifth ship of the fleet",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 26
     },
     {
       "name": "Lim",
@@ -1720,7 +2794,15 @@
       "birth": {
         "month": 9,
         "day": 2
-      }
+      },
+      "clauses": [
+        {
+          "text": "Lim is a young woman who lives on Waford as the Sky Priestess",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 13
     },
     {
       "name": "Limejuice",
@@ -1733,7 +2815,15 @@
       "arc": "Romance Dawn Arc",
       "line": "Limejuice is one of the Senior Officers of the Red Hair Pirates",
       "lineWords": 12,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Limejuice is one of the Senior Officers of the Red Hair Pirates",
+          "chapter": 1,
+          "late": false
+        }
+      ],
+      "sentenceWords": 12
     },
     {
       "name": "Lindbergh",
@@ -1749,7 +2839,20 @@
       "birth": {
         "month": 5,
         "day": 21
-      }
+      },
+      "clauses": [
+        {
+          "text": "Lindbergh is a cat mink",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "and the commander of the Revolutionary Army's South Army",
+          "chapter": 904,
+          "late": false
+        }
+      ],
+      "sentenceWords": 14
     },
     {
       "name": "Loki",
@@ -1762,7 +2865,15 @@
       "arc": "Elbaph Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Loki is the prince of Elbaph, the son of King Harald and Queen Estrid, the younger half-brother of Hajrudin, and the foster son of Ida",
+          "chapter": 1137,
+          "late": false
+        }
+      ],
+      "sentenceWords": 25
     },
     {
       "name": "Lucky.Roux",
@@ -1778,7 +2889,15 @@
       "birth": {
         "month": 7,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Lucky.Roux is one of the Senior Officers, and the cook of the Red Hair Pirates",
+          "chapter": 957,
+          "late": false
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Magellan",
@@ -1794,7 +2913,15 @@
       "birth": {
         "month": 10,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Magellan is the vice warden of Impel Down",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 8
     },
     {
       "name": "Marco",
@@ -1810,7 +2937,15 @@
       "birth": {
         "month": 10,
         "day": 5
-      }
+      },
+      "clauses": [
+        {
+          "text": "Marco is the former 1st division commander of the Whitebeard Pirates",
+          "chapter": 434,
+          "late": true
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Marshall.D.Teach",
@@ -1826,7 +2961,20 @@
       "birth": {
         "month": 8,
         "day": 3
-      }
+      },
+      "clauses": [
+        {
+          "text": "Marshall.D.Teach is the admiral of the Blackbeard Pirates,",
+          "chapter": 803,
+          "late": false
+        },
+        {
+          "text": "and one of the Four Emperors that rule over the New World",
+          "chapter": 650,
+          "late": false
+        }
+      ],
+      "sentenceWords": 20
     },
     {
       "name": "Miss Buckingham Stussy",
@@ -1842,7 +2990,20 @@
       "birth": {
         "month": 4,
         "day": 12
-      }
+      },
+      "clauses": [
+        {
+          "text": "Miss Buckingham Stussy is a former member of both the Rocks Pirates",
+          "chapter": 1072,
+          "late": true
+        },
+        {
+          "text": "and the illegal science institute MADS",
+          "chapter": 1073,
+          "late": false
+        }
+      ],
+      "sentenceWords": 18
     },
     {
       "name": "Miss Doublefinger(Zala)",
@@ -1858,7 +3019,15 @@
       "birth": {
         "month": 7,
         "day": 30
-      }
+      },
+      "clauses": [
+        {
+          "text": "Miss Doublefinger was the second highest ranking female officer agent in the secret organization known as Baroque Works",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 18
     },
     {
       "name": "Mocha",
@@ -1874,7 +3043,15 @@
       "birth": {
         "month": 6,
         "day": 28
-      }
+      },
+      "clauses": [
+        {
+          "text": "Mocha is a little girl who was held captive on Punk Hazard",
+          "chapter": 657,
+          "late": true
+        }
+      ],
+      "sentenceWords": 12
     },
     {
       "name": "Mohji",
@@ -1890,7 +3067,15 @@
       "birth": {
         "month": 10,
         "day": 1
-      }
+      },
+      "clauses": [
+        {
+          "text": "Mohji is a pirate and the first mate of the Buggy Pirates and a member of the Buggy and Alvida Alliance",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Monet",
@@ -1906,7 +3091,15 @@
       "birth": {
         "month": 8,
         "day": 27
-      }
+      },
+      "clauses": [
+        {
+          "text": "Monet was a scout and assistant for Caesar Clown and his underlings in the research facility on Punk Hazard",
+          "chapter": 662,
+          "late": true
+        }
+      ],
+      "sentenceWords": 19
     },
     {
       "name": "Monkey.D.Dragon",
@@ -1922,7 +3115,20 @@
       "birth": {
         "month": 10,
         "day": 5
-      }
+      },
+      "clauses": [
+        {
+          "text": "Monkey.D.Dragon is the supreme commander",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "and founder of the Revolutionary Army (originally the Freedom Fighters)",
+          "chapter": 1066,
+          "late": false
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Monkey.D.Garp",
@@ -1938,7 +3144,15 @@
       "birth": {
         "month": 5,
         "day": 2
-      }
+      },
+      "clauses": [
+        {
+          "text": "Monkey.D.Garp is an extremely famous and powerful Marine Vice Admiral",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 10
     },
     {
       "name": "Monkey.D.Luffy",
@@ -1954,7 +3168,15 @@
       "birth": {
         "month": 5,
         "day": 5
-      }
+      },
+      "clauses": [
+        {
+          "text": "Monkey.D.Luffy is the founder and captain of the Straw Hat Pirates",
+          "chapter": 455,
+          "late": false
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Monster",
@@ -1970,7 +3192,20 @@
       "birth": {
         "month": 10,
         "day": 31
-      }
+      },
+      "clauses": [
+        {
+          "text": "Monster is one of the Senior Officers and musicians",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "of the Red Hair Pirates",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 14
     },
     {
       "name": "Morley",
@@ -1986,7 +3221,20 @@
       "birth": {
         "month": 9,
         "day": 11
-      }
+      },
+      "clauses": [
+        {
+          "text": "Morley is a giant and a newkama,",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "as well as the commander of the West Army in the Revolutionary Army",
+          "chapter": 904,
+          "late": false
+        }
+      ],
+      "sentenceWords": 20
     },
     {
       "name": "Mr.1(Daz.Bonez)",
@@ -2002,7 +3250,20 @@
       "birth": {
         "month": 1,
         "day": 1
-      }
+      },
+      "clauses": [
+        {
+          "text": "Mr.1 is a former bounty hunter",
+          "chapter": 217,
+          "late": true
+        },
+        {
+          "text": "and the former highest-ranked male Officer Agent of Baroque Works",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 16
     },
     {
       "name": "Mr.2.Bon.Kurei(Bentham)",
@@ -2018,7 +3279,15 @@
       "birth": {
         "month": 8,
         "day": 15
-      }
+      },
+      "clauses": [
+        {
+          "text": "Mr.2.Bon.Kurei is a newkama and former Baroque Works officer agent",
+          "chapter": 154,
+          "late": true
+        }
+      ],
+      "sentenceWords": 10
     },
     {
       "name": "Mr.3(Galdino)",
@@ -2034,7 +3303,15 @@
       "birth": {
         "month": 3,
         "day": 3
-      }
+      },
+      "clauses": [
+        {
+          "text": "Mr.3 is a former officer agent of Baroque Works, partnered with \"Miss Goldenweek\" Marianne",
+          "chapter": 117,
+          "late": true
+        }
+      ],
+      "sentenceWords": 14
     },
     {
       "name": "Nami",
@@ -2050,7 +3327,15 @@
       "birth": {
         "month": 7,
         "day": 3
-      }
+      },
+      "clauses": [
+        {
+          "text": "Nami is the navigator of the Straw Hat Pirates and one of the Senior Officers of the Straw Hat Grand Fleet",
+          "chapter": 1058,
+          "late": false
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Nefeltari Vivi",
@@ -2066,7 +3351,15 @@
       "birth": {
         "month": 2,
         "day": 2
-      }
+      },
+      "clauses": [
+        {
+          "text": "Nefeltari Vivi is the princess of the Arabasta Kingdom",
+          "chapter": 110,
+          "late": false
+        }
+      ],
+      "sentenceWords": 9
     },
     {
       "name": "Nekomamushi",
@@ -2082,7 +3375,15 @@
       "birth": {
         "month": 11,
         "day": 22
-      }
+      },
+      "clauses": [
+        {
+          "text": "Nekomamushi is a feline mink and the former guardian of the Whale Forest on Zou",
+          "chapter": 809,
+          "late": true
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Nico Olvia",
@@ -2098,7 +3399,25 @@
       "birth": {
         "month": 2,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Nico Olvia was an archaeologist from Ohara who studied the Poneglyphs two decades ago,",
+          "chapter": 393,
+          "late": true
+        },
+        {
+          "text": "the mother of Nico Robin,",
+          "chapter": 392,
+          "late": false
+        },
+        {
+          "text": "and the older sister of Oran and paternal aunt of Mizuira",
+          "chapter": 393,
+          "late": false
+        }
+      ],
+      "sentenceWords": 30
     },
     {
       "name": "Nico Robin",
@@ -2114,7 +3433,15 @@
       "birth": {
         "month": 2,
         "day": 6
-      }
+      },
+      "clauses": [
+        {
+          "text": "Nico Robin is the archaeologist of the Straw Hat Pirates and one of the Senior Officers of the Straw Hat Grand Fleet",
+          "chapter": 1058,
+          "late": false
+        }
+      ],
+      "sentenceWords": 22
     },
     {
       "name": "Page One",
@@ -2130,7 +3457,15 @@
       "birth": {
         "month": 2,
         "day": 10
-      }
+      },
+      "clauses": [
+        {
+          "text": "Page One is a former member of the Tobiroppo, the strongest Shinuchi of the Beasts Pirates",
+          "chapter": 929,
+          "late": true
+        }
+      ],
+      "sentenceWords": 16
     },
     {
       "name": "Peachbeard",
@@ -2146,7 +3481,9 @@
       "birth": {
         "month": 3,
         "day": 27
-      }
+      },
+      "clauses": [],
+      "sentenceWords": null
     },
     {
       "name": "Penguin",
@@ -2162,7 +3499,15 @@
       "birth": {
         "month": 4,
         "day": 25
-      }
+      },
+      "clauses": [
+        {
+          "text": "Penguin is a member of the Heart Pirates",
+          "chapter": 498,
+          "late": false
+        }
+      ],
+      "sentenceWords": 8
     },
     {
       "name": "Perona",
@@ -2178,7 +3523,15 @@
       "birth": {
         "month": 6,
         "day": 7
-      }
+      },
+      "clauses": [
+        {
+          "text": "Perona is a member of the Thriller Bark Pirates and the former commander of the Wild Zombies and Surprise Zombies, prior to Thriller Bark's collapse",
+          "chapter": 449,
+          "late": true
+        }
+      ],
+      "sentenceWords": 25
     },
     {
       "name": "Pierre",
@@ -2194,7 +3547,15 @@
       "birth": {
         "month": 10,
         "day": 8
-      }
+      },
+      "clauses": [
+        {
+          "text": "Pierre is a Sky Dot Bird belonging to Gan Fall",
+          "chapter": 237,
+          "late": false
+        }
+      ],
+      "sentenceWords": 10
     },
     {
       "name": "Portgas.D.Ace",
@@ -2210,7 +3571,20 @@
       "birth": {
         "month": 1,
         "day": 1
-      }
+      },
+      "clauses": [
+        {
+          "text": "Portgas.D.Ace was the captain of the Spade Pirates",
+          "chapter": 551,
+          "late": true
+        },
+        {
+          "text": "before being recruited into the Whitebeard Pirates and becoming its 2nd division commander",
+          "chapter": 157,
+          "late": false
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Queen",
@@ -2226,7 +3600,15 @@
       "birth": {
         "month": 7,
         "day": 13
-      }
+      },
+      "clauses": [
+        {
+          "text": "Queen is an All-Star of the Beasts Pirates as one of Kaidou's three closest confidants",
+          "chapter": 925,
+          "late": false
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Raizo",
@@ -2242,7 +3624,15 @@
       "birth": {
         "month": 2,
         "day": 26
-      }
+      },
+      "clauses": [
+        {
+          "text": "Raizo is a ninja from Wano Country and one of the Nine Red Scabbards who served as Kouzuki Oden's retainers",
+          "chapter": 935,
+          "late": false
+        }
+      ],
+      "sentenceWords": 20
     },
     {
       "name": "Rakuyo",
@@ -2258,7 +3648,15 @@
       "birth": {
         "month": 9,
         "day": 8
-      }
+      },
+      "clauses": [
+        {
+          "text": "Rakuyo is the former 7th division commander of the Whitebeard Pirates",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Rebecca",
@@ -2274,7 +3672,15 @@
       "birth": {
         "month": 8,
         "day": 4
-      }
+      },
+      "clauses": [
+        {
+          "text": "Rebecca is the daughter of Scarlett and Kyros, the niece of Viola and the granddaughter of Riku Doldo III",
+          "chapter": 726,
+          "late": false
+        }
+      ],
+      "sentenceWords": 19
     },
     {
       "name": "Richie",
@@ -2290,7 +3696,15 @@
       "birth": {
         "month": 7,
         "day": 23
-      }
+      },
+      "clauses": [
+        {
+          "text": "Richie is Mohji's pet lion, and a recurring member of the Buggy Pirates in all their various incarnations",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 18
     },
     {
       "name": "Rob Lucci",
@@ -2306,7 +3720,15 @@
       "birth": {
         "month": 6,
         "day": 2
-      }
+      },
+      "clauses": [
+        {
+          "text": "Rob Lucci is a masked agent of CP0",
+          "chapter": 801,
+          "late": false
+        }
+      ],
+      "sentenceWords": 8
     },
     {
       "name": "Rocks.D.Xebec",
@@ -2319,7 +3741,15 @@
       "arc": "Wano Country Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Rocks.D.Xebec was the captain of the legendary Rocks Pirates",
+          "chapter": 957,
+          "late": true
+        }
+      ],
+      "sentenceWords": 9
     },
     {
       "name": "Rockstar",
@@ -2335,7 +3765,15 @@
       "birth": {
         "month": 6,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Rockstar is a member of the Red Hair Pirates, being relatively new in the crew two years ago",
+          "chapter": 234,
+          "late": true
+        }
+      ],
+      "sentenceWords": 18
     },
     {
       "name": "Rodo",
@@ -2351,7 +3789,20 @@
       "birth": {
         "month": 2,
         "day": 19
-      }
+      },
+      "clauses": [
+        {
+          "text": "Rodo is a giant from Elbaph",
+          "chapter": 866,
+          "late": false
+        },
+        {
+          "text": "who is the navigator of the New Giant Warrior Pirates and was formerly an S-Class ranked mercenary for Buggy's Delivery",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 26
     },
     {
       "name": "Roronoa Zoro",
@@ -2367,7 +3818,20 @@
       "birth": {
         "month": 11,
         "day": 11
-      }
+      },
+      "clauses": [
+        {
+          "text": "Roronoa Zoro is the master swordsman and combatant of the Straw Hat Pirates, one of the Senior Officers of the Straw Hat Grand Fleet,",
+          "chapter": 1058,
+          "late": false
+        },
+        {
+          "text": "and is publicly recognized as the right-hand man and number two of his crew's captain, Monkey D. Luffy",
+          "chapter": 723,
+          "late": false
+        }
+      ],
+      "sentenceWords": 42
     },
     {
       "name": "Sabo",
@@ -2383,7 +3847,15 @@
       "birth": {
         "month": 3,
         "day": 20
-      }
+      },
+      "clauses": [
+        {
+          "text": "Sabo is the Revolutionary Army's chief of staff, recognized as the No. 2 of the entire organization under Supreme Commander Monkey D. Dragon",
+          "chapter": 744,
+          "late": false
+        }
+      ],
+      "sentenceWords": 23
     },
     {
       "name": "Sai",
@@ -2399,7 +3871,20 @@
       "birth": {
         "month": 8,
         "day": 13
-      }
+      },
+      "clauses": [
+        {
+          "text": "Sai is a member of the Chinjao Family and the 13th leader of the Happo Navy,",
+          "chapter": 715,
+          "late": false
+        },
+        {
+          "text": "as well as the captain of the third ship of the Straw Hat Grand Fleet",
+          "chapter": 800,
+          "late": false
+        }
+      ],
+      "sentenceWords": 31
     },
     {
       "name": "Sakazuki",
@@ -2415,7 +3900,15 @@
       "birth": {
         "month": 8,
         "day": 16
-      }
+      },
+      "clauses": [
+        {
+          "text": "Sakazuki is the current Fleet Admiral of the Marines, succeeding the previous Fleet Admiral, Sengoku",
+          "chapter": 650,
+          "late": true
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Sanji",
@@ -2431,7 +3924,15 @@
       "birth": {
         "month": 3,
         "day": 2
-      }
+      },
+      "clauses": [
+        {
+          "text": "Sanji is the cook of the Straw Hat Pirates and one of the Senior Officers of the Straw Hat Grand Fleet",
+          "chapter": 1058,
+          "late": false
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Sasaki",
@@ -2447,7 +3948,20 @@
       "birth": {
         "month": 2,
         "day": 3
-      }
+      },
+      "clauses": [
+        {
+          "text": "Sasaki is a bluespine unicornfish fish-man",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "and one of the Tobiroppo, the strongest six Shinuchi of the Beasts Pirates",
+          "chapter": 978,
+          "late": false
+        }
+      ],
+      "sentenceWords": 19
     },
     {
       "name": "Scratchmen Apoo",
@@ -2463,7 +3977,20 @@
       "birth": {
         "month": 3,
         "day": 19
-      }
+      },
+      "clauses": [
+        {
+          "text": "Scratchmen Apoo is the captain of the On Air Pirates",
+          "chapter": 498,
+          "late": false
+        },
+        {
+          "text": "and was formerly an informant for the Beasts Pirates, led by Kaidou of the Four Emperors",
+          "chapter": 821,
+          "late": true
+        }
+      ],
+      "sentenceWords": 26
     },
     {
       "name": "Sengoku",
@@ -2479,7 +4006,20 @@
       "birth": {
         "month": 5,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Sengoku is a former Fleet Admiral of the Marines,",
+          "chapter": 234,
+          "late": true
+        },
+        {
+          "text": "succeeding Kong and preceding Sakazuki",
+          "chapter": 650,
+          "late": false
+        }
+      ],
+      "sentenceWords": 14
     },
     {
       "name": "Shachi",
@@ -2495,7 +4035,15 @@
       "birth": {
         "month": 4,
         "day": 7
-      }
+      },
+      "clauses": [
+        {
+          "text": "Shachi is a member of the Heart Pirates",
+          "chapter": 498,
+          "late": false
+        }
+      ],
+      "sentenceWords": 8
     },
     {
       "name": "Shanks",
@@ -2511,7 +4059,25 @@
       "birth": {
         "month": 3,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Shanks is the chief",
+          "chapter": 1,
+          "late": false
+        },
+        {
+          "text": "of the Red Hair Pirates",
+          "chapter": 96,
+          "late": false
+        },
+        {
+          "text": "and one of the Four Emperors that rule over the New World",
+          "chapter": 432,
+          "late": false
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Shiki",
@@ -2527,7 +4093,15 @@
       "birth": {
         "month": 3,
         "day": 20
-      }
+      },
+      "clauses": [
+        {
+          "text": "Shiki is the admiral and helmsman of the Golden Lion Pirates",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Shinobu",
@@ -2543,7 +4117,25 @@
       "birth": {
         "month": 10,
         "day": 23
-      }
+      },
+      "clauses": [
+        {
+          "text": "Shinobu is a kunoichi from Wano Country and a retainer of the Kouzuki Family,",
+          "chapter": 921,
+          "late": false
+        },
+        {
+          "text": "having once served in the Oniwabanshu of the Kouzuki Shogunate and trained under Kin'emon as his protégée.",
+          "chapter": null,
+          "late": false
+        },
+        {
+          "text": "She is also the younger sister of Shinosuke",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 39
     },
     {
       "name": "Shirahoshi",
@@ -2559,7 +4151,15 @@
       "birth": {
         "month": 4,
         "day": 4
-      }
+      },
+      "clauses": [
+        {
+          "text": "Shirahoshi is a giant smelt-whiting mermaid and the princess of the Ryugu Kingdom, as the youngest of King Neptune's children and the only daughter in the Neptune royal family",
+          "chapter": 612,
+          "late": false
+        }
+      ],
+      "sentenceWords": 29
     },
     {
       "name": "Shiryu",
@@ -2575,7 +4175,15 @@
       "birth": {
         "month": 6,
         "day": 11
-      }
+      },
+      "clauses": [
+        {
+          "text": "Shiryu is one of the Ten Titanic Captains of the Blackbeard Pirates, serving as the captain of the second ship of the fleet",
+          "chapter": 803,
+          "late": false
+        }
+      ],
+      "sentenceWords": 23
     },
     {
       "name": "Silvers Rayleigh",
@@ -2591,7 +4199,20 @@
       "birth": {
         "month": 5,
         "day": 13
-      }
+      },
+      "clauses": [
+        {
+          "text": "Silvers Rayleigh is a legendary retired pirate who served as the first mate of the former Roger Pirates,",
+          "chapter": 506,
+          "late": true
+        },
+        {
+          "text": "being known as the \"Right Hand of the Pirate King\"",
+          "chapter": 500,
+          "late": false
+        }
+      ],
+      "sentenceWords": 28
     },
     {
       "name": "Smiley",
@@ -2607,7 +4228,15 @@
       "birth": {
         "month": 7,
         "day": 18
-      }
+      },
+      "clauses": [
+        {
+          "text": "Smiley was a pet of Caesar Clown",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 7
     },
     {
       "name": "Smoker",
@@ -2623,7 +4252,15 @@
       "birth": {
         "month": 3,
         "day": 14
-      }
+      },
+      "clauses": [
+        {
+          "text": "Smoker is a Marine vice-admiral and the commander of G-5 Branch's Unit 01, as well as the overall Base Commander of the G-5 Marine base",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 25
     },
     {
       "name": "Speed",
@@ -2639,7 +4276,15 @@
       "birth": {
         "month": 12,
         "day": 11
-      }
+      },
+      "clauses": [
+        {
+          "text": "Speed is a former Shinuchi of the Beasts Pirates stationed in Bakura Town",
+          "chapter": 914,
+          "late": true
+        }
+      ],
+      "sentenceWords": 13
     },
     {
       "name": "Streusen",
@@ -2655,7 +4300,20 @@
       "birth": {
         "month": 4,
         "day": 27
-      }
+      },
+      "clauses": [
+        {
+          "text": "Streusen is the executive chef of the Big Mom Pirates,",
+          "chapter": 858,
+          "late": false
+        },
+        {
+          "text": "and is also the co-founder of the crew alongside Big Mom herself",
+          "chapter": 868,
+          "late": false
+        }
+      ],
+      "sentenceWords": 22
     },
     {
       "name": "Stronger",
@@ -2671,7 +4329,15 @@
       "birth": {
         "month": 4,
         "day": 16
-      }
+      },
+      "clauses": [
+        {
+          "text": "Stronger is the horse that Doc Q rides on",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 9
     },
     {
       "name": "Sugar",
@@ -2687,7 +4353,15 @@
       "birth": {
         "month": 10,
         "day": 22
-      }
+      },
+      "clauses": [
+        {
+          "text": "Sugar is a special officer of the Donquixote Pirates' Trebol Army",
+          "chapter": 731,
+          "late": false
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Tony Tony.Chopper",
@@ -2703,7 +4377,15 @@
       "birth": {
         "month": 12,
         "day": 24
-      }
+      },
+      "clauses": [
+        {
+          "text": "Tony Tony.Chopper is the doctor of the Straw Hat Pirates and one of the Senior Officers of the Straw Hat Grand Fleet",
+          "chapter": 1058,
+          "late": false
+        }
+      ],
+      "sentenceWords": 22
     },
     {
       "name": "Ulti",
@@ -2719,7 +4401,15 @@
       "birth": {
         "month": 1,
         "day": 4
-      }
+      },
+      "clauses": [
+        {
+          "text": "Ulti is a former member of the Tobiroppo, the six strongest Shinuchi of the Beasts Pirates",
+          "chapter": 978,
+          "late": true
+        }
+      ],
+      "sentenceWords": 16
     },
     {
       "name": "Urashima",
@@ -2732,7 +4422,15 @@
       "arc": "Wano Country Arc",
       "line": "Urashima is a yokozuna-ranked sumo wrestler of Wano Country's Flower Capital",
       "lineWords": 11,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Urashima is a yokozuna-ranked sumo wrestler of Wano Country's Flower Capital",
+          "chapter": 913,
+          "late": false
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Usopp",
@@ -2748,7 +4446,15 @@
       "birth": {
         "month": 4,
         "day": 1
-      }
+      },
+      "clauses": [
+        {
+          "text": "Usopp is the sniper of the Straw Hat Pirates and one of the Senior Officers of the Straw Hat Grand Fleet",
+          "chapter": 1058,
+          "late": false
+        }
+      ],
+      "sentenceWords": 21
     },
     {
       "name": "Uta",
@@ -2764,7 +4470,15 @@
       "birth": {
         "month": 10,
         "day": 1
-      }
+      },
+      "clauses": [
+        {
+          "text": "Uta is a world-famous diva and the adopted daughter of the Emperor Red-Haired Shanks, being a musician in his crew",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 20
     },
     {
       "name": "Van Augur",
@@ -2780,7 +4494,20 @@
       "birth": {
         "month": 10,
         "day": 5
-      }
+      },
+      "clauses": [
+        {
+          "text": "Van Augur is the sniper,",
+          "chapter": 222,
+          "late": false
+        },
+        {
+          "text": "and one of the Ten Titanic Captains of the Blackbeard Pirates, serving as the captain of the third ship of the fleet",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 27
     },
     {
       "name": "Vasco Shot",
@@ -2796,7 +4523,15 @@
       "birth": {
         "month": 8,
         "day": 5
-      }
+      },
+      "clauses": [
+        {
+          "text": "Vasco Shot is one of the Ten Titanic Captains of the Blackbeard Pirates, serving as the captain of the eighth ship of the fleet",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 24
     },
     {
       "name": "Vegapunk",
@@ -2812,7 +4547,15 @@
       "birth": {
         "month": 8,
         "day": 9
-      }
+      },
+      "clauses": [
+        {
+          "text": "Vegapunk was the leading scientist of the SSG in the employment of the Marines",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 14
     },
     {
       "name": "Vergo",
@@ -2828,7 +4571,20 @@
       "birth": {
         "month": 7,
         "day": 5
-      }
+      },
+      "clauses": [
+        {
+          "text": "Vergo was one of the four elite officers",
+          "chapter": 732,
+          "late": true
+        },
+        {
+          "text": "and the first to occupy the Heart seat of the Donquixote Pirates under the codename Corazon",
+          "chapter": 764,
+          "late": false
+        }
+      ],
+      "sentenceWords": 24
     },
     {
       "name": "Vinsmoke Reiju",
@@ -2844,7 +4600,15 @@
       "birth": {
         "month": 11,
         "day": 30
-      }
+      },
+      "clauses": [
+        {
+          "text": "Vinsmoke Reiju is the eldest child and only daughter of the Vinsmoke Family",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 13
     },
     {
       "name": "Whitey Bay",
@@ -2860,7 +4624,15 @@
       "birth": {
         "month": 10,
         "day": 31
-      }
+      },
+      "clauses": [
+        {
+          "text": "Whitey Bay is an infamous New World pirate captain who was once a member of the Whitebeard Pirates before forming her own crew subordinate to Whitebeard",
+          "chapter": 556,
+          "late": true
+        }
+      ],
+      "sentenceWords": 26
     },
     {
       "name": "Who's.Who",
@@ -2876,7 +4648,15 @@
       "birth": {
         "month": 3,
         "day": 15
-      }
+      },
+      "clauses": [
+        {
+          "text": "Who's.Who is a pirate who acted as one of the Tobiroppo, the strongest six Shinuchi of the Beasts Pirates, prior to Kaidou's fall from power after the Raid on Onigashima",
+          "chapter": 978,
+          "late": false
+        }
+      ],
+      "sentenceWords": 30
     },
     {
       "name": "Wire",
@@ -2892,7 +4672,15 @@
       "birth": {
         "month": 7,
         "day": 18
-      }
+      },
+      "clauses": [
+        {
+          "text": "Wire is a member of the Kid Pirates",
+          "chapter": 500,
+          "late": false
+        }
+      ],
+      "sentenceWords": 8
     },
     {
       "name": "X.Drake",
@@ -2908,7 +4696,15 @@
       "birth": {
         "month": 10,
         "day": 24
-      }
+      },
+      "clauses": [
+        {
+          "text": "X.Drake is the captain of the Marine Secret Special Unit SWORD",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 11
     },
     {
       "name": "Yamato",
@@ -2924,7 +4720,15 @@
       "birth": {
         "month": 11,
         "day": 3
-      }
+      },
+      "clauses": [
+        {
+          "text": "Yamato is the son of Kaidou",
+          "chapter": null,
+          "late": false
+        }
+      ],
+      "sentenceWords": 6
     },
     {
       "name": "Yasopp",
@@ -2940,7 +4744,15 @@
       "birth": {
         "month": 8,
         "day": 2
-      }
+      },
+      "clauses": [
+        {
+          "text": "Yasopp is one of the Senior Officers and the sniper of the Red Hair Pirates",
+          "chapter": 957,
+          "late": false
+        }
+      ],
+      "sentenceWords": 15
     },
     {
       "name": "Zephyr",
@@ -2953,7 +4765,15 @@
       "arc": "Punk Hazard Arc",
       "line": null,
       "lineWords": null,
-      "birth": null
+      "birth": null,
+      "clauses": [
+        {
+          "text": "Zephyr was the Supreme Commander of the Neo Marines as well as a former Marine Admiral and instructor before his resignation",
+          "chapter": null,
+          "late": true
+        }
+      ],
+      "sentenceWords": 21
     }
   ]
 }

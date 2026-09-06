@@ -80,8 +80,22 @@
  * "nicknamed …", "called …", "known by …", up to the next comma), trailing
  * commas and double spaces go.
  *
+ * Clauses. Besides the default line (debut-arc cutoff), each entry stores the
+ * whole cleaned first sentence as gated clauses { text, chapter, late }, in
+ * order, so the app can run the same gate at the chapter a reader has reached:
+ * text is the clause after every cleaning rule (the subject opens the first,
+ * a trailing comma stays with its clause, the last has no full stop; joined
+ * by single spaces they are the sentence, sentenceWords long); chapter is the
+ * clause's resolved citation or null when uncited or unresolved; late marks a
+ * past-tense verb or a time word, shown only to a reader who has finished.
+ * lineFromClauses() is the reference computation and the script warns when
+ * it disagrees with the stored line. The file carries defaultCutoff and a
+ * one-sentence rules statement. An entry refused as a whole (about the name)
+ * stores no clauses.
+ *
  * Writes data/wiki/lines.json (slim, bundled by the app: name, title, revid
- * permalink, fetch date, debut, cutoff, arc, line, word count, birth) under a
+ * permalink, fetch date, debut, cutoff, arc, line, word count, birth, clauses,
+ * sentence word count) under a
  * CC BY-SA 3.0 notice; data/wiki/audit.json (the same plus the raw sentence,
  * every clause with its chapter and verdict, the reason when no line results,
  * raw birth and status, and the unmapped names with reasons); and
@@ -674,14 +688,40 @@ function cleanText(raw) {
 
 const wordCount = (s) => (s ? s.split(/\s+/).filter(Boolean).length : 0)
 
+/** The one-sentence statement of the gate that lines.json carries, so the file explains itself. */
+const RULES =
+  'A clause passes when its chapter is a number at or under the reader cutoff (the last chapter of the debut arc by default, every chapter when that arc is open) and it is not late, a late clause passing only for a reader who has finished the story; the line is the clauses from the first up to the first failure joined by a space, trailing clauses dropped until the line is 22 words or fewer, trailing punctuation dropped, and no line at all under six words or without a finite verb.'
+
+/**
+ * The gate as the app computes it from an entry's clauses: the reference the
+ * script checks its own `line` against. cutoff null means the gate cannot
+ * run; Infinity means an open arc; finished lets late clauses through.
+ */
+function lineFromClauses(clauses, cutoff, finished = false) {
+  if (cutoff == null || clauses.length === 0) return null
+  let kept = 0
+  while (kept < clauses.length) {
+    const c = clauses[kept]
+    if (c.chapter == null || c.chapter > cutoff || (c.late && !finished)) break
+    kept++
+  }
+  const compose = (k) => clauses.slice(0, k).map((c) => c.text).join(' ').replace(/\s+/g, ' ').replace(/[\s.,;:]+$/, '')
+  let k = kept
+  while (k > 0 && wordCount(compose(k)) > MAX_WORDS) k--
+  if (k === 0) return null
+  const line = compose(k)
+  return wordCount(line) < MIN_WORDS || !FINITE.test(line) ? null : line
+}
+
 /**
  * The line for one page: subject region dropped, predicate split at its
  * citations, each clause tested against the cutoff, the longest passing
- * opening kept, death rule, word cap. Returns everything the audit wants.
+ * opening kept, death rule, word cap. Returns everything the audit wants,
+ * with the clauses in the shape lines.json stores (text, chapter, late).
  */
 function buildLine({ printedName, wikitext, defs, cutoff, gateBlock, statusChap }) {
   const { text: paragraph, items } = firstParagraph(wikitext)
-  const out = { rawSentence: null, clauses: [], line: null, lineWords: null, noLineReason: null }
+  const out = { rawSentence: null, clauses: [], sentenceWords: null, line: null, lineWords: null, noLineReason: null, mismatch: false }
   if (!paragraph) {
     out.noLineReason = 'no paragraph'
     return out
@@ -699,41 +739,63 @@ function buildLine({ printedName, wikitext, defs, cutoff, gateBlock, statusChap 
   for (const c of clauses) {
     const resolved = c.cites.map((q) => chapterOf(q, defs))
     const chapters = resolved.map((r) => r.chapter).filter((n) => n != null)
-    const chapter = chapters.length ? Math.min(...chapters) : null
+    let chapter = chapters.length ? Math.min(...chapters) : null
     const text = cleanText(restore(c.raw, items))
-    const entry = { text, chapter, pass: false }
+    // A death claim ("was") or a time word ("former", "late", …) is late: it passes only with a
+    // cited death chapter, which then becomes the clause's chapter, or for a reader who has finished.
+    const past = PAST.test(text)
+    const time = TIME_WORDS.exec(text)
+    let late = false
+    if ((past || time) && statusChap != null && chapter != null) chapter = Math.max(chapter, statusChap)
+    else if (past || time) late = true
+    const entry = { text, chapter, late, pass: false }
     if (gateBlock) entry.reason = `gate cannot run: ${gateBlock}`
     else if (c.cites.length === 0) entry.reason = 'uncited'
     else if (chapter == null) entry.reason = `unresolved citation: ${resolved.map((r) => r.via).join('; ')}`
     else if (chapter > limit) entry.reason = `after cutoff: chapter ${chapter}, cutoff ${cutoff}`
+    else if (late) entry.reason = past ? 'past tense: status carries no cited chapter' : `time word: ${time[1].toLowerCase()}`
     else {
-      // A death claim ("was") or a time word ("former", "late", …) needs a cited death chapter within the cutoff.
-      const past = PAST.test(text)
-      const time = TIME_WORDS.exec(text)
-      const deathOk = statusChap != null && statusChap <= limit
-      if (past && !deathOk) {
-        entry.reason = statusChap == null ? 'past tense: status carries no cited chapter' : `past tense: status chapter ${statusChap}, cutoff ${cutoff}`
-      } else if (time && !deathOk) {
-        entry.reason = `time word: ${time[1].toLowerCase()}`
-      } else {
-        entry.pass = true
-        entry.via = resolved.filter((r) => r.chapter === chapter).map((r) => r.via).join('; ')
-        if (past || time) entry.via += `; status chapter ${statusChap}`
-      }
+      entry.pass = true
+      entry.via = resolved.filter((r) => r.chapter === chapter).map((r) => r.via).join('; ')
+      if (past || time) entry.via += `; status chapter ${statusChap}`
     }
     out.clauses.push(entry)
+  }
+  // Clause texts in the stored shape: the subject opens the first, a comma that opened a
+  // clause moves to the end of the one before, the last loses its full stop.
+  const subject = subjectOf(printedName)
+  if (out.clauses.length) {
+    out.clauses[0].text = `${subject} ${out.clauses[0].text}`.trim()
+    for (let i = 1; i < out.clauses.length; i++) {
+      const m = /^([,;:])\s*/.exec(out.clauses[i].text)
+      if (!m) continue
+      out.clauses[i].text = out.clauses[i].text.slice(m[0].length)
+      out.clauses[i - 1].text = out.clauses[i - 1].text.replace(/[,;:]$/, '') + m[1]
+    }
+    const last = out.clauses[out.clauses.length - 1]
+    last.text = last.text.replace(/[\s.,;:]+$/, '')
+    out.sentenceWords = wordCount(out.clauses.map((c) => c.text).join(' '))
+  }
+  const finish = () => {
+    const check = lineFromClauses(out.clauses, gateBlock ? null : limit)
+    if (check !== out.line) {
+      out.mismatch = true
+      console.warn(`  warn: ${printedName}: line ${JSON.stringify(out.line)} but the clauses give ${JSON.stringify(check)}`)
+    }
+    return out
   }
   let kept = 0
   while (kept < out.clauses.length && out.clauses[kept].pass) kept++
   if (kept === 0) {
     out.noLineReason = out.clauses.length ? out.clauses[0].reason : 'no clauses'
-    return out
+    return finish()
   }
-  const subject = subjectOf(printedName)
   const compose = (k) => cleanText(restore(clauses.slice(0, k).map((c) => c.raw).join(''), items)).replace(/[\s.,;:]+$/, '')
   if (TAUTOLOGY.test(compose(1))) {
     out.noLineReason = 'about the name, not the character'
-    return out
+    out.clauses = []
+    out.sentenceWords = null
+    return finish()
   }
   let k = kept
   let line = `${subject} ${compose(k)}`
@@ -743,21 +805,21 @@ function buildLine({ printedName, wikitext, defs, cutoff, gateBlock, statusChap 
   }
   if (k === 0) {
     out.noLineReason = `over ${MAX_WORDS} words: the first clause alone is ${wordCount(`${subject} ${compose(1)}`)} words`
-    return out
+    return finish()
   }
   if (k < kept) out.trimmedForLength = kept - k
   const words = wordCount(line)
   if (words < MIN_WORDS) {
     out.noLineReason = `under ${MIN_WORDS} words: "${line}"`
-    return out
+    return finish()
   }
   if (!FINITE.test(line)) {
     out.noLineReason = 'no finite verb'
-    return out
+    return finish()
   }
   out.line = line
   out.lineWords = words
-  return out
+  return finish()
 }
 
 // ---------------------------------------------------------------- one name
@@ -846,6 +908,8 @@ async function processName(name, arcs) {
       line: built.line,
       lineWords: built.lineWords,
       birth,
+      clauses: built.clauses.map(({ text, chapter, late }) => ({ text, chapter, late })),
+      sentenceWords: built.sentenceWords,
     },
     audit: {
       askedTitle: title,
@@ -861,6 +925,7 @@ async function processName(name, arcs) {
       clauses: built.clauses,
       trimmedForLength: built.trimmedForLength ?? 0,
       noLineReason: built.noLineReason,
+      ...(built.mismatch ? { lineMismatch: true } : {}),
     },
   }
 }
@@ -901,9 +966,11 @@ function writeOutputs(results, skipped) {
       auditEntries.set(name, { ...r.entry, ...r.audit })
     }
   }
-  const lines = { ...LICENCE, fetchedAt: TODAY, entries: [...entries.values()].sort(byName) }
+  const lines = { ...LICENCE, defaultCutoff: 'debut arc', rules: RULES, fetchedAt: TODAY, entries: [...entries.values()].sort(byName) }
   const audit = {
     ...LICENCE,
+    defaultCutoff: 'debut arc',
+    rules: RULES,
     fetchedAt: TODAY,
     entries: [...auditEntries.values()].sort(byName),
     unmapped: [...unmapped.values()].sort(byName),
@@ -926,7 +993,7 @@ const { cache: arcs, note: arcNote } = await loadArcs()
 console.log(`  arcs: ${arcNote}`)
 
 const results = new Map()
-const tally = { mapped: 0, line: 0, unmapped: {}, noLine: {}, errors: 0 }
+const tally = { mapped: 0, line: 0, unmapped: {}, noLine: {}, errors: 0, mismatches: 0 }
 for (const name of names) {
   let r
   try {
@@ -947,6 +1014,7 @@ for (const name of names) {
   tally.mapped++
   const e = r.entry
   const a = r.audit
+  if (a.lineMismatch) tally.mismatches++
   const gate = e.arc ? `D ${e.debutChapter} · ${e.arc} · C ${e.cutoffChapter ?? 'open'}` : `D ${e.debutChapter ?? 'none'} · no arc`
   const birth = e.birth ? `${e.birth.month}/${e.birth.day}` : `no birth (${a.birthRaw ?? 'empty'})`
   if (e.line) {
@@ -967,7 +1035,7 @@ for (const name of names) {
 const written = writeOutputs(results, skipped)
 const seconds = ((Date.now() - started) / 1000).toFixed(1)
 console.log(
-  `Summary: ${tally.mapped} mapped, ${tally.line} with a line, unmapped ${JSON.stringify(tally.unmapped)}, no line ${JSON.stringify(tally.noLine)}, ${tally.errors} error(s)`,
+  `Summary: ${tally.mapped} mapped, ${tally.line} with a line, unmapped ${JSON.stringify(tally.unmapped)}, no line ${JSON.stringify(tally.noLine)}, ${tally.errors} error(s), ${tally.mismatches} line/clauses mismatch(es)`,
 )
 console.log(`  lines.json now ${written.entries} entries, audit.json ${written.unmapped} unmapped · ${requests} requests · ${seconds} s${DRY ? ' · dry run, nothing written' : ''}`)
 process.exit(tally.errors ? 1 : 0)
