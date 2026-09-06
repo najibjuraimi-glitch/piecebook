@@ -1,0 +1,173 @@
+{
+  "title": "Story Arcs",
+  "revid": 2128192,
+  "url": "https://onepiece.fandom.com/wiki/Story_Arcs?oldid=2128192",
+  "fetchedAt": "2026-09-06",
+  "arcs": [
+    {
+      "name": "Romance Dawn Arc",
+      "firstChapter": 1,
+      "lastChapter": 7
+    },
+    {
+      "name": "Orange Town Arc",
+      "firstChapter": 8,
+      "lastChapter": 21
+    },
+    {
+      "name": "Syrup Village Arc",
+      "firstChapter": 22,
+      "lastChapter": 41
+    },
+    {
+      "name": "Baratie Arc",
+      "firstChapter": 42,
+      "lastChapter": 68
+    },
+    {
+      "name": "Arlong Park Arc",
+      "firstChapter": 69,
+      "lastChapter": 95
+    },
+    {
+      "name": "Loguetown Arc",
+      "firstChapter": 96,
+      "lastChapter": 100
+    },
+    {
+      "name": "Reverse Mountain Arc",
+      "firstChapter": 101,
+      "lastChapter": 105
+    },
+    {
+      "name": "Whisky Peak Arc",
+      "firstChapter": 106,
+      "lastChapter": 114
+    },
+    {
+      "name": "Little Garden Arc",
+      "firstChapter": 115,
+      "lastChapter": 129
+    },
+    {
+      "name": "Drum Island Arc",
+      "firstChapter": 130,
+      "lastChapter": 154
+    },
+    {
+      "name": "Arabasta Arc",
+      "firstChapter": 155,
+      "lastChapter": 217
+    },
+    {
+      "name": "Jaya Arc",
+      "firstChapter": 218,
+      "lastChapter": 236
+    },
+    {
+      "name": "Skypiea Arc",
+      "firstChapter": 237,
+      "lastChapter": 302
+    },
+    {
+      "name": "Long Ring Long Land Arc",
+      "firstChapter": 303,
+      "lastChapter": 321
+    },
+    {
+      "name": "Water 7 Arc",
+      "firstChapter": 322,
+      "lastChapter": 374
+    },
+    {
+      "name": "Enies Lobby Arc",
+      "firstChapter": 375,
+      "lastChapter": 430
+    },
+    {
+      "name": "Post-Enies Lobby Arc",
+      "firstChapter": 431,
+      "lastChapter": 441
+    },
+    {
+      "name": "Thriller Bark Arc",
+      "firstChapter": 442,
+      "lastChapter": 489
+    },
+    {
+      "name": "Sabaody Archipelago Arc",
+      "firstChapter": 490,
+      "lastChapter": 513
+    },
+    {
+      "name": "Amazon Lily Arc",
+      "firstChapter": 514,
+      "lastChapter": 524
+    },
+    {
+      "name": "Impel Down Arc",
+      "firstChapter": 525,
+      "lastChapter": 549
+    },
+    {
+      "name": "Marineford Arc",
+      "firstChapter": 550,
+      "lastChapter": 580
+    },
+    {
+      "name": "Post-War Arc",
+      "firstChapter": 581,
+      "lastChapter": 597
+    },
+    {
+      "name": "Return to Sabaody Arc",
+      "firstChapter": 598,
+      "lastChapter": 602
+    },
+    {
+      "name": "Fish-Man Island Arc",
+      "firstChapter": 603,
+      "lastChapter": 653
+    },
+    {
+      "name": "Punk Hazard Arc",
+      "firstChapter": 654,
+      "lastChapter": 699
+    },
+    {
+      "name": "Dressrosa Arc",
+      "firstChapter": 700,
+      "lastChapter": 801
+    },
+    {
+      "name": "Zou Arc",
+      "firstChapter": 802,
+      "lastChapter": 824
+    },
+    {
+      "name": "Whole Cake Island Arc",
+      "firstChapter": 825,
+      "lastChapter": 902
+    },
+    {
+      "name": "Levely Arc",
+      "firstChapter": 903,
+      "lastChapter": 908
+    },
+    {
+      "name": "Wano Country Arc",
+      "firstChapter": 909,
+      "lastChapter": 1057
+    },
+    {
+      "name": "Egghead Arc",
+      "firstChapter": 1058,
+      "lastChapter": 1125
+    },
+    {
+      "name": "Elbaph Arc",
+      "firstChapter": 1126,
+      "lastChapter": null
+    }
+  ]
+}

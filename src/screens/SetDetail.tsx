@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ALL_TAB, getSet, rarityTabs, type CardSet } from '../data/seed'
 import { displayCode, displayName, getRosterSet, isUpcoming, releaseLine, rosterSealedProduct, type RosterSet } from '../data/roster'
+import { countdownPhrase } from '../lib/fandom'
+import { todayIso } from '../lib/format'
 import { getSealedGuidance } from '../data/sealed'
 import { getSetIntro, hasIntroContent, type SetIntro as SetIntroData } from '../data/intros'
 import { DEFAULT_SORT, matchesSearch, parseSort, sortCards, type SortKey } from '../lib/query'
@@ -42,7 +44,8 @@ export function SetDetailScreen() {
  * yet on Limitless. The code as the title like any set (read from TCGCSV's card
  * numbers; only a code still guessed by sequence stays hidden and the name
  * leads), the name without its "Extra Booster:" prefix, `US release 20 Nov 2026
- * · TCGplayer's date`, the BoxCard with the pre-order market, one sentence about
+ * · TCGplayer's date · in 75 days` (the countdown never says today or tomorrow
+ * on a TCGplayer day), the BoxCard with the pre-order market, one sentence about
  * the checklist, and the star. No search, no rarity tabs.
  */
 function UpcomingSetDetail({ roster }: { roster: RosterSet }) {
@@ -52,13 +55,15 @@ function UpcomingSetDetail({ roster }: { roster: RosterSet }) {
   const name = displayName(roster)
   // The story (7.1) where Bandai already has an EN page for the coming set; the dates stay TCGplayer's, in the header.
   const intro = getSetIntro(roster.setCode, roster.language)
+  const count = countdownPhrase(roster.enReleased, todayIso(), { namedDay: false })
+  const meta = [releaseLine(roster), count].filter(Boolean).join(' · ') || undefined
 
   return (
     <Screen>
       <BackBar
         title={code ?? name}
         subline={code ? name : undefined}
-        meta={releaseLine(roster) ?? undefined}
+        meta={meta}
         wrapTitle={code === null}
         fallbackTo="/"
         action={<StarButton subject="set" name={name} active={watch.isWatchingSet(roster.setCode)} onToggle={() => watch.toggleSet(roster.setCode)} />}

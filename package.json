@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "seed:refresh": "node scripts/seed-refresh.mjs",
     "seed:backfill": "node scripts/seed-backfill-tcgplayer.mjs",
-    "seed:check": "node scripts/seed-check.mjs"
+    "seed:check": "node scripts/seed-check.mjs",
+    "wiki:refresh": "node scripts/wiki-refresh.mjs"
   },
   "repository": {
     "type": "git",

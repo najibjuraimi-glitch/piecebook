@@ -93,16 +93,16 @@ export function gapPhrase(jpReleased: string | null, enReleased: string | null):
 
 /**
  * The row's second line, in ink: `JP 4 Nov 2022 · EN 10 Mar 2023 · 4 months
- * later`; for a set still ahead, `EN 20 Nov 2026 · US date`, because that date
- * is TCGplayer's, not Bandai's. Each clause is a separate string so the row can
- * keep them from breaking mid-date.
+ * later`; for a set still ahead whose day is TCGplayer's, `US date 20 Nov 2026`
+ * (not `EN … · US date`). The countdown is appended by the row, not here.
+ * Each clause is a separate string so the row can keep them from breaking
+ * mid-date.
  */
 export function dateClauses(row: TimelineRow): string[] {
   const clauses: string[] = []
   if (row.jpReleased) clauses.push(`JP ${formatDate(row.jpReleased)}`)
-  if (row.enReleased) clauses.push(`EN ${formatDate(row.enReleased)}`)
-  if (row.usDate) clauses.push('US date')
-  else {
+  if (row.enReleased) clauses.push(row.usDate ? `US date ${formatDate(row.enReleased)}` : `EN ${formatDate(row.enReleased)}`)
+  if (!row.usDate) {
     const gap = gapPhrase(row.jpReleased, row.enReleased)
     if (gap) clauses.push(gap)
   }

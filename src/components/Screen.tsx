@@ -65,7 +65,7 @@ export interface Crumb {
 interface BackBarProps {
   title?: string
   subline?: string
-  /** One quiet ink line under the subline, e.g. "You own 12 of 151". */
+  /** Quiet ink under the subline, e.g. "You own 12 of 151" or the upcoming date + countdown. Wraps so a long date line is not clipped. */
   meta?: string
   /** Path from home to here, e.g. Sets › OP-09 › OP09-004p1. Rendered in place of the title. */
   crumbs?: Crumb[]
@@ -123,7 +123,7 @@ export function BackBar({ title, subline, meta, crumbs, fallbackTo, action, wrap
         <div className="min-w-0 flex-1 pt-1.5">
           <h1 className={`tabular text-title text-ink ${wrapTitle ? 'break-words' : 'truncate'}`}>{title}</h1>
           {subline && <p className="truncate text-meta text-muted">{subline}</p>}
-          {meta && <p className="tabular mt-0.5 truncate text-meta text-ink">{meta}</p>}
+          {meta && <p className="tabular mt-0.5 text-meta text-ink">{meta}</p>}
         </div>
       )}
       {!title && crumbs && (
