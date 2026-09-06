@@ -1,15 +1,18 @@
 # Piecebook V1 — Customer lenses (shop + learn)
-(Design addendum, draft v2 after 40 seats then the same 40 on v1, 6 Sep 2026. Not approved. Not for merge.)
+(Design addendum, draft v3 after Jib’s new-tab note, 6 Sep 2026. Not approved. Not for merge.)
 
-Owner: Code as interim Cards, from Jib’s 6 Sep instruction to review Collectr and Bandai how-to-play, then live Piecebook, 20 shop + 20 learn (10 new / 10 play each)  
-For: Design (critique), the same 40 seats on v1, then Jib  
+Owner: Code as interim Cards, from Jib’s 6 Sep instruction to review Collectr and Bandai how-to-play, then live Piecebook, 20 shop + 20 learn (10 new / 10 play each), then Jib as a new tab  
+For: Design (critique), then Jib  
 Covers: Start here doors, Sets jumps, Learn to play — a pass on Collect and Play **before the next phase**  
-Reads with: `V1-DESIGN-PACK.md`, `V1-STARTER-DECKS-LINKS-LEARN-UI.md` (6.7), `V1-SETTILE-AND-GRID-PRICES.md`, `V1-BELONG-UI.md` (8.1), `seed-sources.md`
+Reads with: `V1-DESIGN-PACK.md`, `V1-STARTER-DECKS-LINKS-LEARN-UI.md` (6.7), `V1-SETTILE-AND-GRID-PRICES.md`, `V1-BELONG-UI.md` (8.1), `seed-sources.md`  
+Design seats: `docs/review/lenses/design/`
 
 Not a shop. No cart. No World-only third wave — those 40 already saw the World tab. No 9.2.
 
 ## Why
 The three pillars are up. Jib asked to look through shopper and learner eyes before opening the next phase. Collectr’s One Piece grid is a chase ticker (Price high to low, SAMPLE, Shop, +). Bandai’s how-to-play page is a funnel (video, boxes, official shop, app) and does not teach a turn. Piecebook already has the honest pieces (dated seed, five sentences, starter rows). The first door often missed them.
+
+Jib then sat as a new tab (6 Sep): Collect / Play / World are *our* words. Collectr is instantly a card shop. Bandai Asia (`https://asia-en.onepiece-cardgame.com/`) is instantly the card game. Piecebook’s Start here was not, even to the person building it. A stranger should not have to know our pillars to find cards, learn the TCG, or open the story.
 
 ## What we will not do
 - A cart, checkout, or buy button.
@@ -20,9 +23,17 @@ The three pillars are up. Jib asked to look through shopper and learner eyes bef
 - S$ chips on Sets (5.4 is Portfolio).
 - Search on World.
 
-## v2 on the glass
+## v3 on the glass
 
-**Start.** Search field first: `Find a card or a box` → `/?q=` (existing Sets search) and marks started. Collect: *Find a card or a box, then see what you have and what it is worth today.* Play opens **`/learn`**, not empty Decks: *The rules in five sentences, then Bandai’s own. Build a deck from your cards.* World unchanged.
+**Start.** Wordmark, then a visitor subline: *One Piece cards. Prices, the game, and the story.* Search field: `Find a card or a box` → `/?q=` (existing Sets search) and marks started. Three doors as set-tile cards — art we already serve, visitor title as the big type, house name as a muted eyebrow only:
+
+| Eyebrow | Title | Art | Opens |
+|---|---|---|---|
+| Collect | Find a card or a box | Cheapest released EN box (`cheapestReleasedBox()`, today OP-16) | `/` |
+| Play | Learn to play | ST-21 Gear 5 starter box (else ST-08) | `/learn` |
+| World | Story, people, fruits | Printed card `OP01-003` Monkey.D.Luffy | `/belong` |
+
+No accent on any door. No wiki image. No fruit picture. The “New to the game?” line is *Learn to play in five sentences.* Tab bar is still Sets · Collection · Decks · Portfolio · **World**.
 
 **Sets.** Same tiles, oldest EN first. The existing jump line also has **cheapest box** → `#cheapest-box` (today OP-16). The tile still prints the dated seed. Starter-deck jump stays.
 
@@ -45,13 +56,16 @@ No new feed. `cheapestReleasedBox()` reads `rosterSealedProduct` (TCGCSV newest 
 | ~6 new shoppers — set grid Price · high to low | Not taken. Shipped default. Search + lowest box + starters are the first-buy path |
 | 1 (C06) — S$ on Sets tiles | Not taken. 5.4 stays Portfolio |
 | 5 on v1 — search on Start | Built in v2: same Sets field, `/?q=` |
+| Jib as a new tab — Collect / Play / World are our words; Collectr and Bandai Asia name the place | v3: visitor titles, subline, existing box/card art on each door |
 
-## Decisions (draft v2 — for Jib)
+## Decisions (draft v3 — for Jib)
 1. Play door is Learn. Decks stays the tab and the last line on Learn.
 2. Collect copy is find, then own. Not a shop. Start search is the existing Sets field.
 3. Cheapest box is a jump, not a new sort. Oldest-first tiles stay. The tile still says seed.
 4. Learn leads with DON!! and life, then the five sentences, then starters, then Bandai.
-5. World is not this pass.
+5. Start speaks visitor language. Collect / Play / World stay muted house names. The headlines are Find a card or a box / Learn to play / Story, people, fruits.
+6. Each Start door carries existing product art (box or a printed card). No wiki, no fruit art, no cart.
+7. World is still the chrome name and the `/belong` door. No World-only review wave.
 
 ## Not taken, noted for later
 - Search field on Start.

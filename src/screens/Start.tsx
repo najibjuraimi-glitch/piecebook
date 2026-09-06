@@ -3,18 +3,43 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Screen } from '../components/Screen'
 import { ChevronRight } from '../components/SetTile'
 import { SearchField } from '../components/SearchField'
+import { cheapestReleasedBox, ROSTER, type RosterSet } from '../data/roster'
+import { getCard, type Card } from '../data/seed'
 import { markStarted } from '../store/started'
 
 /**
- * Start here (8.1 / 11.1): the wordmark, then three doors. Collect and Play keep
- * the pillar words. The third door is World — the house name on the glass, not
- * the pillar word Belong. No accent on any door, nothing lit in the tab bar,
- * nothing remembered but the fact that the visitor has been here.
+ * Start here (lenses v3): visitor language first. The wordmark names One Piece
+ * cards; the doors are jobs a new tab can read (find, learn, story) — Collect,
+ * Play and World stay muted house names, not the headline. Each door carries
+ * art we already serve (TCGplayer box, Limitless card). No accent.
  */
+const FIND_BOX: RosterSet | undefined = cheapestReleasedBox() ?? ROSTER.find((s) => s.setCode === 'OP-01')
+const LEARN_BOX: RosterSet | undefined =
+  ROSTER.find((s) => s.setCode === 'ST-21') ?? ROSTER.find((s) => s.setCode === 'ST-08')
+const STORY_CARD: Card | undefined = getCard('OP01-003')
+
 const DOORS = [
-  { pillar: 'Collect', question: 'Find a card or a box, then see what you have and what it is worth today.', to: '/' },
-  { pillar: 'Play', question: 'The rules in five sentences, then Bandai’s own. Build a deck from your cards.', to: '/learn' },
-  { pillar: 'World', question: 'The story, the people, the fruits, and the game — as far as you have read.', to: '/belong' },
+  {
+    house: 'Collect',
+    title: 'Find a card or a box',
+    question: 'Every English set, with dated seed prices. Then what you have and what it is worth today.',
+    to: '/',
+    art: { kind: 'box' as const, set: FIND_BOX },
+  },
+  {
+    house: 'Play',
+    title: 'Learn to play',
+    question: 'The rules in five sentences, then Bandai’s own. Build a deck from your cards.',
+    to: '/learn',
+    art: { kind: 'box' as const, set: LEARN_BOX },
+  },
+  {
+    house: 'World',
+    title: 'Story, people, fruits',
+    question: 'The story, the people, the fruits, and the game — as far as you have read.',
+    to: '/belong',
+    art: { kind: 'card' as const, card: STORY_CARD },
+  },
 ]
 
 const LINK = 'text-ink underline decoration-line underline-offset-2 transition-colors duration-150 ease-out hover:decoration-ink'
@@ -35,6 +60,7 @@ export function StartScreen() {
         <h1 className="text-display tracking-[-0.01em] text-ink" aria-label="Piecebook">
           Piecebook
         </h1>
+        <p className="mt-2 max-w-[40ch] text-body text-ink">One Piece cards. Prices, the game, and the story.</p>
       </header>
 
       <form role="search" onSubmit={find} className="mb-8">
@@ -48,17 +74,21 @@ export function StartScreen() {
 
       <ul className="grid grid-cols-1 gap-3 tablet:grid-cols-3">
         {DOORS.map((d) => (
-          <li key={d.pillar}>
+          <li key={d.house}>
             <Link
               to={d.to}
               onClick={markStarted}
-              className="flex h-full min-h-[96px] items-start justify-between gap-4 rounded-2xl border border-line bg-surface p-5 shadow-paper transition-transform duration-150 ease-out active:scale-[0.99]"
+              className="block h-full overflow-hidden rounded-2xl border border-line bg-surface shadow-paper transition-transform duration-150 ease-out active:scale-[0.99]"
             >
-              <span className="min-w-0">
-                <span className="block text-meta font-medium uppercase tracking-[0.08em] text-muted">{d.pillar}</span>
-                <span className="mt-1.5 block text-body text-ink">{d.question}</span>
+              <DoorArt art={d.art} />
+              <span className="flex items-start justify-between gap-4 p-5">
+                <span className="min-w-0">
+                  <span className="block text-meta font-medium uppercase tracking-[0.08em] text-muted">{d.house}</span>
+                  <span className="mt-1.5 block text-title text-ink">{d.title}</span>
+                  <span className="mt-1 block text-body text-ink">{d.question}</span>
+                </span>
+                <ChevronRight className="h-5 w-5 shrink-0 self-center text-muted" />
               </span>
-              <ChevronRight className="h-5 w-5 shrink-0 self-center text-muted" />
             </Link>
           </li>
         ))}
@@ -67,7 +97,7 @@ export function StartScreen() {
       <p className="mt-8 max-w-[60ch] text-body text-ink">
         New to the game?{' '}
         <Link to="/learn" onClick={markStarted} className={LINK}>
-          Play has the rules in five sentences.
+          Learn to play in five sentences.
         </Link>
       </p>
       <p className="mt-3 max-w-[60ch] text-meta text-ink">
@@ -84,5 +114,53 @@ export function StartScreen() {
         Just show me the sets
       </Link>
     </Screen>
+  )
+}
+
+type DoorArtProps =
+  | { kind: 'box'; set: RosterSet | undefined }
+  | { kind: 'card'; card: Card | undefined }
+
+/**
+ * Top band of a Start door. Box renders letterbox on white like a set tile.
+ * The story door uses a printed card we already show (not wiki or fruit art).
+ */
+function DoorArt({ art }: { art: DoorArtProps }) {
+  const [loaded, setLoaded] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const src = art.kind === 'box' ? art.set?.boxArtUrl : art.card?.imageUrl
+  const showArt = Boolean(src) && !failed
+  const artShown = showArt && loaded
+  const alt =
+    art.kind === 'box'
+      ? art.set
+        ? `${art.set.setName} ${art.set.product === 'starter_deck' ? 'starter deck' : 'booster box'}`
+        : ''
+      : art.card
+        ? `${art.card.name} ${art.card.cardNumber}`
+        : ''
+
+  return (
+    <div className={`relative aspect-[3/2] w-full overflow-hidden ${artShown ? 'bg-white' : 'bg-[#EFEBE3]'}`}>
+      {showArt && src && (
+        <img
+          src={src}
+          alt={alt}
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className={`h-full w-full transition-opacity duration-200 ease-out ${
+            art.kind === 'card' ? 'object-cover object-top' : 'object-contain p-3'
+          } ${loaded ? 'opacity-100' : 'opacity-0'}`}
+        />
+      )}
+      {!artShown && (
+        <div className="absolute inset-0 flex items-end p-5" aria-hidden="true">
+          <p className="text-display text-ink">
+            {art.kind === 'box' ? (art.set?.setCode ?? 'Box') : (art.card?.cardNumber ?? 'Card')}
+          </p>
+        </div>
+      )}
+    </div>
   )
 }
