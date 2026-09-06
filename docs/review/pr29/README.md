@@ -1,4 +1,4 @@
-# PR #29 — Fandom page draft 11 v2
+# PR #29 — Phase 9.1 Fandom page (draft)
 
 Phone 390 (deviceScaleFactor 2) and wide 1280 against `npx vite preview` of this branch. Console clean. Chrome says **World**. Route is `/belong`. Belong does not appear on the glass.
 
@@ -9,8 +9,8 @@ Phone 390 (deviceScaleFactor 2) and wide 1280 against `npx vite preview` of this
 | `phone-belong-east-blue.png` | East Blue featured row is Arlong Park title and range — no paragraph |
 | `wide-world.png` / `wide-belong-east-blue.png` | Four doors, On This Day, featured index row, The game rows |
 | `phone-story.png` / `phone-story-east-blue.png` | Crumb **World › Story**; titles and ranges only |
-| `phone-people.png` / `wide-people.png` | 28 names at East Blue · 728 printed; Alvida, Arlong, no Absalom |
-| `phone-fruits-debut.png` | Dex closed until a saga chip |
+| `phone-people.png` / `wide-people.png` | East Blue log: stored fruit and debut when we have them; Alvida, Arlong, no Absalom |
+| `phone-fruits-debut.png` | Fruit log closed until a saga chip |
 | `phone-fruits-east-blue.png` | Gum-Gum Fruit · Gomu Gomu no Mi · Paramecia; no Nika |
 | `phone-who-mihawk-wano.png` | Character page stays the Sets print book; who-is follows the chip |
 | `wide-start.png` | Start here doors on 1280 |

@@ -51,7 +51,11 @@ export function personLogLine(name: string, reader: ReaderCutoff): string | null
   const fruit = fruitForPerson(name)
   if (fruit && fruitVisible(fruit, reader)) parts.push(fruit.name)
   const debut = personDebut(name)
-  if (debut != null && (reader.finished || reader.chapter == null || debut <= reader.chapter)) {
+  if (
+    debut != null &&
+    debut > 0 &&
+    (reader.finished || reader.chapter == null || debut <= reader.chapter)
+  ) {
     parts.push(`ch ${debut}`)
   }
   return parts.length ? parts.join(' · ') : null

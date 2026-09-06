@@ -14,7 +14,7 @@ const LINK = 'text-ink underline decoration-line underline-offset-2 transition-c
 
 const ROOMS = [
   { to: '/belong/story', pillar: 'Story', question: 'Every main arc, its chapters and episodes. Titles and ranges only — no plot.' },
-  { to: '/belong/people', pillar: 'People', question: 'A stored log of every printed Character and Leader, A–Z, into the prints you already have.' },
+  { to: '/belong/people', pillar: 'People', question: 'A stored log of every printed Character and Leader: name, fruit and debut chapter when we have them.' },
   { to: '/belong/fruits', pillar: 'Fruits', question: 'A stored log of Devil Fruits on the printed names we have asked: English, Japanese, type, who ate it.' },
   { to: '/?view=timeline', pillar: 'The game', question: 'Sets in English order, who drew each card, what is coming next.' },
 ]
