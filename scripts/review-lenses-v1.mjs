@@ -54,7 +54,7 @@ const wide = { width: 1280, height: 800, scale: 1 }
 
 async function run(size, prefix) {
   const { context, page } = await open({ ...size, started: false })
-  await go(page, '/start')
+  await go(page, '/')
   await shot(page, `${prefix}-start-fold.png`, { fullPage: false })
   await shot(page, `${prefix}-start.png`)
   await context.close()

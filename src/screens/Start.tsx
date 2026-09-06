@@ -5,15 +5,13 @@ import { ChevronRight } from '../components/SetTile'
 import { SearchField } from '../components/SearchField'
 import { cheapestReleasedBox, ROSTER, type RosterSet } from '../data/roster'
 import { getCard, type Card } from '../data/seed'
-import { markStarted } from '../store/started'
-
 /**
- * Start here (lenses v3): visitor language first. The wordmark names One Piece
- * cards; the doors are jobs a new tab can read (find, learn, story) — Collect,
- * Play and World stay muted house names, not the headline. Each door carries
- * art we already serve (TCGplayer box, Limitless card). On the phone the art
- * is a 96px chip so all three jobs sit on the first fold; from tablet it is a
- * 3:2 band like a set tile. No accent.
+ * Home (`/`): visitor language first. The wordmark names One Piece cards; the
+ * doors are jobs a new tab can read (find, learn, story) — Collect, Play and
+ * World stay muted house names, not the headline. Each door carries art we
+ * already serve (TCGplayer box, Limitless card). On the phone the art is a
+ * 96px chip so all three jobs sit on the first fold; from tablet it is a 3:2
+ * band like a set tile. No accent. Shown every visit — not a one-shot.
  */
 const FIND_BOX: RosterSet | undefined = cheapestReleasedBox() ?? ROSTER.find((s) => s.setCode === 'OP-01')
 const LEARN_BOX: RosterSet | undefined =
@@ -25,7 +23,7 @@ const DOORS = [
     house: 'Collect',
     title: 'Find a card or a box',
     question: 'Every English set, with dated prices. Then what you have and what it is worth today.',
-    to: '/',
+    to: '/sets',
     art: { kind: 'box' as const, set: FIND_BOX },
   },
   {
@@ -51,9 +49,8 @@ export function StartScreen() {
   const navigate = useNavigate()
   const find = (e: FormEvent) => {
     e.preventDefault()
-    markStarted()
     const q = query.trim()
-    navigate(q ? `/?q=${encodeURIComponent(q)}` : '/')
+    navigate(q ? `/sets?q=${encodeURIComponent(q)}` : '/sets')
   }
 
   return (
@@ -79,7 +76,6 @@ export function StartScreen() {
           <li key={d.house}>
             <Link
               to={d.to}
-              onClick={markStarted}
               className="flex h-full items-center gap-3 overflow-hidden rounded-2xl border border-line bg-surface p-3 shadow-paper transition-transform duration-150 ease-out active:scale-[0.99] tablet:flex-col tablet:items-stretch tablet:gap-0 tablet:p-0"
             >
               <DoorArt art={d.art} />
@@ -100,13 +96,13 @@ export function StartScreen() {
 
       <p className="mt-8 max-w-[60ch] text-body text-ink">
         New to the game?{' '}
-        <Link to="/learn" onClick={markStarted} className={LINK}>
+        <Link to="/learn" className={LINK}>
           Learn to play in five sentences.
         </Link>
       </p>
       <p className="mt-3 max-w-[60ch] text-meta text-ink">
         Nothing here is invented: prices from TCGplayer, cards from Limitless, dates from Bandai.{' '}
-        <Link to="/about-prices" onClick={markStarted} className={LINK}>
+        <Link to="/about-prices" className={LINK}>
           Read how prices work.
         </Link>
       </p>
@@ -114,7 +110,7 @@ export function StartScreen() {
         Piecebook is unofficial. Not affiliated with Eiichiro Oda, Shueisha, Toei Animation, or Bandai.
       </p>
 
-      <Link to="/" onClick={markStarted} className={`mt-6 inline-flex h-11 items-center text-[15px] font-medium ${LINK}`}>
+      <Link to="/sets" className={`mt-6 inline-flex h-11 items-center text-[15px] font-medium ${LINK}`}>
         Just show me the sets
       </Link>
     </Screen>

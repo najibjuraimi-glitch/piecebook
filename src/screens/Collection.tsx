@@ -242,7 +242,7 @@ export function CollectionScreen() {
         watching ? (
           <p className="px-1 pt-2 text-body text-muted">No owned cards yet.</p>
         ) : (
-          <EmptyState message="No owned cards yet." ctaLabel="Browse sets" ctaTo="/" />
+          <EmptyState message="No owned cards yet." ctaLabel="Browse sets" ctaTo="/sets" />
         )
       ) : (
         <>

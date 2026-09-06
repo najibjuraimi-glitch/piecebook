@@ -28,7 +28,7 @@ export function ArtistScreen() {
   if (!attrs) {
     return (
       <Screen>
-        <BackBar fallbackTo="/" crumbs={[{ label: 'Sets', to: '/' }, { label: name }]} />
+        <BackBar fallbackTo="/sets" crumbs={[{ label: 'Sets', to: '/sets' }, { label: name }]} />
         <header className="mb-6">
           <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">Illustrator</p>
           <h1 className="mt-1 text-display text-ink">{name}</h1>
@@ -46,7 +46,7 @@ export function ArtistScreen() {
 
   return (
     <Screen>
-      <BackBar fallbackTo="/" crumbs={[{ label: 'Sets', to: '/' }, { label: artist.name }]} />
+      <BackBar fallbackTo="/sets" crumbs={[{ label: 'Sets', to: '/sets' }, { label: artist.name }]} />
 
       <header className="mb-6">
         <p className="text-meta font-medium uppercase tracking-[0.08em] text-muted">Illustrator</p>

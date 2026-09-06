@@ -1,14 +1,14 @@
 import { Link } from 'react-router-dom'
 import { CONTENT_COLUMN, Wordmark } from './Screen'
 
-/** Sets is home for the whole box › cards tree, including the search cross-cuts into it (card, character and artist views). */
+/** Sets is the catalog: `/sets`, a set page, and the search cross-cuts into that tree. `/` is home (Start). */
 export const isSetsSection = (p: string) =>
-  p === '/' || p.startsWith('/sets') || p.startsWith('/cards') || p.startsWith('/characters') || p.startsWith('/artists')
+  p === '/sets' || p.startsWith('/sets/') || p.startsWith('/cards') || p.startsWith('/characters') || p.startsWith('/artists')
 
 export const isBelongSection = (p: string) => p === '/belong' || p.startsWith('/belong/')
 
 const LINKS = [
-  { to: '/', label: 'Sets', match: isSetsSection },
+  { to: '/sets', label: 'Sets', match: isSetsSection },
   { to: '/collection', label: 'Collection', match: (p: string) => p.startsWith('/collection') },
   { to: '/decks', label: 'Decks', match: (p: string) => p.startsWith('/decks') },
   { to: '/portfolio', label: 'Portfolio', match: (p: string) => p.startsWith('/portfolio') },
@@ -23,7 +23,7 @@ export function TopBar({ pathname }: { pathname: string }) {
   return (
     <header className="hidden border-b border-line bg-paper tablet:block">
       <div className={`${CONTENT_COLUMN} flex h-14 items-center justify-between`}>
-        <Link to="/" className="rounded-md" aria-label="Piecebook, Sets">
+        <Link to="/" className="rounded-md" aria-label="Piecebook">
           <Wordmark />
         </Link>
         <nav aria-label="Primary">

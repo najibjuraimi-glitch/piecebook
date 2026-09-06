@@ -10,7 +10,7 @@ import { BackBar, Screen } from '../components/Screen'
 export function AboutPricesScreen() {
   return (
     <Screen>
-      <BackBar fallbackTo="/" crumbs={[{ label: 'Sets', to: '/' }, { label: 'How prices work' }]} />
+      <BackBar fallbackTo="/sets" crumbs={[{ label: 'Sets', to: '/sets' }, { label: 'How prices work' }]} />
 
       <h1 className="text-display text-ink">How prices work</h1>
       <p className="mt-2 max-w-[60ch] text-body text-muted">
@@ -82,7 +82,7 @@ export function AboutPricesScreen() {
           <Link to="/data" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
             Data health
           </Link>
-          . Back to <Link to="/" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">Sets</Link>.
+          . Back to <Link to="/sets" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">Sets</Link>.
         </p>
       </div>
     </Screen>

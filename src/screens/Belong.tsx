@@ -16,7 +16,7 @@ const ROOMS = [
   { to: '/belong/story', pillar: 'Story', question: 'Every main arc, its chapters and episodes. Titles and ranges only — no plot.' },
   { to: '/belong/people', pillar: 'People', question: 'A stored log of every printed Character and Leader: name, fruit and debut chapter when we have them.' },
   { to: '/belong/fruits', pillar: 'Fruits', question: 'A stored log of Devil Fruits on the printed names we have asked: English, Japanese, type, who ate it.' },
-  { to: '/?view=timeline', pillar: 'The game', question: 'Sets in English order, who drew each card, what is coming next.' },
+  { to: '/sets?view=timeline', pillar: 'The game', question: 'Sets in English order, who drew each card, what is coming next.' },
 ]
 
 /**
@@ -108,8 +108,8 @@ export function BelongScreen() {
         </h2>
         <ul className="mt-3 divide-y divide-line rounded-2xl border border-line bg-surface">
           {[
-            { to: '/', label: 'What you own', note: 'Sets, the collection, what it is worth today' },
-            { to: '/?view=timeline', label: 'Sets in order', note: 'English release, On This Day, what is coming' },
+            { to: '/sets', label: 'What you own', note: 'Sets, the collection, what it is worth today' },
+            { to: '/sets?view=timeline', label: 'Sets in order', note: 'English release, On This Day, what is coming' },
             { to: '/decks', label: 'Play', note: 'Build a deck from your cards' },
           ].map((row) => (
             <li key={row.to}>

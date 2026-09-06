@@ -52,7 +52,7 @@ function CardDetail({ card }: { card: Card }) {
       <BackBar
         fallbackTo={`/sets/${encodeURIComponent(card.setCode)}`}
         crumbs={[
-          { label: 'Sets', to: '/' },
+          { label: 'Sets', to: '/sets' },
           { label: card.setCode, to: `/sets/${encodeURIComponent(card.setCode)}` },
           { label: card.cardNumber },
         ]}

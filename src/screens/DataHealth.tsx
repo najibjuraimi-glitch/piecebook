@@ -13,7 +13,7 @@ export function DataHealthScreen() {
 
   return (
     <Screen>
-      <BackBar fallbackTo="/" crumbs={[{ label: 'Sets', to: '/' }, { label: 'Data health' }]} />
+      <BackBar fallbackTo="/sets" crumbs={[{ label: 'Sets', to: '/sets' }, { label: 'Data health' }]} />
 
       <h1 className="text-display text-ink">Data health</h1>
       <p className="mt-2 max-w-[60ch] text-body text-ink">

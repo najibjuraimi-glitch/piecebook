@@ -34,8 +34,8 @@ export function CharacterScreen() {
   return (
     <Screen>
       <BackBar
-        fallbackTo="/"
-        crumbs={[{ label: 'Sets', to: '/' }, { label: name }]}
+        fallbackTo="/sets"
+        crumbs={[{ label: 'Sets', to: '/sets' }, { label: name }]}
         action={<StarButton subject="character" name={name} active={watch.isWatchingCharacter(name)} onToggle={() => watch.toggleCharacter(name)} />}
       />
 

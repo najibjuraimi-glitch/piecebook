@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import React, { useMemo } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { cheapestReleasedBox, ROSTER, UPCOMING } from '../data/roster'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { ChevronRight, SetTile } from '../components/SetTile'
@@ -12,7 +12,6 @@ import { ViewTabs } from '../components/ViewTabs'
 import { Timeline } from '../components/Timeline'
 import { resolveCardNumber, searchAll } from '../lib/search'
 import { useCollection } from '../store/collection'
-import { claimFirstShowing, hasStarted } from '../store/started'
 
 /** The two views of Sets home (7.2): tiles by set, or every booster in English release order. The view lives in the URL only. */
 const VIEWS = [
@@ -40,11 +39,9 @@ export function SetsScreen() {
   const cheapestBox = cheapestReleasedBox()
   // Facets (2.3) read every set's attributes; they load on the first search and stay.
   const attrs = useSearchAttributes(searching)
-  const { isOwned, owned } = useCollection()
+  const { isOwned } = useCollection()
   const results = useMemo(() => searchAll(query, { attrs, isOwned }), [query, attrs, isOwned])
   const loading = searching && !attrs
-  useStartHere(Object.keys(owned).length === 0)
-
   const setQuery = (q: string) => {
     const next = new URLSearchParams(params)
     if (q.trim()) next.set('q', q)
@@ -152,35 +149,17 @@ export function SetsScreen() {
               </ul>
             </section>
           )}
-          {/* One quiet door back to Start here (8.1), for whoever skipped it or wants the other two pillars. */}
           <Link
-            to="/start"
+            to="/"
             className="mt-8 flex h-12 items-center justify-between rounded-2xl border border-line bg-surface px-4 text-[15px] font-medium text-ink transition-colors duration-150 ease-out hover:bg-white"
           >
-            Start here
+            Piecebook
             <ChevronRight />
           </Link>
         </div>
       )}
     </Screen>
   )
-}
-
-/**
- * Start here (8.1) shows once: a first visit to `/` itself — not a deep link, not
- * a search, not the timeline — with nothing owned and the flag unset goes to
- * `/start`. The flag is set only by a door or "Just show me the sets"; a
- * session marker stops the redirect repeating within one visit.
- */
-function useStartHere(nothingOwned: boolean) {
-  const { pathname, search } = useLocation()
-  const navigate = useNavigate()
-  useEffect(() => {
-    if (pathname !== '/' || search !== '' || !nothingOwned || hasStarted()) return
-    if (claimFirstShowing()) navigate('/start', { replace: true })
-    // Only the landing matters; later changes to the collection on this screen do not send anyone back.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 }
 
 /** A same-page jump inside a sentence: the words stay on the line, the target is 44px tall around them. */

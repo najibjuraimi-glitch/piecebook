@@ -10,7 +10,7 @@ export function NotFoundScreen({ title = 'Not found', message = 'Nothing here.' 
   return (
     <Screen>
       <ScreenTitle title={title} />
-      <EmptyState message={message} ctaLabel="Browse sets" ctaTo="/" />
+      <EmptyState message={message} ctaLabel="Browse sets" ctaTo="/sets" />
     </Screen>
   )
 }
