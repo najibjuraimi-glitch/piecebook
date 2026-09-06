@@ -31,13 +31,13 @@ export function StartScreen() {
             <Link
               to={d.to}
               onClick={markStarted}
-              className="flex h-full min-h-[96px] items-center justify-between gap-4 rounded-2xl border border-line bg-surface p-5 shadow-paper transition-transform duration-150 ease-out active:scale-[0.99]"
+              className="flex h-full min-h-[96px] items-start justify-between gap-4 rounded-2xl border border-line bg-surface p-5 shadow-paper transition-transform duration-150 ease-out active:scale-[0.99]"
             >
               <span className="min-w-0">
                 <span className="block text-meta font-medium uppercase tracking-[0.08em] text-muted">{d.pillar}</span>
                 <span className="mt-1.5 block text-body text-ink">{d.question}</span>
               </span>
-              <ChevronRight className="h-5 w-5 shrink-0 text-muted" />
+              <ChevronRight className="h-5 w-5 shrink-0 self-center text-muted" />
             </Link>
           </li>
         ))}
