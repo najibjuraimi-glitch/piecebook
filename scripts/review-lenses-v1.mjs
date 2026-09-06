@@ -36,9 +36,11 @@ async function open({ width, height, scale, started }) {
   return { context, page }
 }
 
-async function shot(page, file) {
+async function shot(page, file, { fullPage = true } = {}) {
   await page.waitForTimeout(400)
-  await page.screenshot({ path: join(OUT, file), fullPage: true })
+  await page.locator('img').first().waitFor({ state: 'visible', timeout: 8000 }).catch(() => {})
+  await page.waitForTimeout(800)
+  await page.screenshot({ path: join(OUT, file), fullPage })
   console.log(`  ${file}`)
 }
 
@@ -53,6 +55,7 @@ const wide = { width: 1280, height: 800, scale: 1 }
 async function run(size, prefix) {
   const { context, page } = await open({ ...size, started: false })
   await go(page, '/start')
+  await shot(page, `${prefix}-start-fold.png`, { fullPage: false })
   await shot(page, `${prefix}-start.png`)
   await context.close()
 
