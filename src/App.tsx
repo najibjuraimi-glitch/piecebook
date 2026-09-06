@@ -16,6 +16,10 @@ import { DeckBuilderScreen } from './screens/DeckBuilder'
 import { LearnScreen } from './screens/Learn'
 import { StartScreen } from './screens/Start'
 import { DataHealthScreen } from './screens/DataHealth'
+import { BelongScreen } from './screens/Belong'
+import { BelongStoryScreen } from './screens/BelongStory'
+import { BelongPeopleScreen } from './screens/BelongPeople'
+import { BelongFruitsScreen } from './screens/BelongFruits'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -47,6 +51,10 @@ export default function App() {
         <Route path="/decks/:id" element={<DeckBuilderScreen />} />
         <Route path="/learn" element={<LearnScreen />} />
         <Route path="/start" element={<StartScreen />} />
+        <Route path="/belong" element={<BelongScreen />} />
+        <Route path="/belong/story" element={<BelongStoryScreen />} />
+        <Route path="/belong/people" element={<BelongPeopleScreen />} />
+        <Route path="/belong/fruits" element={<BelongFruitsScreen />} />
         <Route path="*" element={<NotFoundScreen />} />
       </Routes>
       <TabBar pathname={pathname} />

@@ -22,6 +22,7 @@ Bold entries were added after the audit on 5 Sep 2026; before them the map was a
 | **6 Play** | 6.3 deck gap priced from the collection | **6.1 decks home · 6.2 deck builder · 6.4 legality · 6.5 starter decks · 6.6 tournament decks link · 6.7 learn to play** | — |
 | **7 Belong (fandom)** | 7.2 timeline, 7.5 upcoming sets, 7.11 countdown | 7.3 artists | **7.1 set stories · 7.2 release timeline · 7.3 artists · 7.4 characters + watch · 7.5 upcoming sets · 7.6 official events · 7.7 wiki pipeline · 7.8 Who is / Born · 7.9 On This Day · 7.10 Today's card (stood down) · 7.11 countdown** |
 | **8 Start here** | Collect door | Play door | Belong door |
+| **9 Fandom page** | — | — | **9.1 World: story index, people log, fruit log, reader cutoff** |
 
 ## Order of work
 Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 → 4), with 1.0 (attribute capture) pulled forward because it is a one-day pipeline change that unlocks both other pillars; then Play (6), Belong (7), Start here (8).
@@ -32,9 +33,10 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 5.1 — SG asks for the other 20 boxes: closed as superseded (Jib, 5 Sep 2026). The SG ask was a hand-read Carousell figure with no automated source; since 3.1 / 3.2 every box price is TCGplayer market, read daily, and the SG line is retired from the UI. Nothing manual is added to the data.
 - 5.4 — Currency display: built 6 Sep 2026. Portfolio only. `US $` / `S$` chips, remembered, default US $. S$ is the USD seed at the dated ECB cross (`data/fx-usd-sgd.json`, EUR/SGD ÷ EUR/USD). Costs never convert. P/L stays in US dollars on both tabs. Amends the PRD's no-FX line: no invented rates; a dated central-bank table is not a bank quote.
 - 5.2 (multiple collections) and 5.3 (graded prices, population) stay parked: nobody in the research asked for 5.2; 5.3 has no free licensed source (PriceCharting's paid API or PSA's population data would need a budget decision first).
+- 9.1 — Fandom page (Jib, 6 Sep 2026). Shipped PR #29. `/belong` is the fandom home: a story index (titles and chapter/episode ranges — no plot), a stored log of fruits and people, a reader cutoff, a fifth tab **World**. Fruit rows stay text. ClickUp: https://app.clickup.com/t/86eyuqatu. See `docs/V1-FANDOM-PAGE-UI.md`.
 
 ## Hypotheses, not taken as given
-- 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Next-phase interest only: ringgit, rupiah, and language translation *may* matter. Seat collectors in those markets in the next research round before any map row besides this decision opens.
+- 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Later only: ringgit, rupiah, and language translation *may* matter. Not a phase you finish before the fandom page. Seat collectors in those markets before any map row besides this decision opens. Parked: https://app.clickup.com/t/86eyuqbbq. Not work to start.
 
 ## Decisions parked on the board
 - 6.1 — where decks live (fourth tab vs under Collection)
@@ -42,4 +44,4 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 6.6 — decklists: link only, or import as a source
 
 ## Task list
-`docs/growth-map.csv` holds every task (49 rows) with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. Rows marked `NO` (10.0) or `NO (quota)` (7.6 events) are not in ClickUp; do not create 10.0 until research in MY and ID asks. 5.4 and 9.1 built 6 Sep 2026. The dependencies to wire are in the `Depends on` column.
+`docs/growth-map.csv` holds every task with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. ClickUp Team Space › Piecebook lists are Phase 0–9 (shipped), then Ongoing and Later. 7.6 is already a low to-do. 5.4, weekly data health, and 9.1 built 6 Sep 2026. The dependencies to wire are in the `Depends on` column. Growth map page in the pinned ClickUp doc. No 9.2 until Jib asks.

@@ -1,5 +1,6 @@
 import { getWiki } from '../data/wiki'
 import { bornLabel, visibleLine } from '../lib/fandom'
+import { useReaderCutoff } from '../store/readerCutoff'
 
 /**
  * The who-is block for a character page (7.8): the gated wiki sentence in ink
@@ -7,8 +8,9 @@ import { bornLabel, visibleLine } from '../lib/fandom'
  * the Char Box parsed a day. Attribution sits after the prints line, not here.
  */
 export function WhoIs({ name, className = '' }: { name: string; className?: string }) {
+  const reader = useReaderCutoff()
   const entry = getWiki(name)
-  const line = visibleLine(entry)
+  const line = visibleLine(entry, { chapter: reader.chapter, finished: reader.finished })
   if (!line && !entry?.birth) return null
   return (
     <div className={`max-w-[60ch] ${className}`}>

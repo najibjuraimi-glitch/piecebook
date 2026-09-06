@@ -5,6 +5,7 @@ import App from './App'
 import { CollectionProvider } from './store/collection'
 import { WatchlistProvider } from './store/watchlist'
 import { DecksProvider } from './store/decks'
+import { ReaderCutoffProvider } from './store/readerCutoff'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -13,7 +14,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <CollectionProvider>
         <WatchlistProvider>
           <DecksProvider>
-            <App />
+            <ReaderCutoffProvider>
+              <App />
+            </ReaderCutoffProvider>
           </DecksProvider>
         </WatchlistProvider>
       </CollectionProvider>

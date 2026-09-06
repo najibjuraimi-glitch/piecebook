@@ -1,0 +1,243 @@
+{
+  "source": "One Piece Wiki (onepiece.fandom.com)",
+  "licence": "CC BY-SA 3.0",
+  "licenceUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+  "title": "Story Arcs",
+  "revid": 2128192,
+  "url": "https://onepiece.fandom.com/wiki/Story_Arcs?oldid=2128192",
+  "fetchedAt": "2026-09-06",
+  "rules": "Index only: arc title plus Chapters (a-b) and Episodes (c-d) from the wiki Story Arcs page. No plot paragraph is stored. Chapter pages are titles, not plots; official synopses are not stored.",
+  "arcs": [
+    {
+      "name": "Romance Dawn Arc",
+      "firstChapter": 1,
+      "lastChapter": 7,
+      "firstEpisode": 1,
+      "lastEpisode": 4
+    },
+    {
+      "name": "Orange Town Arc",
+      "firstChapter": 8,
+      "lastChapter": 21,
+      "firstEpisode": 4,
+      "lastEpisode": 8
+    },
+    {
+      "name": "Syrup Village Arc",
+      "firstChapter": 22,
+      "lastChapter": 41,
+      "firstEpisode": 9,
+      "lastEpisode": 18
+    },
+    {
+      "name": "Baratie Arc",
+      "firstChapter": 42,
+      "lastChapter": 68,
+      "firstEpisode": 19,
+      "lastEpisode": 30
+    },
+    {
+      "name": "Arlong Park Arc",
+      "firstChapter": 69,
+      "lastChapter": 95,
+      "firstEpisode": 31,
+      "lastEpisode": 44
+    },
+    {
+      "name": "Loguetown Arc",
+      "firstChapter": 96,
+      "lastChapter": 100,
+      "firstEpisode": 45,
+      "lastEpisode": 53
+    },
+    {
+      "name": "Reverse Mountain Arc",
+      "firstChapter": 101,
+      "lastChapter": 105,
+      "firstEpisode": 62,
+      "lastEpisode": 63
+    },
+    {
+      "name": "Whisky Peak Arc",
+      "firstChapter": 106,
+      "lastChapter": 114,
+      "firstEpisode": 64,
+      "lastEpisode": 67
+    },
+    {
+      "name": "Little Garden Arc",
+      "firstChapter": 115,
+      "lastChapter": 129,
+      "firstEpisode": 70,
+      "lastEpisode": 77
+    },
+    {
+      "name": "Drum Island Arc",
+      "firstChapter": 130,
+      "lastChapter": 154,
+      "firstEpisode": 78,
+      "lastEpisode": 91
+    },
+    {
+      "name": "Arabasta Arc",
+      "firstChapter": 155,
+      "lastChapter": 217,
+      "firstEpisode": 92,
+      "lastEpisode": 130
+    },
+    {
+      "name": "Jaya Arc",
+      "firstChapter": 218,
+      "lastChapter": 236,
+      "firstEpisode": 144,
+      "lastEpisode": 152
+    },
+    {
+      "name": "Skypiea Arc",
+      "firstChapter": 237,
+      "lastChapter": 302,
+      "firstEpisode": 153,
+      "lastEpisode": 195
+    },
+    {
+      "name": "Long Ring Long Land Arc",
+      "firstChapter": 303,
+      "lastChapter": 321,
+      "firstEpisode": 207,
+      "lastEpisode": 219
+    },
+    {
+      "name": "Water 7 Arc",
+      "firstChapter": 322,
+      "lastChapter": 374,
+      "firstEpisode": 229,
+      "lastEpisode": 263
+    },
+    {
+      "name": "Enies Lobby Arc",
+      "firstChapter": 375,
+      "lastChapter": 430,
+      "firstEpisode": 264,
+      "lastEpisode": 312
+    },
+    {
+      "name": "Post-Enies Lobby Arc",
+      "firstChapter": 431,
+      "lastChapter": 441,
+      "firstEpisode": 313,
+      "lastEpisode": 325
+    },
+    {
+      "name": "Thriller Bark Arc",
+      "firstChapter": 442,
+      "lastChapter": 489,
+      "firstEpisode": 337,
+      "lastEpisode": 381
+    },
+    {
+      "name": "Sabaody Archipelago Arc",
+      "firstChapter": 490,
+      "lastChapter": 513,
+      "firstEpisode": 385,
+      "lastEpisode": 405
+    },
+    {
+      "name": "Amazon Lily Arc",
+      "firstChapter": 514,
+      "lastChapter": 524,
+      "firstEpisode": 408,
+      "lastEpisode": 421
+    },
+    {
+      "name": "Impel Down Arc",
+      "firstChapter": 525,
+      "lastChapter": 549,
+      "firstEpisode": 422,
+      "lastEpisode": 452
+    },
+    {
+      "name": "Marineford Arc",
+      "firstChapter": 550,
+      "lastChapter": 580,
+      "firstEpisode": 457,
+      "lastEpisode": 489
+    },
+    {
+      "name": "Post-War Arc",
+      "firstChapter": 581,
+      "lastChapter": 597,
+      "firstEpisode": 490,
+      "lastEpisode": 516
+    },
+    {
+      "name": "Return to Sabaody Arc",
+      "firstChapter": 598,
+      "lastChapter": 602,
+      "firstEpisode": 517,
+      "lastEpisode": 522
+    },
+    {
+      "name": "Fish-Man Island Arc",
+      "firstChapter": 603,
+      "lastChapter": 653,
+      "firstEpisode": 523,
+      "lastEpisode": 574
+    },
+    {
+      "name": "Punk Hazard Arc",
+      "firstChapter": 654,
+      "lastChapter": 699,
+      "firstEpisode": 579,
+      "lastEpisode": 625
+    },
+    {
+      "name": "Dressrosa Arc",
+      "firstChapter": 700,
+      "lastChapter": 801,
+      "firstEpisode": 629,
+      "lastEpisode": 746
+    },
+    {
+      "name": "Zou Arc",
+      "firstChapter": 802,
+      "lastChapter": 824,
+      "firstEpisode": 751,
+      "lastEpisode": 779
+    },
+    {
+      "name": "Whole Cake Island Arc",
+      "firstChapter": 825,
+      "lastChapter": 902,
+      "firstEpisode": 783,
+      "lastEpisode": 877
+    },
+    {
+      "name": "Levely Arc",
+      "firstChapter": 903,
+      "lastChapter": 908,
+      "firstEpisode": 878,
+      "lastEpisode": 889
+    },
+    {
+      "name": "Wano Country Arc",
+      "firstChapter": 909,
+      "lastChapter": 1057,
+      "firstEpisode": 890,
+      "lastEpisode": 1085
+    },
+    {
+      "name": "Egghead Arc",
+      "firstChapter": 1058,
+      "lastChapter": 1125,
+      "firstEpisode": 1086,
+      "lastEpisode": 1155
+    },
+    {
+      "name": "Elbaph Arc",
+      "firstChapter": 1126,
+      "lastChapter": null,
+      "firstEpisode": 1156,
+      "lastEpisode": null
+    }
+  ]
+}
