@@ -27,6 +27,9 @@
  *     set's leaders or none of them
  *   - wiki/lines.json (7.7): CC BY-SA 3.0 notice, fetchedAt an ISO day (warn
  *     after 3 silent days), every stored line ≤22 words and without !
+ *   - fx-usd-sgd.json (5.4): ECB source, positive rate equal to EUR/SGD ÷
+ *     EUR/USD, asOf an ISO day; missing or older than 4 weekdays fails
+ *   - health.json (9.1): asOf an ISO day; warn if missing or more than 8 days old
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -314,6 +317,58 @@ if (existsSync(wikiPath)) {
   }
 } else {
   warn('wiki/lines.json is missing; run npm run wiki:refresh')
+}
+
+// FX (5.4): dated ECB USD→SGD. Missing or older than 4 weekdays fails
+// (the table is not published on TARGET holidays; weekends do not count).
+const FX_WEEKDAYS = 4
+const fxPath = join(DATA, 'fx-usd-sgd.json')
+function weekdaysAfter(fromIso, toIso) {
+  const from = Date.parse(`${fromIso}T00:00:00Z`)
+  const to = Date.parse(`${toIso}T00:00:00Z`)
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from) return 0
+  let n = 0
+  for (let t = from + 86_400_000; t <= to; t += 86_400_000) {
+    const day = new Date(t).getUTCDay()
+    if (day !== 0 && day !== 6) n++
+  }
+  return n
+}
+if (!existsSync(fxPath)) {
+  fail('fx-usd-sgd.json is missing; run npm run seed:refresh')
+} else {
+  const fx = JSON.parse(readFileSync(fxPath, 'utf8'))
+  if (fx.source !== 'ECB') fail('fx-usd-sgd.json: source must be ECB')
+  if (typeof fx.sourceUrl !== 'string' || !fx.sourceUrl.includes('ecb.europa.eu')) {
+    fail('fx-usd-sgd.json: sourceUrl must point at the ECB euro table')
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fx.asOf ?? '')) fail('fx-usd-sgd.json: asOf must be an ISO day')
+  if (typeof fx.rate !== 'number' || fx.rate <= 0) fail('fx-usd-sgd.json: rate must be a positive number')
+  if (typeof fx.eurUsd !== 'number' || fx.eurUsd <= 0) fail('fx-usd-sgd.json: eurUsd must be a positive number')
+  if (typeof fx.eurSgd !== 'number' || fx.eurSgd <= 0) fail('fx-usd-sgd.json: eurSgd must be a positive number')
+  const expected = Math.round((fx.eurSgd / fx.eurUsd) * 10000) / 10000
+  if (Math.abs(fx.rate - expected) > 0.0001) fail(`fx-usd-sgd.json: rate ${fx.rate} is not EUR/SGD ÷ EUR/USD`)
+  const today = new Date().toISOString().slice(0, 10)
+  const age = weekdaysAfter(fx.asOf, today)
+  if (age > FX_WEEKDAYS) fail(`fx-usd-sgd.json last dated ${fx.asOf}, ${age} weekdays ago; run npm run seed:refresh`)
+}
+
+// Health (9.1): the weekly page. Warn if the file is missing or more than
+// 8 calendar days old; do not invent a figure to fill it.
+const HEALTH_STALE_DAYS = 8
+const healthPath = join(DATA, 'health.json')
+if (!existsSync(healthPath)) {
+  warn('health.json is missing; run npm run seed:refresh')
+} else {
+  const health = JSON.parse(readFileSync(healthPath, 'utf8'))
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(health.asOf ?? '')) fail('health.json: asOf must be an ISO day')
+  else {
+    const age = Math.floor((Date.now() - Date.parse(`${health.asOf}T00:00:00Z`)) / 86_400_000)
+    if (age > HEALTH_STALE_DAYS) warn(`health.json last dated ${health.asOf}, ${age} days ago; run npm run seed:refresh`)
+  }
+  if (!Array.isArray(health.unpriced)) fail('health.json: unpriced must be a list')
+  if (!Array.isArray(health.exclusions)) fail('health.json: exclusions must be a list')
+  if (!Array.isArray(health.warnings)) fail('health.json: warnings must be a list')
 }
 
 for (const w of warnings) console.warn(`warn: ${w}`)

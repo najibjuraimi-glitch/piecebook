@@ -1,0 +1,47 @@
+{
+  "asOf": "2026-09-06",
+  "weekOf": "2026-08-31",
+  "seed": {
+    "files": 58,
+    "rows": 4083,
+    "cardPricesAsOf": "2026-09-05",
+    "versionNote": "cleaned-same-set-only (PRB reprint sets: every print in the box, cross-set numbers included)"
+  },
+  "boxFeed": {
+    "newest": "2026-09-04",
+    "source": "TCGCSV",
+    "staleAfterDays": 3
+  },
+  "wiki": {
+    "fetchedAt": "2026-09-06",
+    "asked": 188,
+    "mapped": 188,
+    "lines": 40,
+    "births": 169
+  },
+  "unpriced": [
+    {
+      "setCode": "EB-04",
+      "cardNumber": "EB04-061p3",
+      "name": "Monkey.D.Luffy"
+    },
+    {
+      "setCode": "PRB-01",
+      "cardNumber": "OP05-115p1",
+      "name": "Two-Hundred Million Volts Amaru"
+    },
+    {
+      "setCode": "OP-17",
+      "cardNumber": "OP17-118p2",
+      "name": "Rocks.D.Xebec"
+    }
+  ],
+  "exclusions": [
+    "EB-04 has no English box, so it has no box price.",
+    "OP-18 has no story line: Bandai has no English product page yet.",
+    "SG asks are not shown: there is no automated Singapore source.",
+    "Wiki images are never pulled."
+  ],
+  "warnings": [],
+  "errors": 0
+}

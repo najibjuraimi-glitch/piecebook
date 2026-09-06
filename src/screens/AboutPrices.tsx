@@ -22,8 +22,10 @@ export function AboutPricesScreen() {
         <Section title="Card prices">
           <p>
             A card's <strong>Market</strong> price is the TCGplayer market price for that print as shown on Limitless, read
-            once a day. The <em>as of</em> date beside it is the day it was read. Prices are in US dollars because that is
-            the currency of the source; Piecebook does not convert.
+            once a day. The <em>as of</em> date beside it is the day it was read. Catalogue prices are in US dollars
+            because that is the currency of the source. Costs you log never convert. On Portfolio you can read the same
+            USD seed as S$ at the last European Central Bank euro table; that figure is dated, it is not a bank quote and
+            not a Singapore ask.
           </p>
           <p>
             Some prints have no price at all. Those say <strong>No market price</strong> rather than borrow a number from a
@@ -55,7 +57,7 @@ export function AboutPricesScreen() {
         <Section title="What Piecebook never does">
           <ul className="list-disc space-y-1.5 pl-5">
             <li>Invent a price, a card, a set name or a date to fill a gap.</li>
-            <li>Convert currencies. Costs you log stay in the currency you paid.</li>
+            <li>Convert a cost you logged into another currency. Costs stay in the currency you paid.</li>
             <li>Show live quotes, sold listings or seller offers.</li>
             <li>Carry marketplace or affiliate links. No one is paid when you buy.</li>
           </ul>
@@ -76,6 +78,10 @@ export function AboutPricesScreen() {
           >
             docs/seed-sources.md
           </a>
+          . What we hold this week:{' '}
+          <Link to="/data" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+            Data health
+          </Link>
           . Back to <Link to="/" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">Sets</Link>.
         </p>
       </div>

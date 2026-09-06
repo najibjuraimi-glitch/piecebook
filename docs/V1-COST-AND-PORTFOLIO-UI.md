@@ -8,7 +8,7 @@ Companion: `V1-SETS-ROSTER-UI.md`
 Recreated in-repo from the implementation brief; wording follows the brief, nothing added. Where the brief truncates a line of copy, the copy Code shipped is marked **(Code)** so Design can replace it.
 
 ## Why
-Collectors want to remember what they paid and see, quietly, how that compares with the seed market. Keep it honest: no live prices, no FX, no charts, no nag. Affiliates stay parked.
+Collectors want to remember what they paid and see, quietly, how that compares with the seed market. Keep it honest: no live prices, no invented FX, no charts, no nag. Affiliates stay parked. Portfolio S$ (5.4) is a dated ECB reading; see `V1-CURRENCY-AND-HEALTH-UI.md`.
 
 ## Tokens
 paper `#F7F5F0` · surface `#FFFFFF` · ink `#1A1A1A` · muted `#6B6560` · line `#E6E1D8` · accent `#C45C26` **only on Save cost / Mark owned**. Only one accent button on screen at a time.
