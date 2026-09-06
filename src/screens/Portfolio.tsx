@@ -49,9 +49,9 @@ export function PortfolioScreen() {
   const plTone = plUsd === null ? 'ink' : plUsd > 0 ? 'good' : plUsd < 0 ? 'bad' : 'ink'
   const plSubline =
     plUsd === null && costSgd !== null
-      ? 'P/L needs USD costs (seed market is USD).'
+      ? 'P/L needs USD costs (market prices are in USD).'
       : plUsd !== null && (costSgd !== null || plSkippedUnpriced)
-        ? 'USD costs against seed market only.'
+        ? 'USD costs against market prices only.'
         : undefined
 
   const top = holdings.filter((h) => (h.marketUsd ?? 0) > 0).slice(0, 5)
@@ -81,7 +81,7 @@ export function PortfolioScreen() {
             />
           </div>
           <p className="mt-4 px-1 text-meta text-muted">
-            Values use Cards’ seed prices, not live market.{' '}
+            Values use market prices read once a day, not live prices.{' '}
             <Link to="/about-prices" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
               How prices work
             </Link>
