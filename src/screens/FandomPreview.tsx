@@ -4,11 +4,18 @@ import { CardCell, CardGrid } from '../components/CardCell'
 import { StarButton } from '../components/StarButton'
 import { WhoIs } from '../components/WhoIs'
 import { OnThisDay } from '../components/OnThisDay'
-import { TodaysCard } from '../components/TodaysCard'
+import { WikiAttribution } from '../components/WikiAttribution'
 import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
 import { pluralPrints, printsNamed } from '../lib/search'
-import { countdownPhrase, parsePinDate, todaysCardPool, TODAYS_CARD_MIN_POOL } from '../lib/fandom'
+import {
+  countdownPhrase,
+  EAST_BLUE_LAST_CHAPTER,
+  parsePinDate,
+  todaysCardPool,
+  TODAYS_CARD_MIN_POOL,
+} from '../lib/fandom'
+import { getWiki } from '../data/wiki'
 import { formatDate, todayIso } from '../lib/format'
 import { displayCode, displayName, getRosterSet, type RosterSet } from '../data/roster'
 import { getSetIntro } from '../data/intros'
@@ -33,20 +40,20 @@ export function FandomPreviewScreen() {
   const [params] = useSearchParams()
   const date = pinnedDay(params)
   const pool = todaysCardPool().length
+  const safePool = todaysCardPool({ maxDebut: EAST_BLUE_LAST_CHAPTER }).length
   return (
     <Screen>
       <BackBar fallbackTo="/" crumbs={[{ label: 'Sets', to: '/' }, { label: 'Fandom draft' }]} />
       <ScreenTitle title="Fandom, distilled" subline="Draft surfaces. Not wired into the live screens yet." />
 
       <p className="max-w-[60ch] text-body text-ink">
-        Four things from the wiki, automated: a gated sentence, a birthday, a card for the day, a countdown.
-        Pin a day with <span className="tabular">?date=</span> so a review can hold still.
+        Three things from the wiki, automated: a gated sentence on a character page you opened, a birthday, a
+        countdown. Today&apos;s card does not sit on the timeline — the East Blue–safe pool is {safePool} names,
+        under {TODAYS_CARD_MIN_POOL}. Pin a day with <span className="tabular">?date=</span> so a review can hold
+        still.
       </p>
       <p className="tabular mt-2 text-meta text-muted">
-        Showing {date}. Base-print pool with a passing line: {pool}
-        {pool < TODAYS_CARD_MIN_POOL
-          ? ` (under ${TODAYS_CARD_MIN_POOL}; Today's card is shown here anyway so the draft can be judged)`
-          : `.`}
+        Showing {date}. Passing-line prints: {pool}. East Blue debuts (chapter ≤ {EAST_BLUE_LAST_CHAPTER}): {safePool}.
       </p>
 
       <nav className="mt-6 flex flex-wrap gap-x-3 gap-y-2 text-body">
@@ -92,6 +99,7 @@ export function FandomCharacterPreview() {
 
   const prints = groups.reduce((n, g) => n + g.cards.length, 0)
   const owned = groups.reduce((n, g) => n + g.cards.filter((c) => isOwned(c.cardNumber)).length, 0)
+  const wiki = getWiki(name)
 
   return (
     <Screen>
@@ -115,6 +123,7 @@ export function FandomCharacterPreview() {
           {prints} {prints === 1 ? 'print' : 'prints'} across {groups.length} {groups.length === 1 ? 'set' : 'sets'}
           {owned > 0 && ` · you own ${owned}`}
         </p>
+        {wiki && <WikiAttribution entry={wiki} className="mt-1" />}
       </header>
 
       <div className="space-y-8">
@@ -190,7 +199,6 @@ export function FandomTimelinePreview() {
             <span aria-hidden="true" className="h-px flex-1 bg-line" />
           </div>
           <OnThisDay iso={date} hrefFor={previewCharacterHref} className="mt-3" />
-          <TodaysCard iso={date} requirePool={false} className="mt-2" />
         </div>
 
         <ol className="divide-y divide-line">
@@ -214,10 +222,10 @@ function PreviewRow({ set, today }: { set: RosterSet; today: string }) {
   const en = intro?.enReleased ?? set.enReleased
   const jp = intro?.jpReleased ?? null
   const usDate = !intro?.enReleased && set.codeSource !== 'limitless'
-  const count = countdownPhrase(en, today)
+  const count = countdownPhrase(en, today, { namedDay: !usDate })
   const clauses: string[] = []
   if (jp) clauses.push(`JP ${formatDate(jp)}`)
-  if (en) clauses.push(usDate ? `EN ${formatDate(en)} · US date` : `EN ${formatDate(en)}`)
+  if (en) clauses.push(usDate ? `US date ${formatDate(en)}` : `EN ${formatDate(en)}`)
   if (count && set.cardSeedStatus === 'pending') clauses.push(count)
 
   return (

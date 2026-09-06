@@ -1,25 +1,18 @@
 import { WIKI_LICENCE, WIKI_LICENCE_URL, type WikiEntry } from '../data/wiki'
+import { visibleLine } from '../lib/fandom'
 
 /**
- * The one attribution line that must sit under every wiki sentence or birthday:
- * title (revid permalink) and the CC BY-SA 3.0 licence. Never omitted.
+ * Licence line under a printed wiki sentence only — never under a birthday.
+ * The wiki page is not a link (that door is the full article). The licence is.
  */
 export function WikiAttribution({ entry, className = '' }: { entry: WikiEntry; className?: string }) {
-  if (!entry.url) return null
+  if (!visibleLine(entry)) return null
   return (
-    <p className={`text-meta text-muted ${className}`}>
-      Text adapted from{' '}
-      <a
-        href={entry.url}
-        className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink"
-        rel="noopener noreferrer"
-      >
-        '{entry.title}'
-      </a>
-      , One Piece Wiki,{' '}
+    <p className={`text-meta text-ink ${className}`}>
+      From One Piece Wiki,{' '}
       <a
         href={WIKI_LICENCE_URL}
-        className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink"
+        className="underline decoration-line underline-offset-2 hover:decoration-ink"
         rel="noopener noreferrer"
       >
         {WIKI_LICENCE}

@@ -1,20 +1,19 @@
-import { getWiki, hasWikiContent } from '../data/wiki'
-import { bornLabel } from '../lib/fandom'
-import { WikiAttribution } from './WikiAttribution'
+import { getWiki } from '../data/wiki'
+import { bornLabel, visibleLine } from '../lib/fandom'
 
 /**
- * The who-is block for a character page (7.8): the gated wiki sentence in ink,
- * `Born 9 March` in ink when the Char Box parsed a day, then the attribution.
- * Renders nothing when the pipeline stored neither a line nor a birthday.
+ * The who-is block for a character page (7.8): the gated wiki sentence in ink
+ * when the title is not a later-name reveal, and `Born 9 March` in ink when
+ * the Char Box parsed a day. Attribution sits after the prints line, not here.
  */
 export function WhoIs({ name, className = '' }: { name: string; className?: string }) {
   const entry = getWiki(name)
-  if (!hasWikiContent(entry)) return null
+  const line = visibleLine(entry)
+  if (!line && !entry?.birth) return null
   return (
     <div className={`max-w-[60ch] ${className}`}>
-      {entry.line && <p className="text-body text-ink">{entry.line}.</p>}
-      {entry.birth && <p className={`text-body text-ink ${entry.line ? 'mt-1' : ''}`}>Born {bornLabel(entry.birth)}</p>}
-      <WikiAttribution entry={entry} className="mt-1" />
+      {line && <p className="text-body text-ink">{line}.</p>}
+      {entry?.birth && <p className={`text-body text-ink ${line ? 'mt-1' : ''}`}>Born {bornLabel(entry.birth)}</p>}
     </div>
   )
 }
