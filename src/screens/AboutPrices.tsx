@@ -60,13 +60,23 @@ export function AboutPricesScreen() {
             <li>Convert a cost you logged into another currency. Costs stay in the currency you paid.</li>
             <li>Show live quotes, sold listings or seller offers.</li>
             <li>Carry marketplace or affiliate links. No one is paid when you buy.</li>
+            <li>Buy, bid or offer on a card. Pre-grade is a worksheet, not a desk.</li>
           </ul>
+        </Section>
+
+        <Section title="Pre-grade">
+          <p>
+            The <Link to="/pregrade" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">pre-grade worksheet</Link> uses
+            only numbers you type — a PSA pop, solds, shipping — each with a source and a date. A guess must say it is a
+            guess. The seed market on the card is never treated as a sold. Photos can rule a PSA 10 out on centering; they
+            never confirm one. Corners, edges and surface are not read yet.
+          </p>
         </Section>
 
         <Section title="Your data">
           <p>
-            Owned cards, quantities, cost basis and your watchlist live only in this browser. Nothing is sent anywhere, and
-            there are no accounts. Clearing site data removes them.
+            Owned cards, quantities, cost basis, your watchlist and pre-grade predictions live only in this browser. Nothing
+            is sent anywhere, and there are no accounts. Clearing site data removes them.
           </p>
         </Section>
 

@@ -1,8 +1,12 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    include: ['src/**/*.test.ts'],
+    environment: 'node',
+  },
   // Root by default; GitHub Pages project sites live under /piecebook/ (see .github/workflows/pages.yml).
   base: process.env.PIECEBOOK_BASE ?? '/',
   server: { host: true, port: 5173 },

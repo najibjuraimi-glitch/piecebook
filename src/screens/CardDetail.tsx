@@ -147,6 +147,16 @@ function CardDetail({ card }: { card: Card }) {
 
           {attrs && <PlayBlock attrs={attrs} className="mt-6" />}
           {/* 6.6: link-first. Limitless's card page lists the latest tournament decks with this card; we point there rather than copy anything. */}
+          <Link
+            to={`/pregrade/${encodeURIComponent(card.cardNumber)}`}
+            className="mt-3 flex min-h-[48px] items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-2.5 text-ink transition-colors duration-150 ease-out hover:bg-paper/60 active:bg-paper"
+          >
+            <span className="min-w-0">
+              <span className="block text-[15px] font-medium leading-5">Pre-grade this copy</span>
+              <span className="block text-meta text-muted">Photos can rule out a 10. They never confirm one.</span>
+            </span>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+          </Link>
           <a
             href={`https://onepiece.limitlesstcg.com/cards/en/${encodeURIComponent(card.baseNumber)}`}
             target="_blank"
