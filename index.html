@@ -7,6 +7,20 @@
     <meta name="description" content="Piecebook — One Piece cards. Prices, the game, and the story." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <title>Piecebook</title>
+    <script>
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&')
+            })
+            .join('?')
+          window.history.replaceState(null, null, l.pathname.replace(/\/$/, '') + decoded + l.hash)
+        }
+      })(window.location)
+    </script>
   </head>
   <body>
     <div id="root"></div>

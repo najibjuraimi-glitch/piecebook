@@ -129,6 +129,19 @@ describe('rankVisionCandidates', () => {
     expect(rows[0]?.card.rarity).toBe('SP')
   })
 
+  it('SPECIAL in read_text ranks the SP print even when parallel_guess is base', () => {
+    const rows = rankVisionCandidates(
+      identify({
+        set_code: 'OP09-118',
+        name: 'Monkey.D.Luffy',
+        parallel_guess: 'base',
+        read_text: 'Monkey.D.Luffy OP09-118 SPECIAL',
+      }),
+      catalogue,
+    )
+    expect(rows[0]?.card.rarity).toBe('SP')
+  })
+
   it('null set_code fuzzy-matches name against seed names', () => {
     const rows = rankVisionCandidates(identify({ name: 'Nami' }), catalogue)
     expect(rows.length).toBeGreaterThanOrEqual(1)

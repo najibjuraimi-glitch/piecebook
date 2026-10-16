@@ -74,17 +74,32 @@ export class VisionCapError extends Error {
 }
 
 export class VisionRequestError extends Error {
-  constructor(message: string) {
+  readonly status?: number
+  constructor(message: string, status?: number) {
     super(message)
     this.name = 'VisionRequestError'
+    this.status = status
   }
 }
 
+export const CHECK_TIMEOUT_MS = 30_000
 const LONG_EDGE = 1600
-const JPEG_QUALITY = 0.85
+const MAX_ENCODED_BYTES = 450_000
 
-/** Downscale a photo to ~1600px on the long edge, JPEG ~0.85, as a data URL. */
-export async function downscaleForVision(file: Blob, longEdge = LONG_EDGE, quality = JPEG_QUALITY): Promise<string> {
+/** Human line from a failed /check body — never a silent "could not run". */
+export function visionErrorMessage(payload: unknown, status: number): string {
+  if (payload && typeof payload === 'object') {
+    const p = payload as { error?: unknown; detail?: unknown; hint?: unknown }
+    const error = typeof p.error === 'string' ? p.error : ''
+    const detail = typeof p.detail === 'string' ? p.detail : typeof p.hint === 'string' ? p.hint : ''
+    const bits = [error, detail].filter(Boolean)
+    if (bits.length) return bits.join(' — ')
+  }
+  return `The photo check could not run (${status}).`
+}
+
+/** Downscale a photo to ~1600px on the long edge, JPEG small enough for the Worker. */
+export async function downscaleForVision(file: Blob, longEdge = LONG_EDGE): Promise<string> {
   const bitmap = await createImageBitmap(file)
   const scale = Math.min(1, longEdge / Math.max(bitmap.width, bitmap.height))
   const width = Math.max(1, Math.round(bitmap.width * scale))
@@ -99,7 +114,11 @@ export async function downscaleForVision(file: Blob, longEdge = LONG_EDGE, quali
   }
   ctx.drawImage(bitmap, 0, 0, width, height)
   bitmap.close()
-  return canvas.toDataURL('image/jpeg', quality)
+  for (const quality of [0.85, 0.75, 0.65, 0.55]) {
+    const url = canvas.toDataURL('image/jpeg', quality)
+    if (url.length * 0.75 <= MAX_ENCODED_BYTES) return url
+  }
+  return canvas.toDataURL('image/jpeg', 0.5)
 }
 
 export interface VisionCheckPayload {
@@ -108,35 +127,58 @@ export interface VisionCheckPayload {
   backDataUrl?: string
 }
 
+let inflight: Promise<VisionCheckPayload> | null = null
+
 export async function checkPhotos(front: Blob, back?: Blob | null): Promise<VisionCheckPayload> {
+  if (inflight) return inflight
+  inflight = checkPhotosOnce(front, back).finally(() => {
+    inflight = null
+  })
+  return inflight
+}
+
+async function checkPhotosOnce(front: Blob, back?: Blob | null): Promise<VisionCheckPayload> {
   const frontDataUrl = await downscaleForVision(front)
   const backDataUrl = back ? await downscaleForVision(back) : undefined
   const body: { front: string; back?: string } = { front: frontDataUrl }
   if (backDataUrl) body.back = backDataUrl
-  let res: Response
-  try {
-    res = await fetch(`${VISION_URL}/check`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-  } catch {
-    throw new VisionRequestError('The photo check did not answer.')
-  }
+  const jsonBody = JSON.stringify(body)
+  const res = await postCheck(jsonBody, false)
+  const retried = res.status >= 500 ? await postCheck(jsonBody, true) : res
   let payload: unknown
   try {
-    payload = await res.json()
+    payload = await retried.json()
   } catch {
-    throw new VisionRequestError('The photo check did not answer.')
+    throw new VisionRequestError('The photo check did not answer.', retried.status)
   }
-  if (res.status === 429) {
+  if (retried.status === 429) {
     const err = payload as { cap?: number; used?: number }
     throw new VisionCapError(Number(err.cap) || 60, Number(err.used) || 0)
   }
-  if (!res.ok) throw new VisionRequestError('The photo check could not run.')
+  if (!retried.ok) throw new VisionRequestError(visionErrorMessage(payload, retried.status), retried.status)
   const check = asVisionCheck(payload)
-  if (!check) throw new VisionRequestError('The photo check could not run.')
+  if (!check) throw new VisionRequestError(visionErrorMessage(payload, retried.status), retried.status)
   return { check, frontDataUrl, backDataUrl }
+}
+
+async function postCheck(body: string, isRetry: boolean): Promise<Response> {
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), CHECK_TIMEOUT_MS)
+  try {
+    return await fetch(`${VISION_URL}/check`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      signal: ctrl.signal,
+    })
+  } catch (err) {
+    if (isRetry) throw new VisionRequestError('The photo check timed out.')
+    if (err instanceof VisionRequestError) throw err
+    // First timeout or network drop: one more try.
+    return postCheck(body, true)
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 /** Turn a vision data URL back into a File so the worksheet can measure it. */

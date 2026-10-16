@@ -1,4 +1,8 @@
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
+import { decode as decodeJpeg } from 'jpeg-js'
 import {
   BACK_TEN_MAX,
   FRONT_TEN_MAX,
@@ -6,7 +10,14 @@ import {
   measureFromBorders,
   measurePhoto,
   splitFromPair,
+  type PixelImage,
 } from './centering'
+
+function loadJpegFixture(name: string): PixelImage {
+  const dir = join(dirname(fileURLToPath(import.meta.url)), 'fixtures')
+  const raw = decodeJpeg(readFileSync(join(dir, name)), { useTArray: true })
+  return { width: raw.width, height: raw.height, data: new Uint8ClampedArray(raw.data) }
+}
 
 function expectSplit(got: number, expected: number) {
   expect(Math.abs(got - expected)).toBeLessThanOrEqual(2)
@@ -148,6 +159,18 @@ describe('photo rejects name the side', () => {
     expect(result.code).toBe('cut-off')
     expect(result.message).toMatch(/Back/)
   })
+
+  it('eBay Nami OP09-070 SP front is not cut off', () => {
+    const result = measurePhoto(loadJpegFixture('nami-op09-070-sp-front.jpg'), 'front')
+    expect(result.ok).toBe(true)
+    if (!result.ok) expect(result.message).toBe('')
+  }, 30_000)
+
+  it('eBay Nami OP09-070 SP back is not cut off', () => {
+    const result = measurePhoto(loadJpegFixture('nami-op09-070-sp-back.jpg'), 'back')
+    expect(result.ok).toBe(true)
+    if (!result.ok) expect(result.message).toBe('')
+  }, 30_000)
 
   it('angled over ~8°', () => {
     const img = makeSyntheticCard({

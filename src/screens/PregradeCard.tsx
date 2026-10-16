@@ -29,6 +29,7 @@ import { loadPhotoFile } from '../lib/photoPixels'
 import { dataUrlToFile, isNonEnglishCardLanguage, type VisionCheck } from '../lib/vision'
 import { peekVisionSession } from '../store/visionSession'
 import { formatDate, formatUsMarketUsd, todayIso } from '../lib/format'
+import { copySeedPriceLine } from '../lib/copyPrice'
 import { rateLine } from '../lib/fx'
 import {
   getPrediction,
@@ -269,9 +270,7 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
           <p className="tabular mt-1 text-meta text-muted">
             {card.cardNumber} · {card.setCode}
             {vision ? ` · ${vision.identify.language ?? 'language not read'}` : ''}
-            {card.marketUsd != null && card.asOf
-              ? ` · seed ${formatUsMarketUsd(card.marketUsd)} as of ${formatDate(card.asOf)} — not a sold`
-              : ' · no seed market'}
+            {` · ${copySeedPriceLine(card, vision?.identify)}`}
           </p>
         </div>
       </div>
@@ -495,6 +494,9 @@ function PhotoSlot({
       />
       {result?.ok && bitmap && (
         <canvas ref={canvasRef} className="mt-2 w-full rounded-xl" aria-label={`${side} centering overlay`} />
+      )}
+      {!result?.ok && seedDataUrl && (
+        <img src={seedDataUrl} alt="" className="mt-2 max-h-64 w-full rounded-xl object-contain" />
       )}
       {result && !result.ok && (
         <p className="mt-2 text-body text-bad">{result.message}</p>
