@@ -33,7 +33,7 @@ export function PregradeScreen() {
   const [frontFile, setFrontFile] = useState<File | null>(null)
   const [backFile, setBackFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
-  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<{ text: string; retry: boolean } | null>(null)
   const [check, setCheck] = useState<VisionCheck | null>(null)
   const [frontDataUrl, setFrontDataUrl] = useState<string | null>(null)
   const [backDataUrl, setBackDataUrl] = useState<string | undefined>()
@@ -62,11 +62,13 @@ export function PregradeScreen() {
       })
     } catch (err) {
       if (err instanceof VisionCapError) {
-        setPhotoError('Today’s photo checks are used up. Type a card number instead.')
+        setPhotoError({ text: 'Today’s photo checks are used up. Type a card number instead.', retry: false })
+      } else if (err instanceof VisionRequestError && err.retryable) {
+        setPhotoError({ text: `${err.message} It was not counted against today’s checks.`, retry: true })
       } else if (err instanceof VisionRequestError) {
-        setPhotoError(`${err.message} Type a card number instead.`)
+        setPhotoError({ text: `${err.message} Type a card number instead.`, retry: false })
       } else {
-        setPhotoError('The photo check could not run. Type a card number instead.')
+        setPhotoError({ text: 'The photo check could not run.', retry: true })
       }
     } finally {
       setBusy(false)
@@ -129,7 +131,21 @@ export function PregradeScreen() {
         <PrimaryButton className="mt-4" disabled={!frontFile || busy} onClick={() => void runCheck()}>
           {busy ? 'Checking…' : 'Check photos'}
         </PrimaryButton>
-        {photoError && <p className="mt-3 text-body text-ink">{photoError}</p>}
+        {photoError && (
+          <div className="mt-3" role="alert">
+            <p className="text-body text-ink">{photoError.text}</p>
+            {photoError.retry && (
+              <div className="mt-2 flex flex-wrap items-center gap-3">
+                <GhostButton disabled={busy} onClick={() => void runCheck()}>
+                  Try again
+                </GhostButton>
+                <button type="button" className="text-meta text-muted underline" onClick={useSearchInstead}>
+                  or type a card number
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {check && (
           <div className="mt-6">

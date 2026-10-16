@@ -75,10 +75,16 @@ export class VisionCapError extends Error {
 
 export class VisionRequestError extends Error {
   readonly status?: number
-  constructor(message: string, status?: number) {
+  /** Worker error code (`model_error`, `unparseable_model_output`, …) when it sent one. */
+  readonly code?: string
+  /** True when trying the same photos again has a real chance: model hiccups, timeouts, 5xx. */
+  readonly retryable: boolean
+  constructor(message: string, status?: number, opts: { code?: string; retryable?: boolean } = {}) {
     super(message)
     this.name = 'VisionRequestError'
     this.status = status
+    this.code = opts.code
+    this.retryable = opts.retryable ?? isRetryableVisionFailure(opts.code, status)
   }
 }
 
@@ -86,16 +92,39 @@ export const CHECK_TIMEOUT_MS = 30_000
 const LONG_EDGE = 1600
 const MAX_ENCODED_BYTES = 450_000
 
+const RETRYABLE_CODES = new Set(['model_error', 'unparseable_model_output'])
+
+/** A failure worth a second tap: the model misbehaved or the network did, not the request. */
+export function isRetryableVisionFailure(code: string | undefined, status: number | undefined): boolean {
+  if (code && RETRYABLE_CODES.has(code)) return true
+  if (code) return false
+  return status === undefined || status >= 500
+}
+
+/** Plain words for the Worker's model failures; `detail` from the Worker wins when it has one. */
+const MODEL_FAILURE_TEXT: Record<string, string> = {
+  model_error: 'The photo check’s model did not answer.',
+  unparseable_model_output: 'The photo check got a garbled answer from the model.',
+}
+
 /** Human line from a failed /check body — never a silent "could not run". */
 export function visionErrorMessage(payload: unknown, status: number): string {
   if (payload && typeof payload === 'object') {
     const p = payload as { error?: unknown; detail?: unknown; hint?: unknown }
     const error = typeof p.error === 'string' ? p.error : ''
     const detail = typeof p.detail === 'string' ? p.detail : typeof p.hint === 'string' ? p.hint : ''
+    if (error && MODEL_FAILURE_TEXT[error]) return detail || MODEL_FAILURE_TEXT[error]
     const bits = [error, detail].filter(Boolean)
     if (bits.length) return bits.join(' — ')
   }
   return `The photo check could not run (${status}).`
+}
+
+function visionErrorCode(payload: unknown): string | undefined {
+  if (payload && typeof payload === 'object' && typeof (payload as { error?: unknown }).error === 'string') {
+    return (payload as { error: string }).error
+  }
+  return undefined
 }
 
 /** Downscale a photo to ~1600px on the long edge, JPEG small enough for the Worker. */
@@ -148,15 +177,18 @@ async function checkPhotosOnce(front: Blob, back?: Blob | null): Promise<VisionC
   try {
     payload = await retried.json()
   } catch {
-    throw new VisionRequestError('The photo check did not answer.', retried.status)
+    throw new VisionRequestError('The photo check did not answer.', retried.status, { retryable: true })
   }
   if (retried.status === 429) {
     const err = payload as { cap?: number; used?: number }
     throw new VisionCapError(Number(err.cap) || 60, Number(err.used) || 0)
   }
-  if (!retried.ok) throw new VisionRequestError(visionErrorMessage(payload, retried.status), retried.status)
+  const code = visionErrorCode(payload)
+  if (!retried.ok) throw new VisionRequestError(visionErrorMessage(payload, retried.status), retried.status, { code })
   const check = asVisionCheck(payload)
-  if (!check) throw new VisionRequestError(visionErrorMessage(payload, retried.status), retried.status)
+  if (!check) {
+    throw new VisionRequestError('The photo check answered without a card read.', retried.status, { code, retryable: true })
+  }
   return { check, frontDataUrl, backDataUrl }
 }
 
@@ -197,14 +229,14 @@ export async function postCheckWithRetry(body: string, deps?: Partial<PostCheckD
     try {
       return await attempt()
     } catch {
-      throw new VisionRequestError('The photo check timed out.')
+      throw new VisionRequestError('The photo check timed out.', undefined, { retryable: true })
     }
   }
   if (first.status < 500) return first
   try {
     return await attempt()
   } catch {
-    throw new VisionRequestError('The photo check timed out.', first.status)
+    throw new VisionRequestError('The photo check timed out.', first.status, { retryable: true })
   }
 }
 
