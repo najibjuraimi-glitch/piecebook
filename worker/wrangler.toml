@@ -3,7 +3,8 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 account_id = "dd046e58e703dcb6cc96aa78d2fc13e5"
 
-# Deploy: `npx wrangler deploy` from this folder. Secret: `npx wrangler secret put GEMINI_API_KEY`.
+# Deploy: `npm run worker:deploy` from the repo root (wrangler is a root devDependency; every
+# `worker:*` script passes --config worker/wrangler.toml). Secret: `npm run worker:secret`.
 #
 # This file IS the live configuration: Access lock + cloud sync are on, so a
 # redeploy from a clean checkout can never reopen the Worker. With
@@ -32,7 +33,7 @@ id = "c6e044e2b36843648c53ff84663a81a4"
 binding = "USER_DATA"
 id = "fbb335c717da4e0e98ffd433cb702ca2"
 
-# --- Local dev: `npx wrangler dev --env dev` from worker/ (KV simulated on disk) ---
+# --- Local dev: `npm run worker:dev` from the repo root (KV simulated on disk) ---
 # worker/.dev.vars (git-ignored) holds ACCESS_DEV_IDENTITY=<email> so /sync works
 # on localhost without Access, plus GEMINI_API_KEY for /check. Vite proxies /api here.
 [env.dev]
