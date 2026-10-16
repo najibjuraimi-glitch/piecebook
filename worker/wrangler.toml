@@ -37,6 +37,17 @@ SERVICE_TOKEN_WRITE = "0"                   # "1" to let agents write
 binding = "VISION_CAP"
 id = "c6e044e2b36843648c53ff84663a81a4"
 
+# --- Street price (/price, /street) ---
+# Caches TCGCSV groups and prices, the ECB rate and whole answers in KV. Uses
+# VISION_CAP under `price:` / `tcgcsv:` / `fx:` keys unless a PRICE_CACHE
+# namespace is bound (optional; create one and add it here to keep caches apart).
+# Optional secret: PRICECHARTING_TOKEN (`npx wrangler secret put PRICECHARTING_TOKEN --config worker/wrangler.toml`).
+# The card → TCGplayer product map is the refresh's own data/tcgplayer-products.csv, bundled as text.
+[[rules]]
+type = "Text"
+globs = ["**/*.csv"]
+fallthrough = true
+
 # --- Cloud sync store (step 4 in docs/CLOUDFLARE-SETUP.md) ---
 [[kv_namespaces]]
 binding = "USER_DATA"

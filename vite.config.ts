@@ -1,8 +1,25 @@
-import { defineConfig } from 'vitest/config'
+import { readFileSync } from 'node:fs'
+import { defineConfig, type Plugin } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
+/**
+ * The Worker imports data/tcgplayer-products.csv as text (wrangler's Text rule);
+ * this lets vitest load the same import. The app's own CSVs use `?raw` globs and
+ * carry a query, so they never reach this hook.
+ */
+function csvAsText(): Plugin {
+  return {
+    name: 'piecebook-csv-as-text',
+    enforce: 'pre',
+    load(id) {
+      if (!id.endsWith('.csv')) return null
+      return `export default ${JSON.stringify(readFileSync(id, 'utf8'))}`
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [csvAsText(), react()],
   test: {
     include: ['src/**/*.test.ts', 'worker/**/*.test.ts'],
     environment: 'node',

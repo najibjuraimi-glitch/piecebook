@@ -1,9 +1,11 @@
-// Piecebook Worker: photo check (/check, Gemini) and cloud sync (/sync, KV).
+// Piecebook Worker: photo check (/check, Gemini), cloud sync (/sync, KV) and
+// street price (/price and /street, TCGCSV + ECB, cached in KV).
 // Secret: GEMINI_API_KEY (wrangler secret put). No keys in source.
 // Behind Cloudflare Access once ACCESS_TEAM_DOMAIN + ACCESS_AUD are set: every
 // route but /health then needs a valid Access JWT (see access.js).
 import { accessConfigured, verifyAccess } from "./access.js";
 import { handleSync } from "./sync.js";
+import { handlePrice } from "./price.js";
 // Same words and limits as the app. wrangler bundles the TypeScript; no pixels are read here.
 import { parsePhotoCentering, summariseCentering } from "../../src/lib/centeringSummary.ts";
 
@@ -310,22 +312,25 @@ export default {
 
     const isSync = url.pathname === "/sync" || url.pathname.startsWith("/sync/");
     const isCheck = url.pathname === "/check" && req.method === "POST";
+    // Street price: one endpoint, two spellings (Auction's /price, Cards' /street).
+    const isPrice = url.pathname === "/price" || url.pathname === "/street";
     if (url.pathname === "/whoami" && req.method === "GET") {
       const who = await verifyAccess(req, env, deps);
       if (!who.ok) return json({ error: who.error, detail: who.detail }, who.status, cors);
       return json({ identity: who.identity.email, kind: who.identity.kind, readOnly: Boolean(who.identity.readOnly) }, 200, cors);
     }
-    if (!isSync && !isCheck) return json({ error: "not_found" }, 404, cors);
+    if (!isSync && !isCheck && !isPrice) return json({ error: "not_found" }, 404, cors);
 
     // Fail closed once Access is configured. Until then /check stays open for the
     // old public site and /sync says so rather than pretending to be signed in.
     let identity = null;
     const who = await verifyAccess(req, env, deps);
     if (who.ok) identity = who.identity;
-    else if (isSync) return json({ error: who.status === 503 && who.error === "access_not_configured" ? "sync_not_configured" : who.error, detail: who.detail }, who.status, cors);
+    else if (isSync || isPrice) return json({ error: who.status === 503 && who.error === "access_not_configured" ? (isPrice ? "price_not_configured" : "sync_not_configured") : who.error, detail: who.detail }, who.status, cors);
     else if (who.status !== 503 || who.error !== "access_not_configured") return json({ error: who.error, detail: who.detail }, who.status, cors);
 
     if (isSync) return handleSync(req, env, identity, cors, deps);
+    if (isPrice) return handlePrice(req, env, cors, deps);
     // Two 8 MB images as base64 JSON are ~22 MB. Refuse bigger bodies before parsing them into memory.
     const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
     if (declared > MAX_BODY_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);

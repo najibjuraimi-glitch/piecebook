@@ -198,6 +198,7 @@ curl -s "${H[@]}" "$PIECEBOOK_API/sync" | jq '.docs["piecebook.v1"].value.owned'
 curl -s "${H[@]}" "$PIECEBOOK_API/sync/piecebook.pregrade.v1" | jq '.doc.value'          # pre-grade log
 curl -s "${H[@]}" -X POST "$PIECEBOOK_API/check" -H 'Content-Type: application/json' \
      -d '{"front":"data:image/jpeg;base64,…","back":"data:image/jpeg;base64,…"}'          # photo check (counts against the daily cap)
+curl -s "${H[@]}" "$PIECEBOOK_API/street?code=EB02-010&variant=alt&grade=raw" | jq .street  # street price, USD + SGD, dated (docs/STREET-PRICE.md)
 ```
 
 Keys: `piecebook.v1` (collection + costs), `piecebook.decks.v1`, `piecebook.watchlist.v1`,
