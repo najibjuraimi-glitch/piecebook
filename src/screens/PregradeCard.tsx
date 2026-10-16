@@ -28,6 +28,7 @@ import {
   type PricePoint,
 } from '../lib/gradeWorth'
 import { loadPhotoFile } from '../lib/photoPixels'
+import { centeringLine, photoCentering, summariseCentering } from '../lib/centeringSummary'
 import { dataUrlToFile, isNonEnglishCardLanguage, type VisionCheck } from '../lib/vision'
 import { peekVisionSession } from '../store/visionSession'
 import { formatDate, formatUsMarketUsd, todayIso } from '../lib/format'
@@ -104,6 +105,7 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
   const [notice, setNotice] = useState<string | null>(typeof arrivedNotice === 'string' ? arrivedNotice : null)
 
   const centeringCannotBeTen = Boolean((front?.ok && front.measure.cannotBeTen) || (back?.ok && back.measure.cannotBeTen))
+  const centeringSummary = summariseCentering(photoCentering(front, 'front'), photoCentering(back, 'back'))
   const visionRuledOut = Boolean(vision?.condition.psa10_ruled_out)
   const cannotBeTen = Boolean(centeringCannotBeTen || visionRuledOut)
   const photoNote = photoWouldChangeTheCall({
@@ -311,6 +313,14 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
         {vision && (
           <div className="mt-4">
             <VisionGuess check={vision} />
+          </div>
+        )}
+        {(front || back) && (
+          <div className="mt-4 rounded-2xl border border-line bg-surface px-4 py-3" aria-label="Centering">
+            <p className="text-meta font-medium text-muted">Centering</p>
+            <p className="tabular mt-1 text-body text-ink">{centeringLine(photoCentering(front, 'front'), 'front')}</p>
+            <p className="tabular mt-0.5 text-body text-ink">{centeringLine(photoCentering(back, 'back'), 'back')}</p>
+            <p className={`mt-2 text-body ${centeringSummary.cannotBeTen ? 'font-medium text-bad' : 'text-ink'}`}>{centeringSummary.verdict}</p>
           </div>
         )}
         <p className="mt-4 text-body text-ink">{photoNote}</p>

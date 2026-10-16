@@ -4,6 +4,8 @@
 // route but /health then needs a valid Access JWT (see access.js).
 import { accessConfigured, verifyAccess } from "./access.js";
 import { handleSync } from "./sync.js";
+// Same words and limits as the app. wrangler bundles the TypeScript; no pixels are read here.
+import { parsePhotoCentering, summariseCentering } from "../../src/lib/centeringSummary.ts";
 
 // The prompts ask for labels, never for printed text. Transcribing a card's
 // effect text reproduces copyrighted wording that is indexed all over the web,
@@ -273,10 +275,27 @@ async function readImages(req) {
   if (ct.includes("multipart/form-data")) {
     const fd = await req.formData(); const out = {};
     for (const k of ["front", "back"]) { const f = fd.get(k); if (f && typeof f !== "string") out[k] = { mime: f.type || "image/jpeg", data: b64FromBuffer(await f.arrayBuffer()) }; }
+    const c = fd.get("centering");
+    if (typeof c === "string" && c.trim()) { try { out.centering = JSON.parse(c); } catch { out.centering = undefined; } }
     return out;
   }
   const body = await req.json();
-  return { front: parseDataUrl(body.front), back: parseDataUrl(body.back) };
+  return { front: parseDataUrl(body.front), back: parseDataUrl(body.back), centering: body.centering };
+}
+
+/**
+ * The centering block of a /check answer. The Worker has no pixel decoder, so
+ * the measurement comes with the request (the app measures on the phone with
+ * src/lib/centering.ts). Border pixels are validated and the ratios and the
+ * rule-out are recomputed here; a caller cannot assert `cannotBeTen` directly.
+ * Without a usable measurement the block says so instead of guessing.
+ */
+export function centeringBlock(raw) {
+  const r = raw && typeof raw === "object" ? raw : {};
+  const front = parsePhotoCentering(r.front, "front");
+  const back = parsePhotoCentering(r.back, "back");
+  if (!front && !back) return summariseCentering(null, null, "none");
+  return summariseCentering(front, back, "device");
 }
 
 export default {
@@ -316,6 +335,7 @@ export default {
     if (!imgs.front) return json({ error: "front_required" }, 400, cors);
     const size = (imgs.front.data.length + (imgs.back?.data.length || 0)) * 0.75;
     if (size > MAX_IMAGE_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
+    const centering = centeringBlock(imgs.centering);
 
     // Daily cap (UTC day). KV is eventually consistent; good enough as a spend guard.
     // The slot is reserved before the call and handed back on any failure, so
@@ -388,7 +408,7 @@ export default {
       return fail({ error: "unparseable_model_output", status, reason: extracted.reason, finishReason: extracted.finishReason, prompt: prompt.name, detail: FAILURE_HINT[extracted.reason] || FAILURE_HINT.invalid_json }, 502);
     }
     const result = normaliseResult(extracted.result, prompt);
-    return json({ ...result, ai_guess: true, model: env.GEMINI_MODEL, usage: { today: used + 1, cap }, disclaimer: "AI guess. Photos can rule out a PSA 10 but never confirm one." }, 200, cors);
+    return json({ ...result, centering, ai_guess: true, model: env.GEMINI_MODEL, usage: { today: used + 1, cap }, disclaimer: "AI guess. Photos can rule out a PSA 10 but never confirm one." }, 200, cors);
   },
 };
 

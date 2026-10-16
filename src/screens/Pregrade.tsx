@@ -20,7 +20,18 @@ import {
   type VisionPhotos,
 } from '../lib/vision'
 import { writeVisionSession } from '../store/visionSession'
-import { removePrediction, usePredictions } from '../store/predictions'
+import { removePrediction, usePredictions, type StoredPhoto } from '../store/predictions'
+import { measurePhoto, type PhotoSide } from '../lib/centering'
+import { loadPhotoFile } from '../lib/photoPixels'
+import {
+  centeringLine,
+  photoCentering,
+  photoCenteringFromStored,
+  summariseCentering,
+  unmeasured,
+  type CenteringSummary,
+  type PhotoCentering,
+} from '../lib/centeringSummary'
 
 const VERDICT_LABEL = { go: 'Go', borderline: 'Borderline', 'no-go': 'No-go' } as const
 const EN_ONLY_NOTE = 'Piecebook currently only has English card data and prices.'
@@ -40,6 +51,8 @@ export function PregradeScreen() {
   const [backDataUrl, setBackDataUrl] = useState<string | undefined>()
   // Shrunken photos from a refused check: typing the number still hands them to the worksheet.
   const [heldPhotos, setHeldPhotos] = useState<VisionPhotos | null>(null)
+  // Measured on this phone before the photos leave; shown whatever the model says.
+  const [centering, setCentering] = useState<CenteringSummary | null>(null)
 
   const candidates = useMemo(
     () => (check ? rankVisionCandidates(check.identify, ALL_CARDS, 5) : []),
@@ -54,8 +67,13 @@ export function PregradeScreen() {
     setPhotoError(null)
     setCheck(null)
     setHeldPhotos(null)
+    const measured = {
+      front: await measureSide(frontFile, 'front'),
+      back: backFile ? await measureSide(backFile, 'back') : null,
+    }
+    setCentering(summariseCentering(measured.front, measured.back))
     try {
-      const payload = await checkPhotos(frontFile, backFile)
+      const payload = await checkPhotos(frontFile, backFile, measured)
       setCheck(payload.check)
       setFrontDataUrl(payload.frontDataUrl)
       setBackDataUrl(payload.backDataUrl)
@@ -140,6 +158,7 @@ export function PregradeScreen() {
               setFrontFile(f)
               setCheck(null)
               setPhotoError(null)
+              setCentering(null)
             }}
           />
           <PhotoPick
@@ -149,12 +168,14 @@ export function PregradeScreen() {
               setBackFile(f)
               setCheck(null)
               setPhotoError(null)
+              setCentering(null)
             }}
           />
         </div>
         <PrimaryButton className="mt-4" disabled={!frontFile || busy} onClick={() => void runCheck()}>
           {busy ? 'Checking…' : 'Check photos'}
         </PrimaryButton>
+        {centering && <CenteringBlock summary={centering} />}
         {photoError && (
           <div className="mt-3" role="alert">
             <p className="text-body text-ink">{photoError.text}</p>
@@ -305,6 +326,7 @@ export function PregradeScreen() {
                     {r.status === 'submitted' ? ' · submitted' : ' · draft'}
                     {r.updatedAt ? ` · ${formatDate(r.updatedAt.slice(0, 10))}` : ''}
                   </p>
+                  <p className="tabular mt-0.5 text-meta text-muted">{storedCenteringLine(r.photos)}</p>
                 </Link>
                 {r.status !== 'submitted' && (
                   <GhostButton className="!h-11 !min-h-0 !w-auto shrink-0 px-3 text-[14px]" onClick={() => removePrediction(r.id)}>
@@ -317,6 +339,51 @@ export function PregradeScreen() {
         )}
       </section>
     </Screen>
+  )
+}
+
+/** Centering from the full-size file on this phone. A photo that cannot be read says so; nothing is ruled out. */
+async function measureSide(file: File, side: PhotoSide): Promise<PhotoCentering> {
+  try {
+    const loaded = await loadPhotoFile(file)
+    const result = measurePhoto(loaded.pixels, side)
+    loaded.bitmap.close()
+    return photoCentering(result, side) ?? unmeasured(side, 'unreadable')
+  } catch {
+    return unmeasured(side, 'unreadable')
+  }
+}
+
+/** One line for the prediction log: both sides' ratios, or why a side was not measured. */
+export function storedCenteringLine(photos: StoredPhoto[]): string {
+  const front = photos.find((p) => p.side === 'front')
+  const back = photos.find((p) => p.side === 'back')
+  const f = front ? photoCenteringFromStored(front) : null
+  const b = back ? photoCenteringFromStored(back) : null
+  if (!f && !b) return 'Centering: not measured.'
+  const parts = [f && shortLine(f), b && shortLine(b)].filter(Boolean)
+  const summary = summariseCentering(f, b)
+  return `Centering: ${parts.join(' · ')}${summary.cannotBeTen ? ' · cannot be a 10' : ''}`
+}
+
+function shortLine(c: PhotoCentering): string {
+  const who = c.side === 'front' ? 'front' : 'back'
+  if (!c.measured) return `${who} not measured`
+  if (!c.resolved) return `${who} ${c.leftRight} ${c.topBottom} (edge not resolved)`
+  return `${who} ${c.leftRight} ${c.topBottom}`
+}
+
+export function CenteringBlock({ summary }: { summary: CenteringSummary }) {
+  return (
+    <div className="mt-4 rounded-2xl border border-line bg-surface px-4 py-3" aria-label="Centering">
+      <p className="text-meta font-medium text-muted">Centering, measured on this phone</p>
+      <p className="tabular mt-1 text-body text-ink">{centeringLine(summary.front, 'front')}</p>
+      <p className="tabular mt-0.5 text-body text-ink">{centeringLine(summary.back, 'back')}</p>
+      <p className={`mt-2 text-body ${summary.cannotBeTen ? 'font-medium text-bad' : 'text-ink'}`}>{summary.verdict}</p>
+      <p className="mt-1 text-meta text-muted">
+        A 10 needs {summary.limits.front} or better on the front and {summary.limits.back} or better on the back. Centering can rule a 10 out. It never confirms one.
+      </p>
+    </div>
   )
 }
 
