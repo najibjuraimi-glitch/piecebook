@@ -12,7 +12,8 @@
     "seed:backfill": "node scripts/seed-backfill-tcgplayer.mjs",
     "seed:check": "node scripts/seed-check.mjs",
     "wiki:refresh": "node scripts/wiki-refresh.mjs",
-    "wiki:belong": "node scripts/wiki-belong-refresh.mjs"
+    "wiki:belong": "node scripts/wiki-belong-refresh.mjs",
+    "test": "vitest run"
   },
   "repository": {
     "type": "git",
@@ -32,6 +33,7 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.3",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^2.1.9"
   }
 }

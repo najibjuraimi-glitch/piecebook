@@ -20,6 +20,8 @@ import { BelongScreen } from './screens/Belong'
 import { BelongStoryScreen } from './screens/BelongStory'
 import { BelongPeopleScreen } from './screens/BelongPeople'
 import { BelongFruitsScreen } from './screens/BelongFruits'
+import { PregradeScreen } from './screens/Pregrade'
+import { PregradeCardScreen } from './screens/PregradeCard'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -55,6 +57,8 @@ export default function App() {
         <Route path="/belong/story" element={<BelongStoryScreen />} />
         <Route path="/belong/people" element={<BelongPeopleScreen />} />
         <Route path="/belong/fruits" element={<BelongFruitsScreen />} />
+        <Route path="/pregrade" element={<PregradeScreen />} />
+        <Route path="/pregrade/:cardNumber" element={<PregradeCardScreen />} />
         <Route path="*" element={<NotFoundScreen />} />
       </Routes>
       <TabBar pathname={pathname} />

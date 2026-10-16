@@ -1,0 +1,29 @@
+{
+  "asOf": "2026-10-16",
+  "sourceName": "PSA trading card grading service tiers",
+  "sourceUrl": "https://www.psacard.com/services/tradingcardgrading",
+  "note": "Recorded for Piecebook on 16 Oct 2026 from the posted US trading-card tiers Jib approved. Not a live quote. Bump Standard to Priority when the typed PSA 10 sold is over US$1,000. Declared-value caps are PSA's posted limits for that tier.",
+  "currency": "USD",
+  "tiers": [
+    {
+      "id": "standard",
+      "name": "Standard",
+      "feeUsd": 59.99,
+      "declaredMaxUsd": 1000
+    },
+    {
+      "id": "priority",
+      "name": "Priority",
+      "feeUsd": 79.99,
+      "declaredMaxUsd": 1500
+    },
+    {
+      "id": "express",
+      "name": "Express",
+      "feeUsd": 199,
+      "declaredMaxUsd": 2500
+    }
+  ],
+  "priorityBumpOverUsd": 1000,
+  "turnaroundMonths": { "min": 4, "max": 5 }
+}
