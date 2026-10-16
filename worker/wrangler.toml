@@ -11,6 +11,15 @@ account_id = "dd046e58e703dcb6cc96aa78d2fc13e5"
 # ACCESS_TEAM_DOMAIN + ACCESS_AUD set, every route but /health refuses requests
 # without a valid Cloudflare Access JWT. docs/CLOUDFLARE-SETUP.md explains each value.
 
+# Run the Worker in the Cloudflare data center nearest AWS us-east-1 (a US colo),
+# whatever colo received the request. Gemini refuses calls that originate from
+# some countries with 400 FAILED_PRECONDITION "User location is not supported",
+# and without this the Worker ran wherever the browser was (the Pages Function
+# calls it over a service binding, which placement does honour for fetch).
+# KV is global, so /sync keeps working; from Asia it gains one US round trip.
+[placement]
+region = "aws:us-east-1"
+
 [vars]
 GEMINI_MODEL = "gemini-3.8-flash"
 DAILY_CAP = "60"
