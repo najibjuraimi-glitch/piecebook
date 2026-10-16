@@ -14,7 +14,7 @@ Photos can rule out a PSA 10. They never confirm one. Piecebook never buys, bids
 | Slice | This build (free) | Later on the same row |
 |---|---|---|
 | **11.1 Ingest** | Photo upload (front/back) for a Piecebook card ID; snapshot in the local log | eBay URL ingest and a listing snapshot |
-| **11.2 Photo pre-grade** | Browser centering: outline, warp, four borders; overlay with numbers; reject cut-off / angled ~8° / short side under 800px and name the photo | Vision-model corners, edges, surface; P(10) band low &lt;20% / mid 20–40% / high 40%+; surface cap to mid with no angled photo |
+| **11.2 Photo pre-grade** | Browser centering plus a capped vision Worker: corners, edges, surface; `identify.language` from the card text (EN / JP / CN / KR / FR or null). Photos can rule out a PSA 10 but never confirm one. Never auto-pick a card. | P(10) band low &lt;20% / mid 20–40% / high 40%+; surface cap to mid with no angled photo |
 | **11.3 Grade-worth math** | Typed PSA pop and solds; PSA fee config; cost in; drift; three exits; EV; max buy; Go / Borderline / No-go | — |
 | **11.4 Prediction log** | `localStorage` log, locked once marked submitted; grade entry later | Calibration table (predicted vs actual) |
 
@@ -30,13 +30,16 @@ Later still: auto PSA pop pulls, cert auto-match.
 No paid APIs in the Phase 11 free slice. No API keys. No scraping.
 
 ## On the glass
-- `/pregrade` — type a Piecebook card number; the prediction log.
-- `/pregrade/:cardNumber` — the worksheet. Reached from **Pre-grade this copy** on the card and from the log.
+- `/pregrade` — check photos first (front required, back optional), then confirm a suggested card; or type a Piecebook card number; the prediction log. Detected language sits next to the suggestion. If it is not EN, a note that Piecebook currently only has English card data and prices.
+- `/pregrade/:cardNumber` — the worksheet. Reached from a confirm tap, from **Pre-grade this copy** on the card, and from the log. The AI guess sits next to centering.
 - Quiet paper, ink, one accent on **Mark submitted**. No marketplace chrome. No percent badges.
 - Seed market on the card is shown as seed, dated, and never treated as a sold.
 
 ## Centering
 Ratio = larger / sum per axis. The worse axis counts. Front over 55/45 or back over 75/25 means this copy cannot be a 10. Overlay prints the four shares and the two splits. A photo that is cut off, angled over ~8° (a clear keystone), or whose short side is under 800px is rejected, and the line names the photo.
+
+## Photo check (Worker)
+Public Worker `VISION_URL` (`src/config/vision.ts`). `GEMINI_API_KEY` is a wrangler secret only — never in the repo. Daily KV cap; 429 falls back to typing a number. The model returns `identify.language` from the printed text, not the set code. A confirmed card feeds the existing grade-worth worksheet unchanged. After merge the Worker must be redeployed so the live `/check` schema includes `language`.
 
 ## Math
 - Starting 10-rate = typed PSA 10s / total. Photos may set P(10) to 0. They never raise it.

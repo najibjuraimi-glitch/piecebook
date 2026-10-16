@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { ExitId, P10Band, PriceKind, Verdict } from '../lib/gradeWorth'
 import type { PhotoSide, RejectCode } from '../lib/centering'
+import { asVisionCheck, type VisionCheck } from '../lib/vision'
 
 const STORAGE_KEY = 'piecebook.pregrade.v1'
 
@@ -51,6 +52,8 @@ export interface PredictionRecord {
   photos: StoredPhoto[]
   cannotBeTen: boolean
   photoNote: string
+  /** Snapshot of the photo-check guess. Optional — older rows have none. */
+  vision: VisionCheck | null
   pop: StoredPop | null
   raw: StoredPrice | null
   v9: StoredPrice | null
@@ -133,6 +136,7 @@ function cleanRecord(raw: unknown): PredictionRecord | null {
     photos: Array.isArray(r.photos) ? (r.photos as StoredPhoto[]) : [],
     cannotBeTen: Boolean(r.cannotBeTen),
     photoNote: typeof r.photoNote === 'string' ? r.photoNote : '',
+    vision: r.vision ? asVisionCheck(r.vision) : null,
     pop: r.pop ?? null,
     raw: r.raw ?? null,
     v9: r.v9 ?? null,
@@ -180,6 +184,7 @@ export function savePrediction(draft: PredictionDraft): PredictionRecord {
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
     status: 'draft',
+    vision: draft.vision ?? existing?.vision ?? null,
     actualGrade: existing?.actualGrade ?? draft.actualGrade ?? null,
   }
   const rest = read().filter((r) => r.id !== record.id)

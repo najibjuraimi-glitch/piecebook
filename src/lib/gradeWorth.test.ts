@@ -9,6 +9,7 @@ import {
   selectPsaFee,
   startingRates,
   vaultWithdrawalUsd,
+  photoWouldChangeTheCall,
   type GradeWorthInput,
 } from './gradeWorth'
 
@@ -151,5 +152,19 @@ describe('grade-worth helpers', () => {
     expect(vaultWithdrawalUsd(500)).toBe(24.99)
     expect(vaultWithdrawalUsd(4999)).toBe(24.99)
     expect(vaultWithdrawalUsd(5000)).toBeNull()
+  })
+
+  it('photo note names vision once corners/edges/surface have been read', () => {
+    const both = {
+      frontCannotBeTen: false,
+      backCannotBeTen: false,
+      hasFront: true,
+      hasBack: true,
+    }
+    expect(photoWouldChangeTheCall(both)).toMatch(/not read yet/)
+    expect(photoWouldChangeTheCall({ ...both, visionRead: true })).toMatch(/did not find a defect/)
+    expect(photoWouldChangeTheCall({ ...both, visionRead: true, visionRuledOut: true })).toMatch(
+      /rule out a PSA 10/,
+    )
   })
 })
