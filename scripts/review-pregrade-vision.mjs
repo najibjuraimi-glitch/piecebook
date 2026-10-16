@@ -3,6 +3,7 @@
  * Phone 390 (deviceScaleFactor 2) and wide 1280 shots of /pregrade photo check.
  * Mocks VISION_URL/check so Gemini and the daily cap are unused.
  * Against vite preview. Chrome: /usr/local/bin/google-chrome.
+ * Run: REVIEW_BASE=http://127.0.0.1:4194 node --experimental-strip-types scripts/review-pregrade-vision.mjs
  */
 import { deflateSync } from 'node:zlib'
 import { mkdirSync } from 'node:fs'
@@ -145,9 +146,14 @@ console.log(`Pre-grade vision shots → ${OUT}`)
   await shot(page, 'phone-pregrade.png')
   await uploadAndCheck(page)
   await shot(page, 'phone-candidates-jp.png')
+  await page.getByText('Piecebook currently only has English card data and prices.').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(200)
+  await page.screenshot({ path: join(OUT, 'phone-candidates-jp-fold.png'), fullPage: false })
+  console.log('  phone-candidates-jp-fold.png')
   await page.getByRole('button', { name: 'Confirm this card' }).first().click()
   await page.getByRole('heading', { level: 1, name: 'Sanji' }).waitFor({ timeout: 15_000 })
   await page.getByText('These photos rule out a PSA 10.').waitFor({ timeout: 15_000 })
+  await page.getByRole('button', { name: 'Replace photo' }).first().waitFor({ timeout: 15_000 })
   await shot(page, 'phone-worksheet.png')
   await context.close()
 }
@@ -157,9 +163,14 @@ console.log(`Pre-grade vision shots → ${OUT}`)
   await go(page, '/pregrade')
   await uploadAndCheck(page)
   await shot(page, 'wide-candidates-jp.png')
+  await page.getByText('Piecebook currently only has English card data and prices.').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(200)
+  await page.screenshot({ path: join(OUT, 'wide-candidates-jp-fold.png'), fullPage: false })
+  console.log('  wide-candidates-jp-fold.png')
   await page.getByRole('button', { name: 'Confirm this card' }).first().click()
   await page.getByRole('heading', { level: 1, name: 'Sanji' }).waitFor({ timeout: 15_000 })
   await page.getByText('These photos rule out a PSA 10.').waitFor({ timeout: 15_000 })
+  await page.getByRole('button', { name: 'Replace photo' }).first().waitFor({ timeout: 15_000 })
   await shot(page, 'wide-worksheet.png')
   await context.close()
 }
