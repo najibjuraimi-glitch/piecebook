@@ -15,3 +15,6 @@ export const API_BASE = (fromEnv && fromEnv.length > 0 ? fromEnv : '/api').repla
 
 /** Address of the new home, set at build time on the old site only; shows the "we moved" banner. */
 export const MOVED_TO = ((import.meta.env.VITE_MOVED_TO as string | undefined) ?? '').trim()
+
+/** Build-time off switch: the old GitHub Pages build sets VITE_SYNC=off so it never tries the cloud. */
+export const SYNC_ENABLED = ((import.meta.env.VITE_SYNC as string | undefined) ?? '').trim().toLowerCase() !== 'off'

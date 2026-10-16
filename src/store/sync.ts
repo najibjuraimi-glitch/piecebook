@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { SYNC_ENABLED } from '../config/api'
 import { fetchRemote, pushRemote, type SyncClientDeps, type SyncResult } from '../lib/syncClient'
 import { planMerge, stampAll } from '../lib/syncMerge'
 import {
@@ -161,6 +162,10 @@ export function startSync(d?: Partial<SyncClientDeps>): void {
   if (started || typeof window === 'undefined') return
   started = true
   deps = d
+  if (!SYNC_ENABLED) {
+    set({ status: 'off' })
+    return
+  }
   setLocalWriteHook(() => {
     set({ pending: pendingCount() })
     flushSoon()
