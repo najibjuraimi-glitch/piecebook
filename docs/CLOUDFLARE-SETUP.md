@@ -55,7 +55,8 @@ The Git connection needs the GitHub app authorisation, which only a browser sess
    - Build command: `npm run build`
    - Build output directory: `dist`
    - Root directory: `/`
-   - Environment variables (production *and* preview): `NODE_VERSION` = `22`
+   - Node version: the repo's `.node-version` file (`22`) is what Pages uses. Dashboard
+     environment variables such as `NODE_VERSION` are ignored while a root `wrangler.toml` exists.
 4. Project name `piecebook` → site is `https://piecebook.pages.dev`. If that name is taken and
    you pick another, note the hostname: it must go into `ALLOWED_ORIGINS` (step 8) and into the
    "moved" banner (step 11).
@@ -74,13 +75,16 @@ cd worker
 npx wrangler kv namespace create USER_DATA
 ```
 
-Copy the printed `id` into `worker/wrangler.toml` by uncommenting:
+Copy the printed `id` into `worker/wrangler.toml`:
 
 ```toml
 [[kv_namespaces]]
 binding = "USER_DATA"
 id = "<the id>"
 ```
+
+*Done:* the live namespace `fbb335c717da4e0e98ffd433cb702ca2` is committed. Only repeat this
+step if you deliberately start a fresh store.
 
 (D1 would also work; KV was chosen because each key is one small JSON blob and there is no
 query to run. Switching later means only `worker/src/sync.js`.)
@@ -134,7 +138,7 @@ agents) call `https://piecebook-vision.najibjuraimi.workers.dev` directly.
 
 ## 7. Worker variables  **[API ✓]** (a file edit + deploy)
 
-Edit `worker/wrangler.toml` and uncomment / fill:
+Edit `worker/wrangler.toml` and fill:
 
 ```toml
 ACCESS_TEAM_DOMAIN = "https://jib.cloudflareaccess.com"
@@ -145,6 +149,10 @@ ALLOWED_ORIGINS = "https://najibjuraimi-glitch.github.io,https://piecebook.pages
 ```
 
 Commit that change (the values are not secrets; the Gemini key stays a `wrangler secret`).
+
+*Done:* the live values (team `piecebook.cloudflareaccess.com`, the Pages app's AUD, read-only
+service token) are committed, so `npx wrangler deploy` from any checkout keeps the lock on. If the
+Access application is ever recreated, its new AUD tag must land here before the next deploy.
 
 ## 8. Deploy the Worker  **[API ✓]** — this is the switch
 
@@ -209,7 +217,7 @@ or their write loses to the phone under last-write-wins.
 
   (Dashboard: repo → Settings → Secrets and variables → Actions → Variables.) The banner carries a
   **Download my data** button and a link to the new home.
-- After every device has imported: delete `.github/workflows/pages.yml` and `public/404.html` in a
+- After every device has imported: delete `.github/workflows/pages.yml` and `.github/pages/404.html` in a
   follow-up PR, and GitHub → Settings → Pages → Source → **None** **[Dashboard]**.
 - Optionally make the repo private **[Dashboard]**; Pages keeps building.
 
