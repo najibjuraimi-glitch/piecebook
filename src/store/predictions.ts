@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import type { ExitId, P10Band, PriceKind, Verdict } from '../lib/gradeWorth'
 import type { PhotoSide, RejectCode } from '../lib/centering'
 import { asVisionCheck, type VisionCheck } from '../lib/vision'
+import { readRaw, subscribeUserData, writeRaw } from './userData'
 
 const STORAGE_KEY = 'piecebook.pregrade.v1'
 
@@ -93,7 +94,7 @@ function sorted(list: PredictionRecord[]): PredictionRecord[] {
 function read(): PredictionRecord[] {
   if (cache) return cache
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = readRaw(STORAGE_KEY)
     cache = raw ? cleanList(JSON.parse(raw)) : []
   } catch {
     cache = []
@@ -105,13 +106,18 @@ function read(): PredictionRecord[] {
 function write(next: PredictionRecord[]): void {
   cache = next
   snapshot = sorted(next)
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-  } catch {
-    // Quota or private mode: keep the in-memory list so the session still works.
-  }
+  // Quota or private mode returns false: keep the in-memory list so the session still works.
+  writeRaw(STORAGE_KEY, JSON.stringify(next))
   for (const l of listeners) l()
 }
+
+// A copy from the cloud, an import or another tab replaces the cache.
+subscribeUserData(STORAGE_KEY, (change) => {
+  if (change.source === 'local') return
+  cache = null
+  read()
+  for (const l of listeners) l()
+})
 
 function subscribe(fn: () => void): () => void {
   listeners.add(fn)

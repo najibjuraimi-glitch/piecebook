@@ -47,7 +47,7 @@ const field =
   'block h-11 w-full rounded-xl border border-line bg-paper/60 px-3.5 text-body text-ink placeholder:text-muted/70 focus:border-ink focus:bg-surface focus:outline-none disabled:opacity-60'
 const labelCls = 'block text-meta font-medium text-muted'
 const VERDICT_LABEL = { go: 'Go', borderline: 'Borderline', 'no-go': 'No-go' } as const
-const EXIT_LABEL = { 'vault-sell': 'eBay vault-sell', 'ship-sg': 'Ship to Singapore', keep: 'Keep' } as const
+const EXIT_LABEL = { 'vault-sell': 'eBay vault-sell', 'ship-sg': 'Ship to Singapore', keep: 'Keep (no sale)' } as const
 
 interface PriceFields {
   usd: string

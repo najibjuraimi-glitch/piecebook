@@ -53,17 +53,31 @@ const spUnpriced = card({
 })
 
 describe('identifyVersionHint', () => {
-  it('reads SPECIAL in OCR as SP even when the model said base', () => {
-    expect(identifyVersionHint(identify({ read_text: 'Nami OP09-070 SPECIAL' }))).toBe('sp')
+  it('reads SPECIAL in OCR as SP only when the model gave no guess', () => {
+    expect(identifyVersionHint(identify({ parallel_guess: null, read_text: 'Nami OP09-070 SPECIAL' }))).toBe('sp')
+    expect(identifyVersionHint(identify({ parallel_guess: null, read_text: 'OP09-070 SP' }))).toBe('sp')
     expect(identifyVersionHint(identify({ parallel_guess: 'base', read_text: 'Nami' }))).toBeNull()
+  })
+  it('F6: trusts a base guess when SPECIAL is only the attack attribute', () => {
+    expect(identifyVersionHint(identify({ parallel_guess: 'base', read_text: 'Nami OP09-070 特 SPECIAL 5000' }))).toBeNull()
+  })
+  it('model SP / manga / alt guesses win over the text', () => {
+    expect(identifyVersionHint(identify({ parallel_guess: 'SP', read_text: 'Nami' }))).toBe('sp')
+    expect(identifyVersionHint(identify({ parallel_guess: 'manga', read_text: 'Nami' }))).toBe('manga')
+    expect(identifyVersionHint(identify({ parallel_guess: 'parallel/alt art', read_text: 'Nami' }))).toBe('alt')
   })
 })
 
 describe('copySeedPriceLine', () => {
   it('never shows the base print price for an SP photo', () => {
-    expect(copySeedPriceLine(base, identify({ read_text: 'Nami OP09-070 SPECIAL' }))).toBe(
+    expect(copySeedPriceLine(base, identify({ parallel_guess: null, read_text: 'Nami OP09-070 SPECIAL' }))).toBe(
       'no price for this version',
     )
+    expect(copySeedPriceLine(base, identify({ parallel_guess: 'SP', read_text: 'Nami' }))).toBe('no price for this version')
+  })
+
+  it('F6: shows the base seed when the model said base and SPECIAL is the attribute', () => {
+    expect(copySeedPriceLine(base, identify({ parallel_guess: 'base', read_text: 'Nami OP09-070 SPECIAL' }))).toMatch(/seed US \$/)
   })
 
   it('shows the SP row price when that version has its own figure', () => {

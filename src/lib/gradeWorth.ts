@@ -42,6 +42,9 @@ export type P10Band = 'low' | 'mid' | 'high'
 export type Verdict = 'go' | 'borderline' | 'no-go'
 export type ExitId = 'vault-sell' | 'ship-sg' | 'keep'
 
+/** Exits that turn the card into cash. Keep is a paper value and never the "best exit" (F9). */
+export const CASH_EXITS: readonly ExitId[] = ['vault-sell', 'ship-sg']
+
 export interface GradeWorthInput {
   raw: PricePoint
   v9: PricePoint
@@ -341,18 +344,19 @@ function buildExits(evUsd: number, buyAndShipUsd: number | null | undefined, fxR
     sg,
     {
       id: 'keep',
-      label: 'Keep',
+      label: 'Keep (no sale)',
       netUsd: evUsd,
       netSgd: usdToSgd(evUsd, fxRate),
-      note: 'Drifted expected value, no selling fees, in US$ and at the dated ECB S$ cross.',
+      note: 'Paper value: drifted expected value before any selling cost. Not an exit, so never the best exit.',
     },
   ]
 }
 
-function pickBestExit(exits: ExitLine[]): ExitId | null {
+/** Highest net among the cash exits that can run. Keep carries no selling cost, so it would always win and say nothing. */
+export function pickBestExit(exits: ExitLine[]): ExitId | null {
   let best: ExitLine | null = null
   for (const e of exits) {
-    if (e.netUsd == null) continue
+    if (!CASH_EXITS.includes(e.id) || e.netUsd == null) continue
     if (!best || e.netUsd > (best.netUsd ?? Number.NEGATIVE_INFINITY)) best = e
   }
   return best?.id ?? null

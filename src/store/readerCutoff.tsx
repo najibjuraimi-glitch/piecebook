@@ -1,4 +1,5 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { readRaw, subscribeUserData, writeRaw } from './userData'
 
 /**
  * How far the reader has finished (11.1). Remembered. Default is each name's
@@ -36,20 +37,13 @@ function isCutoffId(v: string | null): v is CutoffId {
 }
 
 export function readCutoffId(): CutoffId {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    return isCutoffId(raw) ? raw : 'debut'
-  } catch {
-    return 'debut'
-  }
+  const raw = readRaw(STORAGE_KEY)
+  return isCutoffId(raw) ? raw : 'debut'
 }
 
 export function writeCutoffId(id: CutoffId): void {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, id)
-  } catch {
-    // Storage unavailable: the tab still works for this visit.
-  }
+  // Storage unavailable returns false: the tab still works for this visit.
+  writeRaw(STORAGE_KEY, id)
 }
 
 export interface ReaderCutoff {
@@ -71,6 +65,7 @@ export function ReaderCutoffProvider({ children }: { children: ReactNode }) {
     setIdState(next)
     writeCutoffId(next)
   }, [])
+  useEffect(() => subscribeUserData(STORAGE_KEY, () => setIdState(readCutoffId())), [])
   const value = useMemo<ReaderCutoff>(() => {
     const option = CUTOFFS.find((c) => c.id === id) ?? CUTOFFS[0]
     return {

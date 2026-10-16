@@ -1,5 +1,6 @@
 import type { Card } from '../data/seed'
 import type { VisionIdentify } from './vision'
+import { textNamesSp } from './copyPrice'
 
 export interface RankedCandidate {
   card: Card
@@ -57,14 +58,17 @@ export function matchesPrintedCode(card: Card, printed: string): boolean {
   return compact(card.baseNumber) === want || compact(card.cardNumber) === want
 }
 
-/** SPECIAL / SP in the OCR text ranks SP prints even when the model said "base". */
+/**
+ * The model's guess when it gave one. Only with no guess does OCR text decide:
+ * SP / SPECIAL CARD / SPECIAL then rank the SP print. A "base" guess is kept
+ * even when the text says SPECIAL, which is also the attack attribute (F6).
+ */
 export function effectiveParallelGuess(identify: Pick<VisionIdentify, 'parallel_guess' | 'read_text'>): string | null {
-  const guess = identify.parallel_guess
-  const text = `${identify.read_text ?? ''} ${guess ?? ''}`
-  if (/\bSPECIAL\b/i.test(text) || /\bSPECIAL CARD\b/i.test(text) || /(?:^|[^\w])SP(?:[^\w]|$)/i.test(identify.read_text ?? '')) {
-    if (!guess || guess.toLowerCase() === 'base') return 'SP'
-  }
-  return guess
+  const guess = identify.parallel_guess?.trim() || null
+  if (guess) return guess
+  const text = identify.read_text ?? ''
+  if (textNamesSp(text) || /\bSPECIAL\b/i.test(text)) return 'SP'
+  return null
 }
 
 function parallelBoost(card: Card, guess: string | null): number {

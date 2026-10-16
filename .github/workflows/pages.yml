@@ -35,6 +35,14 @@ jobs:
         run: npm run build
         env:
           PIECEBOOK_BASE: /piecebook/
+          # The old site has no /api proxy, so it calls the Worker directly. Once the
+          # Worker is behind Access this stops working on purpose; the site is retired.
+          VITE_API_BASE: https://piecebook-vision.najibjuraimi.workers.dev
+          # No cloud sync on the old origin: it has no Access session to sync with.
+          VITE_SYNC: "off"
+          # Flip to the new home (e.g. https://piecebook.pages.dev) to show the "we moved"
+          # banner with the Download-my-data button. Empty = no banner.
+          VITE_MOVED_TO: ${{ vars.PIECEBOOK_MOVED_TO || '' }}
 
       - name: SPA fallback and no Jekyll
         run: |

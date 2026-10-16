@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { readRaw, subscribeUserData, writeRaw } from './userData'
 
 export type CostCurrency = 'SGD' | 'USD'
 
@@ -97,7 +98,7 @@ function migrateLots(owned: Record<string, OwnedEntry>, lots: unknown): Record<s
 function load(): CollectionState {
   if (typeof window === 'undefined') return EMPTY
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    const raw = readRaw(STORAGE_KEY)
     if (!raw) return EMPTY
     const parsed = JSON.parse(raw) as { owned?: unknown; lots?: unknown }
     const owned: Record<string, OwnedEntry> = {}
@@ -114,11 +115,8 @@ function load(): CollectionState {
 }
 
 function save(state: CollectionState) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // Storage full or unavailable; state still lives in memory for this session.
-  }
+  // Storage full or unavailable returns false; state still lives in memory for this session.
+  writeRaw(STORAGE_KEY, JSON.stringify(state))
 }
 
 export interface CollectionApi {
@@ -138,65 +136,90 @@ const CollectionContext = createContext<CollectionApi | null>(null)
 
 export function CollectionProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CollectionState>(load)
+  // Only a change made here is saved (and stamped for sync); a reload from the
+  // cloud, an import or another tab must not re-stamp the data as new.
+  const localChange = useRef(false)
+  const mutate = useCallback((fn: (s: CollectionState) => CollectionState) => {
+    localChange.current = true
+    setState(fn)
+  }, [])
 
   useEffect(() => {
+    if (!localChange.current) return
+    localChange.current = false
     save(state)
   }, [state])
 
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) setState(load())
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
+  useEffect(
+    () =>
+      subscribeUserData(STORAGE_KEY, () => {
+        localChange.current = false
+        setState(load())
+      }),
+    [],
+  )
 
   const isOwned = useCallback((n: string) => Boolean(state.owned[n]), [state.owned])
   const ownedQty = useCallback((n: string) => state.owned[n]?.qty ?? 0, [state.owned])
   const costFor = useCallback((n: string) => state.owned[n]?.cost, [state.owned])
 
-  const markOwned = useCallback((cardNumber: string) => {
-    setState((s) => {
-      if (s.owned[cardNumber]) return s
-      return { owned: { ...s.owned, [cardNumber]: { qty: 1, ownedAt: new Date().toISOString() } } }
-    })
-  }, [])
+  const markOwned = useCallback(
+    (cardNumber: string) => {
+      mutate((s) => {
+        if (s.owned[cardNumber]) return s
+        return { owned: { ...s.owned, [cardNumber]: { qty: 1, ownedAt: new Date().toISOString() } } }
+      })
+    },
+    [mutate],
+  )
 
-  const removeOwned = useCallback((cardNumber: string) => {
-    setState((s) => {
-      if (!s.owned[cardNumber]) return s
-      const owned = { ...s.owned }
-      delete owned[cardNumber]
-      return { owned }
-    })
-  }, [])
+  const removeOwned = useCallback(
+    (cardNumber: string) => {
+      mutate((s) => {
+        if (!s.owned[cardNumber]) return s
+        const owned = { ...s.owned }
+        delete owned[cardNumber]
+        return { owned }
+      })
+    },
+    [mutate],
+  )
 
-  const setQty = useCallback((cardNumber: string, qty: number) => {
-    const next = Math.max(1, Math.floor(qty))
-    setState((s) => {
-      const entry = s.owned[cardNumber] ?? { qty: 1, ownedAt: new Date().toISOString() }
-      return { owned: { ...s.owned, [cardNumber]: { ...entry, qty: next } } }
-    })
-  }, [])
+  const setQty = useCallback(
+    (cardNumber: string, qty: number) => {
+      const next = Math.max(1, Math.floor(qty))
+      mutate((s) => {
+        const entry = s.owned[cardNumber] ?? { qty: 1, ownedAt: new Date().toISOString() }
+        return { owned: { ...s.owned, [cardNumber]: { ...entry, qty: next } } }
+      })
+    },
+    [mutate],
+  )
 
-  const setCost = useCallback((cardNumber: string, cost: CostBasis) => {
-    const clean = cleanCost(cost)
-    if (!clean) return
-    setState((s) => {
-      const entry = s.owned[cardNumber]
-      if (!entry) return s
-      return { owned: { ...s.owned, [cardNumber]: { ...entry, cost: clean } } }
-    })
-  }, [])
+  const setCost = useCallback(
+    (cardNumber: string, cost: CostBasis) => {
+      const clean = cleanCost(cost)
+      if (!clean) return
+      mutate((s) => {
+        const entry = s.owned[cardNumber]
+        if (!entry) return s
+        return { owned: { ...s.owned, [cardNumber]: { ...entry, cost: clean } } }
+      })
+    },
+    [mutate],
+  )
 
-  const clearCost = useCallback((cardNumber: string) => {
-    setState((s) => {
-      const entry = s.owned[cardNumber]
-      if (!entry || !entry.cost) return s
-      const { cost: _dropped, ...rest } = entry
-      return { owned: { ...s.owned, [cardNumber]: rest } }
-    })
-  }, [])
+  const clearCost = useCallback(
+    (cardNumber: string) => {
+      mutate((s) => {
+        const entry = s.owned[cardNumber]
+        if (!entry || !entry.cost) return s
+        const { cost: _dropped, ...rest } = entry
+        return { owned: { ...s.owned, [cardNumber]: rest } }
+      })
+    },
+    [mutate],
+  )
 
   const api = useMemo<CollectionApi>(
     () => ({

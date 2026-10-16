@@ -1,15 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getCard, type Card } from '../data/seed'
 import { useCollection } from '../store/collection'
 import { useWatchlist } from '../store/watchlist'
-import { readDisplayCurrency, writeDisplayCurrency, type DisplayCurrency } from '../store/displayCurrency'
+import { readDisplayCurrency, subscribeDisplayCurrency, writeDisplayCurrency, type DisplayCurrency } from '../store/displayCurrency'
 import { usePriceHistories } from '../data/history'
 import { summarisePortfolio } from '../lib/portfolio'
 import { formatMarket, rateLine } from '../lib/fx'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { StatBlock } from '../components/StatBlock'
 import { EmptyState } from '../components/EmptyState'
+import { DataLink } from '../components/DataLink'
 import { CardArt } from '../components/CardArt'
 import { Movers, type MoverCard } from '../components/Movers'
 import { ViewTabs } from '../components/ViewTabs'
@@ -32,6 +33,7 @@ export function PortfolioScreen() {
   const { owned } = useCollection()
   const watch = useWatchlist()
   const [display, setDisplay] = useState<DisplayCurrency>(readDisplayCurrency)
+  useEffect(() => subscribeDisplayCurrency(setDisplay), [])
   const summary = useMemo(() => summarisePortfolio(owned, getCard), [owned])
   const { holdings, marketUsd, costSgd, costUsd, plUsd, plSkippedUnpriced } = summary
 
@@ -149,6 +151,7 @@ export function PortfolioScreen() {
           )}
         </>
       )}
+      <DataLink className="mt-8" />
     </Screen>
   )
 }

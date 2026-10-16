@@ -1,10 +1,11 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { MAX_COPIES, type Deck } from '../lib/deck'
+import { readRaw, subscribeUserData, writeRaw } from './userData'
 
 /**
  * Decks live in the browser only, like the collection and the watchlist:
  * `localStorage` key `piecebook.decks.v1`, `{ decks: Deck[] }`. Card numbers
- * are base numbers (a parallel print is the same card). No accounts, no sync.
+ * are base numbers (a parallel print is the same card). Synced per key like the rest.
  */
 const STORAGE_KEY = 'piecebook.decks.v1'
 
@@ -40,7 +41,7 @@ function cleanDeck(raw: unknown): Deck | undefined {
 function load(): DecksState {
   if (typeof window === 'undefined') return EMPTY
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    const raw = readRaw(STORAGE_KEY)
     if (!raw) return EMPTY
     const parsed = JSON.parse(raw) as Partial<DecksState>
     return { decks: Array.isArray(parsed.decks) ? parsed.decks.map(cleanDeck).filter((d): d is Deck => d !== undefined) : [] }
@@ -50,11 +51,8 @@ function load(): DecksState {
 }
 
 function save(state: DecksState) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // Storage full or unavailable; state still lives in memory for this session.
-  }
+  // Storage full or unavailable returns false; state still lives in memory for this session.
+  writeRaw(STORAGE_KEY, JSON.stringify(state))
 }
 
 export interface DecksApi {
@@ -75,34 +73,49 @@ const newId = () => `d${Date.now().toString(36)}${Math.random().toString(36).sli
 
 export function DecksProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<DecksState>(load)
+  // Only a change made here is saved (and stamped for sync); a reload from the cloud or another tab is not.
+  const localChange = useRef(false)
+  const mutate = useCallback((fn: (s: DecksState) => DecksState) => {
+    localChange.current = true
+    setState(fn)
+  }, [])
 
   useEffect(() => {
+    if (!localChange.current) return
+    localChange.current = false
     save(state)
   }, [state])
 
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) setState(load())
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
+  useEffect(
+    () =>
+      subscribeUserData(STORAGE_KEY, () => {
+        localChange.current = false
+        setState(load())
+      }),
+    [],
+  )
 
-  const update = useCallback((id: string, fn: (d: Deck) => Deck) => {
-    setState((s) => ({ decks: s.decks.map((d) => (d.id === id ? { ...fn(d), updatedAt: new Date().toISOString() } : d)) }))
-  }, [])
+  const update = useCallback(
+    (id: string, fn: (d: Deck) => Deck) => {
+      mutate((s) => ({ decks: s.decks.map((d) => (d.id === id ? { ...fn(d), updatedAt: new Date().toISOString() } : d)) }))
+    },
+    [mutate],
+  )
 
   const getDeck = useCallback((id: string) => state.decks.find((d) => d.id === id), [state.decks])
 
-  const createDeck = useCallback((name = 'New deck') => {
-    const id = newId()
-    const now = new Date().toISOString()
-    setState((s) => ({ decks: [{ id, name, leader: null, cards: {}, createdAt: now, updatedAt: now }, ...s.decks] }))
-    return id
-  }, [])
+  const createDeck = useCallback(
+    (name = 'New deck') => {
+      const id = newId()
+      const now = new Date().toISOString()
+      mutate((s) => ({ decks: [{ id, name, leader: null, cards: {}, createdAt: now, updatedAt: now }, ...s.decks] }))
+      return id
+    },
+    [mutate],
+  )
 
   const renameDeck = useCallback((id: string, name: string) => update(id, (d) => ({ ...d, name: name.trim() || d.name })), [update])
-  const deleteDeck = useCallback((id: string) => setState((s) => ({ decks: s.decks.filter((d) => d.id !== id) })), [])
+  const deleteDeck = useCallback((id: string) => mutate((s) => ({ decks: s.decks.filter((d) => d.id !== id) })), [mutate])
   const setLeader = useCallback((id: string, cardNumber: string | null) => update(id, (d) => ({ ...d, leader: cardNumber ? cardNumber.replace(BASE_RE, '') : null })), [update])
 
   const setCardQty = useCallback(

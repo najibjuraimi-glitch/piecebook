@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Card } from '../data/seed'
-import { matchesPrintedCode, nameScore, rankVisionCandidates } from './visionCandidates'
+import { effectiveParallelGuess, matchesPrintedCode, nameScore, rankVisionCandidates } from './visionCandidates'
 import type { VisionIdentify } from './vision'
 
 function card(partial: Partial<Card> & Pick<Card, 'cardNumber' | 'name'>): Card {
@@ -58,9 +58,10 @@ const sp = card({
   isParallel: true,
   variant: 'Special Card',
 })
+const luffyBase = card({ cardNumber: 'OP09-118', name: 'Monkey.D.Luffy', rarity: 'SEC', setCode: 'OP-09', baseNumber: 'OP09-118' })
 const usopp = card({ cardNumber: 'ST01-002', name: 'Usopp', rarity: 'C', setCode: 'ST-01' })
 
-const catalogue = [nami, namiP, namiOp, namiManga, luffy, sanji, sanjiP, sp, usopp]
+const catalogue = [nami, namiP, namiOp, namiManga, luffy, sanji, sanjiP, sp, luffyBase, usopp]
 
 function identify(partial: Partial<VisionIdentify>): VisionIdentify {
   return {
@@ -129,17 +130,33 @@ describe('rankVisionCandidates', () => {
     expect(rows[0]?.card.rarity).toBe('SP')
   })
 
-  it('SPECIAL in read_text ranks the SP print even when parallel_guess is base', () => {
+  it('SPECIAL in read_text ranks the SP print when the model gave no guess', () => {
     const rows = rankVisionCandidates(
       identify({
         set_code: 'OP09-118',
         name: 'Monkey.D.Luffy',
-        parallel_guess: 'base',
+        parallel_guess: null,
         read_text: 'Monkey.D.Luffy OP09-118 SPECIAL',
       }),
       catalogue,
     )
     expect(rows[0]?.card.rarity).toBe('SP')
+  })
+
+  it('F6: a base guess ranks the base print even when the text says SPECIAL', () => {
+    const rows = rankVisionCandidates(
+      identify({
+        set_code: 'OP09-118',
+        name: 'Monkey.D.Luffy',
+        parallel_guess: 'base',
+        read_text: 'Monkey.D.Luffy OP09-118 特 SPECIAL',
+      }),
+      catalogue,
+    )
+    expect(rows[0]?.card.cardNumber).toBe('OP09-118')
+    expect(rows[0]?.card.isParallel).toBe(false)
+    expect(effectiveParallelGuess({ parallel_guess: 'base', read_text: 'SPECIAL' })).toBe('base')
+    expect(effectiveParallelGuess({ parallel_guess: null, read_text: 'OP09-118 SP' })).toBe('SP')
   })
 
   it('null set_code fuzzy-matches name against seed names', () => {

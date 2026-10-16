@@ -22,6 +22,8 @@ import { BelongPeopleScreen } from './screens/BelongPeople'
 import { BelongFruitsScreen } from './screens/BelongFruits'
 import { PregradeScreen } from './screens/Pregrade'
 import { PregradeCardScreen } from './screens/PregradeCard'
+import { YourDataScreen } from './screens/YourData'
+import { MovedBanner, SyncNotice } from './components/Notices'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
@@ -39,6 +41,8 @@ export default function App() {
     <div className="min-h-dvh bg-paper">
       <ScrollToTop />
       <TopBar pathname={pathname} />
+      <MovedBanner />
+      <SyncNotice />
       <Routes>
         <Route path="/" element={<SetsScreen />} />
         <Route path="/sets/:setCode" element={<SetDetailScreen />} />
@@ -59,6 +63,7 @@ export default function App() {
         <Route path="/belong/fruits" element={<BelongFruitsScreen />} />
         <Route path="/pregrade" element={<PregradeScreen />} />
         <Route path="/pregrade/:cardNumber" element={<PregradeCardScreen />} />
+        <Route path="/your-data" element={<YourDataScreen />} />
         <Route path="*" element={<NotFoundScreen />} />
       </Routes>
       <TabBar pathname={pathname} />
