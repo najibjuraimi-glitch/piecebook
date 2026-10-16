@@ -4,6 +4,12 @@ export const MIN_SHORT_SIDE_PX = 800
 export const MAX_ANGLE_DEG = 8
 export const FRONT_TEN_MAX = 55
 export const BACK_TEN_MAX = 75
+/**
+ * A print border thinner than this on any side means the scan fired on edge
+ * noise, not a border. Such a measure is unresolved: no ratio is shown and it
+ * never rules a 10 out.
+ */
+export const MIN_PRINT_BORDER_PX = 4
 
 export type PhotoSide = 'front' | 'back'
 export type RejectCode = 'short-side' | 'cut-off' | 'angled' | 'no-card' | 'no-print-edge'
@@ -38,6 +44,8 @@ export interface CenteringMeasure {
   worse: AxisSplit
   worseAxis: 'lr' | 'tb'
   cannotBeTen: boolean
+  /** False when a border is under MIN_PRINT_BORDER_PX: the card was found but the print edge was not. */
+  resolved: boolean
   side: PhotoSide
   corners: [Point, Point, Point, Point]
   inner: [Point, Point, Point, Point]
@@ -87,6 +95,10 @@ export function cannotBeTenFromWorse(largerPct: number, side: PhotoSide): boolea
   return largerPct > limit + 1e-6
 }
 
+export function bordersResolved(left: number, right: number, top: number, bottom: number): boolean {
+  return [left, right, top, bottom].every((px) => Number.isFinite(px) && px >= MIN_PRINT_BORDER_PX)
+}
+
 export function measureFromBorders(left: number, right: number, top: number, bottom: number, side: PhotoSide): Omit<
   CenteringMeasure,
   'corners' | 'inner' | 'maxAngleErrorDeg'
@@ -94,6 +106,7 @@ export function measureFromBorders(left: number, right: number, top: number, bot
   const lr = splitFromPair(left, right)
   const tb = splitFromPair(top, bottom)
   const w = worseAxis(lr, tb)
+  const resolved = bordersResolved(left, right, top, bottom)
   return {
     left,
     right,
@@ -103,9 +116,21 @@ export function measureFromBorders(left: number, right: number, top: number, bot
     tb,
     worse: w.worse,
     worseAxis: w.worseAxis,
-    cannotBeTen: cannotBeTenFromWorse(w.worse.largerPct, side),
+    cannotBeTen: resolved && cannotBeTenFromWorse(w.worse.largerPct, side),
+    resolved,
     side,
   }
+}
+
+/** Restored log rows carry unit-square placeholder corners, not pixel geometry. */
+export function hasPixelGeometry(measure: Pick<CenteringMeasure, 'corners'>): boolean {
+  return measure.corners.some((p) => p.x > 1 || p.y > 1)
+}
+
+/** `50/50 · 50/50`, or a plain statement when the print edge was not resolved. */
+export function centeringLabel(measure: Pick<CenteringMeasure, 'lr' | 'tb' | 'resolved' | 'cannotBeTen'>): string {
+  if (!measure.resolved) return 'Card found · print edge not measured · nothing ruled out'
+  return `${measure.lr.label} · ${measure.tb.label}${measure.cannotBeTen ? ' · cannot be a 10' : ''}`
 }
 
 export function measurePhoto(image: PixelImage, side: PhotoSide): PhotoResult {
@@ -209,6 +234,15 @@ export function drawCenteringOverlay(
   ctx.closePath()
   ctx.stroke()
 
+  const font = Math.max(13, Math.round(Math.min(srcW, srcH) / 28))
+  ctx.font = `600 ${font}px ui-sans-serif, system-ui, sans-serif`
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  if (!measure.resolved) {
+    drawTag(ctx, srcW / 2, srcH - font * 1.4, 'print edge not measured', '#1A1A1A', font)
+    return
+  }
+
   ctx.strokeStyle = 'rgba(196, 92, 38, 0.9)'
   ctx.beginPath()
   const [itl, itr, ibr, ibl] = measure.inner
@@ -219,10 +253,6 @@ export function drawCenteringOverlay(
   ctx.closePath()
   ctx.stroke()
 
-  const font = Math.max(13, Math.round(Math.min(srcW, srcH) / 28))
-  ctx.font = `600 ${font}px ui-sans-serif, system-ui, sans-serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
   const ink = measure.cannotBeTen ? '#B42318' : '#1A1A1A'
   const leftPct = Math.round((measure.left / (measure.left + measure.right)) * 100)
   const rightPct = 100 - leftPct

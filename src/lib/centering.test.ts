@@ -6,6 +6,9 @@ import { decode as decodeJpeg } from 'jpeg-js'
 import {
   BACK_TEN_MAX,
   FRONT_TEN_MAX,
+  MIN_PRINT_BORDER_PX,
+  centeringLabel,
+  hasPixelGeometry,
   makeSyntheticCard,
   measureFromBorders,
   measurePhoto,
@@ -52,6 +55,36 @@ describe('centering ratios from known borders', () => {
     expect(s.largerPct).toBeCloseTo(200 / 3, 5)
     expect(s.label).toBe('67/33')
   })
+
+  it('a border thinner than the guard is unresolved and never rules a 10 out', () => {
+    expect(MIN_PRINT_BORDER_PX).toBe(4)
+    const noise = measureFromBorders(2, 2, 2, 2, 'front')
+    expect(noise.resolved).toBe(false)
+    expect(noise.cannotBeTen).toBe(false)
+    expect(centeringLabel(noise)).toMatch(/not measured/)
+    expect(centeringLabel(noise)).not.toMatch(/50\/50/)
+    // One pixel of jitter on a 2px border would read 60/40 — still nothing is ruled out.
+    const jitter = measureFromBorders(3, 2, 2, 2, 'front')
+    expect(jitter.lr.label).toBe('60/40')
+    expect(jitter.resolved).toBe(false)
+    expect(jitter.cannotBeTen).toBe(false)
+    // A real border over the line still rules out.
+    const real = measureFromBorders(60, 40, 50, 50, 'front')
+    expect(real.resolved).toBe(true)
+    expect(real.cannotBeTen).toBe(true)
+    expect(centeringLabel(real)).toBe('60/40 · 50/50 · cannot be a 10')
+  })
+
+  it('restored log rows carry placeholder corners, not pixel geometry', () => {
+    const unit = [
+      { x: 0, y: 0 },
+      { x: 1, y: 0 },
+      { x: 1, y: 1 },
+      { x: 0, y: 1 },
+    ] as const
+    expect(hasPixelGeometry({ corners: [unit[0], unit[1], unit[2], unit[3]] })).toBe(false)
+    expect(hasPixelGeometry({ corners: [{ x: 120, y: 100 }, { x: 880, y: 100 }, { x: 880, y: 1164 }, { x: 120, y: 1164 }] })).toBe(true)
+  })
 })
 
 describe('centering from synthetic photos (±2 points)', () => {
@@ -68,6 +101,7 @@ describe('centering from synthetic photos (±2 points)', () => {
     // 120 / 200 = 60/40
     expectSplit(result.measure.lr.largerPct, 60)
     expectSplit(result.measure.tb.largerPct, 50)
+    expect(result.measure.resolved).toBe(true)
     expect(result.measure.cannotBeTen).toBe(true)
   })
 
@@ -160,16 +194,29 @@ describe('photo rejects name the side', () => {
     expect(result.message).toMatch(/Back/)
   })
 
-  it('eBay Nami OP09-070 SP front is not cut off', () => {
+  it('eBay Nami OP09-070 SP front is not cut off, and its full-art edge is not invented as 50/50', () => {
     const result = measurePhoto(loadJpegFixture('nami-op09-070-sp-front.jpg'), 'front')
     expect(result.ok).toBe(true)
-    if (!result.ok) expect(result.message).toBe('')
+    if (!result.ok) {
+      expect(result.message).toBe('')
+      return
+    }
+    expect(result.measure.corners[0].x).toBeGreaterThan(50)
+    expect(result.measure.corners[0].y).toBeGreaterThan(20)
+    expect(result.measure.resolved).toBe(false)
+    expect(result.measure.cannotBeTen).toBe(false)
   }, 30_000)
 
-  it('eBay Nami OP09-070 SP back is not cut off', () => {
+  it('eBay Nami OP09-070 SP back is not cut off and rules nothing out', () => {
     const result = measurePhoto(loadJpegFixture('nami-op09-070-sp-back.jpg'), 'back')
     expect(result.ok).toBe(true)
-    if (!result.ok) expect(result.message).toBe('')
+    if (!result.ok) {
+      expect(result.message).toBe('')
+      return
+    }
+    expect(result.measure.corners[0].x).toBeGreaterThan(50)
+    expect(result.measure.resolved).toBe(false)
+    expect(result.measure.cannotBeTen).toBe(false)
   }, 30_000)
 
   it('angled over ~8°', () => {
