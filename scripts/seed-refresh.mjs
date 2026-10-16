@@ -302,6 +302,28 @@ function buildRows(set, prints, seededBase) {
 }
 
 /**
+ * Limitless does not list every print of a hosted set (ST-14 has no page of
+ * its own; only reprints appear on PRB / other decks). Keep seed rows we
+ * already hold for numbers this run did not see, so a Cards-verified fill is
+ * not wiped and the base-checklist gap check stays green.
+ */
+function mergeExistingSeed(set, fresh) {
+  const file = join(DATA, `${codeKey(set.setCode)}-en-seed.csv`)
+  if (!existsSync(file)) return { kept: [], rows: fresh }
+  const have = new Set(fresh.map((r) => r.card_number))
+  const kept = parseCsv(readFileSync(file, 'utf8')).filter((r) => r.card_number && !have.has(r.card_number))
+  if (kept.length === 0) return { kept, rows: fresh }
+  const own = prefixOf(set.setCode)
+  const rows = [...fresh, ...kept].sort((a, b) => {
+    const ao = a.card_number.startsWith(own)
+    const bo = b.card_number.startsWith(own)
+    if (ao !== bo) return ao ? -1 : 1
+    return compareNumbers(a.card_number, b.card_number)
+  })
+  return { kept, rows }
+}
+
+/**
  * data/card-attributes/{code}.csv: what each print is and does (category,
  * colour, cost / life, power, counter, attribute, traits, effect and trigger
  * text, illustrator, regulation block, Standard / Extra legality) plus the
@@ -311,12 +333,17 @@ function buildRows(set, prints, seededBase) {
 function writeAttributes(setCode, rows, prints) {
   mkdirSync(ATTR_DIR, { recursive: true })
   const byNumber = new Map(prints.map((p) => [p.cardNumber, p]))
+  const attrFile = join(ATTR_DIR, `${codeKey(setCode)}.csv`)
+  const previous = existsSync(attrFile)
+    ? new Map(parseCsv(readFileSync(attrFile, 'utf8')).map((r) => [r.card_number, r]))
+    : new Map()
   const out = rows.map((r) => {
     const p = byNumber.get(r.card_number)
-    return { card_number: r.card_number, variant: r.variant, ...(p?.attributes ?? {}) }
+    if (p?.attributes) return { card_number: r.card_number, variant: r.variant, ...p.attributes }
+    return previous.get(r.card_number) ?? { card_number: r.card_number, variant: r.variant }
   })
   const missing = out.filter((o) => !o.category).map((o) => o.card_number)
-  if (!DRY) writeFileSync(join(ATTR_DIR, `${codeKey(setCode)}.csv`), toCsv(out, ATTR_FIELDS))
+  if (!DRY) writeFileSync(attrFile, toCsv(out, ATTR_FIELDS))
   return missing
 }
 
@@ -885,7 +912,9 @@ for (const set of targets) {
     prints = [...pages.values()].flat().filter((p) => p.cardNumber.startsWith(own))
   }
   printsBySet.set(set.setCode, prints)
-  const { rows, unmapped, noPrice } = buildRows(set, prints, seededBase)
+  const built = buildRows(set, prints, seededBase)
+  const { kept, rows } = mergeExistingSeed(set, built.rows)
+  const { unmapped, noPrice } = built
   if (rows.length === 0) {
     // An upcoming set (7.5) has nothing on Limitless until the day it is listed; that is the expected state, not a failure.
     if (set.cardSeedStatus === 'pending') {
@@ -915,6 +944,7 @@ for (const set of targets) {
   counts.set(codeKey(set.setCode), rows.length)
   const notes = []
   if (before && before !== rows.length) notes.push(`was ${before}`)
+  if (kept.length) notes.push(`kept ${kept.length} not on Limitless`)
   if (noCategory.length) notes.push(`no attributes: ${noCategory.join(' ')}`)
   if (noPrice.length) notes.push(`no price: ${noPrice.join(' ')}`)
   if (unmapped.length) notes.push(`UNMAPPED: ${unmapped.join(' ')}`)
