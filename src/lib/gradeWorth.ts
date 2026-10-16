@@ -128,9 +128,9 @@ export function p10Band(rate: number): P10Band {
 export function startingRates(pop: PopInput): { p10: number; p9: number; pRest: number } {
   if (pop.total <= 0) return { p10: 0, p9: 0, pRest: 1 }
   const p10 = clamp01(pop.tens / pop.total)
-  const p9 = clamp01(pop.nines / pop.total)
-  const used = Math.min(1, p10 + p9)
-  return { p10, p9, pRest: 1 - used }
+  // Tens + nines over total is a typo; the three shares must still sum to 1 or EV overcounts.
+  const p9 = Math.min(clamp01(pop.nines / pop.total), 1 - p10)
+  return { p10, p9, pRest: 1 - p10 - p9 }
 }
 
 /** Photos can zero a 10. They never raise one. */
@@ -159,7 +159,7 @@ export function selectPsaFee(v10Usd: number, fees: PsaFeeConfig = PSA_FEES): Sel
 
 export function vaultWithdrawalUsd(valueUsd: number): number | null {
   if (valueUsd < 500) return VAULT_WITHDRAWAL_UNDER_500_USD
-  if (valueUsd <= 4999) return VAULT_WITHDRAWAL_500_TO_4999_USD
+  if (valueUsd < 5000) return VAULT_WITHDRAWAL_500_TO_4999_USD
   return null
 }
 

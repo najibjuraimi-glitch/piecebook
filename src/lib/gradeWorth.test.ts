@@ -151,7 +151,43 @@ describe('grade-worth helpers', () => {
     expect(vaultWithdrawalUsd(256)).toBe(19.99)
     expect(vaultWithdrawalUsd(500)).toBe(24.99)
     expect(vaultWithdrawalUsd(4999)).toBe(24.99)
+    expect(vaultWithdrawalUsd(4999.5)).toBe(24.99)
     expect(vaultWithdrawalUsd(5000)).toBeNull()
+  })
+
+  it('pop shares always sum to 1, even when tens + nines is typed over total', () => {
+    const over = startingRates(pop(70, 50, 100))
+    expect(over.p10).toBeCloseTo(0.7, 8)
+    expect(over.p9).toBeCloseTo(0.3, 8)
+    expect(over.pRest).toBeCloseTo(0, 8)
+    expect(over.p10 + over.p9 + over.pRest).toBeCloseTo(1, 8)
+    const result = evaluateGradeWorth(base({ raw: sold(18), v9: sold(95), v10: sold(280), pop: pop(70, 50, 100) }))
+    expect(result.evUsd).toBeCloseTo(0.7 * 280 + 0.3 * 95, 5)
+  })
+
+  it('ship-to-Singapore exit nets withdrawal, Buy&Ship and 9% GST on both', () => {
+    const result = evaluateGradeWorth(
+      base({ raw: sold(18), v9: sold(95), v10: sold(280), pop: pop(40, 30, 100), buyAndShipUsd: 25 }),
+    )
+    const sg = result.exits.find((e) => e.id === 'ship-sg')!
+    const ev = result.evUsd
+    expect(sg.netUsd).toBeCloseTo(ev - 19.99 - 25 - 0.09 * (ev + 25), 8)
+    const vault = result.exits.find((e) => e.id === 'vault-sell')!
+    expect(vault.netUsd).toBeCloseTo(ev * 0.87, 8)
+    const missing = evaluateGradeWorth(
+      base({ raw: sold(18), v9: sold(95), v10: sold(280), pop: pop(40, 30, 100), buyAndShipUsd: null }),
+    )
+    expect(missing.exits.find((e) => e.id === 'ship-sg')!.netUsd).toBeNull()
+    expect(missing.bestExit).not.toBe('ship-sg')
+  })
+
+  it('max buy is the highest raw that still clears Go', () => {
+    const input = base({ raw: sold(18), v9: sold(95), v10: sold(280), pop: pop(40, 30, 100) })
+    const result = evaluateGradeWorth(input)
+    const atMax = evaluateGradeWorth({ ...input, raw: sold(result.maxBuyUsd) })
+    expect(atMax.verdict).toBe('go')
+    const overMax = evaluateGradeWorth({ ...input, raw: sold(result.maxBuyUsd + 0.5) })
+    expect(overMax.verdict).not.toBe('go')
   })
 
   it('photo note names vision once corners/edges/surface have been read', () => {
