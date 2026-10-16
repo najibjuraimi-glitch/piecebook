@@ -187,7 +187,9 @@ export function scoreCentering(front: PhotoCentering | null, back: PhotoCenterin
     low: score,
     high: score,
     confidence,
-    basis: `${measuredSides.join('; ')}. ${score === 10 ? 'Within' : 'Outside'} PSA's ${score === 10 ? '10' : `${score}`} centering line (${worst.side} is the tighter side).`,
+    basis: `${measuredSides.join('; ')}. ${
+      score === 10 ? "Within PSA's 10 centering line" : `Outside PSA's 10 centering line, within the ${score} line`
+    } (${worst.side} is the tighter side).`,
     caveats,
   }
 }

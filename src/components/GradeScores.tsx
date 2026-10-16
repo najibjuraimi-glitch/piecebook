@@ -41,7 +41,7 @@ function PartRow({ label, part }: { label: string; part: PartScore }) {
         <p className="tabular text-body text-ink">
           <span className="font-medium">{part.score == null ? 'No score' : part.score >= 10 ? '10 not ruled out' : formatScore(part.score)}</span>
           {part.score != null && part.low != null && part.high != null && part.low !== part.high
-            ? ` · ${formatScore(part.low)} to ${part.high >= 10 ? '10 not ruled out' : formatScore(part.high)}`
+            ? ` · ${formatScore(part.low)} ${part.high >= 10 ? 'or better' : `to ${formatScore(part.high)}`}`
             : ''}
           {` · ${confidenceWord(part.confidence)}`}
         </p>

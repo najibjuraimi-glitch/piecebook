@@ -53,6 +53,7 @@ describe('scoreCentering', () => {
     expect(s.basis).toBe("front 55/45 left to right, 52/48 top to bottom; back 50/50 left to right, 50/50 top to bottom. Within PSA's 10 centering line (front is the tighter side).")
     expect(scoreCentering(front(50, 50), back(80, 20))).toMatchObject({ score: 9, confidence: 'high' })
     expect(scoreCentering(front(68, 32), back(50, 50)).score).toBe(8)
+    expect(scoreCentering(front(60, 40), null).basis).toBe("front 60/40 left to right, 50/50 top to bottom. Outside PSA's 10 centering line, within the 9 line (front is the tighter side).")
   })
 
   it('is medium confidence with one side and low when a photo is small or angled', () => {
