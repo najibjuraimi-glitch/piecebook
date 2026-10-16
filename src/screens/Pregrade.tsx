@@ -19,7 +19,7 @@ import {
   type VisionCheck,
   type VisionPhotos,
 } from '../lib/vision'
-import { writeVisionSession } from '../store/visionSession'
+import { writeVisionSession, type CarriedCentering } from '../store/visionSession'
 import { removePrediction, usePredictions, type StoredPhoto } from '../store/predictions'
 import { hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide } from '../lib/centering'
 import { loadPhotoFile } from '../lib/photoPixels'
@@ -57,14 +57,24 @@ export function PregradeScreen() {
   const [frontMeasure, setFrontMeasure] = useState<SideMeasure | null>(null)
   const [backMeasure, setBackMeasure] = useState<SideMeasure | null>(null)
   const [measuring, setMeasuring] = useState(false)
+  // The measurements that went with the last check, so confirm hands the worksheet the same numbers.
+  const [carriedCentering, setCarriedCentering] = useState<CarriedCentering | null>(null)
   const centering = useMemo<CenteringSummary | null>(
     () => (frontMeasure || backMeasure ? summariseCentering(frontMeasure?.centering ?? null, backMeasure?.centering ?? null) : null),
     [frontMeasure, backMeasure],
   )
   // Scores need an attempt at the model (or its refusal) so the condition part is honest about what it rests on.
   const scores = useMemo(
-    () => (centering && (check || photoError) ? buildScores({ front: centering.front, back: centering.back, condition: check && check.coverage === 'full' ? check.condition : null }) : null),
-    [centering, check, photoError],
+    () =>
+      centering && (check || photoError)
+        ? buildScores({
+            front: centering.front,
+            back: centering.back,
+            backSent: Boolean(backFile),
+            condition: check && check.coverage === 'full' ? check.condition : null,
+          })
+        : null,
+    [centering, check, photoError, backFile],
   )
 
   const pickSide = async (file: File | null, side: PhotoSide) => {
@@ -75,6 +85,7 @@ export function PregradeScreen() {
     else setBackFile(file)
     setCheck(null)
     setPhotoError(null)
+    setCarriedCentering(null)
     if (!file) {
       set(null)
       return
@@ -100,10 +111,15 @@ export function PregradeScreen() {
     setPhotoError(null)
     setCheck(null)
     setHeldPhotos(null)
-    const measured = {
-      front: frontMeasure?.centering ?? (await measureSide(frontFile, 'front')).centering,
-      back: backFile ? (backMeasure?.centering ?? (await measureSide(backFile, 'back')).centering) : null,
-    }
+    // Measured once, here, from the full-size file. The same result travels to the worksheet,
+    // which never re-measures the shrunken copy it receives.
+    const fm = frontMeasure ?? (await measureSide(frontFile, 'front'))
+    const bm = backFile ? (backMeasure ?? (await measureSide(backFile, 'back'))) : null
+    if (!frontMeasure) setFrontMeasure(fm)
+    if (bm && !backMeasure) setBackMeasure(bm)
+    const measured = { front: fm.centering, back: bm?.centering ?? null }
+    const carried = { front: fm.result, back: bm?.result ?? null }
+    setCarriedCentering(carried)
     try {
       const payload = await checkPhotos(frontFile, backFile, measured)
       setCheck(payload.check)
@@ -113,6 +129,7 @@ export function PregradeScreen() {
         check: payload.check,
         frontDataUrl: payload.frontDataUrl,
         backDataUrl: payload.backDataUrl,
+        centering: carried,
       })
     } catch (err) {
       if (err instanceof VisionCapError) {
@@ -142,6 +159,7 @@ export function PregradeScreen() {
       check,
       frontDataUrl,
       backDataUrl,
+      centering: carriedCentering ?? undefined,
       confirmedCardNumber: card.cardNumber,
     })
     navigate(`/pregrade/${encodeURIComponent(card.cardNumber)}`)
@@ -160,6 +178,7 @@ export function PregradeScreen() {
         check: null,
         frontDataUrl: heldPhotos.frontDataUrl,
         backDataUrl: heldPhotos.backDataUrl,
+        centering: carriedCentering ?? undefined,
         confirmedCardNumber: card.cardNumber,
       })
     }
@@ -394,7 +413,6 @@ export function storedCenteringLine(photos: StoredPhoto[]): string {
 function shortLine(c: PhotoCentering): string {
   const who = c.side === 'front' ? 'front' : 'back'
   if (!c.measured) return `${who} not measured`
-  if (!c.resolved) return `${who} ${c.leftRight} ${c.topBottom} (edge not resolved)`
   return `${who} ${c.leftRight} ${c.topBottom}`
 }
 
@@ -454,7 +472,10 @@ function PhotoPick({
         <CenteringCanvas bitmap={measure.bitmap} measure={measure.result.measure} side={side} />
       )}
       {!drawable && url && <img src={url} alt="" className="mt-2 max-h-44 w-full rounded-xl object-contain" />}
-      {measure && !measure.centering.measured && <p className="mt-2 text-body text-bad">{measure.centering.note}</p>}
+      {measure && !measure.centering.measured && (
+        // A card that was found but whose print edge was not read is a limit of the photo, not a fault in it.
+        <p className={`mt-2 text-body ${measure.centering.reason === 'no-print-edge' ? 'text-muted' : 'text-bad'}`}>{measure.centering.note}</p>
+      )}
       {measure?.centering.measured && (
         <p className="tabular mt-2 text-meta text-ink">
           {measure.centering.leftRight} left to right · {measure.centering.topBottom} top to bottom
