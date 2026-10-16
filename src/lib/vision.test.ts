@@ -132,6 +132,13 @@ describe('visionErrorMessage', () => {
       'The photo check got a garbled answer from the model.',
     )
     expect(visionErrorMessage({ error: 'model_error', status: 503, detail: 'upstream timeout' }, 502)).toBe('upstream timeout')
+    expect(
+      visionErrorMessage(
+        { error: 'model_error', status: 400, reason: 'region_unsupported', detail: 'AI check unavailable from this region right now, try again.', upstream: 'FAILED_PRECONDITION: User location is not supported for the API use.' },
+        502,
+      ),
+    ).toBe('AI check unavailable from this region right now, try again.')
+    expect(new VisionRequestError('x', 502, { code: 'model_error', reason: 'region_unsupported' })).toMatchObject({ retryable: true, blocked: false })
     expect(visionErrorMessage({ error: 'model_error', status: 0 }, 502)).toBe('The photo check’s model did not answer.')
   })
 })

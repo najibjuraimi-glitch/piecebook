@@ -160,7 +160,9 @@ Access application is ever recreated, its new AUD tag must land here before the 
 npm ci                    # installs wrangler at the repo root; nothing to install in worker/
 npm run worker:deploy     # = wrangler deploy --config worker/wrangler.toml
 curl -s https://piecebook-vision.najibjuraimi.workers.dev/health
-#   {"ok":true,"model":"…","access":"on","sync":"on"}   (or an Access login page if step 6 is on)
+#   {"ok":true,"model":"…","access":"on","sync":"on","colo":"IAD"}   (or an Access login page if step 6 is on)
+#   colo must be a US code (IAD, EWR, ORD, …): worker/wrangler.toml pins the Worker near aws:us-east-1
+#   so the Gemini call never leaves from a country Gemini refuses.
 curl -s -o /dev/null -w '%{http_code}\n' https://piecebook-vision.najibjuraimi.workers.dev/sync
 #   401 (or 302 to the login page if step 6 is on)
 ```
@@ -243,6 +245,7 @@ npm run dev
 | `/api/health` says `api_not_bound` | Pages → Settings → Bindings → Service binding `VISION` → `piecebook-vision` |
 | Your data screen says *Cloud sync is off* | Worker `/health` shows `access:"off"` or `sync:"off"` → step 3 or step 7 not deployed |
 | A photo check fails | `npm run worker:tail` and read the `check_model_output` line: `reason` + `finishReason` name the shape the model returned |
+| *AI check unavailable from this region* | Gemini 400 `FAILED_PRECONDITION`: the Worker ran in a colo Gemini does not serve. `/api/health` → `colo` should be a US code; if not, check `[placement]` in `worker/wrangler.toml` survived the deploy (Workers → piecebook-vision → Settings → Placement) |
 | `wrangler: command not found` | Run `npm ci` at the repo root; wrangler is a root devDependency and every `worker:*` script passes `--config worker/wrangler.toml` |
 | Browser shows *Signed out* right after logging in | `ACCESS_AUD` does not contain the AUD of the app that issued the cookie (step 5's tag) |
 | Agent gets a 302 / HTML login page | Policy `Agents` is not **Service Auth**, or the token is not in its Include list |

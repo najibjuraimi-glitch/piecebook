@@ -244,6 +244,30 @@ const FAILURE_HINT = {
   schema_mismatch: "The model's answer was missing the card read. Try again.",
 };
 
+/**
+ * Name a non-2xx Gemini answer. `body` is the raw response text; Gemini's errors
+ * look like {"error":{"code":400,"message":"…","status":"FAILED_PRECONDITION"}}.
+ * Returns { reason, detail (for the phone), upstream (status + message, for logs) }.
+ */
+export function classifyModelError(status, body) {
+  let message = "", apiStatus = "";
+  try {
+    const parsed = JSON.parse(body || "");
+    message = String(parsed?.error?.message || "");
+    apiStatus = String(parsed?.error?.status || "");
+  } catch {
+    message = String(body || "").replace(/\s+/g, " ").trim();
+  }
+  const upstream = [apiStatus, message].filter(Boolean).join(": ").slice(0, 200);
+  if (/user location is not supported/i.test(message) || (status === 400 && apiStatus === "FAILED_PRECONDITION")) {
+    return { reason: "region_unsupported", detail: "AI check unavailable from this region right now, try again.", upstream };
+  }
+  if (status === 429 || apiStatus === "RESOURCE_EXHAUSTED") return { reason: "model_rate_limited", detail: "The AI is busy right now. Try again in a minute.", upstream };
+  if (status === 401 || status === 403 || apiStatus === "PERMISSION_DENIED" || apiStatus === "UNAUTHENTICATED") return { reason: "model_auth", detail: "The AI key was refused. Try again later.", upstream };
+  if (status >= 500) return { reason: "model_down", detail: "The AI did not answer. Try again.", upstream };
+  return { reason: "model_http", detail: "The AI refused the request. Try again.", upstream };
+}
+
 async function readImages(req) {
   const ct = req.headers.get("Content-Type") || "";
   if (ct.includes("multipart/form-data")) {
@@ -260,7 +284,8 @@ export default {
     const cors = corsHeaders(req.headers.get("Origin"), env);
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-    if (url.pathname === "/health") return json({ ok: true, model: env.GEMINI_MODEL, access: accessConfigured(env) ? "on" : "off", sync: env.USER_DATA ? "on" : "off" }, 200, cors);
+    // colo: the data center this Worker ran in. With [placement] in wrangler.toml it should be a US code (IAD, EWR, …).
+    if (url.pathname === "/health") return json({ ok: true, model: env.GEMINI_MODEL, access: accessConfigured(env) ? "on" : "off", sync: env.USER_DATA ? "on" : "off", colo: req.cf?.colo || null }, 200, cors);
     const origin = req.headers.get("Origin");
     if (origin && !cors["Access-Control-Allow-Origin"]) return json({ error: "origin_not_allowed" }, 403, cors);
 
@@ -324,6 +349,7 @@ export default {
     const queue = [{ prompt: PROMPTS.full, budget: MAX_OUTPUT_TOKENS }];
     let retriedBudget = false, retriedMinimal = false;
     let extracted = null, status = 0, prompt = PROMPTS.full, budget = MAX_OUTPUT_TOKENS, attempt = 0;
+    const colo = req.cf?.colo || null;
     while (queue.length) {
       ({ prompt, budget } = queue.shift());
       attempt++;
@@ -334,10 +360,12 @@ export default {
       }
       status = r.status;
       if (!r.ok) {
-        let detail = "";
-        try { detail = (await r.text()).slice(0, 300); } catch { detail = "unreadable_model_response"; }
-        log({ evt: "check_model_error", attempt, prompt: prompt.name, status: r.status });
-        return fail({ error: "model_error", status: r.status, detail }, 502);
+        let body = "";
+        try { body = await r.text(); } catch { body = ""; }
+        const why = classifyModelError(r.status, body);
+        // colo = where this Worker ran; with [placement] it should be a US airport code.
+        log({ evt: "check_model_error", attempt, prompt: prompt.name, status: r.status, reason: why.reason, upstream: why.upstream, colo });
+        return fail({ error: "model_error", status: r.status, reason: why.reason, detail: why.detail, upstream: why.upstream, colo }, 502);
       }
       let out;
       try { out = await r.json(); } catch {
