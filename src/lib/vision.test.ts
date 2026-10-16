@@ -4,6 +4,7 @@ import {
   cardLanguageLabel,
   isNonEnglishCardLanguage,
   normalizeCardLanguage,
+  visionErrorMessage,
 } from './vision'
 
 describe('normalizeCardLanguage', () => {
@@ -74,5 +75,17 @@ describe('asVisionCheck language', () => {
   it('nulls an unknown language instead of passing it through', () => {
     expect(asVisionCheck(payload('Deutsch'))?.identify.language).toBeNull()
     expect(asVisionCheck(payload(null))?.identify.language).toBeNull()
+  })
+})
+
+describe('visionErrorMessage', () => {
+  it('shows the Worker error and detail instead of a silent failure', () => {
+    expect(visionErrorMessage({ error: 'model_error', status: 503, detail: 'upstream timeout' }, 502)).toBe(
+      'model_error — upstream timeout',
+    )
+    expect(visionErrorMessage({ error: 'too_large', hint: 'downscale to ~1600px long edge' }, 413)).toBe(
+      'too_large — downscale to ~1600px long edge',
+    )
+    expect(visionErrorMessage(null, 502)).toBe('The photo check could not run (502).')
   })
 })

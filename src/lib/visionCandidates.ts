@@ -57,6 +57,16 @@ export function matchesPrintedCode(card: Card, printed: string): boolean {
   return compact(card.baseNumber) === want || compact(card.cardNumber) === want
 }
 
+/** SPECIAL / SP in the OCR text ranks SP prints even when the model said "base". */
+export function effectiveParallelGuess(identify: Pick<VisionIdentify, 'parallel_guess' | 'read_text'>): string | null {
+  const guess = identify.parallel_guess
+  const text = `${identify.read_text ?? ''} ${guess ?? ''}`
+  if (/\bSPECIAL\b/i.test(text) || /\bSPECIAL CARD\b/i.test(text) || /(?:^|[^\w])SP(?:[^\w]|$)/i.test(identify.read_text ?? '')) {
+    if (!guess || guess.toLowerCase() === 'base') return 'SP'
+  }
+  return guess
+}
+
 function parallelBoost(card: Card, guess: string | null): number {
   const g = (guess || '').toLowerCase()
   if (!g) return 0
@@ -91,6 +101,7 @@ export function rankVisionCandidates(
   const exact = printed ? cards.filter((c) => matchesPrintedCode(c, printed)) : []
   const exactIds = new Set(exact.map((c) => c.cardNumber))
 
+  const guess = effectiveParallelGuess(identify)
   const nameQ = identify.name ?? ''
   const readQ = identify.read_text ?? ''
   const readCodes = printedCodesIn(`${nameQ} ${readQ}`)
@@ -101,7 +112,7 @@ export function rankVisionCandidates(
     const n = nameScore(nameQ, card.name)
     const r = nameScore(readQ, card.name)
     const codeBoost = readCodes.some((code) => matchesPrintedCode(card, code)) ? 40 : 0
-    const score = (isExact ? 200 : 0) + n + r * 0.45 + codeBoost + parallelBoost(card, identify.parallel_guess)
+    const score = (isExact ? 200 : 0) + n + r * 0.45 + codeBoost + parallelBoost(card, guess)
     if (score <= 0 && !isExact) continue
     scored.push({ card, score, exact: isExact })
   }
@@ -111,13 +122,13 @@ export function rankVisionCandidates(
   const picked: RankedCandidate[] = []
   const seen = new Set<string>()
   for (const row of exact.sort((a, b) => {
-    const da = parallelBoost(a, identify.parallel_guess) + nameScore(nameQ, a.name)
-    const db = parallelBoost(b, identify.parallel_guess) + nameScore(nameQ, b.name)
+    const da = parallelBoost(a, guess) + nameScore(nameQ, a.name)
+    const db = parallelBoost(b, guess) + nameScore(nameQ, b.name)
     return db - da || a.cardNumber.localeCompare(b.cardNumber)
   })) {
     picked.push({
       card: row,
-      score: 200 + nameScore(nameQ, row.name) + parallelBoost(row, identify.parallel_guess),
+      score: 200 + nameScore(nameQ, row.name) + parallelBoost(row, guess),
       exact: true,
     })
     seen.add(row.cardNumber)

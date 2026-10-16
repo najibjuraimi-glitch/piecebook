@@ -119,9 +119,8 @@ export function measurePhoto(image: PixelImage, side: PhotoSide): PhotoResult {
     }
   }
 
-  const mask = cardMask(image)
-  const blob = largestBlob(mask, image.width, image.height)
-  if (!blob || blob.count < image.width * image.height * 0.08) {
+  const found = resolveCardBlob(image)
+  if (found.reject === 'no-card') {
     return {
       ok: false,
       side,
@@ -129,9 +128,7 @@ export function measurePhoto(image: PixelImage, side: PhotoSide): PhotoResult {
       message: `${side === 'front' ? 'Front' : 'Back'}: could not find a card outline on a contrasting ground.`,
     }
   }
-
-  const margin = 3
-  if (blob.minX <= margin || blob.minY <= margin || blob.maxX >= image.width - 1 - margin || blob.maxY >= image.height - 1 - margin) {
+  if (found.reject === 'cut-off' || !found.blob) {
     return {
       ok: false,
       side,
@@ -139,6 +136,7 @@ export function measurePhoto(image: PixelImage, side: PhotoSide): PhotoResult {
       message: `${side === 'front' ? 'Front' : 'Back'}: the card is cut off at the frame.`,
     }
   }
+  const blob = found.blob
 
   const hull = convexHull(blob.points.length > 2400 ? thinPoints(blob.points, 2400) : blob.points)
   const rect = minAreaRect(hull)
@@ -317,6 +315,131 @@ function unrotate(x: number, y: number, cx: number, cy: number, radians: number)
     x: cx + dx * Math.cos(radians) - dy * Math.sin(radians),
     y: cy + dx * Math.sin(radians) + dy * Math.cos(radians),
   }
+}
+
+function blobTouchesFrame(
+  blob: { minX: number; minY: number; maxX: number; maxY: number },
+  width: number,
+  height: number,
+  margin = 3,
+): boolean {
+  return blob.minX <= margin || blob.minY <= margin || blob.maxX >= width - 1 - margin || blob.maxY >= height - 1 - margin
+}
+
+function luminance(rgb: [number, number, number]): number {
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+}
+
+/** Scan from the photo edge inward for a consistent luminance jump — the card outline. */
+function scanGradientEdge(img: PixelImage, edge: 'left' | 'right' | 'top' | 'bottom', thresh = 24, stations = 21): number | null {
+  const hits: number[] = []
+  for (let s = 1; s <= stations; s++) {
+    const t = s / (stations + 1)
+    if (edge === 'left' || edge === 'right') {
+      const y = Math.round(t * (img.height - 1))
+      const max = Math.floor(img.width * 0.45)
+      for (let d = 2; d < max; d++) {
+        const x = edge === 'left' ? d : img.width - 1 - d
+        if (x <= 0 || x >= img.width - 1) continue
+        if (Math.abs(luminance(pixel(img, x - 1, y)) - luminance(pixel(img, x + 1, y))) >= thresh) {
+          hits.push(d)
+          break
+        }
+      }
+    } else {
+      const x = Math.round(t * (img.width - 1))
+      const max = Math.floor(img.height * 0.45)
+      for (let d = 2; d < max; d++) {
+        const y = edge === 'top' ? d : img.height - 1 - d
+        if (y <= 0 || y >= img.height - 1) continue
+        if (Math.abs(luminance(pixel(img, x, y - 1)) - luminance(pixel(img, x, y + 1))) >= thresh) {
+          hits.push(d)
+          break
+        }
+      }
+    }
+  }
+  if (hits.length < Math.max(5, Math.floor(stations / 3))) return null
+  hits.sort((a, b) => a - b)
+  return hits[Math.floor(hits.length / 2)]
+}
+
+function scanOuterInsets(img: PixelImage): { left: number; right: number; top: number; bottom: number } | null {
+  const left = scanGradientEdge(img, 'left')
+  const right = scanGradientEdge(img, 'right')
+  const top = scanGradientEdge(img, 'top')
+  const bottom = scanGradientEdge(img, 'bottom')
+  if (left == null || right == null || top == null || bottom == null) return null
+  if (left + right >= img.width * 0.85 || top + bottom >= img.height * 0.85) return null
+  return { left, right, top, bottom }
+}
+
+function blobFromInsets(img: PixelImage, inset: { left: number; right: number; top: number; bottom: number }) {
+  const minX = inset.left
+  const minY = inset.top
+  const maxX = img.width - 1 - inset.right
+  const maxY = img.height - 1 - inset.bottom
+  const points: Point[] = []
+  for (let x = minX; x <= maxX; x += 4) {
+    points.push({ x, y: minY }, { x, y: maxY })
+  }
+  for (let y = minY; y <= maxY; y += 4) {
+    points.push({ x: minX, y }, { x: maxX, y })
+  }
+  return {
+    minX,
+    minY,
+    maxX,
+    maxY,
+    count: Math.max(1, (maxX - minX + 1) * (maxY - minY + 1)),
+    points,
+  }
+}
+
+function maskFillRatio(mask: Uint8Array): number {
+  let n = 0
+  for (let i = 0; i < mask.length; i++) if (mask[i]) n++
+  return n / mask.length
+}
+
+function blobFromGradient(image: PixelImage): {
+  blob?: { minX: number; minY: number; maxX: number; maxY: number; count: number; points: Point[] }
+  reject?: 'cut-off' | 'no-card'
+} {
+  const insets = scanOuterInsets(image)
+  if (insets && insets.left > 3 && insets.right > 3 && insets.top > 3 && insets.bottom > 3) {
+    return { blob: blobFromInsets(image, insets) }
+  }
+  if (insets && (insets.left <= 3 || insets.right <= 3 || insets.top <= 3 || insets.bottom <= 3)) {
+    return { reject: 'cut-off' }
+  }
+  return { reject: 'no-card' }
+}
+
+/**
+ * Colour-distance from the frame fails on eBay-style gradient grounds (the
+ * whole photo becomes the "card" and we falsely say it is cut off). If that
+ * mask fills the frame, fall back to an inward gradient scan. A compact blob
+ * that actually touches the frame is still cut off.
+ */
+function resolveCardBlob(image: PixelImage): {
+  blob?: { minX: number; minY: number; maxX: number; maxY: number; count: number; points: Point[] }
+  reject?: 'cut-off' | 'no-card'
+} {
+  const area = image.width * image.height
+  const mask = cardMask(image)
+  const fill = maskFillRatio(mask)
+  // Skip the flood-fill when the mask is the whole photo or almost empty.
+  if (fill > 0.72 || fill < 0.08) return blobFromGradient(image)
+
+  const colorBlob = largestBlob(mask, image.width, image.height)
+  const tiny = !colorBlob || colorBlob.count < area * 0.08
+  const huge = Boolean(colorBlob && colorBlob.count > area * 0.72)
+  const touches = Boolean(colorBlob && blobTouchesFrame(colorBlob, image.width, image.height))
+
+  if (colorBlob && !tiny && !huge && !touches) return { blob: colorBlob }
+  if (colorBlob && !tiny && !huge && touches) return { reject: 'cut-off' }
+  return blobFromGradient(image)
 }
 
 function cardMask(image: PixelImage): Uint8Array {

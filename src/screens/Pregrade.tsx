@@ -7,13 +7,15 @@ import { CardArt } from '../components/CardArt'
 import { GhostButton, PrimaryButton } from '../components/Buttons'
 import { ALL_CARDS, type Card } from '../data/seed'
 import { resolveCardNumber } from '../lib/search'
-import { formatDate, formatUsMarketUsd } from '../lib/format'
+import { formatDate } from '../lib/format'
+import { copySeedPriceLine } from '../lib/copyPrice'
 import { rankVisionCandidates } from '../lib/visionCandidates'
 import {
   cardLanguageLabel,
   checkPhotos,
   isNonEnglishCardLanguage,
   VisionCapError,
+  VisionRequestError,
   type VisionCheck,
 } from '../lib/vision'
 import { writeVisionSession } from '../store/visionSession'
@@ -61,6 +63,8 @@ export function PregradeScreen() {
     } catch (err) {
       if (err instanceof VisionCapError) {
         setPhotoError('Today’s photo checks are used up. Type a card number instead.')
+      } else if (err instanceof VisionRequestError) {
+        setPhotoError(`${err.message} Type a card number instead.`)
       } else {
         setPhotoError('The photo check could not run. Type a card number instead.')
       }
@@ -161,9 +165,7 @@ export function PregradeScreen() {
                             {row.card.variant ? ` · ${row.card.variant}` : ''}
                             {' · '}
                             {cardLanguageLabel(language)}
-                            {row.card.marketUsd != null && row.card.asOf
-                              ? ` · seed ${formatUsMarketUsd(row.card.marketUsd)} as of ${formatDate(row.card.asOf)} — not a sold`
-                              : ''}
+                            {` · ${copySeedPriceLine(row.card, check.identify)}`}
                           </p>
                         </div>
                       </div>
@@ -209,9 +211,7 @@ export function PregradeScreen() {
                 </span>
                 <span className="block text-meta text-muted">
                   {match.setCode}
-                  {match.marketUsd != null && match.asOf
-                    ? ` · seed ${formatUsMarketUsd(match.marketUsd)} as of ${formatDate(match.asOf)} — not a sold`
-                    : ' · no seed market'}
+                  {` · ${copySeedPriceLine(match)}`}
                 </span>
               </span>
               <span aria-hidden="true" className="shrink-0 text-muted">

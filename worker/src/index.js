@@ -2,7 +2,15 @@
 const PROMPT = `You are inspecting photos of a One Piece TCG card for Piecebook, a collector app.
 Image 1 is the FRONT. Image 2, if present, is the BACK.
 Tasks:
-1. IDENTIFY: read the set code printed on the card (e.g. "OP01-016", "ST14-003"), the card name, the printed language, and any text you can read. Only report a set_code you can actually read in the image. If it is not legible, set_code must be null. Never guess or invent a set code. parallel_guess: "base", "parallel/alt art", "manga", "SP", or null if unsure. language: "EN", "JP", "CN", "KR", "FR", or null — read from the card text (English effect text vs Japanese, Chinese, Korean, French). Do not infer language from the set code alone. If the text is not legible, language must be null.
+1. IDENTIFY: read the set code printed on the card (e.g. "OP01-016", "ST14-003"), the card name, the printed language, and any text you can read. Only report a set_code you can actually read in the image. If it is not legible, set_code must be null. Never guess or invent a set code.
+parallel_guess — pick one:
+- "SP" for a Special Card / SP foil (holographic SP treatment, a printed SP rarity, or SPECIAL used as a foil/rarity stamp). Prefer SP over base when the card is clearly an SP foil even if the printed number looks like a base code.
+- "parallel/alt art" for an alternate illustration (not the set's standard art).
+- "manga" for the manga-panel treatment.
+- "base" only for the standard set print with no parallel treatment.
+- null if you cannot tell.
+The attack attribute "Special" (Strike / Slash / Special next to power) is not enough by itself. Foil plus SPECIAL / SP as a rarity mark is. Do not default to "base" when the foil, stamp, or read text says SP, SPECIAL, Alternate, or Manga.
+language: "EN", "JP", "CN", "KR", "FR", or null — read from the card text (English effect text vs Japanese, Chinese, Korean, French). Do not infer language from the set code alone. If the text is not legible, language must be null.
 2. CONDITION: inspect corners, edges and surface for whitening, dings, chips, creases, scratches, print lines, dents, stains.
 Photos can rule out a PSA 10 but never confirm one. Set psa10_ruled_out true only if you see a clear defect; otherwise false (which means "not ruled out", never "is a 10"). Be conservative and say when photo quality limits what you can see.
 Return ONLY JSON matching the schema.`;
@@ -88,17 +96,27 @@ export default {
 
     const parts = [{ text: PROMPT }, { inline_data: { mime_type: imgs.front.mime, data: imgs.front.data } }];
     if (imgs.back) parts.push({ inline_data: { mime_type: imgs.back.mime, data: imgs.back.data } });
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: {
-        responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.1,
-        thinkingConfig: { thinkingLevel: "low" } } }),
-    });
-    if (!r.ok) return json({ error: "model_error", status: r.status, detail: (await r.text()).slice(0, 300) }, 502, cors);
-    const out = await r.json();
+    let r;
+    try {
+      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+        body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: {
+          responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.1,
+          thinkingConfig: { thinkingLevel: "low" } } }),
+      });
+    } catch (e) {
+      return json({ error: "model_error", status: 0, detail: String(e && e.message ? e.message : e).slice(0, 300) }, 502, cors);
+    }
+    if (!r.ok) {
+      let detail = "";
+      try { detail = (await r.text()).slice(0, 300); } catch { detail = "unreadable_model_response"; }
+      return json({ error: "model_error", status: r.status, detail }, 502, cors);
+    }
+    let out;
+    try { out = await r.json(); } catch { return json({ error: "model_error", status: r.status, detail: "unreadable_model_response" }, 502, cors); }
     const text = out?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
-    let result; try { result = JSON.parse(text); } catch { return json({ error: "unparseable_model_output" }, 502, cors); }
+    let result; try { result = JSON.parse(text); } catch { return json({ error: "unparseable_model_output", status: r.status }, 502, cors); }
     if (result?.identify?.set_code && !/^[A-Z]{2,3}\d{2}-\d{3}$/.test(result.identify.set_code.trim().toUpperCase())) result.identify.set_code = null;
     else if (result?.identify?.set_code) result.identify.set_code = result.identify.set_code.trim().toUpperCase();
     if (result?.identify) result.identify.language = normLang(result.identify.language);

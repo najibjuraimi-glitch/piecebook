@@ -3,7 +3,8 @@ name: Pages
 # Publishes the production build to the gh-pages branch, which GitHub Pages serves at
 # https://najibjuraimi-glitch.github.io/piecebook/ once Settings → Pages → Source is
 # "Deploy from a branch" (gh-pages, / root). The app is built with base /piecebook/;
-# 404.html is a copy of index.html so deep links such as /piecebook/cards/OP09-118 load.
+# public/404.html bounces deep links such as /piecebook/pregrade to /piecebook/?/pregrade
+# (HTTP 200), then index.html restores the pretty path. Do not overwrite 404.html with index.html.
 
 on:
   push:
@@ -37,7 +38,7 @@ jobs:
 
       - name: SPA fallback and no Jekyll
         run: |
-          cp dist/index.html dist/404.html
+          test -f dist/404.html
           touch dist/.nojekyll
 
       - name: Check out gh-pages
