@@ -143,8 +143,7 @@ async function checkPhotosOnce(front: Blob, back?: Blob | null): Promise<VisionC
   const body: { front: string; back?: string } = { front: frontDataUrl }
   if (backDataUrl) body.back = backDataUrl
   const jsonBody = JSON.stringify(body)
-  const res = await postCheck(jsonBody, false)
-  const retried = res.status >= 500 ? await postCheck(jsonBody, true) : res
+  const retried = await postCheckWithRetry(jsonBody)
   let payload: unknown
   try {
     payload = await retried.json()
@@ -161,23 +160,51 @@ async function checkPhotosOnce(front: Blob, back?: Blob | null): Promise<VisionC
   return { check, frontDataUrl, backDataUrl }
 }
 
-async function postCheck(body: string, isRetry: boolean): Promise<Response> {
-  const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), CHECK_TIMEOUT_MS)
+export interface PostCheckDeps {
+  fetch: typeof fetch
+  timeoutMs: number
+  url: string
+}
+
+/**
+ * POST /check at most twice: the second attempt only after a timeout, a
+ * network drop, or a 5xx. Each attempt gets its own abort timer.
+ */
+export async function postCheckWithRetry(body: string, deps?: Partial<PostCheckDeps>): Promise<Response> {
+  const d: PostCheckDeps = {
+    fetch: deps?.fetch ?? ((input, init) => fetch(input, init)),
+    timeoutMs: deps?.timeoutMs ?? CHECK_TIMEOUT_MS,
+    url: deps?.url ?? `${VISION_URL}/check`,
+  }
+  const attempt = async (): Promise<Response> => {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), d.timeoutMs)
+    try {
+      return await d.fetch(d.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+        signal: ctrl.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+  let first: Response
   try {
-    return await fetch(`${VISION_URL}/check`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body,
-      signal: ctrl.signal,
-    })
-  } catch (err) {
-    if (isRetry) throw new VisionRequestError('The photo check timed out.')
-    if (err instanceof VisionRequestError) throw err
-    // First timeout or network drop: one more try.
-    return postCheck(body, true)
-  } finally {
-    clearTimeout(timer)
+    first = await attempt()
+  } catch {
+    try {
+      return await attempt()
+    } catch {
+      throw new VisionRequestError('The photo check timed out.')
+    }
+  }
+  if (first.status < 500) return first
+  try {
+    return await attempt()
+  } catch {
+    throw new VisionRequestError('The photo check timed out.', first.status)
   }
 }
 
