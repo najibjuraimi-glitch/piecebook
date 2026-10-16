@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { centeringFromBorders } from './centeringSummary'
 import {
   asVisionCheck,
   cardLanguageLabel,
+  checkRequestBody,
   isNonEnglishCardLanguage,
   isRetryableVisionFailure,
   normalizeCardLanguage,
@@ -80,6 +82,14 @@ describe('asVisionCheck language', () => {
     expect(asVisionCheck(payload(null))?.identify.language).toBeNull()
   })
 
+  it('reads the centering block when the Worker echoes one and leaves it null otherwise', () => {
+    expect(asVisionCheck(payload('EN'))?.centering).toBeNull()
+    const withCentering = { ...payload('EN'), centering: { source: 'device', front: { left: 60, right: 40, top: 50, bottom: 50 }, back: null } }
+    const check = asVisionCheck(withCentering)
+    expect(check?.centering).toMatchObject({ cannotBeTen: true, front: { leftRight: '60/40' }, back: null })
+    expect(check?.centering?.verdict).toBe('Cannot be a 10 by centering: front 60/40 left to right is over 55/45.')
+  })
+
   it('defaults coverage to full and tolerates the Worker no longer sending read_text', () => {
     const p = payload('EN') as { identify: Record<string, unknown>; coverage?: string }
     delete p.identify.read_text
@@ -95,6 +105,18 @@ describe('asVisionCheck language', () => {
     expect(check?.coverage).toBe('identify_only')
     expect(check?.condition.psa10_ruled_out).toBe(false)
     expect(asVisionCheck({ ...payload('EN'), coverage: 'whatever' })?.coverage).toBe('full')
+  })
+})
+
+describe('checkRequestBody', () => {
+  it('sends the photos alone when nothing was measured, and the centering block when it was', () => {
+    const photos = { frontDataUrl: 'data:image/jpeg;base64,AAAA', backDataUrl: 'data:image/jpeg;base64,BBBB' }
+    expect(JSON.parse(checkRequestBody(photos))).toEqual({ front: photos.frontDataUrl, back: photos.backDataUrl })
+    expect(JSON.parse(checkRequestBody(photos, { front: null, back: null }))).toEqual({ front: photos.frontDataUrl, back: photos.backDataUrl })
+    const front = centeringFromBorders('front', 55, 45, 50, 50)
+    const body = JSON.parse(checkRequestBody({ frontDataUrl: photos.frontDataUrl }, { front, back: null }))
+    expect(body.back).toBeUndefined()
+    expect(body.centering).toEqual({ front, back: null })
   })
 })
 

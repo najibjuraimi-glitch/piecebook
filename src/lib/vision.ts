@@ -1,4 +1,5 @@
 import { VISION_URL } from '../config/vision'
+import { parseCenteringSummary, type CenteringSummary, type PhotoCentering } from './centeringSummary'
 
 export const CARD_LANGUAGES = ['EN', 'JP', 'CN', 'KR', 'FR'] as const
 export type CardLanguageCode = (typeof CARD_LANGUAGES)[number]
@@ -63,6 +64,8 @@ export interface VisionCheck {
   identify: VisionIdentify
   condition: VisionCondition
   coverage: VisionCoverage
+  /** Centering as the Worker echoed it back (measured on this device). Null on answers that carried none. */
+  centering: CenteringSummary | null
   ai_guess: boolean
   model: string
   usage: VisionUsage
@@ -182,20 +185,26 @@ export interface VisionCheckPayload {
 
 let inflight: Promise<VisionCheckPayload> | null = null
 
-export async function checkPhotos(front: Blob, back?: Blob | null): Promise<VisionCheckPayload> {
+/** Centering measured on this device, sent with the photos so the Worker can echo it to agents. */
+export interface CenteringToSend {
+  front: PhotoCentering | null
+  back: PhotoCentering | null
+}
+
+export async function checkPhotos(front: Blob, back?: Blob | null, centering?: CenteringToSend | null): Promise<VisionCheckPayload> {
   if (inflight) return inflight
-  inflight = checkPhotosOnce(front, back).finally(() => {
+  inflight = checkPhotosOnce(front, back, centering).finally(() => {
     inflight = null
   })
   return inflight
 }
 
-async function checkPhotosOnce(front: Blob, back?: Blob | null): Promise<VisionCheckPayload> {
+async function checkPhotosOnce(front: Blob, back?: Blob | null, centering?: CenteringToSend | null): Promise<VisionCheckPayload> {
   const frontDataUrl = await downscaleForVision(front)
   const backDataUrl = back ? await downscaleForVision(back) : undefined
   const photos: VisionPhotos = { frontDataUrl, backDataUrl }
   try {
-    return await postAndParse(photos)
+    return await postAndParse(photos, centering)
   } catch (err) {
     // Whatever went wrong after shrinking, the photos are still good for the worksheet.
     if (err instanceof VisionRequestError && !err.photos) err.photos = photos
@@ -203,11 +212,18 @@ async function checkPhotosOnce(front: Blob, back?: Blob | null): Promise<VisionC
   }
 }
 
-async function postAndParse(photos: VisionPhotos): Promise<VisionCheckPayload> {
+/** The JSON body for POST /check: photos as data URLs, plus the centering block when it was measured. */
+export function checkRequestBody(photos: VisionPhotos, centering?: CenteringToSend | null): string {
   const { frontDataUrl, backDataUrl } = photos
-  const body: { front: string; back?: string } = { front: frontDataUrl }
+  const body: { front: string; back?: string; centering?: CenteringToSend } = { front: frontDataUrl }
   if (backDataUrl) body.back = backDataUrl
-  const jsonBody = JSON.stringify(body)
+  if (centering && (centering.front || centering.back)) body.centering = centering
+  return JSON.stringify(body)
+}
+
+async function postAndParse(photos: VisionPhotos, centering?: CenteringToSend | null): Promise<VisionCheckPayload> {
+  const { frontDataUrl, backDataUrl } = photos
+  const jsonBody = checkRequestBody(photos, centering)
   const retried = await postCheckWithRetry(jsonBody)
   let payload: unknown
   try {
@@ -325,6 +341,7 @@ export function asVisionCheck(raw: unknown): VisionCheck | null {
       reasons,
     },
     coverage: r.coverage === 'identify_only' ? 'identify_only' : 'full',
+    centering: parseCenteringSummary(r.centering),
     ai_guess: true,
     model: typeof r.model === 'string' ? r.model : '',
     usage: {

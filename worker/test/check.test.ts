@@ -232,17 +232,12 @@ function harness(answers: unknown[], opts: { status?: number; body?: unknown; co
     if (next instanceof Error) throw next
     return new Response(typeof next === 'string' ? next : JSON.stringify(next), { status: 200, headers: { 'Content-Type': 'application/json' } })
   }
+  const runRequest = (req: Request) =>
+    worker.fetch(Object.assign(req, { cf: { colo: opts.colo ?? 'SIN' } }), env, {} as never, { modelFetch, log: (l: Record<string, unknown>) => logs.push(l) })
   const run = (body: Record<string, unknown> = { front: PIXEL }) =>
-    worker.fetch(
-      Object.assign(new Request('https://piecebook-vision.najibjuraimi.workers.dev/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), {
-        cf: { colo: opts.colo ?? 'SIN' },
-      }),
-      env,
-      {} as never,
-      { modelFetch, log: (l: Record<string, unknown>) => logs.push(l) },
-    )
+    runRequest(new Request('https://piecebook-vision.najibjuraimi.workers.dev/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }))
   const used = () => Number(kv.store.get(`count:${DAY}`) ?? 0)
-  return { run, requests, logs, used, kv }
+  return { run, runRequest, requests, logs, used, kv }
 }
 
 describe('/check', () => {
@@ -255,6 +250,60 @@ describe('/check', () => {
     expect(body.usage).toEqual({ today: 1, cap: 60 })
     expect(h.used()).toBe(1)
     expect(h.requests[0].body.generationConfig).toMatchObject({ maxOutputTokens: 12288, responseMimeType: 'application/json' })
+  })
+
+  it('says centering was not measured when the request carried none, instead of guessing', async () => {
+    const h = harness([SHAPES.clean])
+    const body = await (await h.run()).json()
+    expect(body.centering).toMatchObject({ source: 'none', front: null, back: null, cannotBeTen: false })
+    expect(body.centering.note).toMatch(/not measured/)
+    expect(body.centering.note).toMatch(/does not read pixels/)
+  })
+
+  it('echoes centering measured on the device, recomputed from the border pixels', async () => {
+    const h = harness([SHAPES.clean])
+    const r = await h.run({
+      front: PIXEL,
+      centering: {
+        // A caller cannot claim "fine" with these borders: the Worker recomputes.
+        front: { left: 62, right: 38, top: 50, bottom: 50, leftRight: '50/50', cannotBeTen: false },
+        back: { measured: false, reason: 'short-side', note: 'Back: short side is 448px (need 800).' },
+      },
+    })
+    expect(r.status).toBe(200)
+    const body = await r.json()
+    expect(body.centering).toMatchObject({
+      source: 'device',
+      cannotBeTen: true,
+      limits: { front: '55/45', back: '75/25' },
+      front: { measured: true, leftRight: '62/38', topBottom: '50/50', resolved: true, cannotBeTen: true },
+      back: { measured: false, reason: 'short-side' },
+    })
+    expect(body.centering.verdict).toBe('Cannot be a 10 by centering: front 62/38 left to right is over 55/45.')
+    expect(body.centering.note).toBe('Cannot be a 10 by centering: front 62/38 left to right is over 55/45. Back: short side is 448px (need 800).')
+    // The model's own condition block is untouched by centering.
+    expect(body.condition.psa10_ruled_out).toBe(true)
+    // Centering never reaches the model.
+    expect(JSON.stringify(h.requests[0].body)).not.toContain('62/38')
+  })
+
+  it('drops a malformed centering block rather than inventing a measurement', async () => {
+    const h = harness([SHAPES.clean])
+    const body = await (await h.run({ front: PIXEL, centering: { front: { left: 'wide', right: 40 }, back: '55/45' } })).json()
+    expect(body.centering).toMatchObject({ source: 'none', front: null, back: null, cannotBeTen: false })
+    const h2 = harness([SHAPES.clean])
+    const body2 = await (await h2.run({ front: PIXEL, centering: { front: { measured: false, reason: 'cannotBeTen' } } })).json()
+    expect(body2.centering.front).toBeNull()
+  })
+
+  it('reads centering from a multipart field too', async () => {
+    const h = harness([SHAPES.clean])
+    const fd = new FormData()
+    fd.set('front', new Blob([Uint8Array.from(atob(PIXEL.split(',')[1]), (c) => c.charCodeAt(0))], { type: 'image/jpeg' }), 'front.jpg')
+    fd.set('centering', JSON.stringify({ front: { left: 50, right: 50, top: 54, bottom: 46 } }))
+    const r = await h.runRequest(new Request('https://piecebook-vision.najibjuraimi.workers.dev/check', { method: 'POST', body: fd }))
+    expect(r.status).toBe(200)
+    expect((await r.json()).centering.front).toMatchObject({ topBottom: '54/46', cannotBeTen: false })
   })
 
   it.each(['thoughtFirst', 'fenced', 'split'] as const)('answers 200 for the %s shape', async (name) => {
