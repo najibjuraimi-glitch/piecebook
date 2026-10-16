@@ -66,7 +66,12 @@ describe('scoreCentering', () => {
   it('never scores from an unresolved print edge', () => {
     const s = scoreCentering(front(2, 60), null)
     expect(s.score).toBeNull()
-    expect(s.caveats).toEqual(['front print edge not resolved'])
+    expect(s.basis).toBe('Centering was not measured.')
+    expect(s.caveats).toEqual(['front print edge not found'])
+    // The resolved back carries the score; the front's failure is a caveat, not a 50/50.
+    const mixed = scoreCentering(front(0, 0, 0, 0), back(53, 47, 52, 48))
+    expect(mixed).toMatchObject({ score: 10, confidence: 'medium', caveats: ['front print edge not found', 'front not measured'] })
+    expect(mixed.basis).not.toContain('front 50/50')
   })
 })
 
@@ -135,6 +140,26 @@ describe('buildScores', () => {
     expect(s.overall.text).toBe('10 or better · 10 not ruled out. From 1 of 4 parts.')
     const nothing = buildScores({ front: null, back: null, condition: null })
     expect(nothing.overall).toMatchObject({ low: null, high: null, text: 'No score: nothing could be measured or read from these photos.' })
+  })
+
+  it('says "back not sent" only when no back photo went to the model, whatever its centering read', () => {
+    // Back sent but its centering block came back null: the model still saw the back.
+    const sentNoBlock = buildScores({ front: front(50, 50), back: null, backSent: true, condition: cond() })
+    expect(sentNoBlock.corners.caveats).not.toContain('back not sent')
+    expect(sentNoBlock.corners.confidence).toBe('high')
+    // Back sent but could not be measured: corners and edges still rest on both photos.
+    const sentUnmeasured = buildScores({ front: front(50, 50), back: unmeasured('back', 'no-print-edge'), backSent: true, condition: cond() })
+    expect(sentUnmeasured.corners.caveats).toEqual([])
+    expect(sentUnmeasured.edges.caveats).toEqual([])
+    expect(sentUnmeasured.centering.caveats).toEqual(['back print edge not found', 'back not measured'])
+    // No back at all.
+    const notSent = buildScores({ front: front(50, 50), back: null, backSent: false, condition: cond() })
+    expect(notSent.corners.caveats).toEqual(['back not sent'])
+    expect(notSent.corners.confidence).toBe('medium')
+    expect(notSent.surface.caveats).toEqual([])
+    // Without the flag, the old inference from the centering block still holds.
+    expect(buildScores({ front: front(50, 50), back: null, condition: cond() }).corners.caveats).toEqual(['back not sent'])
+    expect(buildScores({ front: front(50, 50), back: unmeasured('back', 'not_sent'), condition: cond() }).corners.caveats).toEqual(['back not sent'])
   })
 
   it('helpers', () => {
