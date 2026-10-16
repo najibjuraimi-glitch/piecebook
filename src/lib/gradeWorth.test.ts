@@ -6,6 +6,7 @@ import {
   defaultMonthlyDrift,
   driftValue,
   evaluateGradeWorth,
+  pickBestExit,
   selectPsaFee,
   startingRates,
   vaultWithdrawalUsd,
@@ -53,7 +54,7 @@ describe('grade-worth math', () => {
     expect(result.evOverCost).toBeGreaterThanOrEqual(1.2)
     expect(result.nineCoversRaw).toBe(true)
     expect(result.verdict).toBe('go')
-    expect(result.bestExit).toBe('keep')
+    expect(result.bestExit).toBe('vault-sell')
     expect(result.maxBuyUsd).toBeGreaterThan(18)
     expect(result.evSgd).toBeGreaterThan(0)
     expect(result.costInSgd).toBeGreaterThan(0)
@@ -179,6 +180,21 @@ describe('grade-worth helpers', () => {
     )
     expect(missing.exits.find((e) => e.id === 'ship-sg')!.netUsd).toBeNull()
     expect(missing.bestExit).not.toBe('ship-sg')
+  })
+
+  it('F9: best exit is a cash exit, never Keep', () => {
+    const vaultWins = evaluateGradeWorth(base({ raw: sold(18), v9: sold(95), v10: sold(280), pop: pop(40, 30, 100), buyAndShipUsd: 25 }))
+    expect(vaultWins.bestExit).toBe('vault-sell')
+    const keep = vaultWins.exits.find((e) => e.id === 'keep')!
+    expect(keep.netUsd).toBeGreaterThan(vaultWins.exits.find((e) => e.id === 'vault-sell')!.netUsd!)
+    expect(keep.label).toMatch(/no sale/)
+    // Ship-SG wins when its costs undercut the 13% vault fee: a cheap Buy&Ship on a big EV.
+    const sgWins = evaluateGradeWorth(base({ raw: sold(100), v9: sold(900), v10: sold(3000), pop: pop(60, 30, 100), buyAndShipUsd: 5 }))
+    const sg = sgWins.exits.find((e) => e.id === 'ship-sg')!
+    const vault = sgWins.exits.find((e) => e.id === 'vault-sell')!
+    expect(sg.netUsd).not.toBeNull()
+    expect(sgWins.bestExit).toBe(sg.netUsd! > vault.netUsd! ? 'ship-sg' : 'vault-sell')
+    expect(pickBestExit([{ id: 'keep', label: 'Keep', netUsd: 100, netSgd: 130, note: '' }])).toBeNull()
   })
 
   it('max buy is the highest raw that still clears Go', () => {

@@ -4,21 +4,29 @@ import { formatDate, formatUsMarketUsd } from './format'
 
 export type VersionHint = 'sp' | 'manga' | 'alt'
 
-/** Photo text/guess that names a non-base print. SPECIAL in OCR counts as SP. */
+/** Rarity cue in OCR: a lone "SP" token or the "SPECIAL CARD" stamp. The attack attribute prints as "Special" on base cards too. */
+export function textNamesSp(readText: string | null | undefined): boolean {
+  const t = readText ?? ''
+  return /\bSPECIAL CARD\b/i.test(t) || /(?:^|[^\w])SP(?:[^\w]|$)/.test(t)
+}
+
+/**
+ * Photo text/guess that names a non-base print. The model's `parallel_guess`
+ * is trusted when it gave one; OCR text only decides when it did not. SPECIAL
+ * on its own is the attack attribute (OP09-070 base is a Special-attribute
+ * card), so it counts as an SP cue only without a model guess.
+ */
 export function identifyVersionHint(identify: VisionIdentify | null | undefined): VersionHint | null {
   if (!identify) return null
-  const g = (identify.parallel_guess ?? '').toLowerCase()
-  const text = `${identify.read_text ?? ''} ${identify.parallel_guess ?? ''}`
-  if (g.includes('manga') || /\bmanga\b/i.test(identify.read_text ?? '')) return 'manga'
-  if (
-    g === 'sp' ||
-    g.includes('special') ||
-    /\bSPECIAL\b/i.test(text) ||
-    /(?:^|[^\w])SP(?:[^\w]|$)/i.test(identify.read_text ?? '')
-  ) {
-    return 'sp'
-  }
+  const g = (identify.parallel_guess ?? '').trim().toLowerCase()
+  const text = identify.read_text ?? ''
+  if (g === 'base') return null
+  if (g.includes('manga')) return 'manga'
+  if (g === 'sp' || g.includes('special')) return 'sp'
   if (g.includes('parallel') || g.includes('alt')) return 'alt'
+  if (g) return null
+  if (/\bmanga\b/i.test(text)) return 'manga'
+  if (textNamesSp(text) || /\bSPECIAL\b/i.test(text)) return 'sp'
   return null
 }
 
