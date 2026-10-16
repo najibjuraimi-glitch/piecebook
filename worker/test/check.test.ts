@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import worker, { DEFECT_FLAGS, PROMPTS, answerText, extractModelResult, firstJsonObject, normaliseResult, stripFences } from '../src/index.js'
+import worker, { DEFECT_FLAGS, PROMPTS, answerText, classifyModelError, extractModelResult, firstJsonObject, normaliseResult, stripFences } from '../src/index.js'
 
 // --- recorded generateContent shapes --------------------------------------
 // Trimmed from real REST answers: the envelope and part layout are what matter.
@@ -59,7 +59,27 @@ const SHAPES = {
   minimal: { candidates: [candidate([{ text: JSON.stringify(MINIMAL_ANSWER) }])], usageMetadata: usage({ candidatesTokenCount: 18 }) },
 }
 
+/** Recorded Gemini 400 when the calling colo is in a country Gemini does not serve. */
+const GEMINI_REGION_400 = {
+  error: { code: 400, message: 'User location is not supported for the API use.', status: 'FAILED_PRECONDITION' },
+}
+
 // --- pure helpers --------------------------------------------------------
+
+describe('classifyModelError', () => {
+  it('names the region refusal from the message or the FAILED_PRECONDITION status', () => {
+    expect(classifyModelError(400, JSON.stringify(GEMINI_REGION_400))).toMatchObject({ reason: 'region_unsupported', detail: /unavailable from this region right now, try again/ })
+    expect(classifyModelError(400, JSON.stringify({ error: { code: 400, message: 'Precondition check failed.', status: 'FAILED_PRECONDITION' } })).reason).toBe('region_unsupported')
+    expect(classifyModelError(200, 'User location is not supported for the API use.').reason).toBe('region_unsupported')
+  })
+  it('separates quota, key and outage problems and keeps the upstream text short', () => {
+    expect(classifyModelError(429, JSON.stringify({ error: { message: 'Quota exceeded', status: 'RESOURCE_EXHAUSTED' } })).reason).toBe('model_rate_limited')
+    expect(classifyModelError(403, JSON.stringify({ error: { message: 'API key not valid', status: 'PERMISSION_DENIED' } })).reason).toBe('model_auth')
+    expect(classifyModelError(503, '<html>upstream connect error</html>')).toMatchObject({ reason: 'model_down', upstream: '<html>upstream connect error</html>' })
+    expect(classifyModelError(400, JSON.stringify({ error: { message: 'x'.repeat(500), status: 'INVALID_ARGUMENT' } })).upstream).toHaveLength(200)
+    expect(classifyModelError(400, '').reason).toBe('model_http')
+  })
+})
 
 describe('answerText', () => {
   it('concatenates non-thought text parts in order and skips signature-only parts', () => {
@@ -200,7 +220,7 @@ class MemoryKV {
 const PIXEL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA='
 const DAY = new Date().toISOString().slice(0, 10)
 
-function harness(answers: unknown[], opts: { status?: number } = {}) {
+function harness(answers: unknown[], opts: { status?: number; body?: unknown; colo?: string } = {}) {
   const kv = new MemoryKV()
   const env = { GEMINI_MODEL: 'test-model', GEMINI_API_KEY: 'sk-SECRET-KEY', DAILY_CAP: '60', ACCESS_TEAM_DOMAIN: '', ACCESS_AUD: '', VISION_CAP: kv }
   const requests: { url: string; body: Record<string, unknown> }[] = []
@@ -208,13 +228,15 @@ function harness(answers: unknown[], opts: { status?: number } = {}) {
   const modelFetch = async (url: string, init: RequestInit) => {
     requests.push({ url, body: JSON.parse(String(init.body)) })
     const next = answers[Math.min(requests.length - 1, answers.length - 1)]
-    if (opts.status && opts.status >= 400) return new Response(JSON.stringify({ error: { message: 'upstream sad' } }), { status: opts.status })
+    if (opts.status && opts.status >= 400) return new Response(JSON.stringify(opts.body ?? { error: { message: 'upstream sad' } }), { status: opts.status })
     if (next instanceof Error) throw next
     return new Response(typeof next === 'string' ? next : JSON.stringify(next), { status: 200, headers: { 'Content-Type': 'application/json' } })
   }
   const run = (body: Record<string, unknown> = { front: PIXEL }) =>
     worker.fetch(
-      new Request('https://piecebook-vision.najibjuraimi.workers.dev/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+      Object.assign(new Request('https://piecebook-vision.najibjuraimi.workers.dev/check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), {
+        cf: { colo: opts.colo ?? 'SIN' },
+      }),
       env,
       {} as never,
       { modelFetch, log: (l: Record<string, unknown>) => logs.push(l) },
@@ -338,6 +360,26 @@ describe('/check', () => {
     expect(typeof body.detail).toBe('string')
     expect(h.requests).toHaveLength(1)
     expect(h.used()).toBe(0)
+  })
+
+  it('Gemini 400 "User location is not supported" → 502 region_unsupported with a plain message, slot refunded, colo logged', async () => {
+    const h = harness([SHAPES.clean], { status: 400, body: GEMINI_REGION_400, colo: 'SIN' })
+    const r = await h.run()
+    expect(r.status).toBe(502)
+    const body = await r.json()
+    expect(body).toMatchObject({
+      error: 'model_error',
+      status: 400,
+      reason: 'region_unsupported',
+      detail: 'AI check unavailable from this region right now, try again.',
+      colo: 'SIN',
+    })
+    expect(body.upstream).toBe('FAILED_PRECONDITION: User location is not supported for the API use.')
+    expect(h.requests).toHaveLength(1)
+    expect(h.used()).toBe(0)
+    const line = h.logs.find((l) => l.evt === 'check_model_error')
+    expect(line).toMatchObject({ status: 400, reason: 'region_unsupported', colo: 'SIN' })
+    expect(JSON.stringify(h.logs)).not.toContain('SECRET')
   })
 
   it('refunds on an upstream error and on a network drop', async () => {
