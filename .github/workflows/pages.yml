@@ -3,8 +3,10 @@ name: Pages
 # Publishes the production build to the gh-pages branch, which GitHub Pages serves at
 # https://najibjuraimi-glitch.github.io/piecebook/ once Settings → Pages → Source is
 # "Deploy from a branch" (gh-pages, / root). The app is built with base /piecebook/;
-# public/404.html bounces deep links such as /piecebook/pregrade to /piecebook/?/pregrade
+# .github/pages/404.html bounces deep links such as /piecebook/pregrade to /piecebook/?/pregrade
 # (HTTP 200), then index.html restores the pretty path. Do not overwrite 404.html with index.html.
+# The bounce page lives here, not in public/, on purpose: Cloudflare Pages only serves
+# index.html for unknown paths when the build has no 404.html, and the bounce loops at "/".
 
 on:
   push:
@@ -46,6 +48,7 @@ jobs:
 
       - name: SPA fallback and no Jekyll
         run: |
+          cp .github/pages/404.html dist/404.html
           test -f dist/404.html
           touch dist/.nojekyll
 

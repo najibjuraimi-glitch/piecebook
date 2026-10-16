@@ -75,9 +75,9 @@ On the private Cloudflare deployment (see `docs/CLOUDFLARE-SETUP.md`) every one 
 
 ## Deploying
 
-The build in `dist/` is a static single-page app. Configure your host to serve `index.html` for unknown paths so deep links like `/cards/OP16-001` work (a `public/_redirects` file is included for Netlify-style hosts).
+The build in `dist/` is a static single-page app. Configure your host to serve `index.html` for unknown paths so deep links like `/cards/OP16-001` work. Cloudflare Pages does this on its own as long as the build contains no `404.html` (a `/* /index.html 200` rule in `_redirects` is rejected as a loop and ignored), which is why the GitHub Pages bounce page lives in `.github/pages/` rather than `public/`. `.node-version` pins Node 22 for the Pages build; dashboard build variables are ignored while the root `wrangler.toml` exists.
 
-**GitHub Pages** (`https://najibjuraimi-glitch.github.io/piecebook/`): `.github/workflows/pages.yml` builds every push to `main` with `PIECEBOOK_BASE=/piecebook/` (Vite `base`, the router `basename` and the box-art path all follow it), copies `index.html` to `404.html` so deep links load, and commits the result to the `gh-pages` branch. One-time repo setting: Settings → Pages → Build and deployment → Source "Deploy from a branch" → `gh-pages`, `/ (root)`. Locally the base stays `/`.
+**GitHub Pages** (`https://najibjuraimi-glitch.github.io/piecebook/`): `.github/workflows/pages.yml` builds every push to `main` with `PIECEBOOK_BASE=/piecebook/` (Vite `base`, the router `basename` and the box-art path all follow it), copies `.github/pages/404.html` into `dist/` so deep links load, and commits the result to the `gh-pages` branch. One-time repo setting: Settings → Pages → Build and deployment → Source "Deploy from a branch" → `gh-pages`, `/ (root)`. Locally the base stays `/`.
 
 ## Not in V1
 
