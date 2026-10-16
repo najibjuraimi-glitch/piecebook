@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { ExitId, P10Band, PriceKind, Verdict } from '../lib/gradeWorth'
-import type { PhotoSide, RejectCode } from '../lib/centering'
+import type { EdgeName, PhotoSide, RejectCode } from '../lib/centering'
 import { asVisionCheck, type VisionCheck } from '../lib/vision'
 import { readRaw, subscribeUserData, writeRaw } from './userData'
 
@@ -41,6 +41,8 @@ export interface StoredPhoto {
     cannotBeTen: boolean
     /** Absent on rows saved before the print-edge guard; restore recomputes it from the pixel counts. */
     resolved?: boolean
+    /** Sides where no print border could be read, when `resolved` is false. */
+    unresolvedSides?: EdgeName[]
   }
 }
 

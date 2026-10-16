@@ -8,8 +8,11 @@
 import {
   BACK_TEN_MAX,
   FRONT_TEN_MAX,
+  MIN_PRINT_BORDER_PX,
   MIN_SHORT_SIDE_PX,
+  listSides,
   measureFromBorders,
+  type EdgeName,
   type PhotoResult,
   type PhotoSide,
   type RejectCode,
@@ -17,6 +20,11 @@ import {
 
 export type UnmeasuredReason = RejectCode | 'unreadable' | 'not_sent'
 
+/**
+ * A measured side always has a resolved print edge on all four borders. A
+ * card that was found but whose print edge was not read is `UnmeasuredCentering`
+ * with reason `no-print-edge`: a 50/50 from an unresolved edge is not a measurement.
+ */
 export interface MeasuredCentering {
   side: PhotoSide
   measured: true
@@ -28,8 +36,7 @@ export interface MeasuredCentering {
   /** `55/45`: larger share first. */
   leftRight: string
   topBottom: string
-  /** False when a border was thinner than the print-edge floor: ratios are shown, nothing is ruled out. */
-  resolved: boolean
+  resolved: true
   cannotBeTen: boolean
 }
 
@@ -70,8 +77,31 @@ function sideWord(side: PhotoSide): string {
   return side === 'front' ? 'Front' : 'Back'
 }
 
-export function centeringFromBorders(side: PhotoSide, left: number, right: number, top: number, bottom: number): MeasuredCentering {
+/** `Front: card found, but no print border could be read on the right and bottom. Nothing ruled out.` */
+export function noPrintEdgeNote(side: PhotoSide, sides?: readonly EdgeName[]): string {
+  const where = sides && sides.length > 0 && sides.length < 4 ? ` on the ${listSides(sides)}` : ''
+  return `${sideWord(side)}: card found, but no print border could be read${where}. Nothing ruled out.`
+}
+
+/**
+ * Borders to a measurement, or "not measured" when a border is thinner than
+ * the print-edge floor: the scan fired on edge noise and the ratio means nothing.
+ */
+export function centeringFromBorders(
+  side: PhotoSide,
+  left: number,
+  right: number,
+  top: number,
+  bottom: number,
+  unresolvedSides?: readonly EdgeName[],
+): PhotoCentering {
   const m = measureFromBorders(left, right, top, bottom, side)
+  if (!m.resolved) {
+    const thin = unresolvedSides?.length
+      ? unresolvedSides
+      : (['left', 'right', 'top', 'bottom'] as const).filter((n) => !(m[n] >= MIN_PRINT_BORDER_PX))
+    return unmeasured(side, 'no-print-edge', noPrintEdgeNote(side, thin))
+  }
   return {
     side,
     measured: true,
@@ -81,7 +111,7 @@ export function centeringFromBorders(side: PhotoSide, left: number, right: numbe
     bottom,
     leftRight: m.lr.label,
     topBottom: m.tb.label,
-    resolved: m.resolved,
+    resolved: true,
     cannotBeTen: m.cannotBeTen,
   }
 }
@@ -95,7 +125,9 @@ export function unmeasured(side: PhotoSide, reason: UnmeasuredReason, note?: str
         ? `${sideWord(side)}: the photo could not be read.`
         : reason === 'short-side'
           ? `${sideWord(side)}: short side under ${MIN_SHORT_SIDE_PX}px.`
-          : `${sideWord(side)}: could not measure (${reason}).`)
+          : reason === 'no-print-edge'
+            ? noPrintEdgeNote(side)
+            : `${sideWord(side)}: could not measure (${reason}).`)
   return { side, measured: false, reason, note: text.slice(0, MAX_NOTE) }
 }
 
@@ -103,19 +135,21 @@ export function unmeasured(side: PhotoSide, reason: UnmeasuredReason, note?: str
 export function photoCentering(result: PhotoResult | null, side: PhotoSide): PhotoCentering | null {
   if (!result) return null
   if (!result.ok) return unmeasured(side, result.code, result.message)
-  return centeringFromBorders(side, result.measure.left, result.measure.right, result.measure.top, result.measure.bottom)
+  const m = result.measure
+  if (!m.resolved) return unmeasured(side, 'no-print-edge', noPrintEdgeNote(side, m.unresolvedSides))
+  return centeringFromBorders(side, m.left, m.right, m.top, m.bottom)
 }
 
 /** From a stored prediction photo (the log keeps border pixels, never the image). */
 export function photoCenteringFromStored(photo: {
   side: PhotoSide
   reject?: { code: RejectCode; message: string }
-  centering?: { left: number; right: number; top: number; bottom: number }
+  centering?: { left: number; right: number; top: number; bottom: number; unresolvedSides?: EdgeName[] }
 }): PhotoCentering | null {
   if (photo.reject) return unmeasured(photo.side, photo.reject.code, photo.reject.message)
   if (!photo.centering) return null
   const c = photo.centering
-  return centeringFromBorders(photo.side, c.left, c.right, c.top, c.bottom)
+  return centeringFromBorders(photo.side, c.left, c.right, c.top, c.bottom, c.unresolvedSides)
 }
 
 function finiteBorder(v: unknown): number | null {
@@ -151,7 +185,6 @@ export function centeringLine(c: PhotoCentering | null, side: PhotoSide): string
   if (!c) return `${sideWord(side)}: no photo.`
   if (!c.measured) return c.note
   const base = `${sideWord(side)} ${c.leftRight} left to right · ${c.topBottom} top to bottom`
-  if (!c.resolved) return `${base} · print edge not resolved, nothing ruled out`
   return c.cannotBeTen ? `${base} · over ${CENTERING_LIMITS[side]}, cannot be a 10` : base
 }
 
@@ -164,15 +197,14 @@ function overLine(c: MeasuredCentering): string {
 export function summariseCentering(front: PhotoCentering | null, back: PhotoCentering | null, source: 'device' | 'none' = 'device'): CenteringSummary {
   const sides = [front, back].filter((c): c is PhotoCentering => c != null)
   const over = sides.filter((c): c is MeasuredCentering => c.measured && c.cannotBeTen)
-  const measuredResolved = sides.some((c) => c.measured && c.resolved)
+  const measured = sides.some((c) => c.measured)
   const parts: string[] = []
   if (over.length) parts.push(`Cannot be a 10 by centering: ${over.map(overLine).join('; ')}.`)
-  else if (measuredResolved) parts.push('Centering does not rule a 10 out.')
+  else if (measured) parts.push('Centering does not rule a 10 out.')
   else if (source === 'none' || sides.length === 0) parts.push(WORKER_NOT_MEASURED_NOTE)
   else parts.push('Centering was not measured.')
   for (const c of sides) {
     if (!c.measured) parts.push(c.note)
-    else if (!c.resolved) parts.push(`${sideWord(c.side)}: card found, print edge not resolved, nothing ruled out.`)
   }
   return {
     source: sides.length ? source : 'none',

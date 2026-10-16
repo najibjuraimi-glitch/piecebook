@@ -13,6 +13,7 @@ export const MIN_PRINT_BORDER_PX = 4
 
 export type PhotoSide = 'front' | 'back'
 export type RejectCode = 'short-side' | 'cut-off' | 'angled' | 'no-card' | 'no-print-edge'
+export type EdgeName = 'left' | 'right' | 'top' | 'bottom'
 
 export interface PixelImage {
   width: number
@@ -46,10 +47,19 @@ export interface CenteringMeasure {
   cannotBeTen: boolean
   /** False when a border is under MIN_PRINT_BORDER_PX: the card was found but the print edge was not. */
   resolved: boolean
+  /** Sides where the card edge was found but no print border could be read. Empty when resolved. */
+  unresolvedSides?: EdgeName[]
   side: PhotoSide
   corners: [Point, Point, Point, Point]
   inner: [Point, Point, Point, Point]
   maxAngleErrorDeg: number
+  /**
+   * Size of the image the corners were measured in. A measurement carried to
+   * another screen may be drawn over a smaller copy of the photo; the overlay
+   * scales by these.
+   */
+  imageWidth?: number
+  imageHeight?: number
 }
 
 export interface RejectedPhoto {
@@ -127,9 +137,22 @@ export function hasPixelGeometry(measure: Pick<CenteringMeasure, 'corners'>): bo
   return measure.corners.some((p) => p.x > 1 || p.y > 1)
 }
 
+/** `right and bottom` / `left, top and bottom` / `every side`. */
+export function listSides(sides: readonly EdgeName[] | undefined): string {
+  if (!sides || sides.length === 0 || sides.length === 4) return 'every side'
+  if (sides.length === 1) return sides[0]
+  return `${sides.slice(0, -1).join(', ')} and ${sides[sides.length - 1]}`
+}
+
 /** `50/50 · 50/50`, or a plain statement when the print edge was not resolved. */
-export function centeringLabel(measure: Pick<CenteringMeasure, 'lr' | 'tb' | 'resolved' | 'cannotBeTen'>): string {
-  if (!measure.resolved) return 'Card found · print edge not measured · nothing ruled out'
+export function centeringLabel(
+  measure: Pick<CenteringMeasure, 'lr' | 'tb' | 'resolved' | 'cannotBeTen'> & Partial<Pick<CenteringMeasure, 'unresolvedSides'>>,
+): string {
+  if (!measure.resolved) {
+    const sides = measure.unresolvedSides
+    const where = sides && sides.length > 0 && sides.length < 4 ? ` on the ${listSides(sides)}` : ''
+    return `Card found · print edge not measured${where} · nothing ruled out`
+  }
   return `${measure.lr.label} · ${measure.tb.label}${measure.cannotBeTen ? ' · cannot be a 10' : ''}`
 }
 
@@ -172,46 +195,101 @@ export function measurePhoto(image: PixelImage, side: PhotoSide): PhotoResult {
       ok: false,
       side,
       code: 'angled',
-      message: `${side === 'front' ? 'Front' : 'Back'}: photo is angled about ${keystone.toFixed(0)}° (need under ~${MAX_ANGLE_DEG}°).`,
+      message: `${side === 'front' ? 'Front' : 'Back'}: photo is angled about ${keystone.toFixed(0)}° (need under ~${MAX_ANGLE_DEG}°), or a hand or shadow is joined to the card outline.`,
     }
   }
 
   const destW = 720
   const destH = Math.max(1000, Math.round(720 * (quadHeight(rect) / Math.max(1, quadWidth(rect)))))
   const aligned = tilt <= 2.5 && keystone <= 4
-  const warped = aligned
-    ? cropRect(image, blob.minX, blob.minY, blob.maxX, blob.maxY)
-    : warpToRect(image, insetQuad(rect, 1.25), destW, destH)
-  const borders = scanPrintBorders(warped)
+  // Work on a frame that reaches a little past the card outline on every side, so the
+  // physical card edge sits inside the profiles and can be located, not assumed.
+  const pad = Math.max(8, Math.round(Math.min(quadWidth(rect), quadHeight(rect)) * FRAME_PAD_FRAC))
+  let frame: PixelImage
+  let toImage: (p: Point) => Point
+  if (aligned) {
+    const x0 = Math.max(0, blob.minX - pad)
+    const y0 = Math.max(0, blob.minY - pad)
+    const x1 = Math.min(image.width - 1, blob.maxX + pad)
+    const y1 = Math.min(image.height - 1, blob.maxY + pad)
+    frame = cropRect(image, x0, y0, x1, y1)
+    toImage = (p) => ({ x: x0 + p.x, y: y0 + p.y })
+  } else {
+    const quad = insetQuad(rect, -pad)
+    frame = warpToRect(image, quad, destW + 2 * pad, destH + 2 * pad)
+    const [tl, tr, br, bl] = quad
+    toImage = (p) => {
+      const u = p.x / Math.max(1, frame.width - 1)
+      const v = p.y / Math.max(1, frame.height - 1)
+      return lerpPt(lerpPt(tl, tr, u), lerpPt(bl, br, u), v)
+    }
+  }
+
+  const edges = scanCardEdges(frame, pad)
+  // Outline as found in the frame (refined past the blob where the physical edge was seen).
+  const outer: [Point, Point, Point, Point] = [
+    toImage({ x: edges.left.edge, y: edges.top.edge }),
+    toImage({ x: frame.width - 1 - edges.right.edge, y: edges.top.edge }),
+    toImage({ x: frame.width - 1 - edges.right.edge, y: frame.height - 1 - edges.bottom.edge }),
+    toImage({ x: edges.left.edge, y: frame.height - 1 - edges.bottom.edge }),
+  ]
+  const borders = printBorders(edges)
   if (!borders) {
+    // Card found, print edge not: nothing is ruled out and no ratio exists to show.
     return {
-      ok: false,
+      ok: true,
       side,
-      code: 'no-print-edge',
-      message: `${side === 'front' ? 'Front' : 'Back'}: found the card but not the print edge.`,
+      measure: {
+        ...measureFromBorders(0, 0, 0, 0, side),
+        resolved: false,
+        cannotBeTen: false,
+        unresolvedSides: unresolvedSidesOf(edges),
+        corners: outer,
+        inner: outer,
+        maxAngleErrorDeg: keystone,
+        imageWidth: image.width,
+        imageHeight: image.height,
+      },
     }
   }
 
   const base = measureFromBorders(borders.left, borders.right, borders.top, borders.bottom, side)
-  const ordered: [Point, Point, Point, Point] = aligned
-    ? [
-        { x: blob.minX, y: blob.minY },
-        { x: blob.maxX, y: blob.minY },
-        { x: blob.maxX, y: blob.maxY },
-        { x: blob.minX, y: blob.maxY },
-      ]
-    : orderQuad(rect)
-  const inner = innerCorners(ordered, borders, warped.width, warped.height)
+  const inner: [Point, Point, Point, Point] = [
+    toImage({ x: edges.left.print as number, y: edges.top.print as number }),
+    toImage({ x: frame.width - 1 - (edges.right.print as number), y: edges.top.print as number }),
+    toImage({ x: frame.width - 1 - (edges.right.print as number), y: frame.height - 1 - (edges.bottom.print as number) }),
+    toImage({ x: edges.left.print as number, y: frame.height - 1 - (edges.bottom.print as number) }),
+  ]
 
   return {
     ok: true,
     side,
     measure: {
       ...base,
-      corners: ordered,
+      unresolvedSides: [],
+      corners: outer,
       inner,
       maxAngleErrorDeg: keystone,
+      imageWidth: image.width,
+      imageHeight: image.height,
     },
+  }
+}
+
+/** Map a measurement's pixel geometry onto a copy of the photo at a different size. */
+export function scaleMeasureTo(measure: CenteringMeasure, width: number, height: number): CenteringMeasure {
+  const srcW = measure.imageWidth
+  const srcH = measure.imageHeight
+  if (!srcW || !srcH || (srcW === width && srcH === height)) return measure
+  const sx = width / srcW
+  const sy = height / srcH
+  const map = (p: Point): Point => ({ x: p.x * sx, y: p.y * sy })
+  return {
+    ...measure,
+    corners: measure.corners.map(map) as [Point, Point, Point, Point],
+    inner: measure.inner.map(map) as [Point, Point, Point, Point],
+    imageWidth: width,
+    imageHeight: height,
   }
 }
 
@@ -220,8 +298,9 @@ export function drawCenteringOverlay(
   source: CanvasImageSource,
   srcW: number,
   srcH: number,
-  measure: CenteringMeasure,
+  measureIn: CenteringMeasure,
 ): void {
+  const measure = scaleMeasureTo(measureIn, srcW, srcH)
   ctx.drawImage(source, 0, 0, srcW, srcH)
   const [tl, tr, br, bl] = measure.corners
   ctx.strokeStyle = 'rgba(26, 26, 26, 0.85)'
@@ -285,6 +364,18 @@ export function makeSyntheticCard(opts: {
   rotateDeg?: number
   /** Extra perspective: shrink the top edge (0–0.4). Strong values trip the angled reject. */
   topSqueeze?: number
+  /** A skin-toned palm behind the card: an ellipse filling this box, in image pixels. Rounded like a real hand, never a straight edge. */
+  hand?: { x: number; y: number; w: number; h: number }
+  /** Sides where the art runs to the card edge with no border band (alt art). */
+  artToEdge?: EdgeName[]
+  /** Deterministic sensor grain, ± this many levels per channel. */
+  noise?: number
+  /**
+   * An uneven ground (a lit tabletop or bag), brightening across the frame. The
+   * frame-median colour mask cannot separate the card from it, so the card is
+   * found by the inward gradient scan, as in a real hand-held photo.
+   */
+  groundGradient?: boolean
 }): PixelImage {
   const { width, height, card, borders } = opts
   const rotate = ((opts.rotateDeg ?? 0) * Math.PI) / 180
@@ -293,9 +384,18 @@ export function makeSyntheticCard(opts: {
   const cy = card.y + card.h / 2
   const data = new Uint8ClampedArray(width * height * 4)
   const bg: [number, number, number] = [28, 28, 30]
+  const skin: [number, number, number] = [214, 168, 134]
   const stock: [number, number, number] = [250, 248, 242]
   const line: [number, number, number] = [12, 12, 12]
   const art: [number, number, number] = [24, 92, 158]
+  const bleed = new Set(opts.artToEdge ?? [])
+  const grain = opts.noise ?? 0
+  let seed = 0x9e3779b9
+  const jitter = (): number => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+    return ((seed >>> 8) / 0x01000000 - 0.5) * 2 * grain
+  }
+  const hand = opts.hand
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -303,7 +403,13 @@ export function makeSyntheticCard(opts: {
       const local = unrotate(x, y, cx, cy, -rotate)
       const lx = local.x - card.x
       const ly = local.y - card.y
-      let col = bg
+      const ground: [number, number, number] = opts.groundGradient
+        ? [bg[0] + ((x + y) / (width + height)) * 110, bg[1] + ((x + y) / (width + height)) * 100, bg[2] + ((x + y) / (width + height)) * 90]
+        : bg
+      const inHand =
+        hand != null &&
+        ((x - (hand.x + hand.w / 2)) / (hand.w / 2)) ** 2 + ((y - (hand.y + hand.h / 2)) / (hand.h / 2)) ** 2 <= 1
+      let col = inHand ? skin : ground
       if (lx >= 0 && ly >= 0 && lx < card.w && ly < card.h) {
         if (squeeze > 0) {
           const t = ly / card.h
@@ -314,24 +420,32 @@ export function makeSyntheticCard(opts: {
           }
         }
         col = stock
-        const inPrint =
-          lx >= borders.left && lx < card.w - borders.right && ly >= borders.top && ly < card.h - borders.bottom
+        const bl = bleed.has('left') ? 0 : borders.left
+        const br = bleed.has('right') ? 0 : borders.right
+        const bt = bleed.has('top') ? 0 : borders.top
+        const bb = bleed.has('bottom') ? 0 : borders.bottom
+        const inPrint = lx >= bl && lx < card.w - br && ly >= bt && ly < card.h - bb
         if (inPrint) {
           const onLine =
-            lx < borders.left + 2 ||
-            lx >= card.w - borders.right - 2 ||
-            ly < borders.top + 2 ||
-            ly >= card.h - borders.bottom - 2
-          col = onLine ? line : art
+            (!bleed.has('left') && lx < bl + 2) ||
+            (!bleed.has('right') && lx >= card.w - br - 2) ||
+            (!bleed.has('top') && ly < bt + 2) ||
+            (!bleed.has('bottom') && ly >= card.h - bb - 2)
+          // Bled art is not flat: a slow ramp with painterly texture, so no band reads as a border.
+          col = onLine
+            ? line
+            : bleed.size
+              ? [art[0] + (lx / card.w) * 40 + 28 * Math.sin(lx / 5.5) * Math.cos(ly / 4.5), art[1] + 20 * Math.sin(ly / 7), art[2] - (ly / card.h) * 40]
+              : art
         }
       }
-      setPx(data, i, col)
+      setPx(data, i, grain ? [col[0] + jitter(), col[1] + jitter(), col[2] + jitter()] : col)
     }
   }
   return { width, height, data }
 }
 
-function setPx(data: Uint8ClampedArray, i: number, rgb: [number, number, number]): void {
+function setPx(data: Uint8ClampedArray, i: number, rgb: [number, number, number] | number[]): void {
   data[i] = rgb[0]
   data[i + 1] = rgb[1]
   data[i + 2] = rgb[2]
@@ -801,91 +915,330 @@ function sampleNearest(img: PixelImage, x: number, y: number): [number, number, 
   return [img.data[i], img.data[i + 1], img.data[i + 2]]
 }
 
-function scanPrintBorders(img: PixelImage): { left: number; right: number; top: number; bottom: number } | null {
-  const stock = medianEdgeColor(img)
-  const left = scanInward(img, 'left', stock)
-  const right = scanInward(img, 'right', stock)
-  const top = scanInward(img, 'top', stock)
-  const bottom = scanInward(img, 'bottom', stock)
-  if (left == null || right == null || top == null || bottom == null) return null
-  if (left + right >= img.width * 0.85 || top + bottom >= img.height * 0.85) return null
-  return { left, right, top, bottom }
+// --- print edge --------------------------------------------------------------
+//
+// A card border is a flat band of one colour between two colour steps: the
+// physical card edge (ground → stock) and the print edge (stock → art or frame
+// line). Each side is read at several stations as a 1-D colour profile running
+// inward, smoothed across a few pixels so sensor noise and JPEG grain do not
+// register as steps. The first strong step is the card edge; the next strong
+// step after a flat band is the print edge. Stations have to agree on the
+// band's width or the side is unresolved. Full-art edges (no flat band) and
+// glare therefore give "not found", never an invented 50/50.
+
+/** How far past the card outline the working frame reaches, as a share of the short side. */
+const FRAME_PAD_FRAC = 0.03
+/** Stations per side, spread over the middle 80% so rounded corners are skipped. */
+const STATIONS = 21
+/** Half-width of the band each profile sample is averaged over, perpendicular to the scan. */
+const BAND = 2
+/** Pixels on each side of a point used by the smoothed colour step. */
+const STEP_REACH = 3
+/** A colour step below this is noise, never an edge. */
+const MIN_STEP = 24
+/** The card edge needs a stronger step than the print edge: ground and stock differ a lot. */
+const MIN_CARD_STEP = 32
+/** A step this big or bigger counts as a full vote when fitting the card edge line. */
+const STRONG_STEP = 150
+/**
+ * How deep the card edge may sit inside the frame, as a share of the frame
+ * dimension. Generous because a hand behind the card joins the colour blob and
+ * pushes the blob's box well past the card.
+ */
+const CARD_EDGE_DEPTH_FRAC = 0.2
+/** The widest plausible border, as a share of the frame dimension. */
+const MAX_BORDER_FRAC = 0.22
+/**
+ * A print edge closer to the card edge than this is the card edge's own
+ * anti-aliasing seen twice, not a border. Also the thinnest border we read.
+ */
+const MIN_BORDER_GAP = 10
+/** Mean colour distance from the band's average above which the band is art or text, not a border. */
+const MAX_BAND_SPREAD = 16
+/**
+ * Share of stations that must find the same border width for a side to
+ * resolve. Under half on purpose: alt-art frames carry vertical text and art
+ * that overflows the border, so clean stations are the minority on some sides,
+ * while a full-art edge never gets this many stations to agree.
+ */
+const MIN_AGREE = 0.35
+
+interface SideEdges {
+  /** Depth of the physical card edge from the frame edge, in frame pixels. */
+  edge: number
+  /** Depth of the print edge, or null when no flat border band ended in a clear step. */
+  print: number | null
 }
 
-function medianEdgeColor(img: PixelImage): [number, number, number] {
-  const samples: [number, number, number][] = []
-  const push = (x: number, y: number) => {
-    const i = (y * img.width + x) * 4
-    samples.push([img.data[i], img.data[i + 1], img.data[i + 2]])
-  }
-  for (let x = 2; x < img.width - 2; x += 4) {
-    push(x, 2)
-    push(x, img.height - 3)
-  }
-  for (let y = 2; y < img.height - 2; y += 4) {
-    push(2, y)
-    push(img.width - 3, y)
-  }
-  const ch = (k: 0 | 1 | 2) => {
-    const v = samples.map((s) => s[k]).sort((a, b) => a - b)
-    return v[Math.floor(v.length / 2)] ?? 250
-  }
-  return [ch(0), ch(1), ch(2)]
-}
+type Rgb = [number, number, number]
 
-function scanInward(img: PixelImage, edge: 'left' | 'right' | 'top' | 'bottom', stock: [number, number, number]): number | null {
-  const stations = 11
-  const dists: number[] = []
-  const thresh = 36
-  for (let s = 1; s <= stations; s++) {
-    const t = s / (stations + 1)
-    if (edge === 'left' || edge === 'right') {
-      const y = Math.round(t * (img.height - 1))
-      const max = Math.floor(img.width * 0.45)
-      for (let d = 2; d < max; d++) {
-        const x = edge === 'left' ? d : img.width - 1 - d
-        if (colorDist(pixel(img, x, y), stock) > thresh) {
-          dists.push(d)
-          break
-        }
-      }
-    } else {
-      const x = Math.round(t * (img.width - 1))
-      const max = Math.floor(img.height * 0.45)
-      for (let d = 2; d < max; d++) {
-        const y = edge === 'top' ? d : img.height - 1 - d
-        if (colorDist(pixel(img, x, y), stock) > thresh) {
-          dists.push(d)
-          break
-        }
-      }
-    }
-  }
-  if (dists.length < 5) return null
-  dists.sort((a, b) => a - b)
-  return dists[Math.floor(dists.length / 2)]
-}
-
-function pixel(img: PixelImage, x: number, y: number): [number, number, number] {
+function pixel(img: PixelImage, x: number, y: number): Rgb {
   const i = (y * img.width + x) * 4
   return [img.data[i], img.data[i + 1], img.data[i + 2]]
 }
 
-function colorDist(a: [number, number, number], b: [number, number, number]): number {
+function colorDist(a: Rgb, b: Rgb): number {
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
 }
 
-function innerCorners(
-  outer: [Point, Point, Point, Point],
-  borders: { left: number; right: number; top: number; bottom: number },
-  destW: number,
-  destH: number,
-): [Point, Point, Point, Point] {
-  const [tl, tr, br, bl] = outer
-  const u0 = borders.left / destW
-  const u1 = 1 - borders.right / destW
-  const v0 = borders.top / destH
-  const v1 = 1 - borders.bottom / destH
-  const at = (u: number, v: number) => lerpPt(lerpPt(tl, tr, u), lerpPt(bl, br, u), v)
-  return [at(u0, v0), at(u1, v0), at(u1, v1), at(u0, v1)]
+/** Colour at each depth along one scan line, averaged over a short band perpendicular to it. */
+function sideProfile(img: PixelImage, edge: 'left' | 'right' | 'top' | 'bottom', t: number, depth: number): Rgb[] {
+  const out: Rgb[] = []
+  const along = edge === 'left' || edge === 'right'
+  const centre = Math.round(t * ((along ? img.height : img.width) - 1))
+  for (let d = 0; d < depth; d++) {
+    let r = 0
+    let g = 0
+    let b = 0
+    let n = 0
+    for (let k = -BAND; k <= BAND; k++) {
+      const c = centre + k
+      if (c < 0 || c >= (along ? img.height : img.width)) continue
+      const x = along ? (edge === 'left' ? d : img.width - 1 - d) : c
+      const y = along ? c : edge === 'top' ? d : img.height - 1 - d
+      const p = pixel(img, x, y)
+      r += p[0]
+      g += p[1]
+      b += p[2]
+      n++
+    }
+    out.push(n ? [r / n, g / n, b / n] : [0, 0, 0])
+  }
+  return out
+}
+
+function meanRgb(profile: Rgb[], from: number, to: number): Rgb {
+  let r = 0
+  let g = 0
+  let b = 0
+  let n = 0
+  for (let i = Math.max(0, from); i < Math.min(profile.length, to); i++) {
+    r += profile[i][0]
+    g += profile[i][1]
+    b += profile[i][2]
+    n++
+  }
+  return n ? [r / n, g / n, b / n] : [0, 0, 0]
+}
+
+/** Smoothed colour step at each depth: the band just outside against the band just inside. */
+function stepProfile(profile: Rgb[]): number[] {
+  const steps = new Array<number>(profile.length).fill(0)
+  for (let d = STEP_REACH; d < profile.length - STEP_REACH; d++) {
+    steps[d] = colorDist(meanRgb(profile, d - STEP_REACH, d), meanRgb(profile, d + 1, d + 1 + STEP_REACH))
+  }
+  return steps
+}
+
+/** Local maxima of the step profile above `floor`, with neighbours within 3px folded into the strongest. */
+function stepPeaks(steps: number[], floor: number): number[] {
+  const peaks: number[] = []
+  for (let d = 1; d < steps.length - 1; d++) {
+    if (steps[d] < floor || steps[d] < steps[d - 1] || steps[d] < steps[d + 1]) continue
+    const last = peaks[peaks.length - 1]
+    if (last != null && d - last <= 3) {
+      if (steps[d] > steps[last]) peaks[peaks.length - 1] = d
+      continue
+    }
+    peaks.push(d)
+  }
+  return peaks
+}
+
+function median(values: number[]): number {
+  const v = [...values].sort((a, b) => a - b)
+  return v[Math.floor(v.length / 2)]
+}
+
+interface EdgeLine {
+  /** Depth of the line at station position t (0–1 along the side). */
+  at: (t: number) => number
+  support: number
+}
+
+/**
+ * The physical card edge on one side is a straight line, so strong steps at
+ * roughly the same depth line up across stations. Fit the line with the most
+ * stations on it; fingers, shadows and background folds do not line up like
+ * that. The print edge does, but it is never the outermost such line, so among
+ * lines with near-maximal support the outermost wins. Null when nothing lines up.
+ */
+function cardEdgeLine(steps: number[][], ts: number[], pad: number, dim: number): EdgeLine | null {
+  const limit = pad + dim * CARD_EDGE_DEPTH_FRAC
+  const tol = Math.max(3, dim * 0.004)
+  const cands: { i: number; t: number; d: number; w: number }[] = []
+  steps.forEach((s, i) => {
+    const strong = stepPeaks(s, MIN_CARD_STEP)
+      .filter((d) => d <= limit)
+      .sort((a, b) => s[b] - s[a])
+      .slice(0, 6)
+    // A station's vote is worth more the cleaner its step: ground against card is a big step,
+    // a fold in the background or a printed line inside the card is a small one.
+    for (const d of strong) cands.push({ i, t: ts[i], d, w: Math.min(1, s[d] / STRONG_STEP) })
+  })
+  // Under half the stations on purpose: a card edge over a dark ground or a palm is faint
+  // along part of a side, while a printed line inside the card can be crisp all the way.
+  const need = Math.max(5, Math.ceil(steps.length * 0.4))
+  if (cands.length < need) return null
+  // Slope cap: the card passed the 2.5° tilt gate, so its edge cannot climb faster than that across the side.
+  const maxSlope = dim * 0.045
+  let lines: { stations: number; support: number; mid: number; slope: number; at: (t: number) => number }[] = []
+  for (let a = 0; a < cands.length; a++) {
+    for (let b = a + 1; b < cands.length; b++) {
+      const A = cands[a]
+      const B = cands[b]
+      if (A.i === B.i || Math.abs(B.t - A.t) < 0.25) continue
+      const slope = (B.d - A.d) / (B.t - A.t)
+      if (Math.abs(slope) > maxSlope) continue
+      const at = (t: number) => A.d + slope * (t - A.t)
+      const hit = new Map<number, number>()
+      for (const c of cands) {
+        if (Math.abs(c.d - at(c.t)) > tol) continue
+        hit.set(c.i, Math.max(hit.get(c.i) ?? 0, c.w))
+      }
+      if (hit.size < need) continue
+      let support = 0
+      for (const w of hit.values()) support += w
+      lines.push({ stations: hit.size, support, mid: at(0.5), slope, at })
+    }
+  }
+  if (!lines.length) return null
+  // The print edge and lines printed inside the card can out-vote a card edge that is faint
+  // along part of a side, but they are never outside it: take the outermost well-supported line.
+  // Only lines parallel to the strongest one qualify, though: the print edge runs parallel to
+  // the card edge, while a row of finger or shadow edges that happens to line up does not.
+  const top = lines.reduce((a, l) => (l.support > a.support ? l : a))
+  const slopeTol = (tol * 1.5) / 0.8
+  lines = lines.filter((l) => l.support >= top.support * 0.6 && Math.abs(l.slope - top.slope) <= slopeTol)
+  const best = lines.reduce((a, l) => (l.mid < a.mid ? l : a))
+  return refineEdgeLine(steps, ts, best.at, tol, need)
+}
+
+/**
+ * Two stations fix the first line, so a finger or shadow edge at one of them tips it
+ * off the card edge for every station between. Re-fit through the strongest step each
+ * station sees near the line (Theil–Sen: median slope, median offset), twice.
+ */
+function refineEdgeLine(steps: number[][], ts: number[], at0: (t: number) => number, tol: number, need: number): EdgeLine | null {
+  let at = at0
+  for (let pass = 0; pass < 2; pass++) {
+    const pts: { t: number; d: number }[] = []
+    steps.forEach((s, i) => {
+      const expected = at(ts[i])
+      let bestD = -1
+      for (const d of stepPeaks(s, MIN_CARD_STEP)) {
+        if (Math.abs(d - expected) > tol * 1.5) continue
+        if (bestD < 0 || s[d] > s[bestD]) bestD = d
+      }
+      if (bestD >= 0) pts.push({ t: ts[i], d: bestD })
+    })
+    if (pts.length < need) return { at, support: pts.length }
+    const slopes: number[] = []
+    for (let a = 0; a < pts.length; a++) {
+      for (let b = a + 1; b < pts.length; b++) {
+        if (pts[b].t - pts[a].t < 0.1) continue
+        slopes.push((pts[b].d - pts[a].d) / (pts[b].t - pts[a].t))
+      }
+    }
+    if (!slopes.length) return { at, support: pts.length }
+    const slope = median(slopes)
+    const offset = median(pts.map((p) => p.d - slope * p.t))
+    at = (t: number) => offset + slope * t
+  }
+  let support = 0
+  steps.forEach((s, i) => {
+    if (stepPeaks(s, MIN_CARD_STEP).some((d) => Math.abs(d - at(ts[i])) <= tol)) support++
+  })
+  return { at, support }
+}
+
+/** Where, on one station, a flat border band starting at `edge` ends in a clear step. */
+function printEdgeAt(profile: Rgb[], steps: number[], edge: number, dim: number): number | null {
+  const peaks = stepPeaks(steps, MIN_STEP)
+  const maxPrint = edge + dim * MAX_BORDER_FRAC
+  for (const q of peaks) {
+    if (q < edge + MIN_BORDER_GAP) continue
+    if (q > maxPrint) break
+    // The band between the two steps has to be flat: one colour, not art or text.
+    const bandStart = edge + STEP_REACH + 1
+    const bandEnd = q - STEP_REACH
+    if (bandEnd - bandStart < 3) continue
+    const mean = meanRgb(profile, bandStart, bandEnd)
+    let spread = 0
+    for (let i = bandStart; i < bandEnd; i++) spread += colorDist(profile[i], mean)
+    spread /= bandEnd - bandStart
+    // A border is one printed colour: grain and a lighting ramp move it a few levels, art and
+    // text move it far more. The allowance is absolute, so a big step into busy art does not
+    // buy the busy band a pass.
+    if (spread > Math.min(MAX_BAND_SPREAD, Math.max(10, steps[q] * 0.4))) return null
+    return q
+  }
+  return null
+}
+
+/** All stations on one side folded into one answer, or an unresolved print edge when they disagree. */
+function readSide(img: PixelImage, edge: 'left' | 'right' | 'top' | 'bottom', pad: number): SideEdges {
+  const along = edge === 'left' || edge === 'right'
+  const dim = along ? img.width : img.height
+  const depth = Math.min(dim - 1, Math.floor(pad + dim * (CARD_EDGE_DEPTH_FRAC + MAX_BORDER_FRAC) + STEP_REACH * 2 + 2))
+  const profiles: Rgb[][] = []
+  const ts: number[] = []
+  for (let s = 0; s < STATIONS; s++) {
+    const t = 0.1 + (0.8 * s) / (STATIONS - 1)
+    ts.push(t)
+    profiles.push(sideProfile(img, edge, t, depth))
+  }
+  const steps = profiles.map(stepProfile)
+  const line = cardEdgeLine(steps, ts, pad, dim)
+  const cardEdge = line ? Math.round(line.at(0.5)) : pad
+  const edgeTol = Math.max(3, Math.round(dim * 0.004))
+
+  const widths: number[] = []
+  profiles.forEach((profile, i) => {
+    // Follow the edge as this station sees it, within the tolerance of the fitted line.
+    const expected = line ? line.at(ts[i]) : pad
+    const local = stepPeaks(steps[i], MIN_CARD_STEP).find((d) => Math.abs(d - expected) <= edgeTol) ?? Math.round(expected)
+    const print = printEdgeAt(profile, steps[i], local, dim)
+    if (print != null) widths.push(print - local)
+  })
+  const need = Math.max(5, Math.ceil(STATIONS * MIN_AGREE))
+  if (widths.length < need) return { edge: cardEdge, print: null }
+  const mid = median(widths)
+  const tol = Math.max(3, mid * 0.2)
+  const agreeing = widths.filter((w) => Math.abs(w - mid) <= tol)
+  if (agreeing.length < need) return { edge: cardEdge, print: null }
+  return { edge: cardEdge, print: cardEdge + median(agreeing) }
+}
+
+function scanCardEdges(frame: PixelImage, pad: number): { left: SideEdges; right: SideEdges; top: SideEdges; bottom: SideEdges } {
+  return {
+    left: readSide(frame, 'left', pad),
+    right: readSide(frame, 'right', pad),
+    top: readSide(frame, 'top', pad),
+    bottom: readSide(frame, 'bottom', pad),
+  }
+}
+
+/** Sides that found no print border, or whose border is too thin to be one. */
+function unresolvedSidesOf(e: { left: SideEdges; right: SideEdges; top: SideEdges; bottom: SideEdges }): EdgeName[] {
+  const names: EdgeName[] = ['left', 'right', 'top', 'bottom']
+  return names.filter((n) => {
+    const s = e[n]
+    return s.print == null || s.print - s.edge < MIN_PRINT_BORDER_PX
+  })
+}
+
+/** Border widths from the four sides, or null when any side could not resolve its print edge. */
+function printBorders(e: { left: SideEdges; right: SideEdges; top: SideEdges; bottom: SideEdges }): {
+  left: number
+  right: number
+  top: number
+  bottom: number
+} | null {
+  const sides = [e.left, e.right, e.top, e.bottom]
+  if (sides.some((s) => s.print == null)) return null
+  const w = (s: SideEdges) => (s.print as number) - s.edge
+  const out = { left: w(e.left), right: w(e.right), top: w(e.top), bottom: w(e.bottom) }
+  if (!bordersResolved(out.left, out.right, out.top, out.bottom)) return null
+  return out
 }

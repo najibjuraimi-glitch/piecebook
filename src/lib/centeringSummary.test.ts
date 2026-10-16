@@ -51,17 +51,29 @@ describe('centeringFromBorders', () => {
   })
 
   it('rules a 10 out past the front and back limits', () => {
-    expect(centeringFromBorders('front', 60, 40, 50, 50).cannotBeTen).toBe(true)
-    expect(centeringFromBorders('back', 60, 40, 50, 50).cannotBeTen).toBe(false)
-    expect(centeringFromBorders('back', 76, 24, 50, 50).cannotBeTen).toBe(true)
+    expect(centeringFromBorders('front', 60, 40, 50, 50)).toMatchObject({ cannotBeTen: true })
+    expect(centeringFromBorders('back', 60, 40, 50, 50)).toMatchObject({ cannotBeTen: false })
+    expect(centeringFromBorders('back', 76, 24, 50, 50)).toMatchObject({ cannotBeTen: true })
     expect(CENTERING_LIMITS).toEqual({ front: '55/45', back: '75/25' })
   })
 
-  it('never rules a 10 out when a border is thinner than the print-edge floor', () => {
+  it('is "not measured", never a ratio, when a border is thinner than the print-edge floor', () => {
     const c = centeringFromBorders('front', 2, 60, 50, 50)
-    expect(c.resolved).toBe(false)
-    expect(c.cannotBeTen).toBe(false)
-    expect(c.leftRight).toBe('97/3')
+    expect(c).toEqual({
+      side: 'front',
+      measured: false,
+      reason: 'no-print-edge',
+      note: 'Front: card found, but no print border could be read on the left. Nothing ruled out.',
+    })
+    // The scan that found no border at all reports 0 on every side: no side is singled out.
+    expect(centeringFromBorders('back', 0, 0, 0, 0)).toMatchObject({
+      measured: false,
+      reason: 'no-print-edge',
+      note: 'Back: card found, but no print border could be read. Nothing ruled out.',
+    })
+    expect(centeringFromBorders('front', 0, 0, 0, 0, ['right', 'bottom'])).toMatchObject({
+      note: 'Front: card found, but no print border could be read on the right and bottom. Nothing ruled out.',
+    })
   })
 })
 
@@ -74,6 +86,18 @@ describe('photoCentering and the stored form', () => {
   it('carries a reject as unmeasured with its message', () => {
     const c = photoCentering({ ok: false, side: 'back', code: 'short-side', message: 'Back: short side is 448px (need 800).' }, 'back')
     expect(c).toEqual({ side: 'back', measured: false, reason: 'short-side', note: 'Back: short side is 448px (need 800).' })
+  })
+
+  it('turns a found card with no print edge into "not measured" naming the sides, not a 50/50', () => {
+    const r = measured('front', 0, 0, 0, 0)
+    r.ok && (r.measure.resolved = false)
+    r.ok && (r.measure.unresolvedSides = ['right', 'bottom'])
+    expect(photoCentering(r, 'front')).toEqual({
+      side: 'front',
+      measured: false,
+      reason: 'no-print-edge',
+      note: 'Front: card found, but no print border could be read on the right and bottom. Nothing ruled out.',
+    })
   })
 
   it('reads a prediction log row the same way', () => {
@@ -118,6 +142,14 @@ describe('parsePhotoCentering (wire)', () => {
     const long = parsePhotoCentering({ measured: false, reason: 'cut-off', note: 'x'.repeat(500) }, 'front')
     expect(long && !long.measured && long.note.length).toBe(160)
     expect(parsePhotoCentering({ measured: false, reason: 'no-card' }, 'back')).toMatchObject({ note: 'Back: could not measure (no-card).' })
+    expect(parsePhotoCentering({ measured: false, reason: 'no-print-edge' }, 'back')).toMatchObject({
+      note: 'Back: card found, but no print border could be read. Nothing ruled out.',
+    })
+  })
+
+  it('refuses to turn sub-floor borders from the wire into a measurement', () => {
+    const c = parsePhotoCentering({ left: 0, right: 0, top: 0, bottom: 0, leftRight: '50/50', topBottom: '50/50', measured: true }, 'front')
+    expect(c).toMatchObject({ measured: false, reason: 'no-print-edge' })
   })
 })
 
@@ -146,8 +178,17 @@ describe('summariseCentering', () => {
     const s = summariseCentering(unmeasured('front', 'unreadable'), null)
     expect(s.verdict).toBe('Centering was not measured.')
     expect(s.note).toBe('Centering was not measured. Front: the photo could not be read.')
+    // An unresolved edge never contradicts itself: no ratio sits next to "not measured".
     const edge = summariseCentering(centeringFromBorders('front', 2, 60, 50, 50), null)
-    expect(edge.note).toBe('Centering was not measured. Front: card found, print edge not resolved, nothing ruled out.')
+    expect(edge.verdict).toBe('Centering was not measured.')
+    expect(edge.note).toBe('Centering was not measured. Front: card found, but no print border could be read on the left. Nothing ruled out.')
+    expect(edge.note).not.toMatch(/\d+\/\d+/)
+    // One side resolved, the other not: the measured side carries the verdict, the other says why it does not.
+    const mixed = summariseCentering(centeringFromBorders('front', 0, 0, 0, 0, ['right', 'bottom']), centeringFromBorders('back', 53, 47, 52, 48))
+    expect(mixed.verdict).toBe('Centering does not rule a 10 out.')
+    expect(mixed.note).toBe(
+      'Centering does not rule a 10 out. Front: card found, but no print border could be read on the right and bottom. Nothing ruled out.',
+    )
   })
 })
 
@@ -155,7 +196,9 @@ describe('centeringLine', () => {
   it('writes both axes in plain words', () => {
     expect(centeringLine(centeringFromBorders('front', 55, 45, 48, 52), 'front')).toBe('Front 55/45 left to right · 52/48 top to bottom')
     expect(centeringLine(centeringFromBorders('back', 80, 20, 50, 50), 'back')).toBe('Back 80/20 left to right · 50/50 top to bottom · over 75/25, cannot be a 10')
-    expect(centeringLine(centeringFromBorders('front', 1, 60, 50, 50), 'front')).toContain('print edge not resolved, nothing ruled out')
+    expect(centeringLine(centeringFromBorders('front', 1, 60, 50, 50), 'front')).toBe(
+      'Front: card found, but no print border could be read on the left. Nothing ruled out.',
+    )
     expect(centeringLine(null, 'back')).toBe('Back: no photo.')
     expect(centeringLine(unmeasured('front', 'angled', 'Front: photo is angled about 12° (need under ~8°).'), 'front')).toBe('Front: photo is angled about 12° (need under ~8°).')
   })

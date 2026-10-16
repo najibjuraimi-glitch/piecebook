@@ -12,6 +12,7 @@ import {
   makeSyntheticCard,
   measureFromBorders,
   measurePhoto,
+  scaleMeasureTo,
   splitFromPair,
   type PixelImage,
 } from './centering'
@@ -164,6 +165,115 @@ describe('centering from synthetic photos (±2 points)', () => {
   })
 })
 
+describe('hand-held photos: card on a palm, uneven ground, alt-art edges', () => {
+  const CARD = { x: 220, y: 200, w: 760, h: 1064 }
+  const BORDERS = { left: 60, right: 40, top: 50, bottom: 50 }
+  const expectCorners = (got: { x: number; y: number }[], card: typeof CARD) => {
+    const want = [
+      { x: card.x, y: card.y },
+      { x: card.x + card.w, y: card.y },
+      { x: card.x + card.w, y: card.y + card.h },
+      { x: card.x, y: card.y + card.h },
+    ]
+    got.forEach((p, i) => {
+      expect(Math.abs(p.x - want[i].x)).toBeLessThanOrEqual(3)
+      expect(Math.abs(p.y - want[i].y)).toBeLessThanOrEqual(3)
+    })
+  }
+
+  it('a palm behind the card on a lit ground does not move the card edge or the ratios', () => {
+    const img = makeSyntheticCard({
+      width: 1200,
+      height: 1600,
+      card: CARD,
+      borders: BORDERS,
+      hand: { x: 500, y: 600, w: 560, h: 740 },
+      groundGradient: true,
+      noise: 6,
+    })
+    const result = measurePhoto(img, 'front')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(true)
+    expectSplit(result.measure.lr.largerPct, 60)
+    expectSplit(result.measure.tb.largerPct, 50)
+    expectCorners(result.measure.corners, CARD)
+    expect(result.measure).toMatchObject({ imageWidth: 1200, imageHeight: 1600, unresolvedSides: [] })
+  })
+
+  it('fingers over the top of the card still leave enough clean stations to read the top border', () => {
+    const card = { ...CARD, y: 300 }
+    const img = makeSyntheticCard({
+      width: 1200,
+      height: 1600,
+      card,
+      borders: BORDERS,
+      hand: { x: 400, y: 120, w: 500, h: 900 },
+      groundGradient: true,
+      noise: 6,
+    })
+    const result = measurePhoto(img, 'back')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(true)
+    expectSplit(result.measure.tb.largerPct, 50)
+    expectCorners(result.measure.corners, card)
+  })
+
+  it('a slightly tilted card on a palm reads within ±2', () => {
+    const img = makeSyntheticCard({
+      width: 1200,
+      height: 1600,
+      card: CARD,
+      borders: BORDERS,
+      hand: { x: 500, y: 600, w: 560, h: 740 },
+      groundGradient: true,
+      rotateDeg: 2,
+      noise: 6,
+    })
+    const result = measurePhoto(img, 'front')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(true)
+    expectSplit(result.measure.lr.largerPct, 60)
+  })
+
+  it('alt art bled to the right and bottom is not measured, names those sides, and never shows a ratio', () => {
+    const img = makeSyntheticCard({ width: 1200, height: 1600, card: CARD, borders: BORDERS, artToEdge: ['right', 'bottom'], noise: 6 })
+    const result = measurePhoto(img, 'front')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(false)
+    expect(result.measure.cannotBeTen).toBe(false)
+    expect(result.measure.unresolvedSides).toEqual(['right', 'bottom'])
+    expect(centeringLabel(result.measure)).toBe('Card found · print edge not measured on the right and bottom · nothing ruled out')
+    expectCorners(result.measure.corners, CARD)
+  })
+
+  it('full art on every side is not measured, with no side singled out', () => {
+    const img = makeSyntheticCard({ width: 1200, height: 1600, card: CARD, borders: BORDERS, artToEdge: ['left', 'right', 'top', 'bottom'], noise: 6 })
+    const result = measurePhoto(img, 'back')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(false)
+    expect(result.measure.unresolvedSides).toEqual(['left', 'right', 'top', 'bottom'])
+    expect(centeringLabel(result.measure)).toBe('Card found · print edge not measured · nothing ruled out')
+  })
+
+  it('the same card reads the same at camera size and at upload size', () => {
+    const full = measurePhoto(makeSyntheticCard({ width: 1500, height: 2000, card: { x: 275, y: 250, w: 950, h: 1330 }, borders: { left: 75, right: 50, top: 62, bottom: 62 }, groundGradient: true, noise: 6 }), 'front')
+    const small = measurePhoto(makeSyntheticCard({ width: 1200, height: 1600, card: { x: 220, y: 200, w: 760, h: 1064 }, borders: { left: 60, right: 40, top: 50, bottom: 50 }, groundGradient: true, noise: 6 }), 'front')
+    expect(full.ok && small.ok).toBe(true)
+    if (!full.ok || !small.ok) return
+    expect(Math.abs(full.measure.lr.largerPct - small.measure.lr.largerPct)).toBeLessThanOrEqual(2)
+    expect(Math.abs(full.measure.tb.largerPct - small.measure.tb.largerPct)).toBeLessThanOrEqual(2)
+    // Carried to a screen that holds the smaller copy, the geometry scales with the image.
+    const scaled = scaleMeasureTo(full.measure, 1200, 1600)
+    expect(Math.abs(scaled.corners[0].x - small.measure.corners[0].x)).toBeLessThanOrEqual(3)
+    expect(Math.abs(scaled.corners[2].y - small.measure.corners[2].y)).toBeLessThanOrEqual(3)
+  })
+})
+
 describe('photo rejects name the side', () => {
   it('short side under 800px', () => {
     const img = makeSyntheticCard({
@@ -205,6 +315,8 @@ describe('photo rejects name the side', () => {
     expect(result.measure.corners[0].y).toBeGreaterThan(20)
     expect(result.measure.resolved).toBe(false)
     expect(result.measure.cannotBeTen).toBe(false)
+    expect(result.measure.unresolvedSides?.length).toBeGreaterThan(0)
+    expect(centeringLabel(result.measure)).not.toMatch(/\d+\/\d+/)
   }, 30_000)
 
   it('eBay Nami OP09-070 SP back is not cut off and rules nothing out', () => {

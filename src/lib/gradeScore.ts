@@ -122,6 +122,12 @@ export interface ScoreInput {
   back: PhotoCentering | null
   /** Null when the model gave no condition (identify only, refused, or not run). */
   condition: ConditionLike | null
+  /**
+   * Whether a back photo went to the model. Separate from `back` because a back
+   * that was sent but could not be measured still showed the model its corners
+   * and edges. When omitted it is inferred from `back`.
+   */
+  backSent?: boolean
 }
 
 const RANK: Record<Confidence, number> = { high: 0, medium: 1, low: 2 }
@@ -143,10 +149,14 @@ function sideWord(side: PhotoSide): string {
 /** Photo-quality problems from the centering block: under 800px, angled, unreadable. */
 function photoCaveats(c: PhotoCentering | null, side: PhotoSide): string[] {
   if (!c || c.measured) return []
-  if (c.reason === 'short-side') return [`${sideWord(side).toLowerCase()} photo under 800px`]
-  if (c.reason === 'angled') return [`${sideWord(side).toLowerCase()} photo angled`]
+  const who = sideWord(side).toLowerCase()
+  if (c.reason === 'short-side') return [`${who} photo under 800px`]
+  if (c.reason === 'angled') return [`${who} photo angled`]
   if (c.reason === 'not_sent') return []
-  return [`${sideWord(side).toLowerCase()} photo could not be measured`]
+  if (c.reason === 'no-print-edge') return [`${who} print edge not found`]
+  if (c.reason === 'no-card') return [`${who} card outline not found`]
+  if (c.reason === 'cut-off') return [`${who} card cut off at the frame`]
+  return [`${who} photo could not be measured`]
 }
 
 function worsePct(c: MeasuredCentering): { pct: number } {
@@ -163,10 +173,6 @@ export function scoreCentering(front: PhotoCentering | null, back: PhotoCenterin
   const graded: { side: PhotoSide; grade: number }[] = []
   for (const { side, c } of sides) {
     if (!c || !c.measured) continue
-    if (!c.resolved) {
-      caveats.push(`${side} print edge not resolved`)
-      continue
-    }
     graded.push({ side, grade: centeringGradeFor(worsePct(c).pct, side) })
   }
   if (!graded.length) {
@@ -232,8 +238,11 @@ export function formatScore(n: number): string {
 }
 
 export function buildScores(input: ScoreInput): GradeScores {
-  const photo = [...photoCaveats(input.front, 'front'), ...photoCaveats(input.back, 'back')]
-  const backMissing = !input.back || (!input.back.measured && input.back.reason === 'not_sent')
+  // A print edge the scan could not read says nothing about the photo the model saw of the
+  // corners and edges; only photo-quality problems travel to the other parts.
+  const photo = [...photoCaveats(input.front, 'front'), ...photoCaveats(input.back, 'back')].filter((c) => !/print edge/.test(c))
+  const backMissing =
+    input.backSent != null ? !input.backSent : !input.back || (!input.back.measured && input.back.reason === 'not_sent')
   const centering = scoreCentering(input.front, input.back)
   const cond = input.condition
   const quality = { caveats: photo, backMissing }

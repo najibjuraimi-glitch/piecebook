@@ -109,8 +109,16 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
   const centeringCannotBeTen = Boolean((front?.ok && front.measure.cannotBeTen) || (back?.ok && back.measure.cannotBeTen))
   const centeringSummary = summariseCentering(photoCentering(front, 'front'), photoCentering(back, 'back'))
   const scores = useMemo(
-    () => (front || back || vision ? buildScores({ front: photoCentering(front, 'front'), back: photoCentering(back, 'back'), condition: vision && vision.coverage === 'full' ? vision.condition : null }) : null),
-    [front, back, vision],
+    () =>
+      front || back || vision
+        ? buildScores({
+            front: photoCentering(front, 'front'),
+            back: photoCentering(back, 'back'),
+            backSent: Boolean(back || backSeed),
+            condition: vision && vision.coverage === 'full' ? vision.condition : null,
+          })
+        : null,
+    [front, back, backSeed, vision],
   )
   const visionRuledOut = Boolean(vision?.condition.psa10_ruled_out)
   const cannotBeTen = Boolean(centeringCannotBeTen || visionRuledOut)
@@ -129,6 +137,20 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
     const fromConfirm = peekVisionSession()
     if (!fromConfirm || fromConfirm.confirmedCardNumber !== cardNumber) return
     if (existing?.photos.length) return
+    // /pregrade measured the full-size files once. Carry that result; the copies held here are
+    // shrunken for upload and would read differently. Re-measure only when an older session
+    // carried no measurement at all.
+    const carried = fromConfirm.centering
+    if (carried) {
+      setFront(carried.front)
+      setFrontSeed(fromConfirm.frontDataUrl)
+      if (fromConfirm.backDataUrl) {
+        setBack(carried.back)
+        setBackSeed(fromConfirm.backDataUrl)
+      }
+      setVision(fromConfirm.check)
+      return
+    }
     let gone = false
     ;(async () => {
       try {
@@ -870,6 +892,7 @@ function storedPhoto(result: PhotoResult | null): StoredPhoto | null {
       worseLargerPct: result.measure.worse.largerPct,
       cannotBeTen: result.measure.cannotBeTen,
       resolved: result.measure.resolved,
+      unresolvedSides: result.measure.resolved ? undefined : result.measure.unresolvedSides,
     },
   }
 }
@@ -885,6 +908,7 @@ function fromStoredPhoto(existing: PredictionRecord | undefined, side: PhotoSide
     side,
     measure: {
       ...base,
+      unresolvedSides: base.resolved ? [] : row.centering.unresolvedSides,
       corners: [
         { x: 0, y: 0 },
         { x: 1, y: 0 },

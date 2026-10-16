@@ -341,6 +341,7 @@ describe('/check', () => {
     const h = harness([SHAPES.clean])
     const body = await (await h.run({
       front: PIXEL,
+      back: PIXEL,
       centering: {
         front: { left: 52, right: 48, top: 51, bottom: 49 },
         back: { left: 50, right: 50, top: 50, bottom: 50 },
@@ -365,7 +366,7 @@ describe('/check', () => {
   it('never shows a confirmed 10: a clean card tops out at "10 not ruled out"', async () => {
     const clean = { ...ANSWER, condition: { ...ANSWER.condition, edges: { flags: [], notes: '', severity: 'none', confidence: 'high' }, psa10_ruled_out: false, reasons: [] } }
     const h = harness([{ candidates: [candidate([{ text: JSON.stringify(clean) }])], usageMetadata: usage() }])
-    const body = await (await h.run({ front: PIXEL, centering: { front: { left: 50, right: 50, top: 50, bottom: 50 }, back: { left: 50, right: 50, top: 50, bottom: 50 } } })).json()
+    const body = await (await h.run({ front: PIXEL, back: PIXEL, centering: { front: { left: 50, right: 50, top: 50, bottom: 50 }, back: { left: 50, right: 50, top: 50, bottom: 50 } } })).json()
     expect(body.scores.overall).toMatchObject({ low: 9.5, high: 10, text: '9.5 or better · 10 not ruled out.', tenRuledOut: false })
     expect(JSON.stringify(body.scores)).not.toMatch(/confirmed|guaranteed|is a 10/i)
   })
@@ -402,6 +403,38 @@ describe('/check', () => {
     // Front only, so medium confidence, which pulls the low end down half a point.
     expect(body.scores.overall).toMatchObject({ confidence: 'medium', text: '9.5 or better · 10 not ruled out. From 1 of 4 parts.' })
     expect(h.used()).toBe(1)
+  })
+
+  it('never says "back not sent" when the back photo went to the model, even with no centering for it', async () => {
+    // Jib's Luffy EB02-010p1: both photos sent, centering block carried none for either side.
+    const h = harness([SHAPES.clean])
+    const body = await (await h.run({ front: PIXEL, back: PIXEL })).json()
+    expect(h.requests[0].body.contents[0].parts.filter((p: Record<string, unknown>) => p.inline_data)).toHaveLength(2)
+    expect(body.scores.corners.caveats).not.toContain('back not sent')
+    expect(body.scores.edges.caveats).not.toContain('back not sent')
+    expect(body.scores.corners.confidence).toBe('high')
+    // Back sent and found, but no print edge read: still not "not sent".
+    const h2 = harness([SHAPES.clean])
+    const body2 = await (await h2.run({
+      front: PIXEL,
+      back: PIXEL,
+      centering: { front: { left: 50, right: 50, top: 50, bottom: 50 }, back: { measured: false, reason: 'no-print-edge' } },
+    })).json()
+    expect(body2.scores.corners.caveats).toEqual([])
+    expect(body2.scores.centering.caveats).toEqual(['back print edge not found', 'back not measured'])
+    // Front only: the caveat is right.
+    const h3 = harness([SHAPES.clean])
+    const body3 = await (await h3.run({ front: PIXEL })).json()
+    expect(body3.scores.corners.caveats).toEqual(['back not sent'])
+  })
+
+  it('reports a sub-floor centering block as not measured, never as a 50/50', async () => {
+    const h = harness([SHAPES.clean])
+    const body = await (await h.run({ front: PIXEL, back: PIXEL, centering: { front: { left: 0, right: 0, top: 0, bottom: 0, leftRight: '50/50', topBottom: '50/50' } } })).json()
+    expect(body.centering.front).toMatchObject({ measured: false, reason: 'no-print-edge' })
+    expect(body.centering.note).not.toMatch(/50\/50/)
+    expect(body.centering.verdict).toBe('Centering was not measured.')
+    expect(body.scores.centering.score).toBeNull()
   })
 
   it('gives no score at all when nothing was measured and the model gave no severities', async () => {
