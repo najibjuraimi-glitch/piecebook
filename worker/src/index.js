@@ -37,6 +37,8 @@ function corsHeaders(origin) {
   return ok ? { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type", "Vary": "Origin" } : { "Vary": "Origin" };
 }
 const json = (obj, status, cors) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json", ...cors } });
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_BODY_BYTES = 24 * 1024 * 1024;
 
 function b64FromBuffer(buf) {
   const bytes = new Uint8Array(buf); let s = "";
@@ -79,12 +81,15 @@ export default {
     if (url.pathname !== "/check" || req.method !== "POST") return json({ error: "not_found" }, 404, cors);
     const origin = req.headers.get("Origin");
     if (origin && !cors["Access-Control-Allow-Origin"]) return json({ error: "origin_not_allowed" }, 403, cors);
+    // Two 8 MB images as base64 JSON are ~22 MB. Refuse bigger bodies before parsing them into memory.
+    const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
+    if (declared > MAX_BODY_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
 
     let imgs;
     try { imgs = await readImages(req); } catch { return json({ error: "bad_request" }, 400, cors); }
     if (!imgs.front) return json({ error: "front_required" }, 400, cors);
     const size = (imgs.front.data.length + (imgs.back?.data.length || 0)) * 0.75;
-    if (size > 8 * 1024 * 1024) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
+    if (size > MAX_IMAGE_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
 
     // Daily cap (UTC day). KV is eventually consistent; good enough as a spend guard.
     const day = new Date().toISOString().slice(0, 10);

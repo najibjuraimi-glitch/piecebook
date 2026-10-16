@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { getCard } from '../data/seed'
 import { getRosterSet } from '../data/roster'
 import { PSA_FEES } from '../data/psaFees'
@@ -9,7 +9,9 @@ import { GhostButton, PrimaryButton } from '../components/Buttons'
 import { VisionGuess } from '../components/VisionGuess'
 import { NotFoundScreen } from './NotFound'
 import {
+  centeringLabel,
   drawCenteringOverlay,
+  hasPixelGeometry,
   measureFromBorders,
   measurePhoto,
   type PhotoResult,
@@ -67,11 +69,16 @@ export function PregradeCardScreen() {
 function Worksheet({ cardNumber }: { cardNumber: string }) {
   const card = getCard(cardNumber)!
   const navigate = useNavigate()
+  const location = useLocation()
   const [params] = useSearchParams()
   const existing = getPrediction(params.get('p') ?? undefined)
+  // Save/submit navigates to ?p=id, which remounts this worksheet; the notice rides along.
+  const arrivedNotice = (location.state as { notice?: unknown } | null)?.notice
   const locked = existing?.status === 'submitted'
   const roster = getRosterSet(card.setCode)
   const driftDefault = defaultMonthlyDrift(roster?.enReleased, todayIso())
+  // A saved row keeps the drift it was judged with; the same value is written back on save.
+  const monthlyDrift = existing?.monthlyDrift ?? driftDefault
 
   const session = peekVisionSession()
   const sessionMatch = session?.confirmedCardNumber === cardNumber ? session : null
@@ -94,7 +101,7 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
   const [buyShip, setBuyShip] = useState(existing?.buyAndShipUsd != null ? String(existing.buyAndShipUsd) : '')
   const [months, setMonths] = useState(existing?.months === 4 ? 4 : 5)
   const [savedId, setSavedId] = useState(existing?.id)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(typeof arrivedNotice === 'string' ? arrivedNotice : null)
 
   const centeringCannotBeTen = Boolean((front?.ok && front.measure.cannotBeTen) || (back?.ok && back.measure.cannotBeTen))
   const visionRuledOut = Boolean(vision?.condition.psa10_ruled_out)
@@ -161,7 +168,7 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
       shipToPsaUsd: psa,
       buyAndShipUsd: parseUsd(buyShip),
       months,
-      monthlyDrift: existing?.monthlyDrift ?? driftDefault,
+      monthlyDrift,
       cannotBeTen,
     })
   }, [
@@ -179,8 +186,7 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
     buyShip,
     months,
     cannotBeTen,
-    driftDefault,
-    existing?.monthlyDrift,
+    monthlyDrift,
   ])
 
   const missing = useMemo(() => missingBits({ raw, v9, v10, popTens, popNines, popTotal, popSource, popAsOf, shipPortland, shipPsa }), [
@@ -219,18 +225,17 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
       shipPsa,
       buyShip,
       months,
-      monthlyDrift: driftDefault,
+      monthlyDrift,
       worth,
     }))
     setSavedId(record.id)
-    if (asSubmit) {
-      submitPrediction(record.id)
-      setNotice('Locked. Grade entry is later.')
-      navigate(`/pregrade/${encodeURIComponent(card.cardNumber)}?p=${encodeURIComponent(record.id)}`, { replace: true })
-    } else {
-      setNotice('Draft saved on this browser.')
-      navigate(`/pregrade/${encodeURIComponent(card.cardNumber)}?p=${encodeURIComponent(record.id)}`, { replace: true })
-    }
+    const text = asSubmit ? 'Locked. Grade entry is later.' : 'Draft saved on this browser.'
+    if (asSubmit) submitPrediction(record.id)
+    setNotice(text)
+    navigate(`/pregrade/${encodeURIComponent(card.cardNumber)}?p=${encodeURIComponent(record.id)}`, {
+      replace: true,
+      state: { notice: text },
+    })
   }
 
   const fillNami = () => {
@@ -452,9 +457,11 @@ function PhotoSlot({
     }
   }, [seedDataUrl, side])
 
+  const drawable = Boolean(result?.ok && bitmap && hasPixelGeometry(result.measure))
+
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || !bitmap || !result?.ok) return
+    if (!canvas || !bitmap || !result?.ok || !hasPixelGeometry(result.measure)) return
     canvas.width = bitmap.width
     canvas.height = bitmap.height
     const ctx = canvas.getContext('2d')
@@ -492,21 +499,16 @@ function PhotoSlot({
         disabled={locked}
         onChange={(e) => onFile(e.target.files?.[0])}
       />
-      {result?.ok && bitmap && (
+      {drawable && (
         <canvas ref={canvasRef} className="mt-2 w-full rounded-xl" aria-label={`${side} centering overlay`} />
       )}
-      {!result?.ok && seedDataUrl && (
+      {!drawable && seedDataUrl && (
         <img src={seedDataUrl} alt="" className="mt-2 max-h-64 w-full rounded-xl object-contain" />
       )}
       {result && !result.ok && (
         <p className="mt-2 text-body text-bad">{result.message}</p>
       )}
-      {result?.ok && (
-        <p className="tabular mt-2 text-meta text-ink">
-          {result.measure.lr.label} · {result.measure.tb.label}
-          {result.measure.cannotBeTen ? ' · cannot be a 10' : ''}
-        </p>
-      )}
+      {result?.ok && <p className="tabular mt-2 text-meta text-ink">{centeringLabel(result.measure)}</p>}
       {!locked && (
         <GhostButton className="mt-3" onClick={() => inputRef.current?.click()} disabled={busy}>
           {busy ? 'Reading…' : result ? 'Replace photo' : 'Upload photo'}
@@ -846,6 +848,7 @@ function storedPhoto(result: PhotoResult | null): StoredPhoto | null {
       worseLabel: result.measure.worse.label,
       worseLargerPct: result.measure.worse.largerPct,
       cannotBeTen: result.measure.cannotBeTen,
+      resolved: result.measure.resolved,
     },
   }
 }

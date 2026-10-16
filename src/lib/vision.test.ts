@@ -4,6 +4,8 @@ import {
   cardLanguageLabel,
   isNonEnglishCardLanguage,
   normalizeCardLanguage,
+  postCheckWithRetry,
+  VisionRequestError,
   visionErrorMessage,
 } from './vision'
 
@@ -87,5 +89,65 @@ describe('visionErrorMessage', () => {
       'too_large — downscale to ~1600px long edge',
     )
     expect(visionErrorMessage(null, 502)).toBe('The photo check could not run (502).')
+  })
+})
+
+describe('postCheckWithRetry', () => {
+  type Step = number | 'throw' | 'hang'
+  function fakeFetch(steps: Step[]) {
+    const calls: number[] = []
+    const fetchImpl: typeof fetch = (_input, init) => {
+      const step = steps[calls.length] ?? 200
+      calls.push(Date.now())
+      if (step === 'throw') return Promise.reject(new TypeError('network'))
+      if (step === 'hang') {
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+        })
+      }
+      return Promise.resolve(new Response('{}', { status: step }))
+    }
+    return { fetchImpl, calls }
+  }
+  const url = 'https://vision.test/check'
+
+  it('returns a 2xx on the first try without retrying', async () => {
+    const f = fakeFetch([200])
+    const res = await postCheckWithRetry('{}', { fetch: f.fetchImpl, url })
+    expect(res.status).toBe(200)
+    expect(f.calls).toHaveLength(1)
+  })
+
+  it('does not retry a 4xx such as the daily cap', async () => {
+    const f = fakeFetch([429, 200])
+    const res = await postCheckWithRetry('{}', { fetch: f.fetchImpl, url })
+    expect(res.status).toBe(429)
+    expect(f.calls).toHaveLength(1)
+  })
+
+  it('retries once on a 5xx and stops after the second answer', async () => {
+    const ok = fakeFetch([502, 200])
+    expect((await postCheckWithRetry('{}', { fetch: ok.fetchImpl, url })).status).toBe(200)
+    expect(ok.calls).toHaveLength(2)
+    const bad = fakeFetch([502, 503, 200])
+    expect((await postCheckWithRetry('{}', { fetch: bad.fetchImpl, url })).status).toBe(503)
+    expect(bad.calls).toHaveLength(2)
+  })
+
+  it('retries once after a timeout and gives a VisionRequestError after the second', async () => {
+    const recovered = fakeFetch(['hang', 200])
+    expect((await postCheckWithRetry('{}', { fetch: recovered.fetchImpl, url, timeoutMs: 20 })).status).toBe(200)
+    expect(recovered.calls).toHaveLength(2)
+    const dead = fakeFetch(['hang', 'hang', 200])
+    await expect(postCheckWithRetry('{}', { fetch: dead.fetchImpl, url, timeoutMs: 20 })).rejects.toBeInstanceOf(
+      VisionRequestError,
+    )
+    expect(dead.calls).toHaveLength(2)
+  })
+
+  it('a 5xx followed by a network drop never makes a third request', async () => {
+    const f = fakeFetch([500, 'throw', 200])
+    await expect(postCheckWithRetry('{}', { fetch: f.fetchImpl, url })).rejects.toBeInstanceOf(VisionRequestError)
+    expect(f.calls).toHaveLength(2)
   })
 })

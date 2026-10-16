@@ -38,6 +38,8 @@ export interface StoredPhoto {
     worseLabel: string
     worseLargerPct: number
     cannotBeTen: boolean
+    /** Absent on rows saved before the print-edge guard; restore recomputes it from the pixel counts. */
+    resolved?: boolean
   }
 }
 
