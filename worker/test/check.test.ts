@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import worker, { answerText, extractModelResult, firstJsonObject, stripFences } from '../src/index.js'
+import worker, { DEFECT_FLAGS, PROMPTS, answerText, extractModelResult, firstJsonObject, normaliseResult, stripFences } from '../src/index.js'
 
 // --- recorded generateContent shapes --------------------------------------
 // Trimmed from real REST answers: the envelope and part layout are what matter.
 
 const ANSWER = {
-  identify: { set_code: 'EB02-010', name: 'Monkey.D.Luffy', parallel_guess: 'parallel/alt art', language: 'EN', confidence: 0.82, read_text: 'Monkey.D.Luffy 5000 EB02-010' },
+  identify: { set_code: 'EB02-010', name: 'Monkey.D.Luffy', rarity: 'SR', parallel_guess: 'parallel/alt art', language: 'EN', confidence: 0.82 },
   condition: {
     corners: { flags: [], notes: 'Sharp at this resolution.' },
     edges: { flags: ['whitening'], notes: 'Light whitening bottom edge.' },
@@ -14,6 +14,7 @@ const ANSWER = {
     reasons: ['edge whitening'],
   },
 }
+const MINIMAL_ANSWER = { identify: { set_code: 'EB02-010', language: 'EN' } }
 const ANSWER_JSON = JSON.stringify(ANSWER)
 const usage = (over: Record<string, number> = {}) => ({ promptTokenCount: 1812, candidatesTokenCount: 310, thoughtsTokenCount: 420, totalTokenCount: 2542, ...over })
 const candidate = (parts: unknown[], finishReason = 'STOP') => ({ content: { role: 'model', parts }, finishReason, index: 0 })
@@ -52,6 +53,10 @@ const SHAPES = {
   thoughtOnly: { candidates: [candidate([{ text: 'Thinking about the corners…', thought: true }])], usageMetadata: usage({ candidatesTokenCount: 0 }) },
   /** Valid JSON that is not our schema. */
   wrongSchema: { candidates: [candidate([{ text: '{"answer":"EB02-010"}' }])], usageMetadata: usage() },
+  /** The live Luffy EB02-010 failure after #39: recitation stop, no parts, front-only. */
+  recitationLive: { candidates: [{ finishReason: 'RECITATION', index: 0 }], usageMetadata: { promptTokenCount: 1539, totalTokenCount: 1539 } },
+  /** Minimal prompt answered. */
+  minimal: { candidates: [candidate([{ text: JSON.stringify(MINIMAL_ANSWER) }])], usageMetadata: usage({ candidatesTokenCount: 18 }) },
 }
 
 // --- pure helpers --------------------------------------------------------
@@ -116,6 +121,67 @@ describe('extractModelResult', () => {
   it('survives garbage bodies', () => {
     expect(extractModelResult(null)).toMatchObject({ ok: false, reason: 'empty_text', finishReason: 'NONE' })
     expect(extractModelResult({ candidates: [] })).toMatchObject({ ok: false, reason: 'empty_text' })
+  })
+  it('accepts an identify-only body only when condition is not required', () => {
+    expect(extractModelResult(SHAPES.minimal)).toMatchObject({ ok: false, reason: 'schema_mismatch' })
+    expect(extractModelResult(SHAPES.minimal, { requireCondition: false })).toMatchObject({ ok: true, result: MINIMAL_ANSWER })
+  })
+})
+
+// --- prompts and schema: labels, never transcription ----------------------
+
+describe('prompts', () => {
+  const walk = (node: any, out: any[] = []): any[] => {
+    if (node && typeof node === 'object') {
+      out.push(node)
+      for (const v of Object.values(node)) walk(v, out)
+    }
+    return out
+  }
+  it('never ask the model to write out card text', () => {
+    for (const p of Object.values(PROMPTS)) {
+      expect(p.text).not.toMatch(/read_text|any text you can read/i)
+      expect(p.text).toMatch(/Never transcribe|Do not write out any text/i)
+      expect(JSON.stringify(p.schema)).not.toContain('read_text')
+    }
+  })
+  it('keep the schema strict: enums for language, rarity, variant and defect flags', () => {
+    const full = PROMPTS.full.schema as any
+    expect(full.properties.identify.properties.language.enum).toEqual(['EN', 'JP', 'CN', 'KR', 'FR'])
+    expect(full.properties.identify.properties.rarity.enum).toContain('SEC')
+    expect(full.properties.identify.properties.parallel_guess.enum).toEqual(['base', 'parallel/alt art', 'manga', 'SP'])
+    expect(full.properties.condition.properties.corners.properties.flags.items.enum).toEqual(DEFECT_FLAGS)
+    const freeStrings = walk(full).filter((n) => n.type === 'STRING' && !n.enum)
+    // The only free-text fields are the short name, the set code and the condition notes/reasons.
+    expect(freeStrings).toHaveLength(2 + 3 + 1)
+  })
+  it('minimal prompt asks for set code and language only', () => {
+    const min = PROMPTS.minimal.schema as any
+    expect(Object.keys(min.properties)).toEqual(['identify'])
+    expect(Object.keys(min.properties.identify.properties)).toEqual(['set_code', 'language'])
+    expect(PROMPTS.minimal.text).not.toMatch(/CONDITION|corners|edges|surface|psa10|whitening/i)
+    expect(PROMPTS.minimal.text.length).toBeLessThan(PROMPTS.full.text.length / 3)
+  })
+})
+
+describe('normaliseResult', () => {
+  it('clamps labels to the known sets and keeps a full condition', () => {
+    const r = normaliseResult(
+      { identify: { set_code: ' eb02-010 ', name: 'Monkey.D.Luffy', rarity: 'XX', parallel_guess: 'alt art', language: 'English', confidence: 1.7 }, condition: { ...ANSWER.condition, edges: { flags: ['whitening', 'made_up'], notes: 'x' } } },
+      PROMPTS.full,
+    )
+    expect(r.identify).toEqual({ set_code: 'EB02-010', name: 'Monkey.D.Luffy', rarity: null, parallel_guess: null, language: 'EN', confidence: 1 })
+    expect(r.condition.edges.flags).toEqual(['whitening'])
+    expect(r.coverage).toBe('full')
+  })
+  it('fills an empty, nothing-ruled-out condition for an identify-only answer', () => {
+    const r = normaliseResult(MINIMAL_ANSWER, PROMPTS.minimal)
+    expect(r.coverage).toBe('identify_only')
+    expect(r.identify).toMatchObject({ set_code: 'EB02-010', language: 'EN', name: null, parallel_guess: null })
+    expect(r.condition).toEqual({ corners: { flags: [], notes: '' }, edges: { flags: [], notes: '' }, surface: { flags: [], notes: '' }, psa10_ruled_out: false, reasons: [] })
+  })
+  it('nulls a set code that is not a card number', () => {
+    expect(normaliseResult({ identify: { set_code: 'Luffy' } }, PROMPTS.minimal).identify.set_code).toBeNull()
   })
 })
 
@@ -183,6 +249,68 @@ describe('/check', () => {
     expect(h.requests.map((q) => q.body.generationConfig.maxOutputTokens)).toEqual([12288, 32768])
     expect(h.used()).toBe(1)
     expect(h.logs.filter((l) => l.evt === 'check_model_output').map((l) => l.finishReason)).toEqual(['MAX_TOKENS', 'STOP'])
+  })
+
+  it('sends the full prompt with the strict schema and the image after it', async () => {
+    const h = harness([SHAPES.clean])
+    await h.run()
+    const sent = h.requests[0].body as any
+    expect(sent.contents[0].parts[0].text).toBe(PROMPTS.full.text)
+    expect(sent.contents[0].parts[1].inline_data.mime_type).toBe('image/jpeg')
+    expect(sent.generationConfig.responseSchema).toEqual(PROMPTS.full.schema)
+    expect(JSON.stringify(sent)).not.toContain('read_text')
+  })
+
+  it('answers 200 coverage full with clamped labels', async () => {
+    const h = harness([SHAPES.clean])
+    const body = await (await h.run()).json()
+    expect(body.coverage).toBe('full')
+    expect(body.identify).toEqual({ set_code: 'EB02-010', name: 'Monkey.D.Luffy', rarity: 'SR', parallel_guess: 'parallel/alt art', language: 'EN', confidence: 0.82 })
+    expect(body.condition.edges.flags).toEqual(['whitening'])
+  })
+
+  it('RECITATION on the full prompt → one minimal retry → 200 identify_only, one slot charged', async () => {
+    const h = harness([SHAPES.recitationLive, SHAPES.minimal])
+    const r = await h.run()
+    expect(r.status).toBe(200)
+    const body = await r.json()
+    expect(body.coverage).toBe('identify_only')
+    expect(body.identify).toMatchObject({ set_code: 'EB02-010', language: 'EN', name: null })
+    expect(body.condition.psa10_ruled_out).toBe(false)
+    expect(h.requests).toHaveLength(2)
+    expect((h.requests[1].body as any).contents[0].parts[0].text).toBe(PROMPTS.minimal.text)
+    expect((h.requests[1].body as any).generationConfig.responseSchema).toEqual(PROMPTS.minimal.schema)
+    expect(h.used()).toBe(1)
+    expect(h.logs.filter((l) => l.evt === 'check_model_output').map((l) => [l.prompt, l.finishReason])).toEqual([['full', 'RECITATION'], ['minimal', 'STOP']])
+  })
+
+  it('RECITATION twice → 502 blocked naming the minimal prompt, slot refunded, no third call', async () => {
+    const h = harness([SHAPES.recitationLive, SHAPES.recitationLive])
+    const r = await h.run()
+    expect(r.status).toBe(502)
+    const body = await r.json()
+    expect(body).toMatchObject({ error: 'unparseable_model_output', reason: 'blocked', finishReason: 'RECITATION', prompt: 'minimal' })
+    expect(body.detail).toMatch(/Type the card number/)
+    expect(h.requests).toHaveLength(2)
+    expect(h.used()).toBe(0)
+  })
+
+  it('a SAFETY block is not retried with the minimal prompt', async () => {
+    const h = harness([SHAPES.safety, SHAPES.minimal])
+    const r = await h.run()
+    expect(r.status).toBe(502)
+    expect(h.requests).toHaveLength(1)
+  })
+
+  it('MAX_TOKENS then RECITATION uses both retries, never a fourth call', async () => {
+    const h = harness([SHAPES.maxTokensEmpty, SHAPES.recitationLive, SHAPES.minimal])
+    const r = await h.run()
+    expect(r.status).toBe(200)
+    expect(h.requests.map((q) => [(q.body as any).contents[0].parts[0].text === PROMPTS.minimal.text ? 'minimal' : 'full', (q.body as any).generationConfig.maxOutputTokens])).toEqual([
+      ['full', 12288],
+      ['full', 32768],
+      ['minimal', 32768],
+    ])
   })
 
   it('gives up after the second MAX_TOKENS, says why, and refunds the slot', async () => {
