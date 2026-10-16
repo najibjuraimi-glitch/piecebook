@@ -6,6 +6,7 @@ import { PSA_FEES } from '../data/psaFees'
 import { BackBar, Screen } from '../components/Screen'
 import { CardArt } from '../components/CardArt'
 import { GhostButton, PrimaryButton } from '../components/Buttons'
+import { VisionGuess } from '../components/VisionGuess'
 import { NotFoundScreen } from './NotFound'
 import {
   drawCenteringOverlay,
@@ -25,6 +26,8 @@ import {
   type PricePoint,
 } from '../lib/gradeWorth'
 import { loadPhotoFile } from '../lib/photoPixels'
+import { dataUrlToFile, isNonEnglishCardLanguage, type VisionCheck } from '../lib/vision'
+import { peekVisionSession } from '../store/visionSession'
 import { formatDate, formatUsMarketUsd, todayIso } from '../lib/format'
 import { rateLine } from '../lib/fx'
 import {
@@ -69,8 +72,13 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
   const roster = getRosterSet(card.setCode)
   const driftDefault = defaultMonthlyDrift(roster?.enReleased, todayIso())
 
+  const session = peekVisionSession()
+  const sessionMatch = session?.confirmedCardNumber === cardNumber ? session : null
   const [front, setFront] = useState<PhotoResult | null>(fromStoredPhoto(existing, 'front'))
   const [back, setBack] = useState<PhotoResult | null>(fromStoredPhoto(existing, 'back'))
+  const [frontSeed, setFrontSeed] = useState<string | null>(sessionMatch?.frontDataUrl ?? null)
+  const [backSeed, setBackSeed] = useState<string | null>(sessionMatch?.backDataUrl ?? null)
+  const [vision, setVision] = useState<VisionCheck | null>(existing?.vision ?? sessionMatch?.check ?? null)
   const [popTens, setPopTens] = useState(existing?.pop ? String(existing.pop.tens) : '')
   const [popNines, setPopNines] = useState(existing?.pop ? String(existing.pop.nines) : '')
   const [popTotal, setPopTotal] = useState(existing?.pop ? String(existing.pop.total) : '')
@@ -87,7 +95,9 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
   const [savedId, setSavedId] = useState(existing?.id)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const cannotBeTen = Boolean((front?.ok && front.measure.cannotBeTen) || (back?.ok && back.measure.cannotBeTen))
+  const centeringCannotBeTen = Boolean((front?.ok && front.measure.cannotBeTen) || (back?.ok && back.measure.cannotBeTen))
+  const visionRuledOut = Boolean(vision?.condition.psa10_ruled_out)
+  const cannotBeTen = Boolean(centeringCannotBeTen || visionRuledOut)
   const photoNote = photoWouldChangeTheCall({
     frontReject: front && !front.ok ? front.message : null,
     backReject: back && !back.ok ? back.message : null,
@@ -95,7 +105,38 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
     backCannotBeTen: Boolean(back?.ok && back.measure.cannotBeTen),
     hasFront: Boolean(front),
     hasBack: Boolean(back),
+    visionRead: Boolean(vision),
+    visionRuledOut,
   })
+
+  useEffect(() => {
+    const fromConfirm = peekVisionSession()
+    if (!fromConfirm || fromConfirm.confirmedCardNumber !== cardNumber) return
+    if (existing?.photos.length) return
+    let gone = false
+    ;(async () => {
+      try {
+        const frontFile = dataUrlToFile(fromConfirm.frontDataUrl, 'front.jpg')
+        const loadedFront = await loadPhotoFile(frontFile)
+        if (gone) return
+        setFront(measurePhoto(loadedFront.pixels, 'front'))
+        setFrontSeed(fromConfirm.frontDataUrl)
+        if (fromConfirm.backDataUrl) {
+          const backFile = dataUrlToFile(fromConfirm.backDataUrl, 'back.jpg')
+          const loadedBack = await loadPhotoFile(backFile)
+          if (gone) return
+          setBack(measurePhoto(loadedBack.pixels, 'back'))
+          setBackSeed(fromConfirm.backDataUrl)
+        }
+        setVision(fromConfirm.check)
+      } catch {
+        // Leave the slots empty; the collector can upload again.
+      }
+    })()
+    return () => {
+      gone = true
+    }
+  }, [cardNumber, existing?.photos.length])
 
   const worth = useMemo(() => {
     const rawP = parsePrice(raw)
@@ -163,6 +204,7 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
       back,
       cannotBeTen,
       photoNote,
+      vision,
       popTens,
       popNines,
       popTotal,
@@ -226,6 +268,7 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
           <h1 className="text-display text-ink">{card.name}</h1>
           <p className="tabular mt-1 text-meta text-muted">
             {card.cardNumber} · {card.setCode}
+            {vision ? ` · ${vision.identify.language ?? 'language not read'}` : ''}
             {card.marketUsd != null && card.asOf
               ? ` · seed ${formatUsMarketUsd(card.marketUsd)} as of ${formatDate(card.asOf)} — not a sold`
               : ' · no seed market'}
@@ -236,6 +279,11 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
       <p className="mt-5 max-w-[60ch] text-body text-ink">
         Photos can rule out a PSA 10. They never confirm one. Piecebook never buys, bids or offers.
       </p>
+      {isNonEnglishCardLanguage(vision?.identify.language ?? null) && (
+        <p className="mt-3 rounded-2xl border border-line bg-surface px-4 py-3 text-body text-ink">
+          Piecebook currently only has English card data and prices.
+        </p>
+      )}
       {locked && (
         <p className="mt-3 rounded-2xl border border-line bg-surface px-4 py-3 text-body text-ink">
           Locked on submit. Grade entry is later.
@@ -253,12 +301,21 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
           Front and back, square-on. Short side 800px or more. The whole card in the frame. Angled over ~8° is rejected.
         </p>
         <div className="mt-4 grid gap-4 tablet:grid-cols-2">
-          <PhotoSlot side="front" locked={locked} result={front} onResult={setFront} />
-          <PhotoSlot side="back" locked={locked} result={back} onResult={setBack} />
+          <PhotoSlot side="front" locked={locked} result={front} onResult={setFront} seedDataUrl={frontSeed} />
+          <PhotoSlot side="back" locked={locked} result={back} onResult={setBack} seedDataUrl={backSeed} />
         </div>
+        {vision && (
+          <div className="mt-4">
+            <VisionGuess check={vision} />
+          </div>
+        )}
         <p className="mt-4 text-body text-ink">{photoNote}</p>
         {cannotBeTen && (
-          <p className="mt-2 text-body font-medium text-bad">Cannot be a 10 — centering is already over the line.</p>
+          <p className="mt-2 text-body font-medium text-bad">
+            {centeringCannotBeTen
+              ? 'Cannot be a 10 — centering is already over the line.'
+              : 'Cannot be a 10 — the photo check found a defect that rules a 10 out.'}
+          </p>
         )}
       </Section>
 
@@ -362,16 +419,39 @@ function PhotoSlot({
   locked,
   result,
   onResult,
+  seedDataUrl,
 }: {
   side: PhotoSide
   locked: boolean
   result: PhotoResult | null
   onResult: (r: PhotoResult | null) => void
+  seedDataUrl?: string | null
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [bitmap, setBitmap] = useState<ImageBitmap | null>(null)
+
+  useEffect(() => {
+    if (!seedDataUrl) return
+    let gone = false
+    let bmp: ImageBitmap | null = null
+    ;(async () => {
+      try {
+        bmp = await createImageBitmap(dataUrlToFile(seedDataUrl, `${side}.jpg`))
+        if (gone) {
+          bmp.close()
+          return
+        }
+        setBitmap(bmp)
+      } catch {
+        // Preview can stay empty; the measure still ran on the parent.
+      }
+    })()
+    return () => {
+      gone = true
+    }
+  }, [seedDataUrl, side])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -684,6 +764,7 @@ function toDraft(o: {
   back: PhotoResult | null
   cannotBeTen: boolean
   photoNote: string
+  vision: VisionCheck | null
   popTens: string
   popNines: string
   popTotal: string
@@ -711,6 +792,7 @@ function toDraft(o: {
     photos: [storedPhoto(o.front), storedPhoto(o.back)].filter((p): p is StoredPhoto => p !== null),
     cannotBeTen: o.cannotBeTen,
     photoNote: o.photoNote,
+    vision: o.vision,
     pop:
       tens != null && nines != null && total != null && o.popSource.trim() && isoDate(o.popAsOf)
         ? { tens, nines, total, source: o.popSource.trim(), asOf: o.popAsOf }

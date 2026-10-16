@@ -1,0 +1,12 @@
+name = "piecebook-vision"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+account_id = "dd046e58e703dcb6cc96aa78d2fc13e5"
+
+[vars]
+GEMINI_MODEL = "gemini-3.8-flash"
+DAILY_CAP = "60"
+
+[[kv_namespaces]]
+binding = "VISION_CAP"
+id = "c6e044e2b36843648c53ff84663a81a4"
