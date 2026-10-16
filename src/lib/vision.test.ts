@@ -3,6 +3,7 @@ import {
   asVisionCheck,
   cardLanguageLabel,
   isNonEnglishCardLanguage,
+  isRetryableVisionFailure,
   normalizeCardLanguage,
   postCheckWithRetry,
   VisionRequestError,
@@ -82,13 +83,43 @@ describe('asVisionCheck language', () => {
 
 describe('visionErrorMessage', () => {
   it('shows the Worker error and detail instead of a silent failure', () => {
-    expect(visionErrorMessage({ error: 'model_error', status: 503, detail: 'upstream timeout' }, 502)).toBe(
-      'model_error — upstream timeout',
-    )
     expect(visionErrorMessage({ error: 'too_large', hint: 'downscale to ~1600px long edge' }, 413)).toBe(
       'too_large — downscale to ~1600px long edge',
     )
     expect(visionErrorMessage(null, 502)).toBe('The photo check could not run (502).')
+  })
+
+  it('turns model failures into plain words, preferring the Worker hint', () => {
+    expect(
+      visionErrorMessage(
+        { error: 'unparseable_model_output', status: 200, reason: 'max_tokens', detail: 'The model ran out of room before answering. Try again.' },
+        502,
+      ),
+    ).toBe('The model ran out of room before answering. Try again.')
+    expect(visionErrorMessage({ error: 'unparseable_model_output', status: 200 }, 502)).toBe(
+      'The photo check got a garbled answer from the model.',
+    )
+    expect(visionErrorMessage({ error: 'model_error', status: 503, detail: 'upstream timeout' }, 502)).toBe('upstream timeout')
+    expect(visionErrorMessage({ error: 'model_error', status: 0 }, 502)).toBe('The photo check’s model did not answer.')
+  })
+})
+
+describe('isRetryableVisionFailure', () => {
+  it('marks model hiccups, 5xx and timeouts as worth another tap', () => {
+    expect(isRetryableVisionFailure('unparseable_model_output', 502)).toBe(true)
+    expect(isRetryableVisionFailure('model_error', 502)).toBe(true)
+    expect(isRetryableVisionFailure(undefined, 503)).toBe(true)
+    expect(isRetryableVisionFailure(undefined, undefined)).toBe(true)
+  })
+  it('does not retry the caller’s own mistakes', () => {
+    expect(isRetryableVisionFailure('too_large', 413)).toBe(false)
+    expect(isRetryableVisionFailure('front_required', 400)).toBe(false)
+    expect(isRetryableVisionFailure(undefined, 401)).toBe(false)
+  })
+  it('is carried by VisionRequestError', () => {
+    expect(new VisionRequestError('x', 502, { code: 'unparseable_model_output' }).retryable).toBe(true)
+    expect(new VisionRequestError('x', 413, { code: 'too_large' }).retryable).toBe(false)
+    expect(new VisionRequestError('x', undefined, { retryable: true }).retryable).toBe(true)
   })
 })
 
