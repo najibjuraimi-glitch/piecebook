@@ -24,7 +24,7 @@ Bold entries were added after the audit on 5 Sep 2026; before them the map was a
 | **8 Start here** | Collect door | Play door | Belong door |
 | **9 Fandom page** | — | — | **9.1 World: story index, people log, fruit log, reader cutoff** |
 | **11 Pre-grade + Grade-worth** | **11.1 ingest · 11.2 centering · 11.3 math · 11.4 log** | — | — |
-| **12 Goldin + batch (not now)** | **12.1 Goldin URL ingest · 12.2 batch sweep** | — | — |
+| **12 Batch sweep (not now)** | **12.1 eBay search or card list → ranked Go / Borderline** | — | — |
 
 ## Order of work
 Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 → 4), with 1.0 (attribute capture) pulled forward because it is a one-day pipeline change that unlocks both other pillars; then Play (6), Belong (7), Start here (8).
@@ -37,7 +37,7 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 5.2 (multiple collections) and 5.3 (graded prices, population) stay parked: nobody in the research asked for 5.2; 5.3 has no free licensed source (PriceCharting's paid API or PSA's population data would need a budget decision first).
 - 9.1 — Fandom page (Jib, 6 Sep 2026). Shipped PR #29. `/belong` is the fandom home: a story index (titles and chapter/episode ranges — no plot), a stored log of fruits and people, a reader cutoff, a fifth tab **World**. Fruit rows stay text. ClickUp: https://app.clickup.com/t/86eyuqatu. See `docs/V1-FANDOM-PAGE-UI.md`.
 - 11 — Pre-grade + Grade-worth (Jib, 16 Oct 2026). Approved. Photos can rule out a PSA 10 but never confirm one. Piecebook never buys, bids or offers. Free first slice: photo upload + card ID, browser centering, typed pops/solds, localStorage log. 5.3 (licensed graded prices / pop feed) stays parked; this worksheet does not unpark it. See `docs/V1-PREGRADE-UI.md`. ClickUp: https://app.clickup.com/90182837848/v/l/li/1100400000006328.
-- 12 — Goldin ingest + batch sweep (Jib, 16 Oct 2026). Next after 11.1–11.4. **On the map only; do not build now.** 12.1 accepts a goldin.co item URL, pulls photos and the current bid, and adds about 22% buyer's premium to cost-in (inferred from US$325 hammer → US$397 total; verify per listing). Goldin needs a server-side browser render. 12.2 takes an eBay search URL or a card list, runs each raw listing through pre-grade and grade-worth, and returns ranked Go / Borderline picks with max prices; centering first, skip vision on fails, cache by image hash, cap batch size, track spend per month. ClickUp: https://app.clickup.com/90182837848/v/l/li/1100400000006331.
+- 12 — Batch sweep (Jib, 16 Oct 2026). Next after 11.1–11.4. **On the map only; do not build now.** An eBay search URL or a card list; run each raw listing through pre-grade and grade-worth; return ranked Go / Borderline picks with max prices; centering first, skip vision on fails, cache by image hash, cap batch size, track spend per month. ClickUp: https://app.clickup.com/90182837848/v/l/li/1100400000006331.
 
 ## Hypotheses, not taken as given
 - 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Later only: ringgit, rupiah, and language translation *may* matter. Not a phase you finish before the fandom page. Seat collectors in those markets before any map row besides this decision opens. Parked: https://app.clickup.com/t/86eyuqbbq. Not work to start.
@@ -48,4 +48,4 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 6.6 — decklists: link only, or import as a source
 
 ## Task list
-`docs/growth-map.csv` holds every task with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. ClickUp Team Space › Piecebook lists are Phase 0–9 (shipped), then Ongoing, Later, Phase 11 · Pre-grade + Grade-worth, and Phase 12 · Goldin ingest + batch sweep (map only, not now). 7.6 is already a low to-do. 5.4, weekly data health, and 9.1 built 6 Sep 2026. Phase 11 approved 16 Oct 2026. The dependencies to wire are in the `Depends on` column. Growth map page in the pinned ClickUp doc. No 9.2 until Jib asks. Do not start 12 until Jib says so.
+`docs/growth-map.csv` holds every task with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. ClickUp Team Space › Piecebook lists are Phase 0–9 (shipped), then Ongoing, Later, Phase 11 · Pre-grade + Grade-worth, and Phase 12 · Batch sweep (map only, not now). 7.6 is already a low to-do. 5.4, weekly data health, and 9.1 built 6 Sep 2026. Phase 11 approved 16 Oct 2026. The dependencies to wire are in the `Depends on` column. Growth map page in the pinned ClickUp doc. No 9.2 until Jib asks. Do not start 12 until Jib says so.

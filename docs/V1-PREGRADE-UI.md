@@ -18,12 +18,11 @@ Photos can rule out a PSA 10. They never confirm one. Piecebook never buys, bids
 | **11.3 Grade-worth math** | Typed PSA pop and solds; PSA fee config; cost in; drift; three exits; EV; max buy; Go / Borderline / No-go | — |
 | **11.4 Prediction log** | `localStorage` log, locked once marked submitted; grade entry later | Calibration table (predicted vs actual) |
 
-**Phase 12 (next, not this PR):** Goldin ingest + batch sweep. Do not build now.
+**Phase 12 (next, not this PR):** Batch sweep only. Do not build now.
 
 | Slice | What it is |
 |---|---|
-| **12.1 Goldin ingest** | Accept a goldin.co item URL. Pull photos and the current bid. Add about 22% buyer's premium to cost-in — inferred from one listing (US$325 hammer → US$397 total); verify per listing, not a published schedule. Example: `https://goldin.co/item/2025-one-piece-3rd-anniversary-treasure-campaign-pack-st21-014-monkey8m5y2`. Goldin needs a **server-side browser render**. |
-| **12.2 Batch sweep** | An eBay search URL or a card list. Run every raw listing through pre-grade and grade-worth. Return a ranked list of Go and Borderline picks with max prices. Centering first; skip vision calls on fails; cache by image hash; cap batch size; track spend per month. |
+| **12.1 Batch sweep** | An eBay search URL or a card list. Run every raw listing through pre-grade and grade-worth. Return a ranked list of Go and Borderline picks with max prices. Centering first; skip vision calls on fails; cache by image hash; cap batch size; track spend per month. |
 
 Later still: auto PSA pop pulls, cert auto-match.
 
@@ -52,4 +51,4 @@ Ratio = larger / sum per axis. The worse axis counts. Front over 55/45 or back o
 - Invent a sold, a pop, or a shipping figure.
 - Confirm a PSA 10 from a photo.
 - Buy, bid, or offer.
-- Pull PSA pop, eBay, or Goldin in this slice (Phase 12 is the map row for Goldin and batch).
+- Pull PSA pop or eBay in this slice (Phase 12 is the batch sweep).
