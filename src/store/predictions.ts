@@ -78,7 +78,12 @@ export type PredictionDraft = Omit<PredictionRecord, 'id' | 'createdAt' | 'updat
 }
 
 let cache: PredictionRecord[] | null = null
+let snapshot: PredictionRecord[] = []
 const listeners = new Set<() => void>()
+
+function sorted(list: PredictionRecord[]): PredictionRecord[] {
+  return list.slice().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+}
 
 function read(): PredictionRecord[] {
   if (cache) return cache
@@ -88,11 +93,13 @@ function read(): PredictionRecord[] {
   } catch {
     cache = []
   }
+  snapshot = sorted(cache)
   return cache
 }
 
 function write(next: PredictionRecord[]): void {
   cache = next
+  snapshot = sorted(next)
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   } catch {
@@ -154,7 +161,8 @@ function numOrNull(v: unknown): number | null {
 }
 
 export function listPredictions(): PredictionRecord[] {
-  return read().slice().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  read()
+  return snapshot
 }
 
 export function getPrediction(id: string | undefined): PredictionRecord | undefined {
