@@ -11,7 +11,7 @@ What comes next, in order:
 1. **One street price for everything (Phase 14).** Both agents asked for the same thing in two different shapes: "what is this card worth today". One endpoint answers both, in US dollars and Singapore dollars, with the source link and the date. The first version uses TCGplayer market prices (the same daily feed the app already trusts). PriceCharting graded prices and eBay sold comps plug into the same endpoint once you decide to pay for a key. Street price goes first because the max-bid calculator, the hunting list and the ledger all need it.
 2. **Cheaper photo reads for the desks (still Phase 14).** A one-photo "what card is this" call that does not spend a full pre-grade, with its own daily cap. Plus a fix for a real bug Cards found: a 448 pixel photo was read as the wrong card and the app still suggested matches.
 3. **Buying math and a ledger (Phase 15).** A max-bid calculator that both desks and the phone share, a PSA cert lookup, and one purchase ledger that goes from "won" to "sold" with paid, GST, forwarding, all-in, shipping status and tracking. This replaces the spreadsheet.
-4. **Better photo reads (Phase 16).** Centering and a confidence level in the API answer, glare handling, and reading an eBay listing URL directly.
+4. **Better photo reads (Phase 16).** A confidence level in the API answer, glare handling, and reading an eBay listing URL directly. Centering ratios already show on every pre-grade result and in the `/check` answer since the quick fix in PR #42.
 5. **Later.** A pre-order link on product pages needs your call first, because Piecebook never sells.
 
 The guardrails do not move:
@@ -33,7 +33,7 @@ Sizes: **S** is under a day of Code's time, **M** is one to three days, **L** is
 | Auction 2 | Max-bid calculator, one shared formula | 15.1 |
 | Auction 3 | PSA cert lookup, cached | 15.2 |
 | Auction 4, Cards 4 | Won-item tracker, portfolio parity with the sheet, validation | 15.3 and 15.4, one ledger |
-| Auction 5 | `/api/check` returns centering and confidence | 16.1 |
+| Auction 5 | `/api/check` returns centering and confidence | Centering shipped in PR #42 (quick fix, 16 Oct); confidence is 16.1 |
 | Cards 5 | Glare: retake at an angle, or two photos | 16.2 |
 | Auction 5 | `/api/check` accepts an eBay item URL | 16.3 |
 | Auction nice to have | Pre-order or buy link on product pages | Later, decision for Jib |
@@ -105,11 +105,12 @@ Goal: one formula and one book, shared by the phone and both desks, so the sprea
 
 Goal: the desks get more out of each photo without any promise about grades.
 
-### 16.1 Centering and a confidence level in the API answer
+### 16.1 Confidence level, and centering measured on the server
 
-- **User value:** Auction gets the same centering numbers the phone shows, plus a confidence level, in the `/api/check` response.
-- **Change:** the browser centering code (outline, warp, four borders, ratio) is ported to the Worker so the API can measure the same photo. The response gains `centering` (front and back ratios, "cannot be a 10" when a ratio crosses the published limit) and `confidence` (low, medium, high, derived from resolution, model confidence and whether the two photos agree).
-- **Size:** L. **Depends on:** Phase 11.2 centering. **Benefits:** Auction, Cards.
+- **Shipped first (PR #42, 16 Oct 2026):** every `/pregrade` result and the prediction log show the front and back left/right and top/bottom ratios (for example 55/45), whether centering rules a 10 out, and a note when a side could not be measured. `/check` returns the same `centering` block. The phone measures the pixels and sends the border widths with the photos; the Worker recomputes the ratios and the rule-out from them and says "not measured" when a caller sends photos alone.
+- **User value, still open:** Auction gets a confidence level in the `/api/check` answer, and gets centering even when it sends photos alone with no phone in the loop.
+- **Change:** `confidence` (low, medium, high) derived from resolution, model confidence and whether front and back agree. Then port the browser centering code (outline, warp, four borders, ratio) to the Worker so the API can measure a photo itself; the Worker has no pixel decoder today, so this needs a small pure-JS JPEG decoder and a CPU budget check.
+- **Size:** S for confidence, L for server-side centering. **Depends on:** Phase 11.2 centering, PR #42's block. **Benefits:** Auction, Cards.
 - **Guardrail:** centering can rule a 10 out. The response never says a card is a 10 or gives a probability of one.
 
 ### 16.2 Glare handling
@@ -146,7 +147,7 @@ Phase 12 (Goldin ingest and batch sweep) stays "map only, do not build". 16.3 an
                    ──►  16.3 eBay URL in
 14.4 hunting list  ──►  15.3 ledger (scoped write)
 15.2 cert lookup   (independent, needs a PSA token)
-16.1 centering in API (independent, large)
+16.1 confidence (S), then server-side centering (L); the centering echo is shipped (PR #42)
 ```
 
 ## What Jib may need to add
