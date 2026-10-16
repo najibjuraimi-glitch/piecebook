@@ -21,8 +21,10 @@ import {
 } from '../lib/vision'
 import { writeVisionSession } from '../store/visionSession'
 import { removePrediction, usePredictions, type StoredPhoto } from '../store/predictions'
-import { measurePhoto, type PhotoSide } from '../lib/centering'
+import { hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide } from '../lib/centering'
 import { loadPhotoFile } from '../lib/photoPixels'
+import { buildScores } from '../lib/gradeScore'
+import { CenteringCanvas, GradeScores } from '../components/GradeScores'
 import {
   centeringLine,
   photoCentering,
@@ -51,8 +53,39 @@ export function PregradeScreen() {
   const [backDataUrl, setBackDataUrl] = useState<string | undefined>()
   // Shrunken photos from a refused check: typing the number still hands them to the worksheet.
   const [heldPhotos, setHeldPhotos] = useState<VisionPhotos | null>(null)
-  // Measured on this phone before the photos leave; shown whatever the model says.
-  const [centering, setCentering] = useState<CenteringSummary | null>(null)
+  // Measured on this phone the moment a photo is picked, before anything leaves; shown whatever the model says.
+  const [frontMeasure, setFrontMeasure] = useState<SideMeasure | null>(null)
+  const [backMeasure, setBackMeasure] = useState<SideMeasure | null>(null)
+  const [measuring, setMeasuring] = useState(false)
+  const centering = useMemo<CenteringSummary | null>(
+    () => (frontMeasure || backMeasure ? summariseCentering(frontMeasure?.centering ?? null, backMeasure?.centering ?? null) : null),
+    [frontMeasure, backMeasure],
+  )
+  // Scores need an attempt at the model (or its refusal) so the condition part is honest about what it rests on.
+  const scores = useMemo(
+    () => (centering && (check || photoError) ? buildScores({ front: centering.front, back: centering.back, condition: check && check.coverage === 'full' ? check.condition : null }) : null),
+    [centering, check, photoError],
+  )
+
+  const pickSide = async (file: File | null, side: PhotoSide) => {
+    const set = side === 'front' ? setFrontMeasure : setBackMeasure
+    const prev = side === 'front' ? frontMeasure : backMeasure
+    prev?.bitmap?.close()
+    if (side === 'front') setFrontFile(file)
+    else setBackFile(file)
+    setCheck(null)
+    setPhotoError(null)
+    if (!file) {
+      set(null)
+      return
+    }
+    setMeasuring(true)
+    try {
+      set(await measureSide(file, side))
+    } finally {
+      setMeasuring(false)
+    }
+  }
 
   const candidates = useMemo(
     () => (check ? rankVisionCandidates(check.identify, ALL_CARDS, 5) : []),
@@ -68,10 +101,9 @@ export function PregradeScreen() {
     setCheck(null)
     setHeldPhotos(null)
     const measured = {
-      front: await measureSide(frontFile, 'front'),
-      back: backFile ? await measureSide(backFile, 'back') : null,
+      front: frontMeasure?.centering ?? (await measureSide(frontFile, 'front')).centering,
+      back: backFile ? (backMeasure?.centering ?? (await measureSide(backFile, 'back')).centering) : null,
     }
-    setCentering(summariseCentering(measured.front, measured.back))
     try {
       const payload = await checkPhotos(frontFile, backFile, measured)
       setCheck(payload.check)
@@ -151,31 +183,18 @@ export function PregradeScreen() {
           card — nothing is picked for you.
         </p>
         <div className="mt-4 grid gap-4 tablet:grid-cols-2">
-          <PhotoPick
-            label="Front"
-            file={frontFile}
-            onFile={(f) => {
-              setFrontFile(f)
-              setCheck(null)
-              setPhotoError(null)
-              setCentering(null)
-            }}
-          />
-          <PhotoPick
-            label="Back (optional)"
-            file={backFile}
-            onFile={(f) => {
-              setBackFile(f)
-              setCheck(null)
-              setPhotoError(null)
-              setCentering(null)
-            }}
-          />
+          <PhotoPick label="Front" file={frontFile} measure={frontMeasure} side="front" onFile={(f) => void pickSide(f, 'front')} />
+          <PhotoPick label="Back (optional)" file={backFile} measure={backMeasure} side="back" onFile={(f) => void pickSide(f, 'back')} />
         </div>
-        <PrimaryButton className="mt-4" disabled={!frontFile || busy} onClick={() => void runCheck()}>
-          {busy ? 'Checking…' : 'Check photos'}
+        <PrimaryButton className="mt-4" disabled={!frontFile || busy || measuring} onClick={() => void runCheck()}>
+          {busy ? 'Checking…' : measuring ? 'Measuring…' : 'Check photos'}
         </PrimaryButton>
         {centering && <CenteringBlock summary={centering} />}
+        {scores && (
+          <div className="mt-4">
+            <GradeScores scores={scores} />
+          </div>
+        )}
         {photoError && (
           <div className="mt-3" role="alert">
             <p className="text-body text-ink">{photoError.text}</p>
@@ -342,15 +361,21 @@ export function PregradeScreen() {
   )
 }
 
+/** One side as measured on this phone: the summary that travels, plus the pixel geometry and bitmap for the overlay. */
+interface SideMeasure {
+  centering: PhotoCentering
+  result: PhotoResult | null
+  bitmap: ImageBitmap | null
+}
+
 /** Centering from the full-size file on this phone. A photo that cannot be read says so; nothing is ruled out. */
-async function measureSide(file: File, side: PhotoSide): Promise<PhotoCentering> {
+async function measureSide(file: File, side: PhotoSide): Promise<SideMeasure> {
   try {
     const loaded = await loadPhotoFile(file)
     const result = measurePhoto(loaded.pixels, side)
-    loaded.bitmap.close()
-    return photoCentering(result, side) ?? unmeasured(side, 'unreadable')
+    return { centering: photoCentering(result, side) ?? unmeasured(side, 'unreadable'), result, bitmap: loaded.bitmap }
   } catch {
-    return unmeasured(side, 'unreadable')
+    return { centering: unmeasured(side, 'unreadable'), result: null, bitmap: null }
   }
 }
 
@@ -390,10 +415,14 @@ export function CenteringBlock({ summary }: { summary: CenteringSummary }) {
 function PhotoPick({
   label,
   file,
+  measure,
+  side,
   onFile,
 }: {
   label: string
   file: File | null
+  measure: SideMeasure | null
+  side: PhotoSide
   onFile: (f: File | null) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -409,6 +438,8 @@ function PhotoPick({
     return () => URL.revokeObjectURL(next)
   }, [file])
 
+  const drawable = Boolean(measure?.bitmap && measure.result?.ok && hasPixelGeometry(measure.result.measure))
+
   return (
     <div className="rounded-2xl border border-line bg-surface p-3">
       <p className="text-meta font-medium text-muted">{label}</p>
@@ -419,7 +450,17 @@ function PhotoPick({
         className="sr-only"
         onChange={(e) => onFile(e.target.files?.[0] ?? null)}
       />
-      {url && <img src={url} alt="" className="mt-2 max-h-44 w-full rounded-xl object-contain" />}
+      {drawable && measure?.bitmap && measure.result?.ok && (
+        <CenteringCanvas bitmap={measure.bitmap} measure={measure.result.measure} side={side} />
+      )}
+      {!drawable && url && <img src={url} alt="" className="mt-2 max-h-44 w-full rounded-xl object-contain" />}
+      {measure && !measure.centering.measured && <p className="mt-2 text-body text-bad">{measure.centering.note}</p>}
+      {measure?.centering.measured && (
+        <p className="tabular mt-2 text-meta text-ink">
+          {measure.centering.leftRight} left to right · {measure.centering.topBottom} top to bottom
+          {measure.centering.cannotBeTen ? ' · cannot be a 10' : ''}
+        </p>
+      )}
       <GhostButton className="mt-3" onClick={() => inputRef.current?.click()}>
         {file ? 'Replace photo' : 'Upload photo'}
       </GhostButton>

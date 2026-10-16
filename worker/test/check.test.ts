@@ -7,9 +7,9 @@ import worker, { DEFECT_FLAGS, PROMPTS, answerText, classifyModelError, extractM
 const ANSWER = {
   identify: { set_code: 'EB02-010', name: 'Monkey.D.Luffy', rarity: 'SR', parallel_guess: 'parallel/alt art', language: 'EN', confidence: 0.82 },
   condition: {
-    corners: { flags: [], notes: 'Sharp at this resolution.' },
-    edges: { flags: ['whitening'], notes: 'Light whitening bottom edge.' },
-    surface: { flags: [], notes: 'No scratches visible.' },
+    corners: { flags: [], notes: 'Sharp at this resolution.', severity: 'none', confidence: 'high' },
+    edges: { flags: ['whitening'], notes: 'Light whitening bottom edge.', severity: 'light', confidence: 'high' },
+    surface: { flags: [], notes: 'No scratches visible.', severity: 'none', confidence: 'high' },
     psa10_ruled_out: true,
     reasons: ['edge whitening'],
   },
@@ -175,6 +175,19 @@ describe('prompts', () => {
     // The only free-text fields are the short name, the set code and the condition notes/reasons.
     expect(freeStrings).toHaveLength(2 + 3 + 1)
   })
+  it('asks for severity and confidence per part as closed enums, never as free text', () => {
+    const full = PROMPTS.full.schema as any
+    for (const part of ['corners', 'edges', 'surface']) {
+      const section = full.properties.condition.properties[part]
+      expect(section.properties.severity.enum).toEqual(['none', 'light', 'moderate', 'heavy', 'unclear'])
+      expect(section.properties.confidence.enum).toEqual(['high', 'medium', 'low'])
+      expect(section.required).toEqual(['flags', 'notes', 'severity', 'confidence'])
+    }
+    expect(PROMPTS.full.text).toMatch(/severity, one of "none"/)
+    expect(PROMPTS.full.text).toMatch(/confidence, one of "high", "medium", "low"/)
+    // The prompt still never asks for a grade or a number out of 10.
+    expect(PROMPTS.full.text).not.toMatch(/out of 10|grade this|PSA \d+ grade/i)
+  })
   it('minimal prompt asks for set code and language only', () => {
     const min = PROMPTS.minimal.schema as any
     expect(Object.keys(min.properties)).toEqual(['identify'])
@@ -194,11 +207,29 @@ describe('normaliseResult', () => {
     expect(r.condition.edges.flags).toEqual(['whitening'])
     expect(r.coverage).toBe('full')
   })
+  it('clamps severity and confidence to the enums and nulls anything else', () => {
+    const r = normaliseResult(
+      {
+        identify: ANSWER.identify,
+        condition: {
+          ...ANSWER.condition,
+          corners: { flags: [], notes: '', severity: 'Light', confidence: 'high' },
+          edges: { flags: [], notes: '', severity: 'heavy', confidence: 'very sure' },
+          surface: { flags: [], notes: '' },
+        },
+      },
+      PROMPTS.full,
+    )
+    expect(r.condition.corners).toEqual({ flags: [], notes: '', severity: null, confidence: 'high' })
+    expect(r.condition.edges).toEqual({ flags: [], notes: '', severity: 'heavy', confidence: null })
+    expect(r.condition.surface).toEqual({ flags: [], notes: '', severity: null, confidence: null })
+  })
   it('fills an empty, nothing-ruled-out condition for an identify-only answer', () => {
     const r = normaliseResult(MINIMAL_ANSWER, PROMPTS.minimal)
     expect(r.coverage).toBe('identify_only')
     expect(r.identify).toMatchObject({ set_code: 'EB02-010', language: 'EN', name: null, parallel_guess: null })
-    expect(r.condition).toEqual({ corners: { flags: [], notes: '' }, edges: { flags: [], notes: '' }, surface: { flags: [], notes: '' }, psa10_ruled_out: false, reasons: [] })
+    const empty = { flags: [], notes: '', severity: null, confidence: null }
+    expect(r.condition).toEqual({ corners: empty, edges: empty, surface: empty, psa10_ruled_out: false, reasons: [] })
   })
   it('nulls a set code that is not a card number', () => {
     expect(normaliseResult({ identify: { set_code: 'Luffy' } }, PROMPTS.minimal).identify.set_code).toBeNull()
@@ -304,6 +335,88 @@ describe('/check', () => {
     const r = await h.runRequest(new Request('https://piecebook-vision.najibjuraimi.workers.dev/check', { method: 'POST', body: fd }))
     expect(r.status).toBe(200)
     expect((await r.json()).centering.front).toMatchObject({ topBottom: '54/46', cannotBeTen: false })
+  })
+
+  it('adds AI-estimate scores built from the device centering and the model severities', async () => {
+    const h = harness([SHAPES.clean])
+    const body = await (await h.run({
+      front: PIXEL,
+      centering: {
+        front: { left: 52, right: 48, top: 51, bottom: 49 },
+        back: { left: 50, right: 50, top: 50, bottom: 50 },
+      },
+    })).json()
+    expect(body.scores).toMatchObject({
+      estimate: true,
+      label: 'AI estimate, not a grade',
+      centering: { part: 'centering', score: 10, confidence: 'high' },
+      corners: { part: 'corners', score: 10, low: 9.5, high: 10, confidence: 'high' },
+      edges: { part: 'edges', score: 9, low: 8, high: 9.5, confidence: 'high' },
+      surface: { part: 'surface', score: 10, confidence: 'high' },
+      standards: { url: 'https://www.psacard.com/gradingstandards' },
+    })
+    // The model said a 10 is ruled out (edge whitening), so the top of the range is capped below 10.
+    expect(body.scores.overall).toMatchObject({ low: 8, high: 9.5, text: '8 to 9.5.', tenRuledOut: true, tenRuledOutBy: ['the model saw a clear defect'] })
+    expect(body.scores.lowConfidenceReasons).toEqual([])
+    // Still one slot charged; scoring is free.
+    expect(h.used()).toBe(1)
+  })
+
+  it('never shows a confirmed 10: a clean card tops out at "10 not ruled out"', async () => {
+    const clean = { ...ANSWER, condition: { ...ANSWER.condition, edges: { flags: [], notes: '', severity: 'none', confidence: 'high' }, psa10_ruled_out: false, reasons: [] } }
+    const h = harness([{ candidates: [candidate([{ text: JSON.stringify(clean) }])], usageMetadata: usage() }])
+    const body = await (await h.run({ front: PIXEL, centering: { front: { left: 50, right: 50, top: 50, bottom: 50 }, back: { left: 50, right: 50, top: 50, bottom: 50 } } })).json()
+    expect(body.scores.overall).toMatchObject({ low: 9.5, high: 10, text: '9.5 or better · 10 not ruled out.', tenRuledOut: false })
+    expect(JSON.stringify(body.scores)).not.toMatch(/confirmed|guaranteed|is a 10/i)
+  })
+
+  it('rules a 10 out from centering alone even when the model saw nothing', async () => {
+    const clean = { ...ANSWER, condition: { ...ANSWER.condition, edges: { flags: [], notes: '', severity: 'none', confidence: 'high' }, psa10_ruled_out: false, reasons: [] } }
+    const h = harness([{ candidates: [candidate([{ text: JSON.stringify(clean) }])], usageMetadata: usage() }])
+    const body = await (await h.run({ front: PIXEL, centering: { front: { left: 60, right: 40, top: 50, bottom: 50 } } })).json()
+    expect(body.scores.centering).toMatchObject({ score: 9, confidence: 'medium' })
+    expect(body.scores.centering.caveats).toContain('back not measured')
+    expect(body.scores.overall).toMatchObject({ high: 9, tenRuledOut: true, tenRuledOutBy: ['centering'] })
+  })
+
+  it('marks scores low confidence when the photo was under 800px or glary', async () => {
+    const glary = { ...ANSWER, condition: { ...ANSWER.condition, surface: { flags: ['glare'], notes: '', severity: 'unclear', confidence: 'low' } } }
+    const h = harness([{ candidates: [candidate([{ text: JSON.stringify(glary) }])], usageMetadata: usage() }])
+    const body = await (await h.run({
+      front: PIXEL,
+      centering: { front: { measured: false, reason: 'short-side', note: 'Front: short side is 600px (need 800).' } },
+    })).json()
+    expect(body.scores.centering).toMatchObject({ score: null, confidence: 'low' })
+    expect(body.scores.surface).toMatchObject({ score: null, confidence: 'low' })
+    expect(body.scores.overall.confidence).toBe('low')
+    expect(body.scores.lowConfidenceReasons).toEqual(['front photo under 800px', 'glare'])
+    expect(body.scores.overall.text).toMatch(/From 2 of 4 parts\./)
+  })
+
+  it('scores centering only on an identify-only answer, with no part scores from the model', async () => {
+    const h = harness([SHAPES.recitationLive, SHAPES.minimal])
+    const body = await (await h.run({ front: PIXEL, centering: { front: { left: 50, right: 50, top: 50, bottom: 50 } } })).json()
+    expect(body.coverage).toBe('identify_only')
+    expect(body.scores.centering.score).toBe(10)
+    for (const part of ['corners', 'edges', 'surface']) expect(body.scores[part].score).toBeNull()
+    // Front only, so medium confidence, which pulls the low end down half a point.
+    expect(body.scores.overall).toMatchObject({ confidence: 'medium', text: '9.5 or better · 10 not ruled out. From 1 of 4 parts.' })
+    expect(h.used()).toBe(1)
+  })
+
+  it('gives no score at all when nothing was measured and the model gave no severities', async () => {
+    const h = harness([SHAPES.recitationLive, SHAPES.minimal])
+    const body = await (await h.run()).json()
+    expect(body.scores.overall).toMatchObject({ low: null, high: null, tenRuledOut: false })
+    expect(body.scores.overall.text).toMatch(/^No score/)
+  })
+
+  it('keeps the refund on a failed check: no scores, no slot used', async () => {
+    const h = harness([SHAPES.prose])
+    const r = await h.run({ front: PIXEL, centering: { front: { left: 50, right: 50, top: 50, bottom: 50 } } })
+    expect(r.status).toBe(502)
+    expect((await r.json()).scores).toBeUndefined()
+    expect(h.used()).toBe(0)
   })
 
   it.each(['thoughtFirst', 'fenced', 'split'] as const)('answers 200 for the %s shape', async (name) => {
