@@ -5,31 +5,66 @@
 import { accessConfigured, verifyAccess } from "./access.js";
 import { handleSync } from "./sync.js";
 
+// The prompts ask for labels, never for printed text. Transcribing a card's
+// effect text reproduces copyrighted wording that is indexed all over the web,
+// and Gemini then stops with finishReason RECITATION and no parts at all.
+
+const IDENTIFY_RULES = `set_code: the card number printed in the bottom-left corner, e.g. "OP01-016", "ST14-003", "EB02-010". Report it only if you can actually read it; otherwise null. Never guess or invent one.
+language: the label for the script the card is printed in — "EN", "JP", "CN", "KR" or "FR" — judged from the look of the text, not from the set code. If the text is not legible, null. Do not write out any card text.`;
+
 const PROMPT = `You are inspecting photos of a One Piece TCG card for Piecebook, a collector app.
 Image 1 is the FRONT. Image 2, if present, is the BACK.
-Tasks:
-1. IDENTIFY: read the set code printed on the card (e.g. "OP01-016", "ST14-003"), the card name, the printed language, and any text you can read. Only report a set_code you can actually read in the image. If it is not legible, set_code must be null. Never guess or invent a set code.
+Answer with short labels only. Never transcribe, quote or paraphrase any text printed on the card.
+1. IDENTIFY
+${IDENTIFY_RULES}
+name: the character or card title as a short label (1–4 words, e.g. "Monkey.D.Luffy"), or null if you cannot read it.
+rarity: the rarity mark printed next to the card number — "L", "SEC", "SR", "R", "UC", "C", "SP", "P" — or null.
 parallel_guess — pick one:
 - "SP" for a Special Card / SP foil (holographic SP treatment, a printed SP rarity, or SPECIAL used as a foil/rarity stamp). Prefer SP over base when the card is clearly an SP foil even if the printed number looks like a base code.
 - "parallel/alt art" for an alternate illustration (not the set's standard art).
 - "manga" for the manga-panel treatment.
 - "base" only for the standard set print with no parallel treatment.
 - null if you cannot tell.
-The attack attribute "Special" (Strike / Slash / Special next to power) is not enough by itself. Foil plus SPECIAL / SP as a rarity mark is. Do not default to "base" when the foil, stamp, or read text says SP, SPECIAL, Alternate, or Manga.
-language: "EN", "JP", "CN", "KR", "FR", or null — read from the card text (English effect text vs Japanese, Chinese, Korean, French). Do not infer language from the set code alone. If the text is not legible, language must be null.
-2. CONDITION: inspect corners, edges and surface for whitening, dings, chips, creases, scratches, print lines, dents, stains.
-Photos can rule out a PSA 10 but never confirm one. Set psa10_ruled_out true only if you see a clear defect; otherwise false (which means "not ruled out", never "is a 10"). Be conservative and say when photo quality limits what you can see.
+The attack attribute "Special" (Strike / Slash / Special next to power) is not enough by itself. Foil plus SPECIAL / SP as a rarity mark is. Do not default to "base" when the foil or stamp says SP, SPECIAL, Alternate, or Manga.
+2. CONDITION: inspect corners, edges and surface. For each, list the defect flags you can actually see from the allowed list and add at most twelve words of your own describing where and how bad. Describe the card's physical state only; never mention what is written on it.
+Photos can rule out a PSA 10 but never confirm one. Set psa10_ruled_out true only if you see a clear defect; otherwise false (which means "not ruled out", never "is a 10"). reasons: up to three short phrases of your own (max eight words each) naming the defects that drove psa10_ruled_out. Be conservative and flag "unclear_photo" when photo quality limits what you can see.
 Return ONLY JSON matching the schema.`;
 
-const SECTION = { type: "OBJECT", properties: { flags: { type: "ARRAY", items: { type: "STRING" } }, notes: { type: "STRING" } }, required: ["flags", "notes"] };
+// Fallback when the full prompt is still refused: identity only, nothing descriptive.
+const MINIMAL_PROMPT = `Look at this photo of a One Piece TCG card. Answer with two labels only. Do not write out any text printed on the card.
+${IDENTIFY_RULES}
+Return ONLY JSON matching the schema.`;
+
+export const LANGUAGES = ["EN", "JP", "CN", "KR", "FR"];
+export const RARITIES = ["L", "SEC", "SR", "R", "UC", "C", "SP", "P"];
+export const PARALLELS = ["base", "parallel/alt art", "manga", "SP"];
+export const DEFECT_FLAGS = ["whitening", "ding", "chip", "crease", "scratch", "print_line", "dent", "stain", "bend", "peel", "dirt", "glare", "blur", "unclear_photo"];
+
+const SECTION = {
+  type: "OBJECT",
+  properties: { flags: { type: "ARRAY", items: { type: "STRING", enum: DEFECT_FLAGS } }, notes: { type: "STRING" } },
+  required: ["flags", "notes"],
+};
+const IDENTIFY_MINIMAL = {
+  type: "OBJECT",
+  properties: { set_code: { type: "STRING", nullable: true }, language: { type: "STRING", enum: LANGUAGES, nullable: true } },
+  required: ["set_code", "language"],
+};
+const IDENTIFY_FULL = {
+  type: "OBJECT",
+  properties: {
+    ...IDENTIFY_MINIMAL.properties,
+    name: { type: "STRING", nullable: true },
+    rarity: { type: "STRING", enum: RARITIES, nullable: true },
+    parallel_guess: { type: "STRING", enum: PARALLELS, nullable: true },
+    confidence: { type: "NUMBER" },
+  },
+  required: ["set_code", "language", "name", "rarity", "parallel_guess", "confidence"],
+};
 const SCHEMA = {
   type: "OBJECT",
   properties: {
-    identify: { type: "OBJECT", properties: {
-      set_code: { type: "STRING", nullable: true }, name: { type: "STRING", nullable: true },
-      parallel_guess: { type: "STRING", nullable: true }, language: { type: "STRING", nullable: true },
-      confidence: { type: "NUMBER" },
-      read_text: { type: "STRING" } }, required: ["set_code", "name", "parallel_guess", "language", "confidence", "read_text"] },
+    identify: IDENTIFY_FULL,
     condition: { type: "OBJECT", properties: {
       corners: SECTION, edges: SECTION, surface: SECTION,
       psa10_ruled_out: { type: "BOOLEAN" }, reasons: { type: "ARRAY", items: { type: "STRING" } } },
@@ -37,6 +72,16 @@ const SCHEMA = {
   },
   required: ["identify", "condition"],
 };
+const MINIMAL_SCHEMA = { type: "OBJECT", properties: { identify: IDENTIFY_MINIMAL }, required: ["identify"] };
+
+export const PROMPTS = {
+  full: { name: "full", text: PROMPT, schema: SCHEMA, requireCondition: true },
+  minimal: { name: "minimal", text: MINIMAL_PROMPT, schema: MINIMAL_SCHEMA, requireCondition: false },
+};
+
+const EMPTY_SECTION = () => ({ flags: [], notes: "" });
+/** Condition block for an identify-only answer: nothing seen, nothing ruled out. */
+export const emptyCondition = () => ({ corners: EMPTY_SECTION(), edges: EMPTY_SECTION(), surface: EMPTY_SECTION(), psa10_ruled_out: false, reasons: [] });
 
 const DEFAULT_ORIGINS = "https://najibjuraimi-glitch.github.io,https://piecebook.pages.dev,https://*.piecebook.pages.dev";
 
@@ -161,7 +206,7 @@ function partKinds(parts) {
  * `reason` is one of blocked | max_tokens | empty_text | no_json | truncated_json
  * | invalid_json | schema_mismatch. Never includes image data or the raw text.
  */
-export function extractModelResult(body) {
+export function extractModelResult(body, { requireCondition = true } = {}) {
   const cand = body?.candidates?.[0];
   const blockReason = body?.promptFeedback?.blockReason;
   const finishReason = cand?.finishReason || (blockReason ? `PROMPT_${blockReason}` : "NONE");
@@ -185,12 +230,12 @@ export function extractModelResult(body) {
     return { ok: false, reason, ...meta };
   }
   const result = parsed.value;
-  if (!result || typeof result !== "object" || !result.identify || !result.condition) return { ok: false, reason: "schema_mismatch", ...meta };
+  if (!result || typeof result !== "object" || !result.identify || (requireCondition && !result.condition)) return { ok: false, reason: "schema_mismatch", ...meta };
   return { ok: true, result, ...meta };
 }
 
 const FAILURE_HINT = {
-  blocked: "The model declined to read this photo. Try a clearer shot of just the card.",
+  blocked: "The model declined to read this card. Type the card number; your photos still go to the worksheet.",
   max_tokens: "The model ran out of room before answering. Try again.",
   empty_text: "The model answered without any text. Try again.",
   no_json: "The model answered in prose instead of JSON. Try again.",
@@ -261,55 +306,90 @@ export default {
       return json(body, status, cors);
     };
 
-    const parts = [{ text: PROMPT }, { inline_data: { mime_type: imgs.front.mime, data: imgs.front.data } }];
-    if (imgs.back) parts.push({ inline_data: { mime_type: imgs.back.mime, data: imgs.back.data } });
+    const images = [{ inline_data: { mime_type: imgs.front.mime, data: imgs.front.data } }];
+    if (imgs.back) images.push({ inline_data: { mime_type: imgs.back.mime, data: imgs.back.data } });
     const modelFetch = deps.modelFetch || fetch;
     const log = deps.log || ((line) => console.log(JSON.stringify(line)));
-    const callModel = async (maxOutputTokens) => {
-      const r = await modelFetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
+    const callModel = (prompt, maxOutputTokens) =>
+      modelFetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-        body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: {
-          responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.1, maxOutputTokens,
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: prompt.text }, ...images] }], generationConfig: {
+          responseMimeType: "application/json", responseSchema: prompt.schema, temperature: 0.1, maxOutputTokens,
           thinkingConfig: { thinkingLevel: "low" } } }),
       });
-      return r;
-    };
 
-    let extracted = null, status = 0;
-    for (const [attempt, budget] of [[1, MAX_OUTPUT_TOKENS], [2, MAX_OUTPUT_TOKENS_RETRY]]) {
+    // Attempt plan: full prompt; once more with a bigger budget if thinking ate
+    // it; once more with the minimal prompt if the copyright filter refused.
+    const queue = [{ prompt: PROMPTS.full, budget: MAX_OUTPUT_TOKENS }];
+    let retriedBudget = false, retriedMinimal = false;
+    let extracted = null, status = 0, prompt = PROMPTS.full, budget = MAX_OUTPUT_TOKENS, attempt = 0;
+    while (queue.length) {
+      ({ prompt, budget } = queue.shift());
+      attempt++;
       let r;
-      try { r = await callModel(budget); } catch (e) {
-        log({ evt: "check_model_error", attempt, status: 0 });
+      try { r = await callModel(prompt, budget); } catch (e) {
+        log({ evt: "check_model_error", attempt, prompt: prompt.name, status: 0 });
         return fail({ error: "model_error", status: 0, detail: String(e && e.message ? e.message : e).slice(0, 300) }, 502);
       }
       status = r.status;
       if (!r.ok) {
         let detail = "";
         try { detail = (await r.text()).slice(0, 300); } catch { detail = "unreadable_model_response"; }
-        log({ evt: "check_model_error", attempt, status: r.status });
+        log({ evt: "check_model_error", attempt, prompt: prompt.name, status: r.status });
         return fail({ error: "model_error", status: r.status, detail }, 502);
       }
       let out;
       try { out = await r.json(); } catch {
-        log({ evt: "check_model_error", attempt, status: r.status, reason: "unreadable_body" });
+        log({ evt: "check_model_error", attempt, prompt: prompt.name, status: r.status, reason: "unreadable_body" });
         return fail({ error: "model_error", status: r.status, detail: "unreadable_model_response" }, 502);
       }
-      extracted = extractModelResult(out);
+      extracted = extractModelResult(out, { requireCondition: prompt.requireCondition });
       // No secrets, no image bytes, no model text: just the shape of what came back.
-      log({ evt: "check_model_output", attempt, ok: extracted.ok, reason: extracted.reason, finishReason: extracted.finishReason, parts: extracted.parts, tokens: extracted.tokens, textLength: extracted.textLength, maxOutputTokens: budget });
-      if (extracted.ok || extracted.reason !== "max_tokens") break;
+      log({ evt: "check_model_output", attempt, prompt: prompt.name, ok: extracted.ok, reason: extracted.reason, finishReason: extracted.finishReason, parts: extracted.parts, tokens: extracted.tokens, textLength: extracted.textLength, maxOutputTokens: budget });
+      if (extracted.ok) break;
+      if (extracted.reason === "max_tokens" && !retriedBudget) {
+        retriedBudget = true;
+        queue.push({ prompt, budget: MAX_OUTPUT_TOKENS_RETRY });
+      } else if (extracted.reason === "blocked" && extracted.finishReason === "RECITATION" && !retriedMinimal) {
+        retriedMinimal = true;
+        queue.push({ prompt: PROMPTS.minimal, budget });
+      }
     }
     if (!extracted.ok) {
-      return fail({ error: "unparseable_model_output", status, reason: extracted.reason, finishReason: extracted.finishReason, detail: FAILURE_HINT[extracted.reason] || FAILURE_HINT.invalid_json }, 502);
+      return fail({ error: "unparseable_model_output", status, reason: extracted.reason, finishReason: extracted.finishReason, prompt: prompt.name, detail: FAILURE_HINT[extracted.reason] || FAILURE_HINT.invalid_json }, 502);
     }
-    const result = extracted.result;
-    if (result?.identify?.set_code && !/^[A-Z]{2,3}\d{2}-\d{3}$/.test(result.identify.set_code.trim().toUpperCase())) result.identify.set_code = null;
-    else if (result?.identify?.set_code) result.identify.set_code = result.identify.set_code.trim().toUpperCase();
-    if (result?.identify) result.identify.language = normLang(result.identify.language);
+    const result = normaliseResult(extracted.result, prompt);
     return json({ ...result, ai_guess: true, model: env.GEMINI_MODEL, usage: { today: used + 1, cap }, disclaimer: "AI guess. Photos can rule out a PSA 10 but never confirm one." }, 200, cors);
   },
 };
+
+/** Clamp model labels to what the app understands; fill the condition block for an identify-only answer. */
+export function normaliseResult(raw, prompt) {
+  const id = raw.identify || {};
+  const code = typeof id.set_code === "string" ? id.set_code.trim().toUpperCase() : "";
+  const identify = {
+    set_code: /^[A-Z]{2,3}\d{2}-\d{3}$/.test(code) ? code : null,
+    name: typeof id.name === "string" && id.name.trim() ? id.name.trim().slice(0, 60) : null,
+    rarity: RARITIES.includes(id.rarity) ? id.rarity : null,
+    parallel_guess: PARALLELS.includes(id.parallel_guess) ? id.parallel_guess : null,
+    language: normLang(id.language),
+    confidence: Number.isFinite(Number(id.confidence)) ? Math.min(1, Math.max(0, Number(id.confidence))) : 0,
+  };
+  const full = prompt.requireCondition && raw.condition && typeof raw.condition === "object";
+  const section = (s) => ({
+    flags: Array.isArray(s?.flags) ? s.flags.filter((f) => DEFECT_FLAGS.includes(f)) : [],
+    notes: typeof s?.notes === "string" ? s.notes.trim().slice(0, 160) : "",
+  });
+  const condition = full
+    ? {
+        corners: section(raw.condition.corners), edges: section(raw.condition.edges), surface: section(raw.condition.surface),
+        psa10_ruled_out: Boolean(raw.condition.psa10_ruled_out),
+        reasons: Array.isArray(raw.condition.reasons) ? raw.condition.reasons.filter((x) => typeof x === "string").map((x) => x.trim().slice(0, 80)).filter(Boolean).slice(0, 3) : [],
+      }
+    : emptyCondition();
+  return { identify, condition, coverage: full ? "full" : "identify_only" };
+}
 
 /** Hand a reserved daily-cap slot back. Best effort: a refund must never turn a 502 into a 500. */
 async function refundCap(env, key) {

@@ -79,6 +79,38 @@ describe('asVisionCheck language', () => {
     expect(asVisionCheck(payload('Deutsch'))?.identify.language).toBeNull()
     expect(asVisionCheck(payload(null))?.identify.language).toBeNull()
   })
+
+  it('defaults coverage to full and tolerates the Worker no longer sending read_text', () => {
+    const p = payload('EN') as { identify: Record<string, unknown>; coverage?: string }
+    delete p.identify.read_text
+    p.identify.rarity = 'sr'
+    const check = asVisionCheck(p)
+    expect(check?.coverage).toBe('full')
+    expect(check?.identify.read_text).toBe('')
+    expect(check?.identify.rarity).toBe('SR')
+  })
+
+  it('keeps identify_only coverage with an empty condition', () => {
+    const check = asVisionCheck({ ...payload('EN'), coverage: 'identify_only' })
+    expect(check?.coverage).toBe('identify_only')
+    expect(check?.condition.psa10_ruled_out).toBe(false)
+    expect(asVisionCheck({ ...payload('EN'), coverage: 'whatever' })?.coverage).toBe('full')
+  })
+})
+
+describe('VisionRequestError blocked', () => {
+  it('is never retryable and carries the photos for the worksheet', () => {
+    const err = new VisionRequestError('declined', 502, {
+      code: 'unparseable_model_output',
+      reason: 'blocked',
+      photos: { frontDataUrl: 'data:image/jpeg;base64,AAAA' },
+    })
+    expect(err.blocked).toBe(true)
+    expect(err.retryable).toBe(false)
+    expect(err.photos?.frontDataUrl).toBe('data:image/jpeg;base64,AAAA')
+    expect(new VisionRequestError('x', 502, { code: 'unparseable_model_output', reason: 'max_tokens' }).blocked).toBe(false)
+    expect(isRetryableVisionFailure('unparseable_model_output', 502, 'blocked')).toBe(false)
+  })
 })
 
 describe('visionErrorMessage', () => {

@@ -17,6 +17,7 @@ import {
   VisionCapError,
   VisionRequestError,
   type VisionCheck,
+  type VisionPhotos,
 } from '../lib/vision'
 import { writeVisionSession } from '../store/visionSession'
 import { removePrediction, usePredictions } from '../store/predictions'
@@ -33,10 +34,12 @@ export function PregradeScreen() {
   const [frontFile, setFrontFile] = useState<File | null>(null)
   const [backFile, setBackFile] = useState<File | null>(null)
   const [busy, setBusy] = useState(false)
-  const [photoError, setPhotoError] = useState<{ text: string; retry: boolean } | null>(null)
+  const [photoError, setPhotoError] = useState<{ text: string; retry: boolean; blocked?: boolean } | null>(null)
   const [check, setCheck] = useState<VisionCheck | null>(null)
   const [frontDataUrl, setFrontDataUrl] = useState<string | null>(null)
   const [backDataUrl, setBackDataUrl] = useState<string | undefined>()
+  // Shrunken photos from a refused check: typing the number still hands them to the worksheet.
+  const [heldPhotos, setHeldPhotos] = useState<VisionPhotos | null>(null)
 
   const candidates = useMemo(
     () => (check ? rankVisionCandidates(check.identify, ALL_CARDS, 5) : []),
@@ -50,6 +53,7 @@ export function PregradeScreen() {
     setBusy(true)
     setPhotoError(null)
     setCheck(null)
+    setHeldPhotos(null)
     try {
       const payload = await checkPhotos(frontFile, backFile)
       setCheck(payload.check)
@@ -63,6 +67,13 @@ export function PregradeScreen() {
     } catch (err) {
       if (err instanceof VisionCapError) {
         setPhotoError({ text: 'Today’s photo checks are used up. Type a card number instead.', retry: false })
+      } else if (err instanceof VisionRequestError && err.blocked) {
+        setHeldPhotos(err.photos ?? null)
+        setPhotoError({
+          text: `${err.message} It was not counted against today’s checks.`,
+          retry: false,
+          blocked: Boolean(err.photos),
+        })
       } else if (err instanceof VisionRequestError && err.retryable) {
         setPhotoError({ text: `${err.message} It was not counted against today’s checks.`, retry: true })
       } else if (err instanceof VisionRequestError) {
@@ -90,6 +101,19 @@ export function PregradeScreen() {
     document.getElementById('pregrade-search')?.scrollIntoView({ block: 'start' })
     const input = document.querySelector<HTMLInputElement>('#pregrade-search input')
     input?.focus()
+  }
+
+  /** Typed-number path: if a refused check left photos behind, the worksheet still measures them. */
+  const openTyped = (card: Card) => {
+    if (heldPhotos) {
+      writeVisionSession({
+        check: null,
+        frontDataUrl: heldPhotos.frontDataUrl,
+        backDataUrl: heldPhotos.backDataUrl,
+        confirmedCardNumber: card.cardNumber,
+      })
+    }
+    navigate(`/pregrade/${encodeURIComponent(card.cardNumber)}`)
   }
 
   return (
@@ -134,6 +158,14 @@ export function PregradeScreen() {
         {photoError && (
           <div className="mt-3" role="alert">
             <p className="text-body text-ink">{photoError.text}</p>
+            {photoError.blocked && (
+              <div className="mt-2">
+                <GhostButton onClick={useSearchInstead}>Type the card number</GhostButton>
+                <p className="mt-2 text-meta text-muted">
+                  Your photos are kept for this visit: the worksheet still measures centering from them.
+                </p>
+              </div>
+            )}
             {photoError.retry && (
               <div className="mt-2 flex flex-wrap items-center gap-3">
                 <GhostButton disabled={busy} onClick={() => void runCheck()}>
@@ -152,10 +184,17 @@ export function PregradeScreen() {
             <p className="text-[15px] font-medium leading-5 text-ink">
               Read as {check.identify.name ?? 'an unnamed card'}
               {check.identify.set_code ? ` · ${check.identify.set_code}` : ''}
+              {check.identify.rarity ? ` · ${check.identify.rarity}` : ''}
               {check.identify.parallel_guess ? ` · ${check.identify.parallel_guess}` : ''}
               {' · '}
               {cardLanguageLabel(language)}
             </p>
+            {check.coverage === 'identify_only' && (
+              <p className="mt-3 rounded-2xl border border-line bg-surface px-4 py-3 text-body text-ink">
+                The model read the number but declined to describe this card’s condition. Nothing is ruled
+                out; the worksheet still measures centering from your photos.
+              </p>
+            )}
             {showEnOnlyNote && (
               <p className="mt-3 rounded-2xl border border-line bg-surface px-4 py-3 text-body text-ink">
                 {EN_ONLY_NOTE}
@@ -212,13 +251,17 @@ export function PregradeScreen() {
           className="mt-3"
           onSubmit={(e) => {
             e.preventDefault()
-            if (match) navigate(`/pregrade/${encodeURIComponent(match.cardNumber)}`)
+            if (match) openTyped(match)
           }}
         >
           <SearchField value={q} onChange={setQ} placeholder="Piecebook card number, e.g. ST01-007" />
           {match && (
             <Link
               to={`/pregrade/${encodeURIComponent(match.cardNumber)}`}
+              onClick={(e) => {
+                e.preventDefault()
+                openTyped(match)
+              }}
               className="mt-3 flex min-h-[48px] items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-4 py-2.5 text-ink transition-colors duration-150 ease-out hover:bg-paper/60 active:bg-paper"
             >
               <span className="min-w-0">

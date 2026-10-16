@@ -11,12 +11,18 @@ export interface VisionSection {
 export interface VisionIdentify {
   set_code: string | null
   name: string | null
+  /** Rarity mark next to the card number (L, SEC, SR, R, UC, C, SP, P) when read. */
+  rarity: string | null
   parallel_guess: string | null
   /** Printed language read from the card text, not the set code. */
   language: CardLanguageCode | null
   confidence: number
+  /** OCR text. The Worker no longer sends it (it tripped Gemini's recitation filter); kept for stored predictions. */
   read_text: string
 }
+
+/** `identify_only`: the model refused to describe the card, so the condition block is empty and nothing is ruled out. */
+export type VisionCoverage = 'full' | 'identify_only'
 
 /** EN / JP / CN / KR / FR from model output; anything else is null. */
 export function normalizeCardLanguage(v: unknown): CardLanguageCode | null {
@@ -56,6 +62,7 @@ export interface VisionUsage {
 export interface VisionCheck {
   identify: VisionIdentify
   condition: VisionCondition
+  coverage: VisionCoverage
   ai_guess: boolean
   model: string
   usage: VisionUsage
@@ -73,18 +80,34 @@ export class VisionCapError extends Error {
   }
 }
 
+/** The shrunken photos that were sent, so a refused check can still feed the worksheet. */
+export interface VisionPhotos {
+  frontDataUrl: string
+  backDataUrl?: string
+}
+
 export class VisionRequestError extends Error {
   readonly status?: number
   /** Worker error code (`model_error`, `unparseable_model_output`, …) when it sent one. */
   readonly code?: string
+  /** Worker's parse-failure reason (`blocked`, `max_tokens`, …) when it sent one. */
+  readonly reason?: string
   /** True when trying the same photos again has a real chance: model hiccups, timeouts, 5xx. */
   readonly retryable: boolean
-  constructor(message: string, status?: number, opts: { code?: string; retryable?: boolean } = {}) {
+  /** Set once the photos were shrunk, whatever happened after. */
+  photos?: VisionPhotos
+  constructor(message: string, status?: number, opts: { code?: string; reason?: string; retryable?: boolean; photos?: VisionPhotos } = {}) {
     super(message)
     this.name = 'VisionRequestError'
     this.status = status
     this.code = opts.code
-    this.retryable = opts.retryable ?? isRetryableVisionFailure(opts.code, status)
+    this.reason = opts.reason
+    this.photos = opts.photos
+    this.retryable = opts.retryable ?? isRetryableVisionFailure(opts.code, status, opts.reason)
+  }
+  /** The model refused to describe this card (copyright or safety filter); the same photo will refuse again. */
+  get blocked(): boolean {
+    return this.reason === 'blocked'
   }
 }
 
@@ -95,7 +118,8 @@ const MAX_ENCODED_BYTES = 450_000
 const RETRYABLE_CODES = new Set(['model_error', 'unparseable_model_output'])
 
 /** A failure worth a second tap: the model misbehaved or the network did, not the request. */
-export function isRetryableVisionFailure(code: string | undefined, status: number | undefined): boolean {
+export function isRetryableVisionFailure(code: string | undefined, status: number | undefined, reason?: string): boolean {
+  if (reason === 'blocked') return false
   if (code && RETRYABLE_CODES.has(code)) return true
   if (code) return false
   return status === undefined || status >= 500
@@ -120,9 +144,9 @@ export function visionErrorMessage(payload: unknown, status: number): string {
   return `The photo check could not run (${status}).`
 }
 
-function visionErrorCode(payload: unknown): string | undefined {
-  if (payload && typeof payload === 'object' && typeof (payload as { error?: unknown }).error === 'string') {
-    return (payload as { error: string }).error
+function visionErrorField(payload: unknown, field: 'error' | 'reason'): string | undefined {
+  if (payload && typeof payload === 'object' && typeof (payload as Record<string, unknown>)[field] === 'string') {
+    return (payload as Record<string, string>)[field]
   }
   return undefined
 }
@@ -169,6 +193,18 @@ export async function checkPhotos(front: Blob, back?: Blob | null): Promise<Visi
 async function checkPhotosOnce(front: Blob, back?: Blob | null): Promise<VisionCheckPayload> {
   const frontDataUrl = await downscaleForVision(front)
   const backDataUrl = back ? await downscaleForVision(back) : undefined
+  const photos: VisionPhotos = { frontDataUrl, backDataUrl }
+  try {
+    return await postAndParse(photos)
+  } catch (err) {
+    // Whatever went wrong after shrinking, the photos are still good for the worksheet.
+    if (err instanceof VisionRequestError && !err.photos) err.photos = photos
+    throw err
+  }
+}
+
+async function postAndParse(photos: VisionPhotos): Promise<VisionCheckPayload> {
+  const { frontDataUrl, backDataUrl } = photos
   const body: { front: string; back?: string } = { front: frontDataUrl }
   if (backDataUrl) body.back = backDataUrl
   const jsonBody = JSON.stringify(body)
@@ -183,8 +219,9 @@ async function checkPhotosOnce(front: Blob, back?: Blob | null): Promise<VisionC
     const err = payload as { cap?: number; used?: number }
     throw new VisionCapError(Number(err.cap) || 60, Number(err.used) || 0)
   }
-  const code = visionErrorCode(payload)
-  if (!retried.ok) throw new VisionRequestError(visionErrorMessage(payload, retried.status), retried.status, { code })
+  const code = visionErrorField(payload, 'error')
+  const reason = visionErrorField(payload, 'reason')
+  if (!retried.ok) throw new VisionRequestError(visionErrorMessage(payload, retried.status), retried.status, { code, reason })
   const check = asVisionCheck(payload)
   if (!check) {
     throw new VisionRequestError('The photo check answered without a card read.', retried.status, { code, retryable: true })
@@ -274,6 +311,7 @@ export function asVisionCheck(raw: unknown): VisionCheck | null {
     identify: {
       set_code: typeof id.set_code === 'string' && id.set_code.trim() ? id.set_code.trim() : null,
       name: typeof id.name === 'string' && id.name.trim() ? id.name.trim() : null,
+      rarity: typeof id.rarity === 'string' && id.rarity.trim() ? id.rarity.trim().toUpperCase() : null,
       parallel_guess: typeof id.parallel_guess === 'string' && id.parallel_guess.trim() ? id.parallel_guess.trim() : null,
       language: normalizeCardLanguage(id.language),
       confidence: Number.isFinite(Number(id.confidence)) ? Number(id.confidence) : 0,
@@ -286,6 +324,7 @@ export function asVisionCheck(raw: unknown): VisionCheck | null {
       psa10_ruled_out: Boolean(c.psa10_ruled_out),
       reasons,
     },
+    coverage: r.coverage === 'identify_only' ? 'identify_only' : 'full',
     ai_guess: true,
     model: typeof r.model === 'string' ? r.model : '',
     usage: {

@@ -33,7 +33,8 @@ Do them in order. Nothing breaks until step 8 flips the Worker to "Access requir
 ## 0. Before starting
 
 - Cloudflare account `dd046e58e703dcb6cc96aa78d2fc13e5` (already in `worker/wrangler.toml`).
-- Code has `CLOUDFLARE_API_TOKEN` set and `npx wrangler whoami` works from `worker/`.
+- Code has `CLOUDFLARE_API_TOKEN` set, has run `npm ci` at the repo root (that installs `wrangler`;
+  there is no `package.json` in `worker/`), and `npx wrangler whoami` works.
 - The GitHub repo may stay public or go private; Pages only needs read access to it.
 
 ## 1. Zero Trust team  **[Dashboard]**
@@ -71,8 +72,7 @@ At this point the new site works exactly like the old one (public, local-only da
 ## 3. KV namespace for cloud data  **[API ✓]**
 
 ```bash
-cd worker
-npx wrangler kv namespace create USER_DATA
+npx wrangler kv namespace create USER_DATA --config worker/wrangler.toml
 ```
 
 Copy the printed `id` into `worker/wrangler.toml`:
@@ -151,14 +151,14 @@ ALLOWED_ORIGINS = "https://najibjuraimi-glitch.github.io,https://piecebook.pages
 Commit that change (the values are not secrets; the Gemini key stays a `wrangler secret`).
 
 *Done:* the live values (team `piecebook.cloudflareaccess.com`, the Pages app's AUD, read-only
-service token) are committed, so `npx wrangler deploy` from any checkout keeps the lock on. If the
+service token) are committed, so `npm run worker:deploy` from any checkout keeps the lock on. If the
 Access application is ever recreated, its new AUD tag must land here before the next deploy.
 
 ## 8. Deploy the Worker  **[API ✓]** — this is the switch
 
 ```bash
-cd worker
-npx wrangler deploy
+npm ci                    # installs wrangler at the repo root; nothing to install in worker/
+npm run worker:deploy     # = wrangler deploy --config worker/wrangler.toml
 curl -s https://piecebook-vision.najibjuraimi.workers.dev/health
 #   {"ok":true,"model":"…","access":"on","sync":"on"}   (or an Access login page if step 6 is on)
 curl -s -o /dev/null -w '%{http_code}\n' https://piecebook-vision.najibjuraimi.workers.dev/sync
@@ -227,9 +227,8 @@ or their write loses to the phone under last-write-wins.
 
 ```bash
 # terminal 1 — the Worker with a fake identity and on-disk KV
-cd worker
-printf 'ACCESS_DEV_IDENTITY=najibjuraimi@gmail.com\nGEMINI_API_KEY=<key>\n' > .dev.vars   # git-ignored
-npx wrangler dev --env dev
+printf 'ACCESS_DEV_IDENTITY=najibjuraimi@gmail.com\nGEMINI_API_KEY=<key>\n' > worker/.dev.vars   # git-ignored
+npm run worker:dev        # = wrangler dev --config worker/wrangler.toml --env dev
 
 # terminal 2 — the app; Vite proxies /api to :8787
 npm run dev
@@ -243,6 +242,8 @@ npm run dev
 |---|---|
 | `/api/health` says `api_not_bound` | Pages → Settings → Bindings → Service binding `VISION` → `piecebook-vision` |
 | Your data screen says *Cloud sync is off* | Worker `/health` shows `access:"off"` or `sync:"off"` → step 3 or step 7 not deployed |
+| A photo check fails | `npm run worker:tail` and read the `check_model_output` line: `reason` + `finishReason` name the shape the model returned |
+| `wrangler: command not found` | Run `npm ci` at the repo root; wrangler is a root devDependency and every `worker:*` script passes `--config worker/wrangler.toml` |
 | Browser shows *Signed out* right after logging in | `ACCESS_AUD` does not contain the AUD of the app that issued the cookie (step 5's tag) |
 | Agent gets a 302 / HTML login page | Policy `Agents` is not **Service Auth**, or the token is not in its Include list |
 | Agent gets `401 unauthorized` from the Worker directly | Step 6 not done, so no JWT is minted on workers.dev; call via `piecebook.pages.dev/api` instead |

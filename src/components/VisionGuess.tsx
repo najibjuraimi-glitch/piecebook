@@ -6,6 +6,23 @@ import type { VisionCheck, VisionSection } from '../lib/vision'
  */
 export function VisionGuess({ check }: { check: VisionCheck }) {
   const c = check.condition
+  if (check.coverage === 'identify_only') {
+    return (
+      <div className="rounded-2xl border border-line bg-surface px-4 py-3">
+        <p className="text-[15px] font-medium leading-5 text-ink">
+          AI read the card number only. It declined to describe the condition.
+        </p>
+        <p className="mt-1 text-meta text-muted">
+          Nothing is ruled out by the model. Centering below comes from measuring your photos on this device.
+        </p>
+        {check.usage.cap > 0 && (
+          <p className="tabular mt-3 text-meta text-muted">
+            {check.usage.today} of {check.usage.cap} photo checks today.
+          </p>
+        )}
+      </div>
+    )
+  }
   return (
     <div className="rounded-2xl border border-line bg-surface px-4 py-3">
       <p className="text-[15px] font-medium leading-5 text-ink">

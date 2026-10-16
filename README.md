@@ -79,6 +79,8 @@ The build in `dist/` is a static single-page app. Configure your host to serve `
 
 **GitHub Pages** (`https://najibjuraimi-glitch.github.io/piecebook/`): `.github/workflows/pages.yml` builds every push to `main` with `PIECEBOOK_BASE=/piecebook/` (Vite `base`, the router `basename` and the box-art path all follow it), copies `.github/pages/404.html` into `dist/` so deep links load, and commits the result to the `gh-pages` branch. One-time repo setting: Settings → Pages → Build and deployment → Source "Deploy from a branch" → `gh-pages`, `/ (root)`. Locally the base stays `/`.
 
+**Worker** (`worker/`, the photo check and cloud sync): `wrangler` is a root devDependency, so `npm ci` once at the repo root and then `npm run worker:deploy` (deploy), `npm run worker:dev` (local, on :8787 with on-disk KV), `npm run worker:tail` (live JSON logs) or `npm run worker:secret` (set `GEMINI_API_KEY`). Every script passes `--config worker/wrangler.toml`; there is no `package.json` in `worker/`. The photo check asks Gemini for short labels only (card number, language, rarity, variant, defect flags), never for the printed card text: transcribing it trips the model's recitation filter and the answer comes back empty. If the model still refuses, the Worker retries once with a number-and-language-only prompt and the app falls back to a typed card number with the photos kept for the worksheet.
+
 ## Not in V1
 
 Live prices, alerts, invented FX rates (Portfolio S$ is a dated ECB reading, not a live quote), player search facets (colour, category, cost, trait, effect — growth map 2.3, shipped), scanning, accounts or sync, marketplace or affiliate links, dark mode.

@@ -13,7 +13,7 @@ export default defineConfig({
     host: true,
     port: 5173,
     // `/api` is the Worker in every build (see src/config/api.ts). In dev it is
-    // `wrangler dev` from worker/ on :8787, with ACCESS_DEV_IDENTITY in worker/.dev.vars.
+    // `npm run worker:dev` on :8787, with ACCESS_DEV_IDENTITY in worker/.dev.vars.
     proxy: {
       '/api': { target: process.env.PIECEBOOK_WORKER ?? 'http://127.0.0.1:8787', changeOrigin: true, rewrite: (p) => p.replace(/^\/api/, '') },
     },

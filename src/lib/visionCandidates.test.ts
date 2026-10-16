@@ -67,6 +67,7 @@ function identify(partial: Partial<VisionIdentify>): VisionIdentify {
   return {
     set_code: null,
     name: null,
+    rarity: null,
     parallel_guess: null,
     language: null,
     confidence: 0.6,
