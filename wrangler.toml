@@ -1,0 +1,11 @@
+# Cloudflare Pages project for the site (the Worker has its own file in worker/).
+# Pages' Git integration reads this on every build; the binding below wires
+# functions/api/[[path]].js to the Worker so /api/* is same-origin for the
+# browser. See docs/CLOUDFLARE-SETUP.md step 3.
+name = "piecebook"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-10-01"
+
+[[services]]
+binding = "VISION"
+service = "piecebook-vision"

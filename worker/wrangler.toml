@@ -3,10 +3,30 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 account_id = "dd046e58e703dcb6cc96aa78d2fc13e5"
 
+# Deploy: `npx wrangler deploy` from this folder. Secret: `npx wrangler secret put GEMINI_API_KEY`.
+#
+# As committed, the Worker behaves as before (open /check, no sync). Each block
+# below is switched on by filling it in; docs/CLOUDFLARE-SETUP.md walks through
+# the order. With ACCESS_TEAM_DOMAIN + ACCESS_AUD set, every route but /health
+# refuses requests without a valid Cloudflare Access JWT.
+
 [vars]
 GEMINI_MODEL = "gemini-3.8-flash"
 DAILY_CAP = "60"
+# Browser origins allowed to call the Worker directly (comma-separated; `https://*.host` = one subdomain level).
+# The Pages site calls through its own /api proxy, so it only needs listing for the Origin check.
+ALLOWED_ORIGINS = "https://najibjuraimi-glitch.github.io,https://piecebook.pages.dev,https://*.piecebook.pages.dev"
+# --- Cloudflare Access (step 5 in docs/CLOUDFLARE-SETUP.md) ---
+# ACCESS_TEAM_DOMAIN = "https://<team>.cloudflareaccess.com"
+# ACCESS_AUD = "<aud tag of the Pages Access app>,<aud tag of the Worker Access app>"
+# OWNER_EMAIL = "najibjuraimi@gmail.com"      # identity a service token reads as
+# SERVICE_TOKEN_WRITE = "0"                   # "1" to let agents write
 
 [[kv_namespaces]]
 binding = "VISION_CAP"
 id = "c6e044e2b36843648c53ff84663a81a4"
+
+# --- Cloud sync store (step 4 in docs/CLOUDFLARE-SETUP.md) ---
+# [[kv_namespaces]]
+# binding = "USER_DATA"
+# id = "<id from: npx wrangler kv namespace create USER_DATA>"

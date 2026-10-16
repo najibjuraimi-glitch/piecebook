@@ -6,7 +6,10 @@ import { CollectionProvider } from './store/collection'
 import { WatchlistProvider } from './store/watchlist'
 import { DecksProvider } from './store/decks'
 import { ReaderCutoffProvider } from './store/readerCutoff'
+import { startSync } from './store/sync'
 import './index.css'
+
+startSync()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

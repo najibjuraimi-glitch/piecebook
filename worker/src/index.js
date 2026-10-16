@@ -1,4 +1,10 @@
-// Piecebook vision worker. Secret: GEMINI_API_KEY (wrangler secret put). No keys in source.
+// Piecebook Worker: photo check (/check, Gemini) and cloud sync (/sync, KV).
+// Secret: GEMINI_API_KEY (wrangler secret put). No keys in source.
+// Behind Cloudflare Access once ACCESS_TEAM_DOMAIN + ACCESS_AUD are set: every
+// route but /health then needs a valid Access JWT (see access.js).
+import { accessConfigured, verifyAccess } from "./access.js";
+import { handleSync } from "./sync.js";
+
 const PROMPT = `You are inspecting photos of a One Piece TCG card for Piecebook, a collector app.
 Image 1 is the FRONT. Image 2, if present, is the BACK.
 Tasks:
@@ -32,9 +38,31 @@ const SCHEMA = {
   required: ["identify", "condition"],
 };
 
-function corsHeaders(origin) {
-  const ok = origin === "https://najibjuraimi-glitch.github.io" || /^http:\/\/localhost(:\d+)?$/.test(origin || "") || /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin || "");
-  return ok ? { "Access-Control-Allow-Origin": origin, "Access-Control-Allow-Methods": "POST, OPTIONS", "Access-Control-Allow-Headers": "Content-Type", "Vary": "Origin" } : { "Vary": "Origin" };
+const DEFAULT_ORIGINS = "https://najibjuraimi-glitch.github.io,https://piecebook.pages.dev,https://*.piecebook.pages.dev";
+
+/** Browser origins allowed to call this Worker directly. `https://*.host` matches one subdomain level. */
+export function originAllowed(origin, env) {
+  if (!origin) return false;
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return true;
+  const list = String(env?.ALLOWED_ORIGINS || DEFAULT_ORIGINS).split(",").map((s) => s.trim()).filter(Boolean);
+  for (const entry of list) {
+    if (entry === origin) return true;
+    const m = /^https:\/\/\*\.(.+)$/.exec(entry);
+    if (m && new RegExp(`^https://[a-z0-9-]+\\.${m[1].replace(/\./g, "\\.")}$`, "i").test(origin)) return true;
+  }
+  return false;
+}
+
+export function corsHeaders(origin, env) {
+  return originAllowed(origin, env)
+    ? {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, CF-Access-Client-Id, CF-Access-Client-Secret",
+        "Access-Control-Max-Age": "600",
+        "Vary": "Origin",
+      }
+    : { "Vary": "Origin" };
 }
 const json = (obj, status, cors) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json", ...cors } });
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -73,14 +101,32 @@ async function readImages(req) {
 }
 
 export default {
-  async fetch(req, env) {
-    const cors = corsHeaders(req.headers.get("Origin"));
+  async fetch(req, env, _ctx, deps = {}) {
+    const cors = corsHeaders(req.headers.get("Origin"), env);
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-    if (url.pathname === "/health") return json({ ok: true, model: env.GEMINI_MODEL }, 200, cors);
-    if (url.pathname !== "/check" || req.method !== "POST") return json({ error: "not_found" }, 404, cors);
+    if (url.pathname === "/health") return json({ ok: true, model: env.GEMINI_MODEL, access: accessConfigured(env) ? "on" : "off", sync: env.USER_DATA ? "on" : "off" }, 200, cors);
     const origin = req.headers.get("Origin");
     if (origin && !cors["Access-Control-Allow-Origin"]) return json({ error: "origin_not_allowed" }, 403, cors);
+
+    const isSync = url.pathname === "/sync" || url.pathname.startsWith("/sync/");
+    const isCheck = url.pathname === "/check" && req.method === "POST";
+    if (url.pathname === "/whoami" && req.method === "GET") {
+      const who = await verifyAccess(req, env, deps);
+      if (!who.ok) return json({ error: who.error, detail: who.detail }, who.status, cors);
+      return json({ identity: who.identity.email, kind: who.identity.kind, readOnly: Boolean(who.identity.readOnly) }, 200, cors);
+    }
+    if (!isSync && !isCheck) return json({ error: "not_found" }, 404, cors);
+
+    // Fail closed once Access is configured. Until then /check stays open for the
+    // old public site and /sync says so rather than pretending to be signed in.
+    let identity = null;
+    const who = await verifyAccess(req, env, deps);
+    if (who.ok) identity = who.identity;
+    else if (isSync) return json({ error: who.status === 503 && who.error === "access_not_configured" ? "sync_not_configured" : who.error, detail: who.detail }, who.status, cors);
+    else if (who.status !== 503 || who.error !== "access_not_configured") return json({ error: who.error, detail: who.detail }, who.status, cors);
+
+    if (isSync) return handleSync(req, env, identity, cors, deps);
     // Two 8 MB images as base64 JSON are ~22 MB. Refuse bigger bodies before parsing them into memory.
     const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
     if (declared > MAX_BODY_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);

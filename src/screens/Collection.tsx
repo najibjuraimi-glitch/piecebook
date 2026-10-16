@@ -12,6 +12,7 @@ import { Screen, ScreenTitle } from '../components/Screen'
 import { CardCell, CardGrid } from '../components/CardCell'
 import { ChevronRight } from '../components/SetTile'
 import { EmptyState } from '../components/EmptyState'
+import { DataLink } from '../components/DataLink'
 import { formatMoney, formatShortDate, formatSignedUsMarketUsd, formatUsMarketUsd, localDayIso, pluralCards } from '../lib/format'
 
 interface OwnedCard {
@@ -297,6 +298,7 @@ export function CollectionScreen() {
           )}
         </>
       )}
+      <DataLink className="mt-8" />
     </Screen>
   )
 }

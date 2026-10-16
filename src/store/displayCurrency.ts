@@ -3,22 +3,22 @@
  * visit matches the catalogue. Costs never convert; only the Portfolio
  * reading switches.
  */
+import { readRaw, subscribeUserData, writeRaw } from './userData'
+
 const STORAGE_KEY = 'piecebook.displayCurrency.v1'
 
 export type DisplayCurrency = 'usd' | 'sgd'
 
 export function readDisplayCurrency(): DisplayCurrency {
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) === 'sgd' ? 'sgd' : 'usd'
-  } catch {
-    return 'usd'
-  }
+  return readRaw(STORAGE_KEY) === 'sgd' ? 'sgd' : 'usd'
 }
 
 export function writeDisplayCurrency(value: DisplayCurrency): void {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, value)
-  } catch {
-    // Storage unavailable: the tab still works for this visit.
-  }
+  // Storage unavailable returns false: the tab still works for this visit.
+  writeRaw(STORAGE_KEY, value)
+}
+
+/** Fires when the cloud, an import or another tab changes the preference. */
+export function subscribeDisplayCurrency(fn: (value: DisplayCurrency) => void): () => void {
+  return subscribeUserData(STORAGE_KEY, () => fn(readDisplayCurrency()))
 }

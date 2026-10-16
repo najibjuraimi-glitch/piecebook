@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { readRaw, subscribeUserData, writeRaw } from './userData'
 
 /**
  * Watchlist: cards, sets and characters (card names, 7.4) the collector wants
@@ -35,7 +36,7 @@ function cleanMap(v: unknown): Record<string, WatchEntry> {
 function load(): WatchlistState {
   if (typeof window === 'undefined') return EMPTY
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
+    const raw = readRaw(STORAGE_KEY)
     if (!raw) return EMPTY
     const parsed = JSON.parse(raw) as Partial<WatchlistState>
     // Data stored before 7.4 has no `characters`; cleanMap turns the missing key into an empty map.
@@ -46,11 +47,8 @@ function load(): WatchlistState {
 }
 
 function save(state: WatchlistState) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // Storage full or unavailable; state still lives in memory for this session.
-  }
+  // Storage full or unavailable returns false; state still lives in memory for this session.
+  writeRaw(STORAGE_KEY, JSON.stringify(state))
 }
 
 export interface WatchlistApi {
@@ -91,18 +89,27 @@ function toggle(map: Record<string, WatchEntry>, key: string): Record<string, Wa
 
 export function WatchlistProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<WatchlistState>(load)
+  // Only a change made here is saved (and stamped for sync); a reload from the cloud or another tab is not.
+  const localChange = useRef(false)
+  const mutate = useCallback((fn: (s: WatchlistState) => WatchlistState) => {
+    localChange.current = true
+    setState(fn)
+  }, [])
 
   useEffect(() => {
+    if (!localChange.current) return
+    localChange.current = false
     save(state)
   }, [state])
 
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) setState(load())
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
+  useEffect(
+    () =>
+      subscribeUserData(STORAGE_KEY, () => {
+        localChange.current = false
+        setState(load())
+      }),
+    [],
+  )
 
   const isWatchingCard = useCallback((n: string) => Boolean(state.cards[n]), [state.cards])
   const isWatchingSet = useCallback((c: string) => Boolean(state.sets[c]), [state.sets])
@@ -110,9 +117,9 @@ export function WatchlistProvider({ children }: { children: React.ReactNode }) {
   const watchedAt = useCallback((n: string) => state.cards[n]?.at, [state.cards])
   const setWatchedAt = useCallback((c: string) => state.sets[c]?.at, [state.sets])
   const characterWatchedAt = useCallback((name: string) => state.characters[name]?.at, [state.characters])
-  const toggleCard = useCallback((n: string) => setState((s) => ({ ...s, cards: toggle(s.cards, n) })), [])
-  const toggleSet = useCallback((c: string) => setState((s) => ({ ...s, sets: toggle(s.sets, c) })), [])
-  const toggleCharacter = useCallback((name: string) => setState((s) => ({ ...s, characters: toggle(s.characters, name) })), [])
+  const toggleCard = useCallback((n: string) => mutate((s) => ({ ...s, cards: toggle(s.cards, n) })), [mutate])
+  const toggleSet = useCallback((c: string) => mutate((s) => ({ ...s, sets: toggle(s.sets, c) })), [mutate])
+  const toggleCharacter = useCallback((name: string) => mutate((s) => ({ ...s, characters: toggle(s.characters, name) })), [mutate])
 
   const api = useMemo<WatchlistApi>(
     () => ({
