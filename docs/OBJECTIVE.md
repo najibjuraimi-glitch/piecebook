@@ -23,6 +23,7 @@ Bold entries were added after the audit on 5 Sep 2026; before them the map was a
 | **7 Belong (fandom)** | 7.2 timeline, 7.5 upcoming sets, 7.11 countdown | 7.3 artists | **7.1 set stories · 7.2 release timeline · 7.3 artists · 7.4 characters + watch · 7.5 upcoming sets · 7.6 official events · 7.7 wiki pipeline · 7.8 Who is / Born · 7.9 On This Day · 7.10 Today's card (stood down) · 7.11 countdown** |
 | **8 Start here** | Collect door | Play door | Belong door |
 | **9 Fandom page** | — | — | **9.1 World: story index, people log, fruit log, reader cutoff** |
+| **11 Pre-grade + Grade-worth** | **11.1 ingest · 11.2 centering · 11.3 math · 11.4 log** | — | — |
 
 ## Order of work
 Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 → 4), with 1.0 (attribute capture) pulled forward because it is a one-day pipeline change that unlocks both other pillars; then Play (6), Belong (7), Start here (8).
@@ -34,6 +35,7 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 5.4 — Currency display: built 6 Sep 2026. Portfolio only. `US $` / `S$` chips, remembered, default US $. S$ is the USD seed at the dated ECB cross (`data/fx-usd-sgd.json`, EUR/SGD ÷ EUR/USD). Costs never convert. P/L stays in US dollars on both tabs. Amends the PRD's no-FX line: no invented rates; a dated central-bank table is not a bank quote.
 - 5.2 (multiple collections) and 5.3 (graded prices, population) stay parked: nobody in the research asked for 5.2; 5.3 has no free licensed source (PriceCharting's paid API or PSA's population data would need a budget decision first).
 - 9.1 — Fandom page (Jib, 6 Sep 2026). Shipped PR #29. `/belong` is the fandom home: a story index (titles and chapter/episode ranges — no plot), a stored log of fruits and people, a reader cutoff, a fifth tab **World**. Fruit rows stay text. ClickUp: https://app.clickup.com/t/86eyuqatu. See `docs/V1-FANDOM-PAGE-UI.md`.
+- 11 — Pre-grade + Grade-worth (Jib, 16 Oct 2026). Approved. Photos can rule out a PSA 10 but never confirm one. Piecebook never buys, bids or offers. Free first slice: photo upload + card ID, browser centering, typed pops/solds, localStorage log. 5.3 (licensed graded prices / pop feed) stays parked; this worksheet does not unpark it. See `docs/V1-PREGRADE-UI.md`. ClickUp: https://app.clickup.com/90182837848/v/l/li/1100400000006328.
 
 ## Hypotheses, not taken as given
 - 10.0 — Malaysia and Indonesia (Jib, 6 Sep 2026; Jib: do not take his word). Later only: ringgit, rupiah, and language translation *may* matter. Not a phase you finish before the fandom page. Seat collectors in those markets before any map row besides this decision opens. Parked: https://app.clickup.com/t/86eyuqbbq. Not work to start.
@@ -44,4 +46,4 @@ Jib's call (5 Sep 2026): collector objective first (Phases 0 → 1 → 2 → 3 �
 - 6.6 — decklists: link only, or import as a source
 
 ## Task list
-`docs/growth-map.csv` holds every task with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. ClickUp Team Space › Piecebook lists are Phase 0–9 (shipped), then Ongoing and Later. 7.6 is already a low to-do. 5.4, weekly data health, and 9.1 built 6 Sep 2026. The dependencies to wire are in the `Depends on` column. Growth map page in the pinned ClickUp doc. No 9.2 until Jib asks.
+`docs/growth-map.csv` holds every task with phase, pillars, owner, dependencies, priority and whether it exists in ClickUp yet. ClickUp Team Space › Piecebook lists are Phase 0–9 (shipped), then Ongoing, Later, and Phase 11 · Pre-grade + Grade-worth. 7.6 is already a low to-do. 5.4, weekly data health, and 9.1 built 6 Sep 2026. Phase 11 approved 16 Oct 2026. The dependencies to wire are in the `Depends on` column. Growth map page in the pinned ClickUp doc. No 9.2 until Jib asks.
