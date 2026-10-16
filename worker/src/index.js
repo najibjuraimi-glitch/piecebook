@@ -89,6 +89,116 @@ function parseDataUrl(v) {
   return m ? { mime: m[1], data: m[2] } : v ? { mime: "image/jpeg", data: v } : null;
 }
 
+// --- Model output parsing -----------------------------------------------
+// generateContent answers are not always "one text part holding JSON": thinking
+// models add `thought: true` parts and signature-only parts, a budget overrun
+// leaves empty text with finishReason MAX_TOKENS, a blocked answer has no parts
+// at all, and JSON can arrive fenced or with chatter around it. Everything below
+// is pure and exported so the shapes can be pinned in tests.
+
+const BLOCKED_REASONS = new Set(["SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "IMAGE_PROHIBITED_CONTENT", "SPII", "OTHER"]);
+const MAX_OUTPUT_TOKENS = 12288;
+// REST generateContent refuses anything above 32768 without a continuation token.
+const MAX_OUTPUT_TOKENS_RETRY = 32768;
+
+/** Text the model meant as its answer: every non-thought text part, in order. */
+export function answerText(parts) {
+  if (!Array.isArray(parts)) return "";
+  return parts.filter((p) => p && !p.thought && typeof p.text === "string").map((p) => p.text).join("");
+}
+
+/** ```json … ``` → …; tolerates a language tag, missing closing fence, and surrounding whitespace. */
+export function stripFences(text) {
+  let s = String(text ?? "").trim();
+  const open = /^```[A-Za-z0-9_-]*[ \t]*\r?\n?/.exec(s);
+  if (open) s = s.slice(open[0].length);
+  s = s.replace(/\r?\n?```\s*$/, "");
+  return s.trim();
+}
+
+/**
+ * First complete JSON object in `text` (brace-balanced, string-aware), parsed.
+ * Returns { value } or { error: "no_json" | "truncated_json" | "invalid_json" }.
+ */
+export function firstJsonObject(text) {
+  const s = String(text ?? "");
+  const start = s.indexOf("{");
+  if (start < 0) return { error: "no_json" };
+  let depth = 0, inStr = false, esc = false;
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') inStr = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        try { return { value: JSON.parse(s.slice(start, i + 1)) }; } catch { return { error: "invalid_json" }; }
+      }
+    }
+  }
+  return { error: "truncated_json" };
+}
+
+function partKinds(parts) {
+  if (!Array.isArray(parts)) return [];
+  return parts.map((p) => {
+    if (!p || typeof p !== "object") return "other";
+    if (p.thought) return "thought";
+    if (typeof p.text === "string") return p.text ? "text" : "empty";
+    const keys = Object.keys(p).filter((k) => k !== "thoughtSignature");
+    return keys[0] || "signature";
+  });
+}
+
+/**
+ * Turn a generateContent body into { ok, result } or { ok, reason, ... }.
+ * `reason` is one of blocked | max_tokens | empty_text | no_json | truncated_json
+ * | invalid_json | schema_mismatch. Never includes image data or the raw text.
+ */
+export function extractModelResult(body) {
+  const cand = body?.candidates?.[0];
+  const blockReason = body?.promptFeedback?.blockReason;
+  const finishReason = cand?.finishReason || (blockReason ? `PROMPT_${blockReason}` : "NONE");
+  const parts = cand?.content?.parts;
+  const usage = body?.usageMetadata || {};
+  const meta = {
+    finishReason,
+    parts: partKinds(parts),
+    tokens: { prompt: usage.promptTokenCount ?? null, thoughts: usage.thoughtsTokenCount ?? null, answer: usage.candidatesTokenCount ?? null },
+  };
+  const text = stripFences(answerText(parts));
+  meta.textLength = text.length;
+  if (!text) {
+    if (blockReason || BLOCKED_REASONS.has(finishReason)) return { ok: false, reason: "blocked", ...meta };
+    if (finishReason === "MAX_TOKENS") return { ok: false, reason: "max_tokens", ...meta };
+    return { ok: false, reason: "empty_text", ...meta };
+  }
+  const parsed = firstJsonObject(text);
+  if (!parsed.value) {
+    const reason = parsed.error === "truncated_json" && finishReason === "MAX_TOKENS" ? "max_tokens" : parsed.error;
+    return { ok: false, reason, ...meta };
+  }
+  const result = parsed.value;
+  if (!result || typeof result !== "object" || !result.identify || !result.condition) return { ok: false, reason: "schema_mismatch", ...meta };
+  return { ok: true, result, ...meta };
+}
+
+const FAILURE_HINT = {
+  blocked: "The model declined to read this photo. Try a clearer shot of just the card.",
+  max_tokens: "The model ran out of room before answering. Try again.",
+  empty_text: "The model answered without any text. Try again.",
+  no_json: "The model answered in prose instead of JSON. Try again.",
+  truncated_json: "The model's answer was cut off. Try again.",
+  invalid_json: "The model's answer was not valid JSON. Try again.",
+  schema_mismatch: "The model's answer was missing the card read. Try again.",
+};
+
 async function readImages(req) {
   const ct = req.headers.get("Content-Type") || "";
   if (ct.includes("multipart/form-data")) {
@@ -138,39 +248,73 @@ export default {
     if (size > MAX_IMAGE_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
 
     // Daily cap (UTC day). KV is eventually consistent; good enough as a spend guard.
+    // The slot is reserved before the call and handed back on any failure, so
+    // only answers that reach the phone count against the day.
     const day = new Date().toISOString().slice(0, 10);
     const key = `count:${day}`;
     const cap = parseInt(env.DAILY_CAP || "60", 10);
     const used = parseInt((await env.VISION_CAP.get(key)) || "0", 10);
     if (used >= cap) return json({ error: "daily_cap_reached", cap, used }, 429, cors);
     await env.VISION_CAP.put(key, String(used + 1), { expirationTtl: 60 * 60 * 48 });
+    const fail = async (body, status) => {
+      await refundCap(env, key);
+      return json(body, status, cors);
+    };
 
     const parts = [{ text: PROMPT }, { inline_data: { mime_type: imgs.front.mime, data: imgs.front.data } }];
     if (imgs.back) parts.push({ inline_data: { mime_type: imgs.back.mime, data: imgs.back.data } });
-    let r;
-    try {
-      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
+    const modelFetch = deps.modelFetch || fetch;
+    const log = deps.log || ((line) => console.log(JSON.stringify(line)));
+    const callModel = async (maxOutputTokens) => {
+      const r = await modelFetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
         body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: {
-          responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.1,
+          responseMimeType: "application/json", responseSchema: SCHEMA, temperature: 0.1, maxOutputTokens,
           thinkingConfig: { thinkingLevel: "low" } } }),
       });
-    } catch (e) {
-      return json({ error: "model_error", status: 0, detail: String(e && e.message ? e.message : e).slice(0, 300) }, 502, cors);
+      return r;
+    };
+
+    let extracted = null, status = 0;
+    for (const [attempt, budget] of [[1, MAX_OUTPUT_TOKENS], [2, MAX_OUTPUT_TOKENS_RETRY]]) {
+      let r;
+      try { r = await callModel(budget); } catch (e) {
+        log({ evt: "check_model_error", attempt, status: 0 });
+        return fail({ error: "model_error", status: 0, detail: String(e && e.message ? e.message : e).slice(0, 300) }, 502);
+      }
+      status = r.status;
+      if (!r.ok) {
+        let detail = "";
+        try { detail = (await r.text()).slice(0, 300); } catch { detail = "unreadable_model_response"; }
+        log({ evt: "check_model_error", attempt, status: r.status });
+        return fail({ error: "model_error", status: r.status, detail }, 502);
+      }
+      let out;
+      try { out = await r.json(); } catch {
+        log({ evt: "check_model_error", attempt, status: r.status, reason: "unreadable_body" });
+        return fail({ error: "model_error", status: r.status, detail: "unreadable_model_response" }, 502);
+      }
+      extracted = extractModelResult(out);
+      // No secrets, no image bytes, no model text: just the shape of what came back.
+      log({ evt: "check_model_output", attempt, ok: extracted.ok, reason: extracted.reason, finishReason: extracted.finishReason, parts: extracted.parts, tokens: extracted.tokens, textLength: extracted.textLength, maxOutputTokens: budget });
+      if (extracted.ok || extracted.reason !== "max_tokens") break;
     }
-    if (!r.ok) {
-      let detail = "";
-      try { detail = (await r.text()).slice(0, 300); } catch { detail = "unreadable_model_response"; }
-      return json({ error: "model_error", status: r.status, detail }, 502, cors);
+    if (!extracted.ok) {
+      return fail({ error: "unparseable_model_output", status, reason: extracted.reason, finishReason: extracted.finishReason, detail: FAILURE_HINT[extracted.reason] || FAILURE_HINT.invalid_json }, 502);
     }
-    let out;
-    try { out = await r.json(); } catch { return json({ error: "model_error", status: r.status, detail: "unreadable_model_response" }, 502, cors); }
-    const text = out?.candidates?.[0]?.content?.parts?.map(p => p.text || "").join("") || "";
-    let result; try { result = JSON.parse(text); } catch { return json({ error: "unparseable_model_output", status: r.status }, 502, cors); }
+    const result = extracted.result;
     if (result?.identify?.set_code && !/^[A-Z]{2,3}\d{2}-\d{3}$/.test(result.identify.set_code.trim().toUpperCase())) result.identify.set_code = null;
     else if (result?.identify?.set_code) result.identify.set_code = result.identify.set_code.trim().toUpperCase();
     if (result?.identify) result.identify.language = normLang(result.identify.language);
     return json({ ...result, ai_guess: true, model: env.GEMINI_MODEL, usage: { today: used + 1, cap }, disclaimer: "AI guess. Photos can rule out a PSA 10 but never confirm one." }, 200, cors);
   },
 };
+
+/** Hand a reserved daily-cap slot back. Best effort: a refund must never turn a 502 into a 500. */
+async function refundCap(env, key) {
+  try {
+    const cur = parseInt((await env.VISION_CAP.get(key)) || "0", 10);
+    await env.VISION_CAP.put(key, String(Math.max(0, cur - 1)), { expirationTtl: 60 * 60 * 48 });
+  } catch { /* the cap is a spend guard, not a ledger */ }
+}
