@@ -25,6 +25,8 @@ import { hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide } from
 import { loadPhotoFile } from '../lib/photoPixels'
 import { buildScores } from '../lib/gradeScore'
 import { CenteringCanvas, GradeScores } from '../components/GradeScores'
+import { PhotoGuide, PhotoTipLinks, usePhotoGuide } from '../components/PhotoGuide'
+import { flagsOf, tipsForOutcome } from '../lib/photoGuide'
 import {
   centeringLine,
   photoCentering,
@@ -76,6 +78,12 @@ export function PregradeScreen() {
         : null,
     [centering, check, photoError, backFile],
   )
+  const guide = usePhotoGuide()
+  // Tips appear once a check has come back (or failed), never while the photos are only being measured.
+  const resultTips = useMemo(
+    () => (centering && (check || photoError) ? tipsForOutcome({ front: centering.front, back: centering.back, flags: flagsOf(check?.coverage === 'full' ? check.condition : null) }) : []),
+    [centering, check, photoError],
+  )
 
   const pickSide = async (file: File | null, side: PhotoSide) => {
     const set = side === 'front' ? setFrontMeasure : setBackMeasure
@@ -111,6 +119,7 @@ export function PregradeScreen() {
     setPhotoError(null)
     setCheck(null)
     setHeldPhotos(null)
+    guide.markUsed()
     // Measured once, here, from the full-size file. The same result travels to the worksheet,
     // which never re-measures the shrunken copy it receives.
     const fm = frontMeasure ?? (await measureSide(frontFile, 'front'))
@@ -201,6 +210,7 @@ export function PregradeScreen() {
           Front is required. Back helps. The photo is shrunk on this phone before it leaves. Confirm a
           card — nothing is picked for you.
         </p>
+        <PhotoGuide used={guide.used} open={guide.open} onToggle={guide.setOpen} />
         <div className="mt-4 grid gap-4 tablet:grid-cols-2">
           <PhotoPick label="Front" file={frontFile} measure={frontMeasure} side="front" onFile={(f) => void pickSide(f, 'front')} />
           <PhotoPick label="Back (optional)" file={backFile} measure={backMeasure} side="back" onFile={(f) => void pickSide(f, 'back')} />
@@ -209,6 +219,7 @@ export function PregradeScreen() {
           {busy ? 'Checking…' : measuring ? 'Measuring…' : 'Check photos'}
         </PrimaryButton>
         {centering && <CenteringBlock summary={centering} />}
+        <PhotoTipLinks tips={resultTips} onOpen={guide.openTip} />
         {scores && (
           <div className="mt-4">
             <GradeScores scores={scores} />
