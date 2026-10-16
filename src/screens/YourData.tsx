@@ -186,7 +186,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="text-muted">{label}</dt>
+      <dt className="shrink-0 text-muted">{label}</dt>
       <dd className="min-w-0 break-words text-right">{value}</dd>
     </div>
   )
