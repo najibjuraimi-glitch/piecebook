@@ -9,10 +9,11 @@ Piecebook is now private, synced to the cloud, and can read a card from a photo.
 What comes next, in order:
 
 1. **One street price for everything (Phase 14).** Both agents asked for the same thing in two different shapes: "what is this card worth today". One endpoint answers both, in US dollars and Singapore dollars, with the source link and the date. The first version uses TCGplayer market prices (the same daily feed the app already trusts). PriceCharting graded prices and eBay sold comps plug into the same endpoint once you decide to pay for a key. Street price goes first because the max-bid calculator, the hunting list and the ledger all need it.
-2. **Cheaper photo reads for the desks (still Phase 14).** A one-photo "what card is this" call that does not spend a full pre-grade, with its own daily cap. Plus a fix for a real bug Cards found: a 448 pixel photo was read as the wrong card and the app still suggested matches.
-3. **Buying math and a ledger (Phase 15).** A max-bid calculator that both desks and the phone share, a PSA cert lookup, and one purchase ledger that goes from "won" to "sold" with paid, GST, forwarding, all-in, shipping status and tracking. This replaces the spreadsheet.
-4. **Better photo reads (Phase 16).** A confidence level in the API answer, glare handling, and reading an eBay listing URL directly. Centering ratios already show on every pre-grade result and in the `/check` answer since the quick fix in PR #42.
-5. **Later.** A pre-order link on product pages needs your call first, because Piecebook never sells.
+2. **Scores on the pre-grade page (still Phase 14).** A TAG-style score per card: centering from the measured ratios with the borders drawn on the photo, corners, edges and surface out of 10, and an overall range like 8 to 9.5 with a confidence level on each. Always labelled an AI estimate, never a grade, and a 10 is never confirmed.
+3. **Cheaper photo reads for the desks (still Phase 14).** A one-photo "what card is this" call that does not spend a full pre-grade, with its own daily cap. Plus a fix for a real bug Cards found: a 448 pixel photo was read as the wrong card and the app still suggested matches.
+4. **Buying math and a ledger (Phase 15).** A max-bid calculator that both desks and the phone share, a PSA cert lookup, and one purchase ledger that goes from "won" to "sold" with paid, GST, forwarding, all-in, shipping status and tracking. This replaces the spreadsheet.
+5. **Better photo reads (Phase 16).** A confidence level in the API answer, glare handling, and reading an eBay listing URL directly. Centering ratios already show on every pre-grade result and in the `/check` answer since the quick fix in PR #42.
+6. **Later.** A pre-order link on product pages needs your call first, because Piecebook never sells.
 
 The guardrails do not move:
 
@@ -27,9 +28,10 @@ Sizes: **S** is under a day of Code's time, **M** is one to three days, **L** is
 | Asked by | Request | Lands as |
 | --- | --- | --- |
 | Auction 1, Cards 1 | Street price API, two different shapes | 14.1, one endpoint that accepts both shapes |
-| Cards 2 | Cheap one-photo identify with its own cap | 14.2 |
-| Found by Cards | EB02-010 read as EB02-001 on a 448 px photo, matches still suggested | 14.3 |
-| Cards 3 | Watchlist as the hunting list, write back a seen listing | 14.4 |
+| Jib | TAG-style scores on /pregrade: centering, corners, edges, surface, overall range, confidence | 14.2 |
+| Cards 2 | Cheap one-photo identify with its own cap | 14.3 |
+| Found by Cards | EB02-010 read as EB02-001 on a 448 px photo, matches still suggested | 14.4 |
+| Cards 3 | Watchlist as the hunting list, write back a seen listing | 14.5 |
 | Auction 2 | Max-bid calculator, one shared formula | 15.1 |
 | Auction 3 | PSA cert lookup, cached | 15.2 |
 | Auction 4, Cards 4 | Won-item tracker, portfolio parity with the sheet, validation | 15.3 and 15.4, one ledger |
@@ -54,19 +56,26 @@ Goal: the agents stop guessing what a card is worth and stop spending a full pre
 - **Size:** M. **Depends on:** Access and the service token (done), the card to TCGplayer product map the refresh already keeps. **Benefits:** Auction, Cards, Jib.
 - **Guardrail:** the answer is a reference price with a source and a date. It is never an offer.
 
-### 14.2 Cheap identify: one photo, three labels
+### 14.2 Scores on /pregrade, TAG style: centering, corners, edges, surface, and a range
+
+- **User value:** Jib and both desks get a score per card the way TAG and Digital Grading show one: a centering subscore from the measured ratios with the detected borders drawn on the photo, corners, edges and surface out of 10 from the model's severity per part, and an overall range such as 8 to 9.5 instead of one number. Every score carries a confidence level.
+- **Change:** the model returns a strict severity enum (none, light, moderate, heavy, unclear) and a confidence enum per part; the Worker maps them and the centering block to subscores in a shared module the app also uses, and returns a `scores` block in `/check`. Centering maps the measured ratios to PSA's published centering standards (source cited in code; the house 55/45 front rule stays the limit for a 10). Confidence is marked low when a photo is under 800px, angled, or the model flags glare.
+- **Size:** M. **Depends on:** PR #42's centering block, Phase 11.2. **Benefits:** Jib, Auction, Cards.
+- **Guardrail:** everything is labelled an AI estimate, never a grade. A 10 is still said to be ruled out when it is; a 10 is never confirmed, so the top of a range reads "10 not ruled out". The daily cap and refund stay as they are.
+
+### 14.3 Cheap identify: one photo, three labels
 
 - **User value:** Cards can ask "what card is this" from a listing photo for a fraction of a pre-grade.
 - **Shape:** `POST /api/identify` with one photo. Returns card number, language and variant cue only, with confidence. Uses the minimal prompt that already exists for the recitation fallback, so no new prompt work. Own daily cap (`IDENTIFY_DAILY_CAP`, separate KV counter) so it never eats the 60 pre-grade checks.
 - **Size:** S. **Depends on:** nothing new. **Benefits:** Cards, Auction.
 
-### 14.3 Low-resolution guard: do not suggest matches from a photo that cannot be read
+### 14.4 Low-resolution guard: do not suggest matches from a photo that cannot be read
 
 - **User value:** no more EB02-001 when the card is EB02-010. The bug Cards found: a 448 px photo got a warning but still produced candidate matches.
 - **Change:** below the short-side threshold the app does not call the model at all and asks for a sharper photo. Between the threshold and comfortable resolution, any read card number is shown as "unsure, please confirm" and candidates are not auto-ranked by it. The Worker also returns the pixel size it saw so the agents can enforce the same rule.
 - **Size:** S. **Depends on:** nothing. **Benefits:** all.
 
-### 14.4 Hunting list: the watchlist for agents, plus a write-back for seen listings
+### 14.5 Hunting list: the watchlist for agents, plus a write-back for seen listings
 
 - **User value:** Cards hunts from the same watchlist Jib stars on the phone, and leaves a trail of what it saw and at what ask.
 - **Change:** document `/api/sync` keys for the watchlist (read, already works). Add one new key, `piecebook.sightings.v1`, that a read-only service token may write to and nothing else: `{ cardNumber, url, askUsd or askSgd, seenAt, source }`. The phone shows the last sighting under a watched card. The service token stays read-only for every other key.
@@ -92,8 +101,8 @@ Goal: one formula and one book, shared by the phone and both desks, so the sprea
 ### 15.3 Purchase ledger: won to sold, one book for all three
 
 - **User value:** Auction logs a win, Cards sees it land, Jib sees it on the phone, and nobody retypes it. This is the won-item tracker and the sheet in one.
-- **Fields:** card, variant, cert when graded, venue, hammer, premium, paid, forwarding, GST, all-in (computed, never typed), status (won, paid, forwarding, landed, graded, listed, sold), tracking number and carrier, dates, sold price and fees, realised P/L. Stored as `piecebook.ledger.v1` in cloud sync so it syncs like everything else. Agents read it over `/api/sync`; writes by agents go through a scoped write (same mechanism as 14.4) so the service token can append a row without touching the collection.
-- **Size:** L. **Depends on:** 14.4's scoped write, 15.1 for the all-in formula. **Benefits:** all.
+- **Fields:** card, variant, cert when graded, venue, hammer, premium, paid, forwarding, GST, all-in (computed, never typed), status (won, paid, forwarding, landed, graded, listed, sold), tracking number and carrier, dates, sold price and fees, realised P/L. Stored as `piecebook.ledger.v1` in cloud sync so it syncs like everything else. Agents read it over `/api/sync`; writes by agents go through a scoped write (same mechanism as 14.5) so the service token can append a row without touching the collection.
+- **Size:** L. **Depends on:** 14.5's scoped write, 15.1 for the all-in formula. **Benefits:** all.
 
 ### 15.4 Ledger validation that catches bad cells
 
@@ -117,13 +126,13 @@ Goal: the desks get more out of each photo without any promise about grades.
 
 - **User value:** a foil photo with a white glare patch asks for a second shot at an angle instead of returning "unclear".
 - **Change:** when the model flags `glare` or the browser finds a blown-out region over the card, the app and the API both say so and accept a second front photo taken at an angle. The two reads are merged: identity from the clearer shot, surface flags from the union.
-- **Size:** M. **Depends on:** 14.3's resolution signal. **Benefits:** Cards, Jib.
+- **Size:** M. **Depends on:** 14.4's resolution signal. **Benefits:** Cards, Jib.
 
 ### 16.3 eBay item URL in, photos out
 
 - **User value:** Auction pastes a listing URL and gets a check without downloading photos by hand.
 - **Change:** `/api/check` accepts `{ url }` for an eBay item page, fetches the listing's gallery images from eBay's image host, picks the front and back, and runs the normal check. Caches by image hash. This is the "later on this row" of 11.1 and the first step of Phase 12's batch sweep.
-- **Size:** M. **Depends on:** 14.3, 16.1 for the richer answer. **Benefits:** Auction.
+- **Size:** M. **Depends on:** 14.4, 16.1 for the richer answer. **Benefits:** Auction.
 - **Guardrail:** reads a listing. Never bids on it.
 
 ## Later
@@ -142,10 +151,11 @@ Phase 12 (Goldin ingest and batch sweep) stays "map only, do not build". 16.3 an
 
 ```
 14.1 street price  ──►  15.1 max bid  ──►  15.3 ledger  ──►  15.4 validation
-14.2 identify
-14.3 low-res guard ──►  16.2 glare
+14.2 scores (after PR #42)  ──►  16.1 confidence in the API
+14.3 identify
+14.4 low-res guard ──►  16.2 glare
                    ──►  16.3 eBay URL in
-14.4 hunting list  ──►  15.3 ledger (scoped write)
+14.5 hunting list  ──►  15.3 ledger (scoped write)
 15.2 cert lookup   (independent, needs a PSA token)
 16.1 confidence (S), then server-side centering (L); the centering echo is shipped (PR #42)
 ```
