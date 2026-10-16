@@ -424,7 +424,8 @@ export default {
     }
     const result = normaliseResult(extracted.result, prompt);
     // Scores: an AI estimate, never a grade. Same function as the app (src/lib/gradeScore.ts).
-    const scores = buildScores({ front: centering.front, back: centering.back, condition: result.coverage === "full" ? result.condition : null });
+    // backSent is about the photo the model saw, not whether the back's centering was measured.
+    const scores = buildScores({ front: centering.front, back: centering.back, backSent: Boolean(imgs.back), condition: result.coverage === "full" ? result.condition : null });
     return json({ ...result, centering, scores, ai_guess: true, model: env.GEMINI_MODEL, usage: { today: used + 1, cap }, disclaimer: "AI guess. Photos can rule out a PSA 10 but never confirm one." }, 200, cors);
   },
 };
