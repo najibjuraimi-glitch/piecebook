@@ -8,6 +8,7 @@ import { handleSync } from "./sync.js";
 import { handlePrice } from "./price.js";
 // Same words and limits as the app. wrangler bundles the TypeScript; no pixels are read here.
 import { parsePhotoCentering, summariseCentering } from "../../src/lib/centeringSummary.ts";
+import { CONFIDENCES, SEVERITIES, buildScores } from "../../src/lib/gradeScore.ts";
 
 // The prompts ask for labels, never for printed text. Transcribing a card's
 // effect text reproduces copyrighted wording that is indexed all over the web,
@@ -30,7 +31,10 @@ parallel_guess — pick one:
 - "base" only for the standard set print with no parallel treatment.
 - null if you cannot tell.
 The attack attribute "Special" (Strike / Slash / Special next to power) is not enough by itself. Foil plus SPECIAL / SP as a rarity mark is. Do not default to "base" when the foil or stamp says SP, SPECIAL, Alternate, or Manga.
-2. CONDITION: inspect corners, edges and surface. For each, list the defect flags you can actually see from the allowed list and add at most twelve words of your own describing where and how bad. Describe the card's physical state only; never mention what is written on it.
+2. CONDITION: inspect corners, edges and surface. For each, list the defect flags you can actually see from the allowed list, add at most twelve words of your own describing where and how bad, and give:
+- severity, one of "none" (no defect visible), "light" (visible only up close), "moderate" (plain at arm's length), "heavy" (damage), "unclear" (the photo does not let you judge this part). Be strict: a defect you can see is at least "light".
+- confidence, one of "high", "medium", "low", for how well these photos show that part.
+Describe the card's physical state only; never mention what is written on it.
 Photos can rule out a PSA 10 but never confirm one. Set psa10_ruled_out true only if you see a clear defect; otherwise false (which means "not ruled out", never "is a 10"). reasons: up to three short phrases of your own (max eight words each) naming the defects that drove psa10_ruled_out. Be conservative and flag "unclear_photo" when photo quality limits what you can see.
 Return ONLY JSON matching the schema.`;
 
@@ -43,11 +47,17 @@ export const LANGUAGES = ["EN", "JP", "CN", "KR", "FR"];
 export const RARITIES = ["L", "SEC", "SR", "R", "UC", "C", "SP", "P"];
 export const PARALLELS = ["base", "parallel/alt art", "manga", "SP"];
 export const DEFECT_FLAGS = ["whitening", "ding", "chip", "crease", "scratch", "print_line", "dent", "stain", "bend", "peel", "dirt", "glare", "blur", "unclear_photo"];
+export { SEVERITIES, CONFIDENCES };
 
 const SECTION = {
   type: "OBJECT",
-  properties: { flags: { type: "ARRAY", items: { type: "STRING", enum: DEFECT_FLAGS } }, notes: { type: "STRING" } },
-  required: ["flags", "notes"],
+  properties: {
+    flags: { type: "ARRAY", items: { type: "STRING", enum: DEFECT_FLAGS } },
+    notes: { type: "STRING" },
+    severity: { type: "STRING", enum: SEVERITIES },
+    confidence: { type: "STRING", enum: CONFIDENCES },
+  },
+  required: ["flags", "notes", "severity", "confidence"],
 };
 const IDENTIFY_MINIMAL = {
   type: "OBJECT",
@@ -83,7 +93,7 @@ export const PROMPTS = {
   minimal: { name: "minimal", text: MINIMAL_PROMPT, schema: MINIMAL_SCHEMA, requireCondition: false },
 };
 
-const EMPTY_SECTION = () => ({ flags: [], notes: "" });
+const EMPTY_SECTION = () => ({ flags: [], notes: "", severity: null, confidence: null });
 /** Condition block for an identify-only answer: nothing seen, nothing ruled out. */
 export const emptyCondition = () => ({ corners: EMPTY_SECTION(), edges: EMPTY_SECTION(), surface: EMPTY_SECTION(), psa10_ruled_out: false, reasons: [] });
 
@@ -413,7 +423,9 @@ export default {
       return fail({ error: "unparseable_model_output", status, reason: extracted.reason, finishReason: extracted.finishReason, prompt: prompt.name, detail: FAILURE_HINT[extracted.reason] || FAILURE_HINT.invalid_json }, 502);
     }
     const result = normaliseResult(extracted.result, prompt);
-    return json({ ...result, centering, ai_guess: true, model: env.GEMINI_MODEL, usage: { today: used + 1, cap }, disclaimer: "AI guess. Photos can rule out a PSA 10 but never confirm one." }, 200, cors);
+    // Scores: an AI estimate, never a grade. Same function as the app (src/lib/gradeScore.ts).
+    const scores = buildScores({ front: centering.front, back: centering.back, condition: result.coverage === "full" ? result.condition : null });
+    return json({ ...result, centering, scores, ai_guess: true, model: env.GEMINI_MODEL, usage: { today: used + 1, cap }, disclaimer: "AI guess. Photos can rule out a PSA 10 but never confirm one." }, 200, cors);
   },
 };
 
@@ -433,6 +445,8 @@ export function normaliseResult(raw, prompt) {
   const section = (s) => ({
     flags: Array.isArray(s?.flags) ? s.flags.filter((f) => DEFECT_FLAGS.includes(f)) : [],
     notes: typeof s?.notes === "string" ? s.notes.trim().slice(0, 160) : "",
+    severity: SEVERITIES.includes(s?.severity) ? s.severity : null,
+    confidence: CONFIDENCES.includes(s?.confidence) ? s.confidence : null,
   });
   const condition = full
     ? {

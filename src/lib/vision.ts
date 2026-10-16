@@ -1,5 +1,6 @@
 import { VISION_URL } from '../config/vision'
 import { parseCenteringSummary, type CenteringSummary, type PhotoCentering } from './centeringSummary'
+import { isConfidence, isSeverity, type Confidence, type Severity } from './gradeScore'
 
 export const CARD_LANGUAGES = ['EN', 'JP', 'CN', 'KR', 'FR'] as const
 export type CardLanguageCode = (typeof CARD_LANGUAGES)[number]
@@ -7,6 +8,10 @@ export type CardLanguageCode = (typeof CARD_LANGUAGES)[number]
 export interface VisionSection {
   flags: string[]
   notes: string
+  /** How bad the worst defect in this part is, from the model's strict enum. Null on older answers. */
+  severity: Severity | null
+  /** How well the photos show this part, from the model. Null on older answers. */
+  confidence: Confidence | null
 }
 
 export interface VisionIdentify {
@@ -309,7 +314,9 @@ function asSection(raw: unknown): VisionSection | null {
   if (!raw || typeof raw !== 'object') return null
   const s = raw as { flags?: unknown; notes?: unknown }
   const flags = Array.isArray(s.flags) ? s.flags.filter((f): f is string => typeof f === 'string') : []
-  return { flags, notes: typeof s.notes === 'string' ? s.notes : '' }
+  const sv = (s as { severity?: unknown }).severity
+  const cf = (s as { confidence?: unknown }).confidence
+  return { flags, notes: typeof s.notes === 'string' ? s.notes : '', severity: isSeverity(sv) ? sv : null, confidence: isConfidence(cf) ? cf : null }
 }
 
 export function asVisionCheck(raw: unknown): VisionCheck | null {

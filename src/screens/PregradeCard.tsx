@@ -29,6 +29,8 @@ import {
 } from '../lib/gradeWorth'
 import { loadPhotoFile } from '../lib/photoPixels'
 import { centeringLine, photoCentering, summariseCentering } from '../lib/centeringSummary'
+import { buildScores } from '../lib/gradeScore'
+import { GradeScores } from '../components/GradeScores'
 import { dataUrlToFile, isNonEnglishCardLanguage, type VisionCheck } from '../lib/vision'
 import { peekVisionSession } from '../store/visionSession'
 import { formatDate, formatUsMarketUsd, todayIso } from '../lib/format'
@@ -106,6 +108,10 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
 
   const centeringCannotBeTen = Boolean((front?.ok && front.measure.cannotBeTen) || (back?.ok && back.measure.cannotBeTen))
   const centeringSummary = summariseCentering(photoCentering(front, 'front'), photoCentering(back, 'back'))
+  const scores = useMemo(
+    () => (front || back || vision ? buildScores({ front: photoCentering(front, 'front'), back: photoCentering(back, 'back'), condition: vision && vision.coverage === 'full' ? vision.condition : null }) : null),
+    [front, back, vision],
+  )
   const visionRuledOut = Boolean(vision?.condition.psa10_ruled_out)
   const cannotBeTen = Boolean(centeringCannotBeTen || visionRuledOut)
   const photoNote = photoWouldChangeTheCall({
@@ -313,6 +319,11 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
         {vision && (
           <div className="mt-4">
             <VisionGuess check={vision} />
+          </div>
+        )}
+        {scores && (
+          <div className="mt-4">
+            <GradeScores scores={scores} />
           </div>
         )}
         {(front || back) && (
