@@ -4,7 +4,8 @@ import { asVisionCheck } from '../lib/vision'
 const KEY = 'piecebook.vision.session.v1'
 
 export interface VisionSession {
-  check: VisionCheck
+  /** Null when the model refused the card and the user typed the number: photos still go to the worksheet. */
+  check: VisionCheck | null
   frontDataUrl: string
   backDataUrl?: string
   confirmedCardNumber?: string
@@ -14,8 +15,9 @@ export interface VisionSession {
 let memory: VisionSession | null = null
 
 function fromParsed(parsed: Partial<VisionSession>): VisionSession | null {
-  const check = asVisionCheck(parsed.check)
-  if (!check || typeof parsed.frontDataUrl !== 'string') return null
+  if (typeof parsed.frontDataUrl !== 'string') return null
+  const check = parsed.check == null ? null : asVisionCheck(parsed.check)
+  if (parsed.check != null && !check) return null
   return {
     check,
     frontDataUrl: parsed.frontDataUrl,

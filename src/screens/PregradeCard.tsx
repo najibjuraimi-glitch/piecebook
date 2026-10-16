@@ -113,7 +113,7 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
     backCannotBeTen: Boolean(back?.ok && back.measure.cannotBeTen),
     hasFront: Boolean(front),
     hasBack: Boolean(back),
-    visionRead: Boolean(vision),
+    visionRead: vision?.coverage === 'full',
     visionRuledOut,
   })
 

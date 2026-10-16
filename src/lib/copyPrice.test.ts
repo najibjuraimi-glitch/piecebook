@@ -24,6 +24,7 @@ function identify(partial: Partial<VisionIdentify>): VisionIdentify {
   return {
     set_code: 'OP09-070',
     name: 'Nami',
+    rarity: null,
     parallel_guess: 'base',
     language: 'EN',
     confidence: 1,
