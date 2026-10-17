@@ -276,6 +276,10 @@ export function measurePhoto(image: PixelImage, side: PhotoSide, opts: MeasureOp
   const pad = Math.max(8, Math.round(Math.min(quadWidth(rect), quadHeight(rect)) * FRAME_PAD_FRAC))
   let frame: PixelImage
   let toImage: (p: Point) => Point
+  // A flattened shot already names the card edge. The print search refines it
+  // by a few pixels instead of hunting a new edge, which on a foil front locks
+  // onto a line inside the art.
+  let anchor: { left: number; right: number; top: number; bottom: number } | undefined
   if (aligned) {
     const x0 = Math.max(0, box.minX - pad)
     const y0 = Math.max(0, box.minY - pad)
@@ -283,6 +287,9 @@ export function measurePhoto(image: PixelImage, side: PhotoSide, opts: MeasureOp
     const y1 = Math.min(image.height - 1, box.maxY + pad)
     frame = cropRect(image, x0, y0, x1, y1)
     toImage = (p) => ({ x: x0 + p.x, y: y0 + p.y })
+    if (opts.outline) {
+      anchor = { left: box.minX - x0, right: x1 - box.maxX, top: box.minY - y0, bottom: y1 - box.maxY }
+    }
   } else {
     const quad = insetQuad(rect, -pad)
     frame = warpToRect(image, quad, destW + 2 * pad, destH + 2 * pad)
@@ -292,9 +299,10 @@ export function measurePhoto(image: PixelImage, side: PhotoSide, opts: MeasureOp
       const v = p.y / Math.max(1, frame.height - 1)
       return lerpPt(lerpPt(tl, tr, u), lerpPt(bl, br, u), v)
     }
+    if (opts.outline) anchor = { left: pad, right: pad, top: pad, bottom: pad }
   }
 
-  const edges = scanCardEdges(frame, pad)
+  const edges = scanCardEdges(frame, pad, anchor)
   // Outline as found in the frame (refined past the blob where the physical edge was seen).
   const outer: [Point, Point, Point, Point] = [
     toImage({ x: edges.left.edge, y: edges.top.edge }),
@@ -1034,9 +1042,11 @@ const CARD_EDGE_DEPTH_FRAC = 0.2
 const MAX_BORDER_FRAC = 0.22
 /**
  * A print edge closer to the card edge than this is the card edge's own
- * anti-aliasing seen twice, not a border. Also the thinnest border we read.
+ * anti-aliasing seen twice, not a border. Thin foil frames and a back whose
+ * print sits close to the edge are only a few pixels in, so this stays just
+ * above that anti-alias and above MIN_PRINT_BORDER_PX.
  */
-const MIN_BORDER_GAP = 10
+const MIN_BORDER_GAP = 5
 /** Mean colour distance from the band's average above which the band is art or text, not a border. */
 const MAX_BAND_SPREAD = 16
 /**
@@ -1147,13 +1157,16 @@ interface EdgeLine {
  * that. The print edge does, but it is never the outermost such line, so among
  * lines with near-maximal support the outermost wins. Null when nothing lines up.
  */
-function cardEdgeLine(steps: number[][], ts: number[], pad: number, dim: number): EdgeLine | null {
-  const limit = pad + dim * CARD_EDGE_DEPTH_FRAC
+function cardEdgeLine(steps: number[][], ts: number[], pad: number, dim: number, anchor?: number): EdgeLine | null {
+  // A known outline only needs a few pixels of slack: warp rounding, not a new search.
+  const slack = anchor == null ? null : Math.max(6, Math.round(dim * 0.005))
+  const limit = anchor == null || slack == null ? pad + dim * CARD_EDGE_DEPTH_FRAC : anchor + slack
+  const floor = anchor == null || slack == null ? 0 : Math.max(0, anchor - slack)
   const tol = Math.max(3, dim * 0.004)
   const cands: { i: number; t: number; d: number; w: number }[] = []
   steps.forEach((s, i) => {
     const strong = stepPeaks(s, MIN_CARD_STEP)
-      .filter((d) => d <= limit)
+      .filter((d) => d >= floor && d <= limit)
       .sort((a, b) => s[b] - s[a])
       .slice(0, 6)
     // A station's vote is worth more the cleaner its step: ground against card is a big step,
@@ -1173,7 +1186,8 @@ function cardEdgeLine(steps: number[][], ts: number[], pad: number, dim: number)
       const B = cands[b]
       if (A.i === B.i || Math.abs(B.t - A.t) < 0.25) continue
       const slope = (B.d - A.d) / (B.t - A.t)
-      if (Math.abs(slope) > maxSlope) continue
+      // A flattened card's edge is level. A known outline does not follow a tilted inner line.
+      if (Math.abs(slope) > (anchor == null ? maxSlope : dim * 0.012)) continue
       const at = (t: number) => A.d + slope * (t - A.t)
       const hit = new Map<number, number>()
       for (const c of cands) {
@@ -1193,8 +1207,13 @@ function cardEdgeLine(steps: number[][], ts: number[], pad: number, dim: number)
   // the card edge, while a row of finger or shadow edges that happens to line up does not.
   const top = lines.reduce((a, l) => (l.support > a.support ? l : a))
   const slopeTol = (tol * 1.5) / 0.8
-  lines = lines.filter((l) => l.support >= top.support * 0.6 && Math.abs(l.slope - top.slope) <= slopeTol)
-  const best = lines.reduce((a, l) => (l.mid < a.mid ? l : a))
+  lines = lines.filter((l) => (anchor != null || l.support >= top.support * 0.6) && Math.abs(l.slope - top.slope) <= slopeTol)
+  // With a known outline the physical edge is the outermost step in the slack,
+  // even when the print edge just inside it is a stronger step.
+  const best =
+    anchor == null
+      ? lines.reduce((a, l) => (l.mid < a.mid ? l : a))
+      : lines.reduce((a, l) => (l.mid < a.mid - 1 || (Math.abs(l.mid - a.mid) <= 1 && l.support > a.support) ? l : a))
   return refineEdgeLine(steps, ts, best.at, tol, need)
 }
 
@@ -1236,32 +1255,50 @@ function refineEdgeLine(steps: number[][], ts: number[], at0: (t: number) => num
   return { at, support }
 }
 
-/** Where, on one station, a flat border band starting at `edge` ends in a clear step. */
-function printEdgeAt(profile: Rgb[], steps: number[], edge: number, dim: number): number | null {
+/**
+ * Flat border bands on one station, nearest the card edge first. A dark rim
+ * and the real print edge can both be flat; the caller keeps the one stations
+ * agree on. Stops once a long stretch is art, so a text box is not a candidate.
+ */
+function printEdgesAt(profile: Rgb[], steps: number[], edge: number, dim: number): number[] {
   const peaks = stepPeaks(steps, MIN_STEP)
   const maxPrint = edge + dim * MAX_BORDER_FRAC
+  const found: number[] = []
   for (const q of peaks) {
-    if (q < edge + MIN_BORDER_GAP) continue
+    const gap = q - edge
+    if (gap < MIN_BORDER_GAP) continue
     if (q > maxPrint) break
-    // The band between the two steps has to be flat: one colour, not art or text.
-    const bandStart = edge + STEP_REACH + 1
-    const bandEnd = q - STEP_REACH
-    if (bandEnd - bandStart < 3) continue
+    // A thin foil frame is only a few pixels. The usual 3px smoothing would
+    // swallow it, so a short gap is read one pixel at a time.
+    const reach = gap < 18 ? 1 : STEP_REACH
+    const bandStart = edge + reach + 1
+    const bandEnd = q - reach
+    if (bandEnd - bandStart < 2) continue
+    // A wide gap that is still ramping is the card edge's own shoulder, not a frame.
+    if (gap >= 18) {
+      let inner = 0
+      for (let i = bandStart; i < bandEnd; i++) if (steps[i] > inner) inner = steps[i]
+      if (inner > steps[q] * 0.5) continue
+    }
     const mean = meanRgb(profile, bandStart, bandEnd)
     let spread = 0
     for (let i = bandStart; i < bandEnd; i++) spread += colorDist(profile[i], mean)
-    spread /= bandEnd - bandStart
-    // A border is one printed colour: grain and a lighting ramp move it a few levels, art and
-    // text move it far more. The allowance is absolute, so a big step into busy art does not
-    // buy the busy band a pass.
-    if (spread > Math.min(MAX_BAND_SPREAD, Math.max(10, steps[q] * 0.4))) return null
-    return q
+    spread /= Math.max(1, bandEnd - bandStart)
+    // A thin dark or foil frame is a little grainier than a wide cream border.
+    // A long band stays strict, so art and text still fail.
+    const limit = gap < 14 ? 24 : Math.min(MAX_BAND_SPREAD, Math.max(10, steps[q] * 0.4))
+    if (spread > limit) {
+      if (gap > 18) break
+      continue
+    }
+    found.push(q)
+    if (gap > 18) break
   }
-  return null
+  return found
 }
 
 /** All stations on one side folded into one answer, or an unresolved print edge when they disagree. */
-function readSide(img: PixelImage, edge: 'left' | 'right' | 'top' | 'bottom', pad: number): SideEdges {
+function readSide(img: PixelImage, edge: 'left' | 'right' | 'top' | 'bottom', pad: number, anchor?: number): SideEdges {
   const along = edge === 'left' || edge === 'right'
   const dim = along ? img.width : img.height
   const depth = Math.min(dim - 1, Math.floor(pad + dim * (CARD_EDGE_DEPTH_FRAC + MAX_BORDER_FRAC) + STEP_REACH * 2 + 2))
@@ -1273,33 +1310,69 @@ function readSide(img: PixelImage, edge: 'left' | 'right' | 'top' | 'bottom', pa
     profiles.push(sideProfile(img, edge, t, depth))
   }
   const steps = profiles.map(stepProfile)
-  const line = cardEdgeLine(steps, ts, pad, dim)
-  const cardEdge = line ? Math.round(line.at(0.5)) : pad
+  const line = cardEdgeLine(steps, ts, pad, dim, anchor)
+  const cardEdge = line ? Math.round(line.at(0.5)) : Math.round(anchor ?? pad)
   const edgeTol = Math.max(3, Math.round(dim * 0.004))
+  const localTol = anchor == null ? edgeTol : Math.max(edgeTol, Math.max(6, Math.round(dim * 0.005)))
 
-  const widths: number[] = []
+  const perStation: number[][] = []
   profiles.forEach((profile, i) => {
     // Follow the edge as this station sees it, within the tolerance of the fitted line.
-    const expected = line ? line.at(ts[i]) : pad
-    const local = stepPeaks(steps[i], MIN_CARD_STEP).find((d) => Math.abs(d - expected) <= edgeTol) ?? Math.round(expected)
-    const print = printEdgeAt(profile, steps[i], local, dim)
-    if (print != null) widths.push(print - local)
+    const expected = line ? line.at(ts[i]) : (anchor ?? pad)
+    const local = stepPeaks(steps[i], MIN_CARD_STEP).find((d) => Math.abs(d - expected) <= localTol) ?? Math.round(expected)
+    perStation.push(printEdgesAt(profile, steps[i], local, dim).map((q) => q - local))
   })
-  const need = Math.max(5, Math.ceil(STATIONS * MIN_AGREE))
-  if (widths.length < need) return { edge: cardEdge, print: null }
-  const mid = median(widths)
-  const tol = Math.max(3, mid * 0.2)
-  const agreeing = widths.filter((w) => Math.abs(w - mid) <= tol)
-  if (agreeing.length < need) return { edge: cardEdge, print: null }
-  return { edge: cardEdge, print: cardEdge + median(agreeing) }
+  const width = agreedBorder(perStation)
+  if (width == null) return { edge: cardEdge, print: null }
+  return { edge: cardEdge, print: cardEdge + width }
 }
 
-function scanCardEdges(frame: PixelImage, pad: number): { left: SideEdges; right: SideEdges; top: SideEdges; bottom: SideEdges } {
+/**
+ * The border width stations agree on. A dark rim a few pixels in and the real
+ * print edge can both line up; a width of 10px or more wins when it agrees,
+ * and a thinner frame is used only when nothing wider does. Full art agrees
+ * on neither.
+ */
+function agreedBorder(perStation: number[][]): number | null {
+  const need = Math.max(5, Math.ceil(STATIONS * MIN_AGREE))
+  const samples: { i: number; w: number }[] = []
+  perStation.forEach((ws, i) => {
+    for (const w of ws) samples.push({ i, w })
+  })
+  let thin: number | null = null
+  let solid: number | null = null
+  for (const seed of samples) {
+    const tol = Math.max(3, seed.w * 0.2)
+    const hit = new Map<number, number>()
+    for (const s of samples) {
+      if (Math.abs(s.w - seed.w) > tol) continue
+      const prev = hit.get(s.i)
+      if (prev == null || Math.abs(s.w - seed.w) < Math.abs(prev - seed.w)) hit.set(s.i, s.w)
+    }
+    const mid = median([...hit.values()])
+    // A few pixels of anti-alias line up on part of a full-art edge. A real thin
+    // frame lines up along most of the side, so it has to convince more stations.
+    const thinNeed = Math.max(need, Math.ceil(STATIONS * 0.6))
+    if (hit.size < (mid < 10 ? thinNeed : need)) continue
+    if (mid >= 10) {
+      if (solid == null || mid < solid) solid = mid
+    } else if (thin == null || mid < thin) thin = mid
+  }
+  const chosen = solid ?? thin
+  if (chosen == null || chosen < MIN_PRINT_BORDER_PX) return null
+  return chosen
+}
+
+function scanCardEdges(
+  frame: PixelImage,
+  pad: number,
+  anchor?: { left: number; right: number; top: number; bottom: number },
+): { left: SideEdges; right: SideEdges; top: SideEdges; bottom: SideEdges } {
   return {
-    left: readSide(frame, 'left', pad),
-    right: readSide(frame, 'right', pad),
-    top: readSide(frame, 'top', pad),
-    bottom: readSide(frame, 'bottom', pad),
+    left: readSide(frame, 'left', pad, anchor?.left),
+    right: readSide(frame, 'right', pad, anchor?.right),
+    top: readSide(frame, 'top', pad, anchor?.top),
+    bottom: readSide(frame, 'bottom', pad, anchor?.bottom),
   }
 }
 

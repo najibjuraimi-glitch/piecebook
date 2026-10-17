@@ -17,6 +17,7 @@ import {
   splitFromPair,
   type PhotoResult,
   type PixelImage,
+  type Quad,
 } from './centering'
 
 function loadJpegFixture(name: string): PixelImage {
@@ -346,6 +347,113 @@ describe('photo rejects name the side', () => {
     if (result.ok) return
     expect(result.code).toBe('angled')
     expect(result.message).toMatch(/Front/)
+  })
+})
+
+/** A flattened phone shot: margin of cloth, a known card quad, a thin frame. */
+function flattenedFrame(o: {
+  borders: { left: number; right: number; top: number; bottom: number }
+  stock: [number, number, number]
+  art: (x: number, y: number) => [number, number, number]
+  /** Move the handed-over outline outward (+) or inward (−) from the true edge. */
+  outlineShift?: number
+}): { img: PixelImage; quad: Quad } {
+  const cardW = 1000
+  const cardH = 1400
+  const margin = 120
+  const width = cardW + margin * 2
+  const height = cardH + margin * 2
+  const data = new Uint8ClampedArray(width * height * 4)
+  const ground: [number, number, number] = [96, 92, 80]
+  let seed = 11
+  const jit = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+    return ((seed >>> 8) / 0x01000000 - 0.5) * 8
+  }
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4
+      const lx = x - margin
+      const ly = y - margin
+      let col: [number, number, number] = ground
+      if (lx >= 0 && ly >= 0 && lx < cardW && ly < cardH) {
+        const b = o.borders
+        const inArt = lx >= b.left && lx < cardW - b.right && ly >= b.top && ly < cardH - b.bottom
+        col = inArt ? o.art(lx, ly) : o.stock
+      }
+      data[i] = col[0] + jit()
+      data[i + 1] = col[1] + jit()
+      data[i + 2] = col[2] + jit()
+      data[i + 3] = 255
+    }
+  }
+  const s = o.outlineShift ?? 0
+  const quad: Quad = [
+    { x: margin - s, y: margin - s },
+    { x: margin + cardW - 1 + s, y: margin - s },
+    { x: margin + cardW - 1 + s, y: margin + cardH - 1 + s },
+    { x: margin - s, y: margin + cardH - 1 + s },
+  ]
+  return { img: { width, height, data }, quad }
+}
+
+const greenFoil = (x: number, y: number): [number, number, number] => {
+  const n = 16 * Math.sin(x / 3.1) * Math.cos(y / 2.6)
+  return [30 + n, 118 + n * 0.35, 46]
+}
+
+describe('thin frames on a flattened phone shot', () => {
+  it('reads a thin dark frame around green foil, and an even frame does not rule out a 10', () => {
+    const f = flattenedFrame({ borders: { left: 8, right: 8, top: 8, bottom: 8 }, stock: [18, 22, 16], art: greenFoil })
+    const result = measurePhoto(f.img, 'front', { outline: f.quad })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(true)
+    expect(result.measure.cannotBeTen).toBe(false)
+    expect(result.measure.left).toBeGreaterThanOrEqual(6)
+    expect(result.measure.left).toBeLessThanOrEqual(10)
+    expect(result.measure.lr.label).toBe('50/50')
+    expect(result.measure.tb.label).toBe('50/50')
+    expect(centeringLabel(result.measure)).not.toMatch(/not measured/)
+  })
+
+  it('reads a back whose blue print sits close to the right edge', () => {
+    const blue = (): [number, number, number] => [36, 48, 120]
+    const f = flattenedFrame({ borders: { left: 48, right: 8, top: 40, bottom: 44 }, stock: [150, 42, 48], art: blue })
+    const result = measurePhoto(f.img, 'back', { outline: f.quad })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(true)
+    expect(result.measure.right).toBeGreaterThanOrEqual(6)
+    expect(result.measure.right).toBeLessThanOrEqual(10)
+    expect(result.measure.left).toBeGreaterThan(40)
+    expect(result.measure.unresolvedSides).toEqual([])
+  })
+
+  it('still reads that right edge when the outline is a few pixels off the card', () => {
+    const blue = (): [number, number, number] => [36, 48, 120]
+    const f = flattenedFrame({
+      borders: { left: 36, right: 8, top: 32, bottom: 32 },
+      stock: [150, 42, 48],
+      art: blue,
+      outlineShift: 4,
+    })
+    const result = measurePhoto(f.img, 'back', { outline: f.quad })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(true)
+    expect(Math.abs(result.measure.right - 8)).toBeLessThanOrEqual(2)
+  })
+
+  it('a frame under the noise floor is not measured and rules nothing out', () => {
+    const f = flattenedFrame({ borders: { left: 3, right: 3, top: 3, bottom: 3 }, stock: [18, 22, 16], art: greenFoil })
+    const result = measurePhoto(f.img, 'front', { outline: f.quad })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(false)
+    expect(result.measure.cannotBeTen).toBe(false)
+    expect(centeringLabel(result.measure)).toMatch(/not measured/)
+    expect(centeringLabel(result.measure)).not.toMatch(/\d+\/\d+/)
   })
 })
 
