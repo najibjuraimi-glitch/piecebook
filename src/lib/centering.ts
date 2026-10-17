@@ -156,6 +156,157 @@ export function centeringLabel(
   return `${measure.lr.label} · ${measure.tb.label}${measure.cannotBeTen ? ' · cannot be a 10' : ''}`
 }
 
+export type Quad = [Point, Point, Point, Point]
+
+export interface CardOutline {
+  /** The four card corners in image pixels, ordered top-left, top-right, bottom-right, bottom-left. */
+  quad: Quad
+  /** Out-of-plane tilt read from the outline's trapezoid, degrees. */
+  keystoneDeg: number
+  /** In-plane rotation of the outline against the frame axes, degrees. */
+  tiltDeg: number
+  /** Share of the frame the card covers, 0–1. */
+  coverage: number
+}
+
+export type OutlineResult = { ok: true; outline: CardOutline } | { ok: false; reason: 'no-card' | 'cut-off' }
+
+/**
+ * Just the card outline, at any frame size: for the live camera view (small
+ * frames, many times a second) and for flattening an angled shot before it is
+ * measured. The hull's four diagonal extremes give a first quad, so a
+ * keystoned card comes back as the trapezoid it is, not as a fitted
+ * rectangle; each side is then refined on the real pixels (where the colour
+ * steps from ground to card at stations along it) and the corners are the
+ * intersections of those four lines, so a few stray blob pixels do not move
+ * a corner.
+ */
+export function findCardOutline(image: PixelImage): OutlineResult {
+  const found = resolveCardBlob(image)
+  if (found.reject === 'no-card') return { ok: false, reason: 'no-card' }
+  if (found.reject === 'cut-off' || !found.blob) return { ok: false, reason: 'cut-off' }
+  const blob = found.blob
+  const hull = convexHull(blob.points.length > 2400 ? thinPoints(blob.points, 2400) : blob.points)
+  if (hull.length < 4) return { ok: false, reason: 'no-card' }
+  const cx = hull.reduce((s, p) => s + p.x, 0) / hull.length
+  const cy = hull.reduce((s, p) => s + p.y, 0) / hull.length
+  const extreme = (dx: number, dy: number) => hull.reduce((a, p) => ((p.x - cx) * dx + (p.y - cy) * dy > (a.x - cx) * dx + (a.y - cy) * dy ? p : a))
+  const rough: Quad = [extreme(-1, -1), extreme(1, -1), extreme(1, 1), extreme(-1, 1)]
+  const quad = refineQuadOnPixels(image, rough)
+  return {
+    ok: true,
+    outline: {
+      quad,
+      keystoneDeg: quadKeystoneDeg(quad),
+      tiltDeg: axisTiltDeg(quad),
+      coverage: quadArea(quad) / (image.width * image.height),
+    },
+  }
+}
+
+function quadArea(q: Quad): number {
+  return (
+    Math.abs(
+      q[0].x * q[1].y - q[1].x * q[0].y + (q[1].x * q[2].y - q[2].x * q[1].y) + (q[2].x * q[3].y - q[3].x * q[2].y) + (q[3].x * q[0].y - q[0].x * q[3].y),
+    ) / 2
+  )
+}
+
+/** Same scale as `blobKeystoneDeg`: the foreshortening of the shorter opposite side read as a tilt angle. */
+function quadKeystoneDeg(q: Quad): number {
+  const [tl, tr, br, bl] = q
+  const top = Math.hypot(tr.x - tl.x, tr.y - tl.y)
+  const bottom = Math.hypot(br.x - bl.x, br.y - bl.y)
+  const left = Math.hypot(bl.x - tl.x, bl.y - tl.y)
+  const right = Math.hypot(br.x - tr.x, br.y - tr.y)
+  const ratio = Math.min(Math.min(top, bottom) / Math.max(top, bottom), Math.min(left, right) / Math.max(left, right))
+  if (!(ratio > 0) || ratio >= 1) return 0
+  return (Math.acos(Math.min(1, ratio)) * 180) / Math.PI
+}
+
+function lineIntersection(a1: Point, a2: Point, b1: Point, b2: Point): Point | null {
+  const d = (a1.x - a2.x) * (b1.y - b2.y) - (a1.y - a2.y) * (b1.x - b2.x)
+  if (Math.abs(d) < 1e-9) return null
+  const t = ((a1.x - b1.x) * (b1.y - b2.y) - (a1.y - b1.y) * (b1.x - b2.x)) / d
+  return { x: a1.x + t * (a2.x - a1.x), y: a1.y + t * (a2.y - a1.y) }
+}
+
+/**
+ * For each side of a rough quad, walk across the edge at stations along it and
+ * mark where the colour steps from what lies just outside to what lies just
+ * inside; fit a line through those marks (median slope and offset, so a hand
+ * or a shadow at a few stations is outvoted) and intersect neighbouring lines.
+ * A side with too few clean stations keeps its rough line.
+ */
+function refineQuadOnPixels(image: PixelImage, rough: Quad): Quad {
+  const stations = 15
+  const lines: [Point, Point][] = []
+  for (let s = 0; s < 4; s++) {
+    const a = rough[s]
+    const b = rough[(s + 1) % 4]
+    const len = Math.hypot(b.x - a.x, b.y - a.y)
+    if (len < 12) {
+      lines.push([a, b])
+      continue
+    }
+    const ux = (b.x - a.x) / len
+    const uy = (b.y - a.y) / len
+    // Sides run clockwise in image space, so the outward normal is to the left of travel.
+    const nx = uy
+    const ny = -ux
+    const reach = Math.max(4, Math.round(len * 0.03))
+    const marks: { t: number; d: number }[] = []
+    for (let k = 0; k < stations; k++) {
+      const t = 0.12 + (0.76 * k) / (stations - 1)
+      const px = a.x + ux * t * len
+      const py = a.y + uy * t * len
+      const at = (d: number): Rgb | null => {
+        const x = Math.round(px + nx * d)
+        const y = Math.round(py + ny * d)
+        if (x < 0 || y < 0 || x >= image.width || y >= image.height) return null
+        return pixel(image, x, y)
+      }
+      const outside = at(reach)
+      const inside = at(-reach)
+      if (!outside || !inside) continue
+      const span = colorDist(outside, inside)
+      if (span < 20) continue
+      let hit: number | null = null
+      for (let d = reach; d >= -reach; d--) {
+        const c = at(d)
+        if (!c) break
+        if (colorDist(c, outside) >= span / 2) {
+          hit = d + 0.5
+          break
+        }
+      }
+      if (hit != null) marks.push({ t, d: hit })
+    }
+    if (marks.length < 5) {
+      lines.push([a, b])
+      continue
+    }
+    const slopes: number[] = []
+    for (let i = 0; i < marks.length; i++) {
+      for (let j = i + 1; j < marks.length; j++) slopes.push((marks[j].d - marks[i].d) / (marks[j].t - marks[i].t))
+    }
+    const slope = median(slopes)
+    const offset = median(marks.map((m) => m.d - slope * m.t))
+    const shifted = (t: number): Point => {
+      const d = offset + slope * t
+      return { x: a.x + ux * t * len + nx * d, y: a.y + uy * t * len + ny * d }
+    }
+    lines.push([shifted(0), shifted(1)])
+  }
+  const out: Point[] = []
+  for (let s = 0; s < 4; s++) {
+    const prev = lines[(s + 3) % 4]
+    const cur = lines[s]
+    out.push(lineIntersection(prev[0], prev[1], cur[0], cur[1]) ?? rough[s])
+  }
+  return out as Quad
+}
+
 export function measurePhoto(image: PixelImage, side: PhotoSide): PhotoResult {
   const short = Math.min(image.width, image.height)
   if (short < MIN_SHORT_SIDE_PX) {
