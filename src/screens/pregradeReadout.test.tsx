@@ -183,4 +183,15 @@ describe('pregrade result readout', () => {
     )
     expect(document.body.textContent).not.toContain('Mark submitted')
   })
+
+  it('flags a borderless print from seed metadata and reads centering from the back', async () => {
+    await renderRoute('/pregrade/EB04-007p2')
+    const [front, back] = fileInputs()
+    await upload(front, 'front.jpg')
+    await upload(back, 'back.jpg')
+    expect(document.body.textContent).toContain('Front centering not applicable (full art)')
+    expect(document.body.textContent).toContain('Centering does not rule a 10 out. From the back only.')
+    expect(document.body.textContent).toContain('10 not ruled out')
+    expect(document.body.textContent).not.toContain('print border could be read')
+  })
 })

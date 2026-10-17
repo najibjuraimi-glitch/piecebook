@@ -8,6 +8,9 @@ export interface RankedCandidate {
   exact: boolean
 }
 
+/** Below this, a printed name and a card name are not the same character. */
+const NAME_AGREE = 55
+
 const compact = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '')
 
 function normalizeName(s: string): string {
@@ -90,9 +93,57 @@ function printedCodesIn(text: string): string[] {
   return out
 }
 
+/** The numbered card's name does not match the name that was read. */
+function nameDisagrees(nameQ: string, card: Card): boolean {
+  return Boolean(nameQ.trim()) && nameScore(nameQ, card.name) < NAME_AGREE
+}
+
+/**
+ * When the read name and the read number belong to different cards, the number's
+ * owner. Null when they agree, or when either side was not read.
+ */
+export function codeNameDisagreement(
+  identify: Pick<VisionIdentify, 'set_code' | 'name'>,
+  cards: readonly Card[],
+): { code: string; owner: string } | null {
+  const printed = identify.set_code?.trim() || ''
+  const nameQ = identify.name?.trim() || ''
+  if (!printed || !nameQ) return null
+  const exact = cards.filter((c) => matchesPrintedCode(c, printed))
+  if (!exact.length || exact.some((c) => !nameDisagrees(nameQ, c))) return null
+  const owner = exact.find((c) => !c.isParallel) ?? exact[0]
+  return { code: owner.cardNumber, owner: owner.name }
+}
+
+/**
+ * The read names an SP, manga, or other parallel that this number does not have.
+ * The base print is not that card, and it has no price to borrow.
+ */
+export function missingPrintNote(identify: VisionIdentify, cards: readonly Card[]): string | null {
+  const printed = identify.set_code?.trim() || ''
+  if (!printed) return null
+  const exact = cards.filter((c) => matchesPrintedCode(c, printed))
+  if (!exact.length) return null
+  const guess = (effectiveParallelGuess(identify) || '').toLowerCase()
+  const wantsSp = guess === 'sp' || guess.includes('special')
+  const wantsManga = guess.includes('manga')
+  const wantsAlt = guess.includes('parallel') || guess.includes('alt')
+  if (!wantsSp && !wantsManga && !wantsAlt) return null
+  const has = exact.some((c) => {
+    if (wantsSp) return c.rarity === 'SP' || /special/i.test(c.variant ?? '')
+    if (wantsManga) return /manga/i.test(c.variant ?? '')
+    return c.isParallel
+  })
+  if (has) return null
+  const kind = wantsSp ? 'SP' : wantsManga ? 'manga' : 'parallel'
+  const base = exact[0].baseNumber
+  return `${base} is in the seed, but that ${kind} print is not. The base print is a different card. No price is shown for a print that is not in the seed.`
+}
+
 /**
  * Rank seed cards for a vision identify payload.
- * Exact `set_code` hits (base + parallels) rank first; then fuzzy name / read_text.
+ * Exact `set_code` hits (base + parallels) rank first when the name agrees.
+ * A number that belongs to a different character is left out; the name match leads.
  * Never auto-picks — the caller must wait for a confirm tap.
  */
 export function rankVisionCandidates(
@@ -102,16 +153,17 @@ export function rankVisionCandidates(
 ): RankedCandidate[] {
   const cap = Math.min(5, Math.max(3, limit))
   const printed = identify.set_code?.trim() || ''
-  const exact = printed ? cards.filter((c) => matchesPrintedCode(c, printed)) : []
+  const nameQ = identify.name ?? ''
+  const exact = printed ? cards.filter((c) => matchesPrintedCode(c, printed) && !nameDisagrees(nameQ, c)) : []
   const exactIds = new Set(exact.map((c) => c.cardNumber))
 
   const guess = effectiveParallelGuess(identify)
-  const nameQ = identify.name ?? ''
   const readQ = identify.read_text ?? ''
   const readCodes = printedCodesIn(`${nameQ} ${readQ}`)
 
   const scored: RankedCandidate[] = []
   for (const card of cards) {
+    if (printed && matchesPrintedCode(card, printed) && nameDisagrees(nameQ, card)) continue
     const isExact = exactIds.has(card.cardNumber)
     const n = nameScore(nameQ, card.name)
     const r = nameScore(readQ, card.name)

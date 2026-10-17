@@ -1,4 +1,5 @@
 import { csvToObjects } from './csv'
+import { isBorderlessCardNumber } from '../lib/frontBorder'
 
 /**
  * Every EN checklist CSV under data/ (one per set, `opXX-en-seed.csv`,
@@ -42,6 +43,12 @@ export interface Card {
    * has no published name). Null on base prints.
    */
   variant: string | null
+  /**
+   * `none` when the official scan has no flat light front border (full art /
+   * borderless). `frame` otherwise, including an SP that still has a border.
+   * From data/front-border.json, not from the seller photo.
+   */
+  frontBorder: 'none' | 'frame'
 }
 
 export interface CardSet {
@@ -116,6 +123,7 @@ function toCard(row: Record<string, string>): Card | null {
     psa10Printing: psa10.printing,
     isParallel: isParallelNumber(cardNumber),
     variant: row.variant || null,
+    frontBorder: isBorderlessCardNumber(cardNumber) ? 'none' : 'frame',
   }
 }
 

@@ -45,6 +45,13 @@ describe('parsePhotoResult (storage)', () => {
   it('round-trips a reject and an unresolved card, keeping the sides that failed', () => {
     const reject: PhotoResult = { ok: false, side: 'back', code: 'short-side', message: 'Back: short side is 448px (need 800).' }
     expect(parsePhotoResult(stored(reject), 'back')).toEqual(reject)
+    const holder: PhotoResult = {
+      ok: false,
+      side: 'front',
+      code: 'holder',
+      message: 'Centering not measurable from these photos. A magnetic holder or stand covers the card edge.',
+    }
+    expect(parsePhotoResult(stored(holder), 'front')).toEqual(holder)
     const unresolved = front.ok ? { ...front, measure: { ...front.measure, left: 0, right: 0, top: 0, bottom: 0, resolved: false, cannotBeTen: false, unresolvedSides: ['right', 'bottom'] } } : front
     const parsed = parsePhotoResult(stored(unresolved), 'front')
     expect(parsed?.ok && parsed.measure).toMatchObject({ resolved: false, cannotBeTen: false, unresolvedSides: ['right', 'bottom'] })

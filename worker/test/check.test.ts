@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { encode as encodeJpeg } from 'jpeg-js'
+import { makeSyntheticCard } from '../../src/lib/centering.ts'
 import worker, { DEFECT_FLAGS, PROMPTS, answerText, classifyModelError, extractModelResult, firstJsonObject, normaliseResult, stripFences } from '../src/index.js'
 
 // --- recorded generateContent shapes --------------------------------------
@@ -203,7 +205,7 @@ describe('normaliseResult', () => {
       { identify: { set_code: ' eb02-010 ', name: 'Monkey.D.Luffy', rarity: 'XX', parallel_guess: 'alt art', language: 'English', confidence: 1.7 }, condition: { ...ANSWER.condition, edges: { flags: ['whitening', 'made_up'], notes: 'x' } } },
       PROMPTS.full,
     )
-    expect(r.identify).toEqual({ set_code: 'EB02-010', name: 'Monkey.D.Luffy', rarity: null, parallel_guess: null, language: 'EN', confidence: 1 })
+    expect(r.identify).toEqual({ set_code: 'EB02-010', name: 'Monkey.D.Luffy', rarity: null, parallel_guess: null, language: 'EN', confidence: 1, graded_slab: false })
     expect(r.condition.edges.flags).toEqual(['whitening'])
     expect(r.coverage).toBe('full')
   })
@@ -401,7 +403,7 @@ describe('/check', () => {
     expect(body.scores.centering.score).toBe(10)
     for (const part of ['corners', 'edges', 'surface']) expect(body.scores[part].score).toBeNull()
     // Front only, so medium confidence, which pulls the low end down half a point.
-    expect(body.scores.overall).toMatchObject({ confidence: 'medium', text: '9.5 or better · 10 not ruled out. From 1 of 4 parts.' })
+    expect(body.scores.overall).toMatchObject({ confidence: 'medium', text: '9.5. From 1 of 4 parts.' })
     expect(h.used()).toBe(1)
   })
 
@@ -420,7 +422,9 @@ describe('/check', () => {
       back: PIXEL,
       centering: { front: { left: 50, right: 50, top: 50, bottom: 50 }, back: { measured: false, reason: 'no-print-edge' } },
     })).json()
-    expect(body2.scores.corners.caveats).toEqual([])
+    expect(body2.scores.corners.caveats).toEqual(['back print edge not found'])
+    expect(body2.scores.corners.confidence).toBe('low')
+    expect(body2.scores.corners.caveats).not.toContain('back not sent')
     expect(body2.scores.centering.caveats).toEqual(['back print edge not found', 'back not measured'])
     // Front only: the caveat is right.
     const h3 = harness([SHAPES.clean])
@@ -482,7 +486,7 @@ describe('/check', () => {
     const h = harness([SHAPES.clean])
     const body = await (await h.run()).json()
     expect(body.coverage).toBe('full')
-    expect(body.identify).toEqual({ set_code: 'EB02-010', name: 'Monkey.D.Luffy', rarity: 'SR', parallel_guess: 'parallel/alt art', language: 'EN', confidence: 0.82 })
+    expect(body.identify).toEqual({ set_code: 'EB02-010', name: 'Monkey.D.Luffy', rarity: 'SR', parallel_guess: 'parallel/alt art', language: 'EN', confidence: 0.82, graded_slab: false })
     expect(body.condition.edges.flags).toEqual(['whitening'])
   })
 
@@ -604,5 +608,118 @@ describe('/check', () => {
     expect(all).not.toContain('SECRET')
     expect(all).not.toContain('/9j/')
     expect(all).not.toContain('Luffy')
+  })
+
+  it('names a slab without asking the model to transcribe the label', () => {
+    expect(PROMPTS.full.text).toMatch(/graded_slab: true only for a grading-company slab/)
+    expect(PROMPTS.full.text).toMatch(/magnetic holder, or stand is not a slab/)
+    expect(PROMPTS.full.text).not.toMatch(/read_text|any text you can read/i)
+    expect((PROMPTS.full.schema as { properties: { identify: { properties: { graded_slab: { type: string } } } } }).properties.identify.properties.graded_slab.type).toBe('BOOLEAN')
+  })
+
+  it('omits scores when the photo is a graded slab', async () => {
+    const slab = { ...ANSWER, identify: { ...ANSWER.identify, graded_slab: true } }
+    const h = harness([{ candidates: [candidate([{ text: JSON.stringify(slab) }])], usageMetadata: usage() }])
+    const body = await (await h.run({ front: PIXEL, back: PIXEL, centering: { front: { left: 50, right: 50, top: 50, bottom: 50 }, back: { left: 50, right: 50, top: 50, bottom: 50 } } })).json()
+    expect(body.identify.graded_slab).toBe(true)
+    expect(body.scores).toBeNull()
+    expect(body.slab).toBe('This photo shows a graded slab. Piecebook does not pre-grade a card that is already in a slab.')
+    expect(JSON.stringify(body.scores)).not.toMatch(/10 not ruled out/)
+  })
+
+  it('charges one slot for two attempts that share a checkId, and leaves a failure uncharged', async () => {
+    const retry = harness([SHAPES.prose, SHAPES.clean, SHAPES.clean])
+    expect((await retry.run({ front: PIXEL, checkId: 'retry-card-01' })).status).toBe(502)
+    expect(retry.used()).toBe(0)
+    expect((await retry.run({ front: PIXEL, checkId: 'retry-card-01' })).status).toBe(200)
+    expect((await retry.run({ front: PIXEL, checkId: 'retry-card-01' })).status).toBe(200)
+    expect(retry.used()).toBe(1)
+    const two = harness([SHAPES.clean, SHAPES.clean])
+    await two.run({ front: PIXEL, checkId: 'attempt-one-aaaa' })
+    await two.run({ front: PIXEL, checkId: 'attempt-two-bbbb' })
+    expect(two.used()).toBe(2)
+  })
+})
+
+function cardJpeg(): string {
+  const card = makeSyntheticCard({
+    width: 1100,
+    height: 1540,
+    card: { x: 40, y: 50, w: 1020, h: 1440 },
+    borders: { left: 56, right: 55, top: 74, bottom: 79 },
+  })
+  const encoded = encodeJpeg({ width: card.width, height: card.height, data: card.data }, 95)
+  return `data:image/jpeg;base64,${Buffer.from(encoded.data).toString('base64')}`
+}
+
+const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+
+describe('/pregrade', () => {
+  const clean = {
+    ...ANSWER,
+    identify: { set_code: 'EB04-007', name: 'Roronoa Zoro', rarity: 'SP', parallel_guess: 'SP', language: 'EN', confidence: 0.9, graded_slab: false },
+    condition: {
+      corners: { flags: [], notes: '', severity: 'none', confidence: 'high' },
+      edges: { flags: [], notes: '', severity: 'none', confidence: 'high' },
+      surface: { flags: [], notes: '', severity: 'none', confidence: 'high' },
+      psa10_ruled_out: false,
+      reasons: [],
+    },
+  }
+  const shape = { candidates: [candidate([{ text: JSON.stringify(clean) }])], usageMetadata: usage() }
+
+  function run(h: ReturnType<typeof harness>, body: Record<string, unknown>) {
+    return h.runRequest(new Request('https://piecebook-vision.najibjuraimi.workers.dev/pregrade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }))
+  }
+
+  it('does not 500 when the JPEG cannot be decoded, and still runs the model', async () => {
+    const h = harness([SHAPES.clean])
+    const r = await run(h, { front: PIXEL, back: PIXEL })
+    expect(r.status).toBe(200)
+    const body = await r.json()
+    expect(body.centering.front).toMatchObject({ measured: false, reason: 'unreadable' })
+    expect(body.centering.front.note).toMatch(/could not be read/)
+    expect(h.requests).toHaveLength(1)
+    expect(h.used()).toBe(1)
+  })
+
+  it('leaves a PNG unmeasured and still runs the model', async () => {
+    const h = harness([SHAPES.clean])
+    const r = await run(h, { front: PNG })
+    expect(r.status).toBe(200)
+    expect((await r.json()).centering.front).toMatchObject({ measured: false, reason: 'unreadable' })
+    expect(h.requests).toHaveLength(1)
+  })
+
+  it('measures the JPEG, ignores a client centering block, and gives a back-only verdict for a borderless SP', async () => {
+    const jpeg = cardJpeg()
+    const h = harness([shape])
+    const r = await run(h, {
+      front: jpeg,
+      back: jpeg,
+      centering: { front: { left: 90, right: 10, top: 90, bottom: 10 }, back: { left: 90, right: 10, top: 90, bottom: 10 } },
+    })
+    expect(r.status).toBe(200)
+    const body = await r.json()
+    expect(body.centering.front).toMatchObject({ measured: false, reason: 'full-art', note: 'Front centering not applicable (full art)' })
+    expect(body.centering.back).toMatchObject({ measured: true, leftRight: '50/50', topBottom: '48/52', cannotBeTen: false })
+    expect(body.centering.verdict).toBe('Centering does not rule a 10 out. From the back only.')
+    expect(body.centering.note).not.toMatch(/90\/10/)
+    expect(body.scores.centering).toMatchObject({ score: 10, confidence: 'high' })
+    expect(body.scores.overall.text).toMatch(/10 not ruled out/)
+    expect(h.used()).toBe(1)
+  })
+
+  it('treats an exact borderless number the same way when the model includes the parallel suffix', async () => {
+    const named = { ...clean, identify: { ...clean.identify, set_code: 'EB04-007p2', parallel_guess: 'base' } }
+    const h = harness([{ candidates: [candidate([{ text: JSON.stringify(named) }])], usageMetadata: usage() }])
+    const body = await (await run(h, { front: cardJpeg(), back: cardJpeg() })).json()
+    expect(body.identify.set_code).toBeNull()
+    expect(body.centering.front.reason).toBe('full-art')
+    expect(body.centering.verdict).toBe('Centering does not rule a 10 out. From the back only.')
   })
 })

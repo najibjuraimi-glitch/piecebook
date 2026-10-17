@@ -26,6 +26,7 @@ function card(partial: Partial<Card> & Pick<Card, 'cardNumber' | 'name'>): Card 
     psa10Printing: null,
     isParallel,
     variant: isParallel ? 'Special Card' : null,
+    frontBorder: 'frame',
     ...partial,
   }
 }
@@ -39,6 +40,7 @@ function identify(partial: Partial<VisionIdentify>): VisionIdentify {
     language: 'EN',
     confidence: 1,
     read_text: '',
+    graded_slab: false,
     ...partial,
   }
 }

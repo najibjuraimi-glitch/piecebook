@@ -9,10 +9,12 @@ export const BACK_TEN_MAX = 75
  * noise, not a border. Such a measure is unresolved: no ratio is shown and it
  * never rules a 10 out.
  */
-export const MIN_PRINT_BORDER_PX = 4
+export const MIN_PRINT_BORDER_PX = 3
 
 export type PhotoSide = 'front' | 'back'
-export type RejectCode = 'short-side' | 'cut-off' | 'angled' | 'no-card' | 'no-print-edge'
+export type RejectCode = 'short-side' | 'cut-off' | 'angled' | 'no-card' | 'no-print-edge' | 'holder' | 'sleeve' | 'hand'
+/** Why a photo could not be measured: the thing covering the card, not a guess at a shadow. */
+export type Obstacle = 'holder' | 'sleeve' | 'hand'
 export type EdgeName = 'left' | 'right' | 'top' | 'bottom'
 
 export interface PixelImage {
@@ -90,14 +92,27 @@ export function splitFromPair(a: number, b: number): AxisSplit {
   }
   const largerPct = (Math.max(a, b) / sum) * 100
   const smallerPct = 100 - largerPct
-  const largerRound = Math.round(largerPct)
+  // Directional shares (left/right or top/bottom as passed in). They sum to 100.
+  // `largerPct` stays the grade comparison; the label is not "larger first".
+  const first = Math.round((a / sum) * 100)
   return {
     largerPct,
     smallerPct,
-    label: `${largerRound}/${100 - largerRound}`,
+    label: `${first}/${100 - first}`,
     leftOrTop: a,
     rightOrBottom: b,
   }
+}
+
+/** `Centering not measurable from these photos`, then the thing that is actually in the way. */
+export function obstacleMessage(kind: Obstacle): string {
+  const cause =
+    kind === 'holder'
+      ? 'A magnetic holder or stand covers the card edge.'
+      : kind === 'sleeve'
+        ? 'A sleeve covers the card edge.'
+        : 'A hand covers the card edge.'
+  return `Centering not measurable from these photos. ${cause}`
 }
 
 export function worseAxis(lr: AxisSplit, tb: AxisSplit): { worse: AxisSplit; worseAxis: 'lr' | 'tb' } {
@@ -214,6 +229,90 @@ export function chooseMeasure(guided: PhotoResult, searched: PhotoResult): Photo
   return unresolved(searched) < unresolved(guided) ? searched : guided
 }
 
+type CardBlob = { minX: number; minY: number; maxX: number; maxY: number; count: number; points: Point[] }
+
+function rectBlob(minX: number, minY: number, maxX: number, maxY: number): CardBlob {
+  const points: Point[] = []
+  for (let x = minX; x <= maxX; x += 4) points.push({ x, y: minY }, { x, y: maxY })
+  for (let y = minY; y <= maxY; y += 4) points.push({ x: minX, y }, { x: maxX, y })
+  return { minX, minY, maxX, maxY, count: Math.max(1, (maxX - minX + 1) * (maxY - minY + 1)), points }
+}
+
+/** Light print stock is the real border. A dark frame, a gray sleeve, or skin is not. */
+function bandKind(rgb: Rgb): 'stock' | Obstacle | 'other' {
+  const L = luminance(rgb)
+  const chroma = Math.max(rgb[0], rgb[1], rgb[2]) - Math.min(rgb[0], rgb[1], rgb[2])
+  if (L > 210 && chroma < 45) return 'stock'
+  if (L < 70 && chroma < 35) return 'holder'
+  if (rgb[0] > 160 && rgb[0] > rgb[1] + 20 && rgb[1] > rgb[2] + 10 && L > 120 && L < 210) return 'hand'
+  if (L >= 155 && L <= 198 && chroma < 20) return 'sleeve'
+  return 'other'
+}
+
+function medianChannel(samples: Rgb[], channel: 0 | 1 | 2): number {
+  const v = samples.map((s) => s[channel]).sort((a, b) => a - b)
+  return v[Math.floor(v.length / 2)] ?? 0
+}
+
+function meanStrip(image: PixelImage, box: CardBlob, edge: EdgeName, d0: number, d1: number): Rgb | null {
+  const vertical = edge === 'left' || edge === 'right'
+  const span = vertical ? box.maxY - box.minY : box.maxX - box.minX
+  const start = Math.round(span * 0.25)
+  const end = Math.round(span * 0.75)
+  const samples: Rgb[] = []
+  for (let i = start; i <= end; i += 3) {
+    for (let d = d0; d < d1; d++) {
+      const x = edge === 'left' ? box.minX + d : edge === 'right' ? box.maxX - d : box.minX + i
+      const y = edge === 'top' ? box.minY + d : edge === 'bottom' ? box.maxY - d : box.minY + i
+      if (x < 0 || y < 0 || x >= image.width || y >= image.height) continue
+      samples.push(pixel(image, x, y))
+    }
+  }
+  if (samples.length < 8) return null
+  return [medianChannel(samples, 0), medianChannel(samples, 1), medianChannel(samples, 2)]
+}
+
+/**
+ * A sleeve, holder, or hand around the card is a band that is not print stock,
+ * with card stock inside it on all four sides. A white print border is stock
+ * and is left alone. Returns a tighter blob, an obstacle when the inner shape
+ * is not a card, or nothing when the outer edge is already the card.
+ */
+function tightenInsideObstacle(image: PixelImage, blob: CardBlob): { blob?: CardBlob; obstacle?: Obstacle } {
+  const edges: EdgeName[] = ['left', 'right', 'top', 'bottom']
+  const steps = edges.map((edge) => {
+    const span = edge === 'left' || edge === 'right' ? blob.maxX - blob.minX : blob.maxY - blob.minY
+    const outer = meanStrip(image, blob, edge, 2, 8)
+    if (!outer) return null
+    // A rotated card's box includes the photo's own background in the corners.
+    // That is not a holder. A sleeve or holder is a different colour from the ground.
+    if (colorDist(outer, edgeMedianColor(image)) < 36) return null
+    const kind = bandKind(outer)
+    if (kind === 'stock' || kind === 'other') return null
+    const maxD = Math.min(Math.round(span * 0.18), Math.round(Math.min(image.width, image.height) * 0.2))
+    for (let d = 12; d <= maxD; d += 2) {
+      const inside = meanStrip(image, blob, edge, d, d + 4)
+      if (!inside) continue
+      if (bandKind(inside) === 'stock' && luminance(inside) > luminance(outer) + 28) return { depth: d, kind }
+    }
+    return null
+  })
+  if (steps.some((s) => !s)) return {}
+  const kinds = new Set(steps.map((s) => s!.kind))
+  if (kinds.size !== 1) return {}
+  const kind = [...kinds][0]
+  const [left, right, top, bottom] = steps.map((s) => s!.depth)
+  const minX = blob.minX + left
+  const maxX = blob.maxX - right
+  const minY = blob.minY + top
+  const maxY = blob.maxY - bottom
+  const w = maxX - minX
+  const h = maxY - minY
+  const aspect = w / Math.max(1, h)
+  if (w < 80 || h < 80 || aspect < 0.62 || aspect > 0.82) return { obstacle: kind }
+  return { blob: rectBlob(minX, minY, maxX, maxY) }
+}
+
 export function measurePhoto(image: PixelImage, side: PhotoSide, opts: MeasureOptions = {}): PhotoResult {
   const short = Math.min(image.width, image.height)
   if (short < MIN_SHORT_SIDE_PX) {
@@ -258,7 +357,11 @@ export function measurePhoto(image: PixelImage, side: PhotoSide, opts: MeasureOp
         message: `${side === 'front' ? 'Front' : 'Back'}: the card is cut off at the frame.`,
       }
     }
-    const blob = found.blob
+    const tight = tightenInsideObstacle(image, found.blob)
+    if (tight.obstacle) {
+      return { ok: false, side, code: tight.obstacle, message: obstacleMessage(tight.obstacle) }
+    }
+    const blob = tight.blob ?? found.blob
     const hull = convexHull(blob.points.length > 2400 ? thinPoints(blob.points, 2400) : blob.points)
     rect = minAreaRect(hull)
     keystone = blobKeystoneDeg(hull, rect)
@@ -270,7 +373,7 @@ export function measurePhoto(image: PixelImage, side: PhotoSide, opts: MeasureOp
       ok: false,
       side,
       code: 'angled',
-      message: `${side === 'front' ? 'Front' : 'Back'}: photo is angled about ${keystone.toFixed(0)}° (need under ~${MAX_ANGLE_DEG}°), or a hand or shadow is joined to the card outline.`,
+      message: `${side === 'front' ? 'Front' : 'Back'}: photo is angled about ${keystone.toFixed(0)}° (need under ~${MAX_ANGLE_DEG}°).`,
     }
   }
 
@@ -455,6 +558,10 @@ export function makeSyntheticCard(opts: {
   artToEdge?: EdgeName[]
   /** Deterministic sensor grain, ± this many levels per channel. */
   noise?: number
+  /** Light-gray sleeve margin outside the card, in pixels. The card sits inside it. */
+  sleeve?: number
+  /** Dark magnetic-holder frame outside the sleeve (or the card), in pixels. */
+  holder?: number
   /**
    * An uneven ground (a lit tabletop or bag), brightening across the frame. The
    * frame-median colour mask cannot separate the card from it, so the card is
@@ -465,11 +572,17 @@ export function makeSyntheticCard(opts: {
   const { width, height, card, borders } = opts
   const rotate = ((opts.rotateDeg ?? 0) * Math.PI) / 180
   const squeeze = opts.topSqueeze ?? 0
+  const sleevePx = opts.sleeve ?? 0
+  const holderPx = opts.holder ?? 0
+  const framePx = sleevePx + holderPx
   const cx = card.x + card.w / 2
   const cy = card.y + card.h / 2
   const data = new Uint8ClampedArray(width * height * 4)
   const bg: [number, number, number] = [28, 28, 30]
+  const wood: [number, number, number] = [148, 112, 74]
   const skin: [number, number, number] = [214, 168, 134]
+  const sleeveCol: [number, number, number] = [176, 178, 176]
+  const holderCol: [number, number, number] = [22, 24, 26]
   const stock: [number, number, number] = [250, 248, 242]
   const line: [number, number, number] = [12, 12, 12]
   const art: [number, number, number] = [24, 92, 158]
@@ -490,12 +603,22 @@ export function makeSyntheticCard(opts: {
       const ly = local.y - card.y
       const ground: [number, number, number] = opts.groundGradient
         ? [bg[0] + ((x + y) / (width + height)) * 110, bg[1] + ((x + y) / (width + height)) * 100, bg[2] + ((x + y) / (width + height)) * 90]
-        : bg
+        : framePx
+          ? wood
+          : bg
       const inHand =
         hand != null &&
         ((x - (hand.x + hand.w / 2)) / (hand.w / 2)) ** 2 + ((y - (hand.y + hand.h / 2)) / (hand.h / 2)) ** 2 <= 1
       let col = inHand ? skin : ground
-      if (lx >= 0 && ly >= 0 && lx < card.w && ly < card.h) {
+      const inFrame =
+        framePx > 0 && lx >= -framePx && ly >= -framePx && lx < card.w + framePx && ly < card.h + framePx
+      const inCard = lx >= 0 && ly >= 0 && lx < card.w && ly < card.h
+      if (inFrame && !inCard) {
+        const inSleeve =
+          sleevePx > 0 && lx >= -sleevePx && ly >= -sleevePx && lx < card.w + sleevePx && ly < card.h + sleevePx
+        col = inSleeve ? sleeveCol : holderCol
+      }
+      if (inCard) {
         if (squeeze > 0) {
           const t = ly / card.h
           const half = (card.w / 2) * (1 - squeeze * (1 - t))
@@ -1198,7 +1321,7 @@ const PRINT_VOTE_FRAC = 0.45
  * print sits close to the edge are only a few pixels in, so this stays just
  * above that anti-alias and above MIN_PRINT_BORDER_PX.
  */
-const MIN_BORDER_GAP = 5
+const MIN_BORDER_GAP = 3
 /** Mean colour distance from the band's average above which the band is art or text, not a border. */
 const MAX_BAND_SPREAD = 16
 
@@ -1476,6 +1599,8 @@ function firstPrintWidth(profile: Rgb[], steps: number[], edge: number, dim: num
     const gap = d - edgePx
     // Anti-alias just inside the card edge is a weak step. The ink at a real
     // thin frame is not.
+    // Anti-alias just inside the card edge is a weak step. The ink at a real
+    // thin frame is not: a strong step in this gap is kept.
     if (gap < 14 && cardStep > 0 && steps[d] < cardStep * 0.55) continue
     const bandStart = edgePx + 1
     const bandEnd = Math.min(d, profile.length)

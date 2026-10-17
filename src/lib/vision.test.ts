@@ -98,6 +98,12 @@ describe('asVisionCheck language', () => {
     expect(check?.coverage).toBe('full')
     expect(check?.identify.read_text).toBe('')
     expect(check?.identify.rarity).toBe('SR')
+    expect(check?.identify.graded_slab).toBe(false)
+  })
+
+  it('keeps a graded slab flag and defaults it off when the answer omits it', () => {
+    expect(asVisionCheck({ ...payload('EN'), identify: { ...payload('EN').identify, graded_slab: true } })?.identify.graded_slab).toBe(true)
+    expect(asVisionCheck(payload('EN'))?.identify.graded_slab).toBe(false)
   })
 
   it('keeps identify_only coverage with an empty condition', () => {
@@ -117,6 +123,10 @@ describe('checkRequestBody', () => {
     const body = JSON.parse(checkRequestBody({ frontDataUrl: photos.frontDataUrl }, { front, back: null }))
     expect(body.back).toBeUndefined()
     expect(body.centering).toEqual({ front, back: null })
+    expect(body.checkId).toBeUndefined()
+    const withId = JSON.parse(checkRequestBody(photos, null, 'card-attempt-1'))
+    expect(withId.checkId).toBe('card-attempt-1')
+    expect(withId.centering).toBeUndefined()
   })
 })
 

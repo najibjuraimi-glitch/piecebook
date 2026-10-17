@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Card } from '../data/seed'
-import { effectiveParallelGuess, matchesPrintedCode, nameScore, rankVisionCandidates } from './visionCandidates'
+import { codeNameDisagreement, effectiveParallelGuess, matchesPrintedCode, missingPrintNote, nameScore, rankVisionCandidates } from './visionCandidates'
 import type { VisionIdentify } from './vision'
 
 function card(partial: Partial<Card> & Pick<Card, 'cardNumber' | 'name'>): Card {
@@ -26,6 +26,7 @@ function card(partial: Partial<Card> & Pick<Card, 'cardNumber' | 'name'>): Card 
     psa10Printing: null,
     isParallel,
     variant: isParallel ? 'Alternate Art' : null,
+    frontBorder: 'frame',
     ...partial,
   }
 }
@@ -82,6 +83,7 @@ function identify(partial: Partial<VisionIdentify>): VisionIdentify {
     language: null,
     confidence: 0.6,
     read_text: '',
+    graded_slab: false,
     ...partial,
   }
 }
@@ -196,5 +198,63 @@ describe('rankVisionCandidates', () => {
 
   it('empty identify returns no candidates', () => {
     expect(rankVisionCandidates(identify({}), catalogue)).toEqual([])
+  })
+
+  it('does not pair a name with a number that belongs to someone else', () => {
+    const luffySec = card({ cardNumber: 'OP10-118', name: 'Monkey.D.Luffy', rarity: 'SEC', setCode: 'OP-10', baseNumber: 'OP10-118' })
+    const law = card({ cardNumber: 'OP10-081', name: 'Trafalgar Law', rarity: 'SR', setCode: 'OP-10', baseNumber: 'OP10-081' })
+    const lawSp = card({
+      cardNumber: 'OP10-081p1',
+      name: 'Trafalgar Law',
+      rarity: 'SP',
+      setCode: 'OP-10',
+      baseNumber: 'OP10-081',
+      isParallel: true,
+      variant: 'Special Card',
+    })
+    const yamato = card({ cardNumber: 'EB01-007', name: 'Yamato', rarity: 'C', setCode: 'EB-01', baseNumber: 'EB01-007' })
+    const zoro = card({ cardNumber: 'EB04-007', name: 'Roronoa Zoro', rarity: 'SR', setCode: 'EB-04', baseNumber: 'EB04-007' })
+    const zoroSp = card({
+      cardNumber: 'EB04-007p2',
+      name: 'Roronoa Zoro',
+      rarity: 'SP',
+      setCode: 'EB-04',
+      baseNumber: 'EB04-007',
+      isParallel: true,
+      variant: 'Special Card',
+      frontBorder: 'none',
+    })
+    const cards = [...catalogue, luffySec, law, lawSp, yamato, zoro, zoroSp]
+    const lawRead = rankVisionCandidates(identify({ set_code: 'OP10-118', name: 'Trafalgar Law', parallel_guess: 'SP' }), cards)
+    expect(lawRead[0]?.card.name).toBe('Trafalgar Law')
+    expect(lawRead.some((r) => r.card.cardNumber === 'OP10-118')).toBe(false)
+    expect(codeNameDisagreement(identify({ set_code: 'OP10-118', name: 'Trafalgar Law' }), cards)).toEqual({
+      code: 'OP10-118',
+      owner: 'Monkey.D.Luffy',
+    })
+    const zoroRead = rankVisionCandidates(identify({ set_code: 'EB01-007', name: 'Roronoa Zoro', parallel_guess: 'SP' }), cards)
+    expect(zoroRead[0]?.card.cardNumber).toBe('EB04-007p2')
+    expect(zoroRead.some((r) => r.card.name === 'Yamato')).toBe(false)
+    expect(codeNameDisagreement(identify({ set_code: 'EB01-007', name: 'Roronoa Zoro' }), cards)?.owner).toBe('Yamato')
+    expect(codeNameDisagreement(identify({ set_code: 'ST01-007', name: 'Nami' }), cards)).toBeNull()
+  })
+
+  it('says an SP print is missing instead of treating the base as that SP', () => {
+    const baseOnly = [card({ cardNumber: 'OP01-078', name: 'Boa Hancock', rarity: 'SR', setCode: 'OP-01', baseNumber: 'OP01-078' })]
+    expect(missingPrintNote(identify({ set_code: 'OP01-078', name: 'Boa Hancock', parallel_guess: 'SP' }), baseOnly)).toMatch(/SP print is not/)
+    expect(missingPrintNote(identify({ set_code: 'OP01-078', name: 'Boa Hancock', parallel_guess: 'base' }), baseOnly)).toBeNull()
+    const withSp = [
+      ...baseOnly,
+      card({
+        cardNumber: 'OP01-078p2',
+        name: 'Boa Hancock',
+        rarity: 'SP',
+        setCode: 'OP-01',
+        baseNumber: 'OP01-078',
+        isParallel: true,
+        variant: 'Special Card',
+      }),
+    ]
+    expect(missingPrintNote(identify({ set_code: 'OP01-078', name: 'Boa Hancock', parallel_guess: 'SP' }), withSp)).toBeNull()
   })
 })

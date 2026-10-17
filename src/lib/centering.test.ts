@@ -63,7 +63,7 @@ describe('centering ratios from known borders', () => {
   })
 
   it('a border thinner than the guard is unresolved and never rules a 10 out', () => {
-    expect(MIN_PRINT_BORDER_PX).toBe(4)
+    expect(MIN_PRINT_BORDER_PX).toBe(3)
     const noise = measureFromBorders(2, 2, 2, 2, 'front')
     expect(noise.resolved).toBe(false)
     expect(noise.cannotBeTen).toBe(false)
@@ -336,6 +336,37 @@ describe('photo rejects name the side', () => {
     expect(result.measure.cannotBeTen).toBe(false)
   }, 30_000)
 
+  it('a sleeve or a magnetic holder is cropped away, and the card inside still reads', () => {
+    const card = { x: 180, y: 160, w: 760, h: 1064 }
+    const borders = { left: 60, right: 40, top: 50, bottom: 50 }
+    for (const extra of [{ sleeve: 36 }, { holder: 28 }] as const) {
+      const img = makeSyntheticCard({ width: 1400, height: 1800, card, borders, ...extra })
+      const result = measurePhoto(img, 'front')
+      expect(result.ok).toBe(true)
+      if (!result.ok) return
+      expect(result.measure.resolved).toBe(true)
+      expectSplit(result.measure.lr.largerPct, 60)
+      expect(result.measure.corners[0].x).toBeGreaterThan(card.x - 8)
+      expect(result.measure.corners[0].x).toBeLessThan(card.x + 12)
+    }
+  })
+
+  it('names the obstacle instead of a hand or shadow when the card inside cannot be used', () => {
+    const img = makeSyntheticCard({
+      width: 1400,
+      height: 1800,
+      card: { x: 200, y: 180, w: 400, h: 400 },
+      borders: { left: 20, right: 20, top: 20, bottom: 20 },
+      holder: 40,
+    })
+    const result = measurePhoto(img, 'front')
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.code).toBe('holder')
+    expect(result.message).toBe('Centering not measurable from these photos. A magnetic holder or stand covers the card edge.')
+    expect(result.message).not.toMatch(/hand or shadow/)
+  })
+
   it('angled over ~8°', () => {
     const img = makeSyntheticCard({
       width: 1200,
@@ -349,6 +380,7 @@ describe('photo rejects name the side', () => {
     if (result.ok) return
     expect(result.code).toBe('angled')
     expect(result.message).toMatch(/Front/)
+    expect(result.message).not.toMatch(/hand or shadow/)
   })
 })
 

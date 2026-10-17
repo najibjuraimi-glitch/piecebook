@@ -1,0 +1,40 @@
+[
+  {
+    "source": "carousell",
+    "page": "https://www.carousell.sg/p/monkey-d-luffy-one-piece-english-op13-wanted-sp-1420119669",
+    "title": "Monkey D Luffy One Piece English OP13 Wanted SP",
+    "fetched": false,
+    "note": "Carousell returned a Cloudflare challenge. No listing photo was saved."
+  },
+  {
+    "source": "carousell",
+    "page": "https://www.carousell.sg/p/one-piece-card-game-trafalgar-law-sp-english-1428435525",
+    "title": "One Piece Card Game Trafalgar Law SP English",
+    "fetched": false,
+    "note": "Carousell returned a Cloudflare challenge. No listing photo was saved."
+  },
+  {
+    "source": "carousell",
+    "page": "https://www.carousell.sg/p/one-piece-ccg-shanks-sp-sr-alternative-art-st16-004-english-1445446649",
+    "title": "One Piece CCG Shanks SP SR Alternative Art ST16-004 English",
+    "fetched": false,
+    "note": "Carousell returned a Cloudflare challenge. No listing photo was saved."
+  },
+  {
+    "source": "ebay",
+    "itemId": "298725185525",
+    "page": "https://www.ebay.com/itm/298725185525",
+    "fetched": false,
+    "note": "The item page redirected and did not return a gallery photo."
+  },
+  {
+    "source": "ebay",
+    "itemId": "860034714691",
+    "page": "https://www.ebay.com/itm/860034714691",
+    "title": "One Piece Boa Hancock OP04 SP Kingdoms Of Intrigue (OP01-078) Boa Lisa",
+    "image": "https://i.ebayimg.com/images/g/S9oAAeSwhDxqzC2M/s-l1600.jpg",
+    "file": "860034714691.jpg",
+    "fetched": true,
+    "note": "Front of a raw OP01-078 Boa Hancock SP on fabric. The official scan of that print has no front border."
+  }
+]

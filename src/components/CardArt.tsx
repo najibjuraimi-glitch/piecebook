@@ -37,12 +37,12 @@ export function CardArt({ card, className = '', large = false, eager = false }: 
           }`}
         />
       )}
-      {failed && (
+      {(!loaded || failed) && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-3 text-center">
           <span className={`tabular font-semibold text-ink ${large ? 'text-title' : 'text-[13px]'}`}>
             {card.cardNumber}
           </span>
-          <span className={`text-muted ${large ? 'text-meta' : 'text-[11px] leading-[14px]'}`}>No art</span>
+          {failed && <span className={`text-muted ${large ? 'text-meta' : 'text-[11px] leading-[14px]'}`}>No art</span>}
         </div>
       )}
     </div>

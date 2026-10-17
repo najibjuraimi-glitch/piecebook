@@ -197,7 +197,12 @@ H=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $
 curl -s "${H[@]}" "$PIECEBOOK_API/sync" | jq '.docs["piecebook.v1"].value.owned'        # collection
 curl -s "${H[@]}" "$PIECEBOOK_API/sync/piecebook.pregrade.v1" | jq '.doc.value'          # pre-grade log
 curl -s "${H[@]}" -X POST "$PIECEBOOK_API/check" -H 'Content-Type: application/json' \
-     -d '{"front":"data:image/jpeg;base64,…","back":"data:image/jpeg;base64,…"}'          # photo check (counts against the daily cap)
+     -d '{"front":"data:image/jpeg;base64,…","back":"data:image/jpeg;base64,…"}'          # photo check; centering is whatever the client measured (the Worker does not read pixels)
+curl -s "${H[@]}" -X POST "$PIECEBOOK_API/pregrade" -H 'Content-Type: application/json' \
+     -d '{"front":"data:image/jpeg;base64,…","back":"data:image/jpeg;base64,…","checkId":"one-card-attempt"}'
+# /pregrade measures JPEG centering on the Worker and ignores a client centering block.
+# PNG is not decoded (that side stays unmeasured; the model still runs). Same Access headers.
+# A success counts once per checkId, so a retry of one card does not take a second slot.
 curl -s "${H[@]}" "$PIECEBOOK_API/street?code=EB02-010&variant=alt&grade=raw" | jq .street  # street price, USD + SGD, dated (docs/STREET-PRICE.md)
 ```
 
