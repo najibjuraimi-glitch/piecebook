@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { decode as decodeJpeg, encode as encodeJpeg } from 'jpeg-js'
 import { flattenCard } from './cardFrame'
+import { KHAKI_FABRIC, centredQuad, renderFrame } from './syntheticFrame'
 import {
   BACK_TEN_MAX,
   FRONT_TEN_MAX,
@@ -98,12 +99,12 @@ describe('centering from synthetic photos (±2 points)', () => {
       width: 1000,
       height: 1400,
       card: { x: 120, y: 100, w: 760, h: 1064 },
-      borders: { left: 120, right: 80, top: 90, bottom: 90 },
+      borders: { left: 48, right: 32, top: 36, bottom: 36 },
     })
     const result = measurePhoto(img, 'front')
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    // 120 / 200 = 60/40
+    // 48 / 80 = 60/40. Widths stay under 10% of the card, where a real border sits.
     expectSplit(result.measure.lr.largerPct, 60)
     expectSplit(result.measure.tb.largerPct, 50)
     expect(result.measure.resolved).toBe(true)
@@ -115,7 +116,7 @@ describe('centering from synthetic photos (±2 points)', () => {
       width: 1000,
       height: 1400,
       card: { x: 110, y: 90, w: 780, h: 1092 },
-      borders: { left: 110, right: 90, top: 80, bottom: 80 },
+      borders: { left: 44, right: 36, top: 40, bottom: 40 },
     })
     const result = measurePhoto(img, 'front')
     expect(result.ok).toBe(true)
@@ -129,7 +130,7 @@ describe('centering from synthetic photos (±2 points)', () => {
       width: 1000,
       height: 1400,
       card: { x: 140, y: 120, w: 720, h: 1008 },
-      borders: { left: 60, right: 60, top: 140, bottom: 60 },
+      borders: { left: 40, right: 40, top: 56, bottom: 24 },
     })
     const result = measurePhoto(img, 'front')
     expect(result.ok).toBe(true)
@@ -144,13 +145,13 @@ describe('centering from synthetic photos (±2 points)', () => {
       width: 1100,
       height: 1500,
       card: { x: 160, y: 140, w: 760, h: 1064 },
-      borders: { left: 100, right: 60, top: 80, bottom: 80 },
+      borders: { left: 50, right: 30, top: 40, bottom: 40 },
       rotateDeg: 3,
     })
     const result = measurePhoto(img, 'front')
     expect(result.ok).toBe(true)
     if (!result.ok) return
-    // 100 / 160 = 62.5/37.5
+    // 50 / 80 = 62.5/37.5
     expectSplit(result.measure.lr.largerPct, 62.5)
   })
 
@@ -159,7 +160,7 @@ describe('centering from synthetic photos (±2 points)', () => {
       width: 1000,
       height: 1400,
       card: { x: 120, y: 100, w: 760, h: 1064 },
-      borders: { left: 160, right: 40, top: 80, bottom: 80 },
+      borders: { left: 56, right: 14, top: 40, bottom: 40 },
     })
     const result = measurePhoto(img, 'back')
     expect(result.ok).toBe(true)
@@ -544,7 +545,7 @@ function expectBordersNear(
   expect(result.measure.cannotBeTen, notes).toBe(false)
   expect(result.measure.unresolvedSides, notes).toEqual([])
   for (const side of ['left', 'right', 'top', 'bottom'] as const) {
-    expect(result.measure.edgeNotes?.[side], notes).toMatch(/\d+px on \d+\/21/)
+    expect(result.measure.edgeNotes?.[side], notes).toMatch(/\d+px on \d+\/\d+ rows/)
     expect(Math.abs(result.measure[side] - borders[side]), `${side} ${notes}`).toBeLessThanOrEqual(slack)
   }
 }
@@ -604,7 +605,7 @@ describe('upload with no outline', () => {
     expect(centeringLabel(result.measure)).toMatch(/not measured/)
     expect(centeringLabel(result.measure)).not.toMatch(/\d+\/\d+/)
     for (const side of ['left', 'top', 'bottom'] as const) {
-      expect(result.measure.edgeNotes?.[side], notes).toMatch(/\d+px on \d+\/21/)
+      expect(result.measure.edgeNotes?.[side], notes).toMatch(/\d+px on \d+\/\d+ rows/)
     }
   })
 })
@@ -749,8 +750,62 @@ describe('real phone shots', () => {
     expect(result.measure.resolved).toBe(false)
     expect(result.measure.cannotBeTen).toBe(false)
     expect(result.measure.unresolvedSides).toEqual(expect.arrayContaining(['bottom']))
-    expect(result.measure.edgeNotes?.bottom).toMatch(/\d+\/21/)
+    expect(result.measure.edgeNotes?.bottom).toMatch(/\d+\/\d+ rows/)
     expect(centeringLabel(result.measure)).toMatch(/not measured/)
     expect(centeringLabel(result.measure)).not.toMatch(/\d+\/\d+/)
+  }, 30_000)
+})
+
+describe('print edge stays in the outer band', () => {
+  it('rejects a border wider than 10% of the card and says why', () => {
+    const img = makeSyntheticCard({
+      width: 1000,
+      height: 1400,
+      card: { x: 100, y: 120, w: 800, h: 1120 },
+      borders: { left: 130, right: 130, top: 140, bottom: 140 },
+    })
+    const result = measurePhoto(img, 'front')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(false)
+    expect(result.measure.cannotBeTen).toBe(false)
+    expect(centeringLabel(result.measure)).toMatch(/not measured/)
+    expect(centeringLabel(result.measure)).not.toMatch(/\d+\/\d+/)
+    for (const side of ['left', 'right', 'top', 'bottom'] as const) {
+      expect(result.measure.edgeNotes?.[side]).toMatch(/wider than 10%/)
+    }
+  })
+
+  it('keeps the real frame when a decoy line sits further in, after perspective, jpeg, blur, glare and shade', () => {
+    const quad = centredQuad(1100, 1500, 0.7, { keystone: 0.06 })
+    const img = renderFrame({
+      width: 1100,
+      height: 1500,
+      quad,
+      face: 'back',
+      ground: KHAKI_FABRIC,
+      texture: 8,
+      noise: 5,
+      soft: 1,
+      shade: { edge: 'bottom', amount: 0.35 },
+      glare: { x: 0.72, y: 0.2, r: 0.07 },
+      decoy: { frac: 0.15, colour: [226, 196, 120] },
+    })
+    const flat = flattenCard(jpegRoundtrip(img))
+    expect(flat.flattened).toBe(true)
+    if (!flat.flattened) return
+    const result = measurePhoto(jpegRoundtrip(flat.image), 'back', { outline: flat.cardQuad })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved, JSON.stringify(result.measure.edgeNotes)).toBe(true)
+    expect(result.measure.cannotBeTen).toBe(false)
+    const cardW = flat.cardQuad[1].x - flat.cardQuad[0].x
+    const cardH = flat.cardQuad[3].y - flat.cardQuad[0].y
+    // The back's frame is about 4.5% of the card. The decoy ring is at 15%.
+    expect(result.measure.left / cardW).toBeGreaterThan(0.02)
+    expect(result.measure.left / cardW).toBeLessThan(0.09)
+    expect(result.measure.right / cardW).toBeLessThan(0.09)
+    expect(result.measure.top / cardH).toBeLessThan(0.09)
+    expect(result.measure.bottom / cardH).toBeLessThan(0.09)
   }, 30_000)
 })

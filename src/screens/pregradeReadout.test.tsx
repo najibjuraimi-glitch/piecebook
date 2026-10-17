@@ -121,6 +121,13 @@ afterEach(() => {
   storedId = null
 })
 
+function unmountRoute() {
+  act(() => root?.unmount())
+  host?.remove()
+  root = null
+  host = null
+}
+
 async function renderRoute(path: string) {
   host = document.createElement('div')
   document.body.appendChild(host)
@@ -174,8 +181,8 @@ describe('pregrade result readout', () => {
     const [front, back] = fileInputs()
     await upload(front, 'front.jpg')
     await upload(back, 'back.jpg')
-    expectReadout('front', /px on \d+\/21/)
-    expectReadout('back', /px on \d+\/21/)
+    expectReadout('front', /px on \d+\/\d+ rows/)
+    expectReadout('back', /px on \d+\/\d+ rows/)
     expect(document.body.textContent).not.toContain('cannot be a 10')
   })
 
@@ -184,9 +191,25 @@ describe('pregrade result readout', () => {
     const [front, back] = fileInputs()
     await upload(front, 'front.jpg')
     await upload(back, 'back.jpg')
-    expectReadout('front', /px on \d+\/21/)
-    expectReadout('back', /px on \d+\/21/)
+    expectReadout('front', /px on \d+\/\d+ rows/)
+    expectReadout('back', /px on \d+\/\d+ rows/)
     expect(document.body.textContent).toContain('AI estimate, not a grade')
     expect(document.body.textContent).not.toContain('cannot be a 10')
+  })
+
+  it('offers save flattened photo only with ?debug=1', async () => {
+    await renderRoute('/pregrade')
+    expect(document.body.textContent).not.toContain('Save flattened photo')
+    unmountRoute()
+    await renderRoute('/pregrade?debug=1')
+    expect(document.querySelector('[data-testid="save-flat-front"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="save-flat-back"]')).toBeTruthy()
+    unmountRoute()
+    await renderRoute('/pregrade/ST01-007')
+    expect(document.body.textContent).not.toContain('Save flattened photo')
+    unmountRoute()
+    await renderRoute('/pregrade/ST01-007?debug=1')
+    expect(document.querySelector('[data-testid="save-flat-front"]')).toBeTruthy()
+    expect(document.querySelector('[data-testid="save-flat-back"]')).toBeTruthy()
   })
 })

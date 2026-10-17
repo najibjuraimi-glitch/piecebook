@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { BackBar, Screen } from '../components/Screen'
 import { SearchField } from '../components/SearchField'
 import { EmptyState } from '../components/EmptyState'
@@ -23,6 +23,7 @@ import { writeVisionSession, type CarriedCentering } from '../store/visionSessio
 import { removePrediction, usePredictions, type StoredPhoto } from '../store/predictions'
 import { chooseMeasure, hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide, type Quad } from '../lib/centering'
 import { loadPhotoFile } from '../lib/photoPixels'
+import { downloadBlob, flattenedPhotoFile } from '../lib/saveFlatPhoto'
 import { buildScores } from '../lib/gradeScore'
 import { EdgeReadout } from '../components/EdgeReadout'
 import { CenteringCanvas, GradeScores } from '../components/GradeScores'
@@ -43,6 +44,8 @@ const VERDICT_LABEL = { go: 'Go', borderline: 'Borderline', 'no-go': 'No-go' } a
 const EN_ONLY_NOTE = 'Piecebook currently only has English card data and prices.'
 
 export function PregradeScreen() {
+  const [params] = useSearchParams()
+  const debugSave = params.get('debug') === '1'
   const [q, setQ] = useState('')
   const navigate = useNavigate()
   const rows = usePredictions()
@@ -240,6 +243,7 @@ export function PregradeScreen() {
             measure={frontMeasure}
             note={frontNote}
             side="front"
+            debugSave={debugSave}
             onFile={(f) => void pickSide(f, 'front')}
             onCamera={hasCamera ? () => setCameraSide('front') : undefined}
           />
@@ -249,6 +253,7 @@ export function PregradeScreen() {
             measure={backMeasure}
             note={backNote}
             side="back"
+            debugSave={debugSave}
             onFile={(f) => void pickSide(f, 'back')}
             onCamera={hasCamera ? () => setCameraSide('back') : undefined}
           />
@@ -502,6 +507,7 @@ function PhotoPick({
   measure,
   note,
   side,
+  debugSave,
   onFile,
   onCamera,
 }: {
@@ -510,11 +516,13 @@ function PhotoPick({
   measure: SideMeasure | null
   note: CameraNote | null
   side: PhotoSide
+  debugSave?: boolean
   onFile: (f: File | null) => void
   onCamera?: () => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [url, setUrl] = useState<string | null>(null)
+  const [saveNote, setSaveNote] = useState<string | null>(null)
 
   useEffect(() => {
     if (!file) {
@@ -564,7 +572,23 @@ function PhotoPick({
         {onCamera && (
           <GhostButton onClick={onCamera}>{file ? 'Retake with camera' : 'Use camera'}</GhostButton>
         )}
+        {debugSave && (
+          <GhostButton
+            data-testid={`save-flat-${side}`}
+            disabled={!file}
+            onClick={() => {
+              if (!file) return
+              void flattenedPhotoFile(file, Boolean(note?.flattened), side).then((saved) => {
+                downloadBlob(saved.blob, saved.name)
+                setSaveNote(saved.note)
+              })
+            }}
+          >
+            Save flattened photo
+          </GhostButton>
+        )}
       </div>
+      {debugSave && saveNote && <p className="mt-2 text-meta text-muted">{saveNote}</p>}
     </div>
   )
 }
