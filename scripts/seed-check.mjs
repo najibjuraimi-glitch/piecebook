@@ -442,6 +442,33 @@ if (!existsSync(healthPath)) {
   if (!Array.isArray(health.warnings)) fail('health.json: warnings must be a list')
 }
 
+// Portfolio snapshot: one totals row per UTC day. Older days are never removed.
+const portfolioHistory = join(DATA, 'portfolio-history.csv')
+const PORTFOLIO_HEADER = 'as_of,source,held_copies,listed_copies,sold_copies,cost_sgd,market_sgd,unpriced_held,unrealized_pl_sgd,realized_pl_sgd,overall_pl_sgd,capital_sgd,roi'
+if (!existsSync(portfolioHistory)) fail('portfolio-history.csv is missing')
+else {
+  const lines = readFileSync(portfolioHistory, 'utf8').replace(/\r\n/g, '\n').trim().split('\n')
+  if (lines[0] !== PORTFOLIO_HEADER) fail(`portfolio-history.csv: header "${lines[0]}"`)
+  const seen = new Set()
+  for (let i = 1; i < lines.length; i++) {
+    const cells = lines[i].split(',')
+    const [asOf, source] = cells
+    if (seen.has(asOf)) fail(`portfolio-history.csv:${i + 1}: duplicate ${asOf}`)
+    seen.add(asOf)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf)) fail(`portfolio-history.csv:${i + 1}: as_of "${asOf}"`)
+    if (source !== 'fixture' && source !== 'sheet') fail(`portfolio-history.csv:${i + 1}: source "${source}"`)
+    if (cells.length !== PORTFOLIO_HEADER.split(',').length) fail(`portfolio-history.csv:${i + 1}: expected ${PORTFOLIO_HEADER.split(',').length} columns`)
+  }
+}
+const boughtFixture = join(DATA, 'bought-fixture.csv')
+if (!existsSync(boughtFixture)) fail('bought-fixture.csv is missing')
+else {
+  const header = readFileSync(boughtFixture, 'utf8').split(/\r?\n/)[0]
+  for (const name of ['Row ID', 'Code', 'Grade/Raw', 'All-in SGD', 'Status', 'Realized P/L SGD']) {
+    if (!header.split(',').includes(name)) fail(`bought-fixture.csv: missing header "${name}"`)
+  }
+}
+
 for (const w of warnings) console.warn(`warn: ${w}`)
 for (const e of errors) console.error(`FAIL: ${e}`)
 console.log(`${files.length} seed files, ${[...counts.values()].reduce((a, b) => a + b, 0)} rows, ${errors.length} errors, ${warnings.length} warnings`)

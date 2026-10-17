@@ -23,9 +23,11 @@ export function AboutPricesScreen() {
           <p>
             A card's <strong>Market</strong> price is the TCGplayer market price for that print as shown on Limitless, read
             once a day. The <em>as of</em> date beside it is the day it was read. Catalogue prices are in US dollars
-            because that is the currency of the source. Costs you log never convert. On Portfolio you can read the same
-            USD seed as S$ at the last European Central Bank euro table; that figure is dated, it is not a bank quote and
-            not a Singapore ask.
+            because that is the currency of the source. Costs you log on a card never convert. Portfolio reads the Bought
+            sheet: what you paid is already in Singapore dollars. A copy’s value is the legal seed figure for that exact
+            print and grade — raw from Limitless, PSA 10 from OP Box Index when that print has one — in S$ at the dated
+            European Central Bank rate. That S$ figure is not a bank quote and not a Singapore ask. The sheet’s own market
+            column is not used.
           </p>
           <p>
             Some prints have no price at all. Those say <strong>No market price</strong> rather than borrow a number from a
@@ -57,6 +59,7 @@ export function AboutPricesScreen() {
         <Section title="What Piecebook never does">
           <ul className="list-disc space-y-1.5 pl-5">
             <li>Invent a price, a card, a set name or a date to fill a gap.</li>
+            <li>Put a PriceCharting figure in the app, or fetch a PriceCharting page.</li>
             <li>Convert a cost you logged into another currency. Costs stay in the currency you paid.</li>
             <li>Show a live quote, an individual sold listing, or a seller’s offer.</li>
             <li>Carry marketplace or affiliate links. No one is paid when you buy.</li>

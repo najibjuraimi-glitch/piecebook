@@ -1,3 +1,7 @@
+/**
+ * Collection-page cost math (owned cards in this browser). The Portfolio screen
+ * does not use it; that screen reads the Bought sheet. See src/lib/boughtBook.ts.
+ */
 import type { Card } from '../data/seed'
 import type { CostBasis, OwnedEntry } from '../store/collection'
 

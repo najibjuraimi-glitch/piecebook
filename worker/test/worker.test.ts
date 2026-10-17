@@ -261,3 +261,62 @@ describe('/sync', () => {
     expect(await r.json()).toMatchObject({ error: 'sync_not_configured' })
   })
 })
+
+describe('/bought', () => {
+  it('does not read the sheet without Access, and stays on the fixture without a key', async () => {
+    const closed = await call(req('/bought'), env({ ACCESS_TEAM_DOMAIN: '', ACCESS_AUD: '' }))
+    expect(closed.status).toBe(503)
+    expect(await closed.json()).toMatchObject({ error: 'bought_not_configured' })
+    const locked = await call(req('/bought'))
+    expect(locked.status).toBe(401)
+    const jwt = await signer.sign(userClaims())
+    const open = await call(req('/bought', { jwt }))
+    expect(open.status).toBe(200)
+    expect(await open.json()).toEqual({ source: 'fixture', reason: 'not_configured' })
+  })
+
+  it('GETs the tab for a signed-in reader and drops PriceCharting columns', async () => {
+    const pair = await crypto.subtle.generateKey(
+      { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+      true,
+      ['sign', 'verify'],
+    )
+    const pkcs8 = await crypto.subtle.exportKey('pkcs8', pair.privateKey)
+    const b64 = btoa(String.fromCharCode(...new Uint8Array(pkcs8)))
+    const wrapped = b64.match(/.{1,64}/g)!.join('\n')
+    const privateKey = `-----BEGIN PRIVATE KEY-----\n${wrapped}\n-----END PRIVATE KEY-----\n`
+    const calls: string[] = []
+    const sheets = async (url: string, init?: RequestInit) => {
+      if (url === `${TEAM}/cdn-cgi/access/certs`) return new Response(JSON.stringify(signer.jwks), { status: 200 })
+      calls.push(`${init?.method ?? 'GET'} ${url}`)
+      if (url === 'https://oauth2.googleapis.com/token') return new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 })
+      if (url.includes('/values/')) {
+        return new Response(
+          JSON.stringify({
+            values: [
+              ['Row ID', 'Code', 'Market value SGD', 'PriceCharting URL', 'Grade/Raw', 'All-in SGD', 'Status'],
+              ['OPB-1', 'ST01-007', '9999', 'https://www.pricecharting.com/secret', 'Raw', '2', 'Held'],
+            ],
+          }),
+          { status: 200 },
+        )
+      }
+      return new Response(JSON.stringify({ sheets: [{ properties: { sheetId: 163782451, title: 'Bought' } }] }), { status: 200 })
+    }
+    const jwt = await signer.sign(userClaims())
+    const e = env({
+      GOOGLE_SERVICE_ACCOUNT_JSON: JSON.stringify({ client_email: 'reader@example.iam.gserviceaccount.com', private_key: privateKey }),
+      BOUGHT_SHEET_ID: 'abcdefghijklmnopqrstuvwxyz0123456789ABCD',
+    })
+    const r = await worker.fetch(req('/bought', { jwt }), e, {} as never, { fetcher: sheets, now: () => NOW })
+    const body = await r.json()
+    expect(r.status).toBe(200)
+    expect(body.source).toBe('sheet')
+    expect(body.matrix[0]).toEqual(['Row ID', 'Code', 'Grade/Raw', 'All-in SGD', 'Status'])
+    expect(JSON.stringify(body)).not.toContain('pricecharting')
+    expect(JSON.stringify(body)).not.toContain('9999')
+    expect(JSON.stringify(body)).not.toContain(privateKey)
+    expect(calls.every((line) => line.startsWith('POST https://oauth2.googleapis.com/token') || line.startsWith('GET https://sheets.googleapis.com/'))).toBe(true)
+    expect(calls.some((line) => /batchUpdate|values:append|PUT |PATCH /.test(line))).toBe(false)
+  })
+})

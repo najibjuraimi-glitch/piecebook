@@ -1,4 +1,6 @@
 # Piecebook — V1 Cost basis + Portfolio (Design addendum)
+
+The Portfolio tab is now the Bought sheet (17 Oct 2026). This addendum still describes cost basis on a card and the collection. It does not describe the current Portfolio screen; see `docs/BOUGHT-SHEET.md`.
 As of: 4 Sep 2026 SGT  
 Owner: Design  
 For: Code (implement)  
