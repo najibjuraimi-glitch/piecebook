@@ -215,8 +215,9 @@ Worker redeployed. If that is ever turned on, agents must send the current ISO t
 or their write loses to the phone under last-write-wins.
 
 Holdings are a separate book in the same KV namespace (`/api/holdings`). A service token may add
-and update those rows while `/sync` stays read-only. The shape is in `docs/BOUGHT-SHEET.md`. No
-Google service account and no extra secret.
+and update those rows while `/sync` stays read-only. The token has no email, so the book key is
+`u:<OWNER_EMAIL>:holdings.v1`, the same key the phone uses when signed in as that address. The
+shape is in `docs/BOUGHT-SHEET.md`. No Google service account and no extra secret.
 
 ## 11. The old site: banner, then retirement
 

@@ -324,6 +324,29 @@ describe('/holdings', () => {
     expect(clash.status).toBe(409)
   })
 
+  it('puts a service-token write in the owner book the phone reads', async () => {
+    const kv = new MemoryKV()
+    const e = env({ USER_DATA: kv, OWNER_EMAIL: 'NajibJuraimi@gmail.com' })
+    const svc = await signer.sign(serviceClaims())
+    const created = await call(
+      req('/holdings', {
+        method: 'POST',
+        jwt: svc,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revision: 0, card: 'Nami', code: 'ST01-007', grade: 'Raw', allInSgd: 2 }),
+      }),
+      e,
+    )
+    expect(created.status).toBe(201)
+    expect([...kv.store.keys()].filter((k) => k.endsWith(':holdings.v1'))).toEqual(['u:najibjuraimi@gmail.com:holdings.v1'])
+
+    const phone = await call(req('/holdings', { jwt: await signer.sign(userClaims()) }), e)
+    expect(await phone.json()).toMatchObject({ source: 'piecebook', revision: 1, copies: [{ rowId: 'OPB-0001', card: 'Nami' }] })
+
+    const other = await call(req('/holdings', { jwt: await signer.sign(userClaims({ email: 'someone@else.example' })) }), e)
+    expect(await other.json()).toMatchObject({ revision: 0, copies: [] })
+  })
+
   it('imports a CSV once for a signed-in user', async () => {
     const e = env()
     const jwt = await signer.sign(userClaims())

@@ -38,6 +38,8 @@ Same host as the rest of the private API: `https://piecebook.pages.dev/api`. Clo
 
 A service token may add and update holdings even while `SERVICE_TOKEN_WRITE` is `0`. That flag still blocks `/sync` writes. `/whoami` keeps reporting `readOnly: true` for the token; that flag is about sync, not this book.
 
+A service token carries no email. Its book is `u:<OWNER_EMAIL>:holdings.v1` (history beside it). Jib’s phone, signed in as that address, reads and writes the same key. Another Access email is a different book.
+
 Every write sends the `revision` from the last GET. A stale revision is `409 revision_conflict`. Row IDs already in the book are not reused.
 
 ```bash

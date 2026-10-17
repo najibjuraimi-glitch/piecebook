@@ -32,6 +32,15 @@ function fail(result, cors) {
 
 const keyFor = (email, name) => `u:${String(email).toLowerCase()}:${name}`;
 
+/**
+ * One book. A signed-in phone uses its Access email. A service token has no
+ * email; it is pinned to OWNER_EMAIL, the same address the phone uses.
+ */
+function bookEmail(identity, env) {
+  if (identity.kind === "service") return String(env.OWNER_EMAIL || "").trim().toLowerCase();
+  return String(identity.email || "").trim().toLowerCase();
+}
+
 async function readDoc(kv, email) {
   const doc = await kv.get(keyFor(email, STORE), "json");
   if (!doc || typeof doc.revision !== "number" || !Array.isArray(doc.copies)) return emptyHoldings();
@@ -52,7 +61,8 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
   const now = deps.now ? deps.now() : Date.now();
   const today = new Date(now).toISOString().slice(0, 10);
   const log = deps.log || (() => {});
-  const email = identity.email;
+  const email = bookEmail(identity, env);
+  if (!email) return json({ error: "no_identity" }, 403, cors);
 
   const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
   if (declared > MAX_BODY) return json({ error: "too_large" }, 413, cors);
