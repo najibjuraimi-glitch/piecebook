@@ -1,7 +1,8 @@
 /**
- * Legal quotes for the daily snapshot, read from the seed CSVs already in the repo.
- * Same rules as src/lib/cardPrices.ts: raw is Limitless `market_usd` for this print,
- * PSA 9 / PSA 10 only when the OP Box Index row is complete and names a printing.
+ * English stored quotes, read from the seed CSVs already in the repo.
+ * Same rule as legalQuote: raw is Limitless `market_usd` for this EN print.
+ * PSA 9 / PSA 10 are used only when the stored printing is English.
+ * A Japanese OP Box Index median is not a Portfolio value.
  * A parallel does not inherit another print. PriceCharting is not read.
  */
 import { readdirSync, readFileSync } from 'node:fs'
@@ -79,6 +80,12 @@ export function quoteFor(code, grade) {
   if (!code || (grade !== 'raw' && grade !== 'psa9' && grade !== 'psa10')) return null
   const row = rows.get(code) ?? rows.get(code.toUpperCase()) ?? [...rows.entries()].find(([k]) => k.toUpperCase() === code.toUpperCase())?.[1]
   if (!row) return null
+  const lang = (row.language || '').trim().toUpperCase()
+  if (lang && lang !== 'EN') return null
   if (grade === 'raw') return rawQuote(row)
-  return gradedQuote(row, grade)
+  const quote = gradedQuote(row, grade)
+  if (!quote) return null
+  const prefix = grade === 'psa9' ? 'psa9' : 'psa10'
+  if ((row[`${prefix}_printing`] || '').toLowerCase() !== 'english') return null
+  return quote
 }

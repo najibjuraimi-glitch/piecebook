@@ -456,7 +456,7 @@ else {
     if (seen.has(asOf)) fail(`portfolio-history.csv:${i + 1}: duplicate ${asOf}`)
     seen.add(asOf)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf)) fail(`portfolio-history.csv:${i + 1}: as_of "${asOf}"`)
-    if (source !== 'fixture' && source !== 'sheet') fail(`portfolio-history.csv:${i + 1}: source "${source}"`)
+    if (source !== 'fixture' && source !== 'piecebook') fail(`portfolio-history.csv:${i + 1}: source "${source}"`)
     if (cells.length !== PORTFOLIO_HEADER.split(',').length) fail(`portfolio-history.csv:${i + 1}: expected ${PORTFOLIO_HEADER.split(',').length} columns`)
   }
 }

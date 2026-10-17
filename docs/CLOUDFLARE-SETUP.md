@@ -214,6 +214,10 @@ Writes from agents are refused (`403 read_only`) until `SERVICE_TOKEN_WRITE = "1
 Worker redeployed. If that is ever turned on, agents must send the current ISO time as `updatedAt`
 or their write loses to the phone under last-write-wins.
 
+Holdings are a separate book in the same KV namespace (`/api/holdings`). A service token may add
+and update those rows while `/sync` stays read-only. The shape is in `docs/BOUGHT-SHEET.md`. No
+Google service account and no extra secret.
+
 ## 11. The old site: banner, then retirement
 
 - Turn the "we moved" banner on without touching code **[API ✓ with `gh`]**:

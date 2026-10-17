@@ -262,61 +262,99 @@ describe('/sync', () => {
   })
 })
 
-describe('/bought', () => {
-  it('does not read the sheet without Access, and stays on the fixture without a key', async () => {
-    const closed = await call(req('/bought'), env({ ACCESS_TEAM_DOMAIN: '', ACCESS_AUD: '' }))
+describe('/holdings', () => {
+  it('stays closed without Access', async () => {
+    const closed = await call(req('/holdings'), env({ ACCESS_TEAM_DOMAIN: '', ACCESS_AUD: '' }))
     expect(closed.status).toBe(503)
-    expect(await closed.json()).toMatchObject({ error: 'bought_not_configured' })
-    const locked = await call(req('/bought'))
+    expect(await closed.json()).toMatchObject({ error: 'holdings_not_configured' })
+    const locked = await call(req('/holdings'))
     expect(locked.status).toBe(401)
-    const jwt = await signer.sign(userClaims())
-    const open = await call(req('/bought', { jwt }))
-    expect(open.status).toBe(200)
-    expect(await open.json()).toEqual({ source: 'fixture', reason: 'not_configured' })
   })
 
-  it('GETs the tab for a signed-in reader and drops PriceCharting columns', async () => {
-    const pair = await crypto.subtle.generateKey(
-      { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
-      true,
-      ['sign', 'verify'],
+  it('lets a service token add and update a row, and never echoes the token', async () => {
+    const lines: unknown[] = []
+    const e = env()
+    const jwt = await signer.sign(serviceClaims())
+    const secret = 'super-secret-token-value'
+    const created = await worker.fetch(
+      req('/holdings', {
+        method: 'POST',
+        jwt,
+        headers: { 'Content-Type': 'application/json', 'CF-Access-Client-Secret': secret },
+        body: JSON.stringify({ revision: 0, card: 'Nami', code: 'ST01-007', grade: 'Raw', allInSgd: 2, marketValueSgd: 5, marketSource: 'Cards', marketAsOf: '2026-10-12' }),
+      }),
+      e,
+      {} as never,
+      { ...deps, log: (line: unknown) => lines.push(line) },
     )
-    const pkcs8 = await crypto.subtle.exportKey('pkcs8', pair.privateKey)
-    const b64 = btoa(String.fromCharCode(...new Uint8Array(pkcs8)))
-    const wrapped = b64.match(/.{1,64}/g)!.join('\n')
-    const privateKey = `-----BEGIN PRIVATE KEY-----\n${wrapped}\n-----END PRIVATE KEY-----\n`
-    const calls: string[] = []
-    const sheets = async (url: string, init?: RequestInit) => {
-      if (url === `${TEAM}/cdn-cgi/access/certs`) return new Response(JSON.stringify(signer.jwks), { status: 200 })
-      calls.push(`${init?.method ?? 'GET'} ${url}`)
-      if (url === 'https://oauth2.googleapis.com/token') return new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 })
-      if (url.includes('/values/')) {
-        return new Response(
-          JSON.stringify({
-            values: [
-              ['Row ID', 'Code', 'Market value SGD', 'PriceCharting URL', 'Grade/Raw', 'All-in SGD', 'Status'],
-              ['OPB-1', 'ST01-007', '9999', 'https://www.pricecharting.com/secret', 'Raw', '2', 'Held'],
-            ],
-          }),
-          { status: 200 },
-        )
-      }
-      return new Response(JSON.stringify({ sheets: [{ properties: { sheetId: 163782451, title: 'Bought' } }] }), { status: 200 })
-    }
+    const body = await created.json()
+    expect(created.status).toBe(201)
+    expect(body.copy.rowId).toBe('OPB-0001')
+    expect(body.revision).toBe(1)
+    expect(JSON.stringify(body)).not.toContain(secret)
+    expect(JSON.stringify(body)).not.toContain(jwt)
+    expect(JSON.stringify(lines)).not.toContain(secret)
+    expect(JSON.stringify(lines)).not.toContain(jwt)
+
+    const sold = await call(
+      req('/holdings/OPB-0001/sold', {
+        method: 'POST',
+        jwt,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revision: 1, soldDate: '2026-10-01', soldPrice: 1, currency: 'SGD', feesSgd: 0, shippingOutSgd: 0 }),
+      }),
+      e,
+    )
+    expect(sold.status).toBe(200)
+    expect(await sold.json()).toMatchObject({ revision: 2, copy: { status: 'Sold', netSgd: 1, realizedSgd: -1 } })
+
+    const read = await call(req('/holdings', { jwt }), e)
+    const book = await read.json()
+    expect(book.copies).toHaveLength(1)
+    expect(book.copies[0].marketSource).toBe('Cards')
+    const clash = await call(
+      req('/holdings', {
+        method: 'POST',
+        jwt,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revision: 0, card: 'Other' }),
+      }),
+      e,
+    )
+    expect(clash.status).toBe(409)
+  })
+
+  it('imports a CSV once for a signed-in user', async () => {
+    const e = env()
     const jwt = await signer.sign(userClaims())
-    const e = env({
-      GOOGLE_SERVICE_ACCOUNT_JSON: JSON.stringify({ client_email: 'reader@example.iam.gserviceaccount.com', private_key: privateKey }),
-      BOUGHT_SHEET_ID: 'abcdefghijklmnopqrstuvwxyz0123456789ABCD',
-    })
-    const r = await worker.fetch(req('/bought', { jwt }), e, {} as never, { fetcher: sheets, now: () => NOW })
-    const body = await r.json()
-    expect(r.status).toBe(200)
-    expect(body.source).toBe('sheet')
-    expect(body.matrix[0]).toEqual(['Row ID', 'Code', 'Grade/Raw', 'All-in SGD', 'Status'])
-    expect(JSON.stringify(body)).not.toContain('pricecharting')
-    expect(JSON.stringify(body)).not.toContain('9999')
-    expect(JSON.stringify(body)).not.toContain(privateKey)
-    expect(calls.every((line) => line.startsWith('POST https://oauth2.googleapis.com/token') || line.startsWith('GET https://sheets.googleapis.com/'))).toBe(true)
-    expect(calls.some((line) => /batchUpdate|values:append|PUT |PATCH /.test(line))).toBe(false)
+    const csv = 'Row ID,Code,Grade/Raw,All-in SGD,Status,Card,Market value SGD,Notes\nOPB-0004,ST01-007,Raw,2,Held,Nami,9,Sample copy\n'
+    const first = await call(
+      req('/holdings/import', {
+        method: 'POST',
+        jwt,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revision: 0, csv }),
+      }),
+      e,
+    )
+    expect(first.status).toBe(200)
+    expect(await first.json()).toMatchObject({ imported: 1, revision: 1 })
+    const second = await call(
+      req('/holdings/import', {
+        method: 'POST',
+        jwt,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revision: 1, csv }),
+      }),
+      e,
+    )
+    expect(second.status).toBe(409)
+    expect(await second.json()).toMatchObject({ error: 'already_imported' })
+  })
+
+  it('says holdings are not configured when KV is missing', async () => {
+    const r = await call(req('/holdings', { jwt: await signer.sign(userClaims()) }), env({ USER_DATA: undefined }))
+    expect(r.status).toBe(503)
+    expect(await r.json()).toMatchObject({ error: 'holdings_not_configured' })
   })
 })

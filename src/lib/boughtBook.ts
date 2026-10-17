@@ -1,14 +1,11 @@
 /**
- * The Bought tab, keyed by header name. One row is one physical copy.
- * Market value is never read from the sheet: the caller supplies a legal quote
- * (seed raw, or an OP Box Index PSA 10 / PSA 9 that names its printing).
- * Nothing here writes to a spreadsheet.
+ * One physical copy, keyed by header name when a Bought-tab CSV is imported.
+ * Piecebook stores the rows. A caller may supply an English stored quote;
+ * a Japanese printing is not a value. Otherwise the copy's own manual market
+ * figure is used. Nothing here writes to a spreadsheet.
  */
 
 export const STALE_AFTER_DAYS = 7
-
-/** Tab id (`gid`) of the Bought sheet. Not the spreadsheet id. */
-export const BOUGHT_TAB_GID = 163782451
 
 export const BOUGHT_HEADERS = [
   'Date',
@@ -38,9 +35,6 @@ export const BOUGHT_HEADERS = [
   'Realized P/L SGD',
 ] as const
 
-/** Sheet columns that must not become a Piecebook value. */
-export const IGNORED_VALUE_HEADERS = ['Market value SGD', 'P/L SGD', 'PriceCharting URL'] as const
-
 const REQUIRED_HEADERS = ['Row ID', 'Code', 'Grade/Raw', 'All-in SGD', 'Status'] as const
 
 export const SNAPSHOT_HEADER =
@@ -48,10 +42,11 @@ export const SNAPSHOT_HEADER =
 
 export type CopyStatus = 'held' | 'listed' | 'sold'
 export type LegalGrade = 'raw' | 'psa9' | 'psa10'
-export type BookSource = 'fixture' | 'sheet'
+export type BookSource = 'fixture' | 'piecebook'
 
 export interface PriceQuote {
-  usd: number
+  /** Null on a manual SGD figure: that number is not a USD seed price. */
+  usd: number | null
   sgd: number
   source: string
   url: string | null
@@ -72,7 +67,15 @@ export interface BoughtCopy {
   gstSgd: number | null
   forwardingSgd: number | null
   allInSgd: number | null
+  /** Hand-entered SGD figure. Used only when no English stored quote matches. */
+  manualMarketSgd: number | null
+  /** Label shown with the manual figure, e.g. "Sheet (Cards)" or "Cards". */
+  manualSource: string
+  /** ISO day the manual figure was written. Null means undated. */
+  manualAsOf: string | null
   notes: string
+  /** Click-through only. Never fetched, never used as a price. */
+  priceChartingUrl: string | null
   status: CopyStatus
   statusText: string
   soldDate: string | null
@@ -221,6 +224,34 @@ export function parseSheetDate(raw: string): string | null {
   return null
 }
 
+/**
+ * The first real date written inside a note: ISO, "1 Sep 2026", or D/M/YYYY.
+ * A bare number is not a date. No match means the manual figure is undated.
+ */
+export function findDateInText(raw: string): string | null {
+  if (!raw) return null
+  const iso = raw.match(/(?:^|[^0-9])(\d{4}-\d{2}-\d{2})(?![0-9])/)
+  if (iso && parseSheetDate(iso[1])) return iso[1]
+  const mon = raw.match(/(?:^|[^0-9A-Za-z])(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})(?![0-9A-Za-z])/)
+  if (mon) {
+    const d = parseSheetDate(mon[1])
+    if (d) return d
+  }
+  const slash = raw.match(/(?:^|[^0-9])(\d{1,2}\/\d{1,2}\/\d{4})(?![0-9])/)
+  if (slash) {
+    const d = parseSheetDate(slash[1])
+    if (d) return d
+  }
+  return null
+}
+
+export function httpsUrl(raw: string): string | null {
+  const t = raw.trim()
+  if (!t || /\s/.test(t)) return null
+  if (!/^https?:\/\//i.test(t)) return null
+  return t
+}
+
 /** Raw, PSA 9 or PSA 10 only. Any other grade text has no legal price. */
 export function legalGrade(text: string): LegalGrade | null {
   const s = text.trim().toLowerCase().replace(/\s+/g, ' ')
@@ -282,6 +313,12 @@ export function parseBoughtMatrix(matrix: string[][]): { copies: BoughtCopy[]; m
     const status = copyStatus(statusText)
     const dateLabel = cell(row, index, 'Date')
     const soldDateLabel = cell(row, index, 'Sold date')
+    const notes = cell(row, index, 'Notes')
+    const marketRaw = parseMoney(cell(row, index, 'Market value SGD'))
+    const manualMarketSgd = marketRaw != null && marketRaw >= 0 ? marketRaw : null
+    const sourceCol = cell(row, index, 'Market source')
+    const asOfCell = cell(row, index, 'Market as of')
+    const manualAsOf = parseSheetDate(asOfCell) || findDateInText(asOfCell) || findDateInText(notes)
     const sheetRealized = parseMoney(cell(row, index, 'Realized P/L SGD'))
     const netSgd = parseMoney(cell(row, index, 'Net SGD'))
     const allInSgd = parseMoney(cell(row, index, 'All-in SGD'))
@@ -306,7 +343,11 @@ export function parseBoughtMatrix(matrix: string[][]): { copies: BoughtCopy[]; m
       gstSgd: parseMoney(cell(row, index, 'GST SGD')),
       forwardingSgd: parseMoney(cell(row, index, 'Forwarding SGD')),
       allInSgd,
-      notes: cell(row, index, 'Notes'),
+      manualMarketSgd,
+      manualSource: sourceCol || (manualMarketSgd != null ? 'Sheet (Cards)' : ''),
+      manualAsOf: manualMarketSgd != null ? manualAsOf : null,
+      notes,
+      priceChartingUrl: httpsUrl(cell(row, index, 'PriceCharting URL')),
       status,
       statusText,
       soldDate: parseSheetDate(soldDateLabel),
@@ -324,21 +365,31 @@ export function parseBoughtMatrix(matrix: string[][]): { copies: BoughtCopy[]; m
   return { copies, missing: [], skipped }
 }
 
-/** Drop sheet market, sheet P/L and any PriceCharting URL before a response leaves the server. */
-export function omitIgnoredValueColumns(matrix: string[][]): string[][] {
-  if (matrix.length === 0) return matrix
-  const header = matrix[0].map((h) => String(h ?? '').trim())
-  const drop = new Set<number>()
-  header.forEach((name, i) => {
-    if ((IGNORED_VALUE_HEADERS as readonly string[]).includes(name)) drop.add(i)
-  })
-  if (drop.size === 0) return matrix
-  return matrix.map((row) => row.filter((_, i) => !drop.has(i)))
+/** An English stored quote. A Japanese printing, or a manual SGD figure, is not one. */
+export function isEnglishStoredQuote(quote: PriceQuote | null): quote is PriceQuote {
+  if (!quote) return false
+  if (quote.usd == null || !Number.isFinite(quote.usd) || quote.usd < 0) return false
+  if (!Number.isFinite(quote.sgd) || !quote.asOf || !quote.source) return false
+  if ((quote.detail || '').toLowerCase().includes('japanese')) return false
+  return true
 }
 
-export function valueCopy(copy: BoughtCopy, quote: PriceQuote | null, today: string): ValuedCopy {
-  const usable = quote && Number.isFinite(quote.sgd) && quote.asOf && quote.source ? quote : null
-  const stale = usable ? isStale(usable.asOf, today) : false
+function manualQuote(copy: BoughtCopy): PriceQuote | null {
+  if (copy.manualMarketSgd == null || !Number.isFinite(copy.manualMarketSgd) || copy.manualMarketSgd < 0) return null
+  const asOf = copy.manualAsOf && /^\d{4}-\d{2}-\d{2}$/.test(copy.manualAsOf) ? copy.manualAsOf : ''
+  return {
+    usd: null,
+    sgd: round2(copy.manualMarketSgd),
+    source: copy.manualSource.trim() || 'Manual',
+    url: null,
+    asOf,
+    detail: asOf ? null : 'Undated',
+  }
+}
+
+export function valueCopy(copy: BoughtCopy, stored: PriceQuote | null, today: string): ValuedCopy {
+  const usable = isEnglishStoredQuote(stored) ? stored : manualQuote(copy)
+  const stale = usable ? (usable.asOf ? isStale(usable.asOf, today) : true) : false
   const unrealizedSgd =
     copy.status !== 'sold' && usable && copy.allInSgd != null ? round2(usable.sgd - copy.allInSgd) : null
   const underCost =
@@ -360,9 +411,9 @@ function sum(nums: (number | null | undefined)[]): number | null {
   return round2(xs.reduce((a, b) => a + b, 0))
 }
 
+/** Same code and the same Grade/Raw text. PSA 10 and Raw stay on separate lines. */
 function groupKey(copy: ValuedCopy): string {
-  const grade = copy.grade ?? copy.gradeText.trim().toLowerCase()
-  return `${copy.code.trim().toUpperCase()}|${grade}`
+  return `${copy.code.trim().toUpperCase()}|${copy.gradeText.trim()}`
 }
 
 export function summariseBought(copies: ValuedCopy[]): BoughtSummary {
@@ -472,6 +523,24 @@ export function dismissAlerts(memory: AlertMemory, alerts: UnderCostAlert[]): Al
 
 function moneyCell(n: number | null): string {
   return n == null ? '' : n.toFixed(2)
+}
+
+export function snapshotView(summary: BoughtSummary, asOf: string, source: BookSource): SnapshotView {
+  return {
+    asOf,
+    source,
+    heldCopies: summary.heldCopies,
+    listedCopies: summary.listedCopies,
+    soldCopies: summary.soldCopies,
+    costSgd: summary.costSgd,
+    marketSgd: summary.marketSgd,
+    unpricedHeld: summary.unpricedHeld,
+    unrealizedSgd: summary.unrealizedSgd,
+    realizedSgd: summary.realizedSgd,
+    overallSgd: summary.overallSgd,
+    capitalSgd: summary.capitalSgd,
+    roi: summary.roi,
+  }
 }
 
 export function snapshotLine(summary: BoughtSummary, asOf: string, source: BookSource): string {

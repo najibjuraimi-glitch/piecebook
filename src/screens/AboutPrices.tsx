@@ -23,11 +23,11 @@ export function AboutPricesScreen() {
           <p>
             A card's <strong>Market</strong> price is the TCGplayer market price for that print as shown on Limitless, read
             once a day. The <em>as of</em> date beside it is the day it was read. Catalogue prices are in US dollars
-            because that is the currency of the source. Costs you log on a card never convert. Portfolio reads the Bought
-            sheet: what you paid is already in Singapore dollars. A copy’s value is the legal seed figure for that exact
-            print and grade — raw from Limitless, PSA 10 from OP Box Index when that print has one — in S$ at the dated
-            European Central Bank rate. That S$ figure is not a bank quote and not a Singapore ask. The sheet’s own market
-            column is not used.
+            because that is the currency of the source. Costs you log on a card never convert. Portfolio is your own
+            book: what you paid is already in Singapore dollars. A copy’s value is the English stored figure for that
+            exact print and grade — raw from Limitless, and a graded figure only when its printing is English — then a
+            market value you typed yourself, in S$ at the dated European Central Bank rate for the seed figures. That
+            S$ figure is not a bank quote and not a Singapore ask. A Japanese sold median is not used for a holding.
           </p>
           <p>
             Some prints have no price at all. Those say <strong>No market price</strong> rather than borrow a number from a

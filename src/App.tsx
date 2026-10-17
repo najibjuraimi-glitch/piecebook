@@ -6,6 +6,7 @@ import { SetsScreen } from './screens/Sets'
 import { SetDetailScreen } from './screens/SetDetail'
 import { CardDetailScreen } from './screens/CardDetail'
 import { CollectionScreen } from './screens/Collection'
+import { HoldingFormScreen } from './screens/HoldingForm'
 import { PortfolioScreen } from './screens/Portfolio'
 import { NotFoundScreen } from './screens/NotFound'
 import { AboutPricesScreen } from './screens/AboutPrices'
@@ -49,6 +50,9 @@ export default function App() {
         <Route path="/cards/:cardNumber" element={<CardDetailScreen />} />
         <Route path="/collection" element={<CollectionScreen />} />
         <Route path="/portfolio" element={<PortfolioScreen />} />
+        <Route path="/portfolio/new" element={<HoldingFormScreen mode="add" />} />
+        <Route path="/portfolio/:rowId/sold" element={<HoldingFormScreen mode="sold" />} />
+        <Route path="/portfolio/:rowId" element={<HoldingFormScreen mode="edit" />} />
         <Route path="/about-prices" element={<AboutPricesScreen />} />
         <Route path="/data" element={<DataHealthScreen />} />
         <Route path="/characters/:name" element={<CharacterScreen />} />
