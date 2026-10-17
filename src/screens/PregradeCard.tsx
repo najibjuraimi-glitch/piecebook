@@ -199,7 +199,7 @@ function PricesCard({ card }: { card: Card }) {
     <section className="mt-8 rounded-2xl border border-line bg-surface px-5 py-4" aria-label="Prices">
       <h2 className="text-title text-ink">Prices</h2>
       <p className="mt-1 text-meta text-muted">
-        Raw is the ungraded seed market for this print. PSA 9 and PSA 10 appear only when a sourced figure is already stored. Not an offer.
+        Raw is the ungraded seed market for this print. PSA 9 and PSA 10 appear only when a sourced figure is stored for this same print. Not an offer.
       </p>
       <ul className="mt-4 divide-y divide-line">
         {rows.map((row) => {
@@ -207,7 +207,7 @@ function PricesCard({ card }: { card: Card }) {
           return (
             <li key={row.grade} className="py-3 first:pt-0 last:pb-0" data-testid={`price-${row.grade}`}>
               <p className="text-meta font-medium text-muted">{row.label}</p>
-              {priced ? (
+              {priced && row.detail ? (
                 <>
                   <p className="tabular mt-1 text-[22px] font-semibold leading-7 tracking-[-0.02em] text-ink">
                     {formatUsMarketUsd(row.usd!)}
@@ -222,7 +222,7 @@ function PricesCard({ card }: { card: Card }) {
                     >
                       {row.source}
                     </a>
-                    <span className="text-muted"> · ungraded TCGplayer market · {formatDate(row.asOf!)}</span>
+                    <span className="text-muted"> · {row.detail} · {formatDate(row.asOf!)}</span>
                   </p>
                 </>
               ) : (
