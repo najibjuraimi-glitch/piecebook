@@ -5,6 +5,7 @@ import { getCard, type Card } from '../data/seed'
 import { advicePrices } from './cardPrices'
 import {
   parseBoughtMatrix,
+  printCode,
   readSnapshots,
   summariseBought,
   valueCopies,
@@ -36,7 +37,7 @@ export interface LoadedBook {
  */
 export function legalQuote(code: string, grade: LegalGrade | null): PriceQuote | null {
   if (!code || !grade) return null
-  const card = getCard(code)
+  const card = getCard(printCode(code))
   if (!card || card.language.toUpperCase() !== 'EN') return null
   if (grade !== 'raw') {
     const printing = grade === 'psa10' ? card.psa10Printing : card.psa9Printing
