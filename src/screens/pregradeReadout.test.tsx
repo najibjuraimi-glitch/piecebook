@@ -167,4 +167,20 @@ describe('pregrade result readout', () => {
     expect(document.querySelector('[data-testid="save-flat-front"]')).toBeTruthy()
     expect(document.querySelector('[data-testid="save-flat-back"]')).toBeTruthy()
   })
+
+  it('shows a sourced Japanese PSA 10 and leaves PSA 9 empty', async () => {
+    await renderRoute('/pregrade/OP05-100p2')
+    expect(priceText('raw')).toContain('US $133.85')
+    expect(priceText('raw')).toContain('ungraded TCGplayer market')
+    expect(priceText('psa9')).toContain('No price yet')
+    expect(priceText('psa9')).not.toMatch(/\$/)
+    expect(priceText('psa10')).toContain('US $260.00')
+    expect(priceText('psa10')).toContain('OP Box Index')
+    expect(priceText('psa10')).toContain('Japanese printing · sold median')
+    expect(priceText('psa10')).toContain('14 Sep 2026')
+    expect(document.querySelector('[data-testid="price-psa10"] a')?.getAttribute('href')).toBe(
+      'https://opboxindex.com/cards/op05-100-enel-100-sp.html',
+    )
+    expect(document.body.textContent).not.toContain('Mark submitted')
+  })
 })

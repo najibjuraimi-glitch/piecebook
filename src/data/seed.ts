@@ -23,6 +23,18 @@ export interface Card {
   imageUrl: string | null
   marketUsd: number | null
   asOf: string | null
+  /** PSA 9 sold figure for this print, or null when the seed has none. */
+  psa9Usd: number | null
+  psa9AsOf: string | null
+  psa9Source: string | null
+  psa9Url: string | null
+  /** `japanese` or `english`: the printing the sale sample was for. */
+  psa9Printing: string | null
+  psa10Usd: number | null
+  psa10AsOf: string | null
+  psa10Source: string | null
+  psa10Url: string | null
+  psa10Printing: string | null
   isParallel: boolean
   /**
    * Human name for a parallel print as Limitless labels it ("Alternate Art",
@@ -69,6 +81,18 @@ function toCard(row: Record<string, string>): Card | null {
   const cardNumber = row.card_number
   if (!cardNumber || !row.set_code || !isAllowedRow(row.set_code, cardNumber)) return null
   const market = row.market_usd === '' ? NaN : Number(row.market_usd)
+  const graded = (prefix: 'psa9' | 'psa10') => {
+    const usd = row[`${prefix}_usd`] === '' || row[`${prefix}_usd`] == null ? NaN : Number(row[`${prefix}_usd`])
+    return {
+      usd: Number.isFinite(usd) ? usd : null,
+      asOf: row[`${prefix}_as_of`] || null,
+      source: row[`${prefix}_source`] || null,
+      url: row[`${prefix}_url`] || null,
+      printing: row[`${prefix}_printing`] || null,
+    }
+  }
+  const psa9 = graded('psa9')
+  const psa10 = graded('psa10')
   return {
     setCode: row.set_code,
     setName: row.set_name,
@@ -80,6 +104,16 @@ function toCard(row: Record<string, string>): Card | null {
     imageUrl: row.image_url || null,
     marketUsd: Number.isFinite(market) ? market : null,
     asOf: row.as_of || null,
+    psa9Usd: psa9.usd,
+    psa9AsOf: psa9.asOf,
+    psa9Source: psa9.source,
+    psa9Url: psa9.url,
+    psa9Printing: psa9.printing,
+    psa10Usd: psa10.usd,
+    psa10AsOf: psa10.asOf,
+    psa10Source: psa10.source,
+    psa10Url: psa10.url,
+    psa10Printing: psa10.printing,
     isParallel: isParallelNumber(cardNumber),
     variant: row.variant || null,
   }

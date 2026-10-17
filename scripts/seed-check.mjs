@@ -13,6 +13,10 @@
  *   - card numbers unique within a file; base checklist has no gaps
  *   - rarity is a known code; market_usd is blank or a non-negative number;
  *     as_of is blank iff market_usd is blank, else an ISO date
+ *   - psa9_* and psa10_* are blank together or a real figure: positive USD,
+ *     ISO date, source opboxindex, an OP Box Index card URL, printing
+ *     japanese or english. Two prints never share a graded URL. PSA 9 stays
+ *     blank while that source publishes no PSA 9 price.
  *   - image_url is on the Limitless CDN (nothing else is ever hotlinked)
  *   - SEED-VERSION.txt row counts match the files
  *   - variant is set on every parallel and blank on every base print
@@ -36,7 +40,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const DATA = join(dirname(fileURLToPath(import.meta.url)), '..', 'data')
-const HEADER = 'set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant'
+const HEADER = 'set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant,psa9_usd,psa9_as_of,psa9_source,psa9_url,psa9_printing,psa10_usd,psa10_as_of,psa10_source,psa10_url,psa10_printing'
+const HEADER_FIELDS = HEADER.split(',')
 const ATTR_HEADER = 'card_number,variant,category,color,cost,life,power,counter,attribute,types,effect,trigger,artist,block,standard,extra'
 const CATEGORIES = new Set(['Leader', 'Character', 'Event', 'Stage'])
 const RARITIES = new Set(['L', 'C', 'UC', 'R', 'SR', 'SEC', 'SP', 'TR', 'P'])
@@ -49,6 +54,24 @@ const errors = []
 const warnings = []
 const fail = (m) => errors.push(m)
 const warn = (m) => warnings.push(m)
+/** Graded card-page URL → card number. Two prints sharing one page would mean a borrowed price. */
+const gradedUrls = new Map()
+
+function checkGraded(file, line, num, grade, usd, asOf, source, url, printing) {
+  const parts = [usd, asOf, source, url, printing]
+  const any = parts.some((p) => p !== '')
+  const all = parts.every((p) => p !== '')
+  if (any && !all) fail(`${file}:${line}: ${grade} price, date, source, url and printing must be blank together`)
+  if (!any) return
+  if (!(/^\d+(\.\d{1,2})?$/.test(usd) && Number(usd) > 0)) fail(`${file}:${line}: ${grade}_usd "${usd}"`)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf)) fail(`${file}:${line}: ${grade}_as_of "${asOf}"`)
+  if (source !== 'opboxindex') fail(`${file}:${line}: ${grade}_source "${source}"`)
+  if (!url.startsWith('https://opboxindex.com/cards/') || url.includes('?')) fail(`${file}:${line}: ${grade}_url "${url}"`)
+  if (printing !== 'japanese' && printing !== 'english') fail(`${file}:${line}: ${grade}_printing "${printing}"`)
+  const prev = gradedUrls.get(url)
+  if (prev && prev !== num) fail(`${file}:${line}: ${grade}_url ${url} is also on ${prev}`)
+  gradedUrls.set(url, num)
+}
 
 function parseCsv(text) {
   const lines = text.split(/\r?\n/).filter((l) => l.length > 0)
@@ -118,8 +141,9 @@ for (const f of files) {
   const bases = new Set()
   rows.forEach((r, i) => {
     const line = i + 2
-    const [setCode, setName, num, name, rarity, lang, img, usd, asOf, variant] = r
-    if (r.length !== 10) fail(`${f}:${line}: ${r.length} fields`)
+    if (r.length !== HEADER_FIELDS.length) fail(`${f}:${line}: ${r.length} fields`)
+    const col = Object.fromEntries(HEADER_FIELDS.map((h, i) => [h, r[i]]))
+    const { set_code: setCode, set_name: setName, card_number: num, name, rarity, language: lang, image_url: img, market_usd: usd, as_of: asOf, variant } = col
     if (/p\d+$/.test(num) !== (variant !== '')) fail(`${f}:${line}: variant "${variant}" on ${num} (parallels need one, base prints none)`)
     if (setCode !== set.setCode) fail(`${f}:${line}: set_code ${setCode}`)
     if (setName !== set.setName) warn(`${f}:${line}: set_name "${setName}" differs from roster "${set.setName}"`)
@@ -135,6 +159,8 @@ for (const f of files) {
     if (usd !== '' && !(/^\d+(\.\d{1,2})?$/.test(usd) && Number(usd) >= 0)) fail(`${f}:${line}: market_usd "${usd}"`)
     if ((usd === '') !== (asOf === '')) fail(`${f}:${line}: market_usd and as_of must be blank together`)
     if (asOf !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(asOf)) fail(`${f}:${line}: as_of "${asOf}"`)
+    checkGraded(f, line, num, 'psa9', col.psa9_usd, col.psa9_as_of, col.psa9_source, col.psa9_url, col.psa9_printing)
+    checkGraded(f, line, num, 'psa10', col.psa10_usd, col.psa10_as_of, col.psa10_source, col.psa10_url, col.psa10_printing)
   })
   if (bases.size > 0) {
     const max = Math.max(...bases)

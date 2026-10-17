@@ -21,7 +21,9 @@
  *   - regular sets keep same-set numbers only; PRB and ST reprint products keep every
  *     print in the box; a set with no Limitless page of its own (EB-04) is
  *     assembled from its numbers on the other sets' pages
- * Writes data/{code}-en-seed.csv (identity, rarity, image, price, variant),
+ * Writes data/{code}-en-seed.csv (identity, rarity, image, price, variant, and
+ * PSA 9 / PSA 10 columns filled afterwards from OP Box Index — see
+ * scripts/graded-prices.mjs). Also writes
  * data/card-attributes/{code}.csv (category, colour, cost / life, stats,
  * traits, effect and trigger text, artist, block, legality), appends today's
  * priced rows to data/price-history/{code}.csv (one row per card per day,
@@ -49,6 +51,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { SEED_FIELDS as FIELDS, carryGraded, emptyGraded, refreshGradedPrices } from './graded-prices.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const DATA = join(ROOT, 'data')
@@ -68,7 +71,6 @@ const RARITY = {
   'Treasure Rare': 'TR',
 }
 const REPRINT_SETS = /^(PRB|ST)-/ // premium boosters and starter decks are reprint products: every print on the page belongs
-const FIELDS = ['set_code', 'set_name', 'card_number', 'name', 'rarity', 'language', 'image_url', 'market_usd', 'as_of', 'variant']
 const ATTR_DIR = join(DATA, 'card-attributes')
 const ATTR_FIELDS = [
   'card_number', 'variant', 'category', 'color', 'cost', 'life', 'power', 'counter', 'attribute', 'types',
@@ -290,6 +292,7 @@ function buildRows(set, prints, seededBase) {
       market_usd: p.usd ?? '',
       as_of: p.usd ? AS_OF : '',
       variant: p.variant,
+      ...emptyGraded(),
     })
   }
   rows.sort((a, b) => {
@@ -321,18 +324,20 @@ function mergeExistingSeed(set, fresh) {
     const prev = byExisting.get(r.card_number)
     if (prev?.name && !r.name) {
       kept.push(prev)
-      return prev
+      return { ...emptyGraded(), ...prev }
     }
-    return r
+    // A Limitless rebuild does not know graded prices. Keep the ones already stored
+    // until the graded step reads them again; a failed read must not blank them.
+    return { ...emptyGraded(), ...r, ...carryGraded(prev) }
   })
   const have = new Set(rows.map((r) => r.card_number))
   for (const r of existing) {
     if (!have.has(r.card_number)) {
       kept.push(r)
-      rows.push(r)
+      rows.push({ ...emptyGraded(), ...r })
     }
   }
-  if (kept.length === 0) return { kept, rows: fresh }
+  if (kept.length === 0) return { kept, rows }
   const own = prefixOf(set.setCode)
   rows.sort((a, b) => {
     const ao = a.card_number.startsWith(own)
@@ -847,6 +852,16 @@ function repinSeedVersion(counts) {
 const rosterFile = JSON.parse(readFileSync(ROSTER_FILE, 'utf8'))
 const roster = rosterFile.sets
 
+if (args.includes('--graded-only')) {
+  // PSA 9 / PSA 10 only. Does not re-pull Limitless, boxes, FX or health.
+  const graded = await refreshGradedPrices({ dataDir: DATA, dry: DRY })
+  for (const s of graded.skipped) console.log(`  graded skip ${s.setCode} ${s.cardNumber}: ${s.reason}`)
+  for (const f of graded.failedSets) console.error(`  graded: ${f}`)
+  console.log(`  graded: PSA 10 on ${graded.psa10} prints, PSA 9 on ${graded.psa9}`)
+  console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
+  process.exit(graded.failedSets.length ? 1 : 0)
+}
+
 if (HEALTH_ONLY) {
   writeHealth(AS_OF)
   console.log(DRY ? 'Dry run, nothing written.' : 'Done.')
@@ -993,6 +1008,16 @@ try {
 } catch (e) {
   console.error(`  fx: ${e.message}`)
   if (!existsSync(join(DATA, 'fx-usd-sgd.json'))) failures++
+}
+try {
+  const graded = await refreshGradedPrices({ dataDir: DATA, dry: DRY })
+  for (const s of graded.skipped) console.log(`  graded skip ${s.setCode} ${s.cardNumber}: ${s.reason}`)
+  for (const f of graded.failedSets) console.error(`  graded: ${f}`)
+  console.log(`  graded: PSA 10 on ${graded.psa10} prints, PSA 9 on ${graded.psa9}`)
+  if (graded.failedSets.length) failures++
+} catch (e) {
+  console.error(`  graded: ${e.message}`)
+  failures++
 }
 writeHealth(AS_OF)
 console.log(DRY ? 'Dry run, nothing written.' : 'Done.')

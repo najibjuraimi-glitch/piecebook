@@ -15,9 +15,10 @@ describe('advicePrices', () => {
       source: 'Limitless',
       url: 'https://onepiece.limitlesstcg.com/cards/en/ST01-007',
       asOf: '2026-09-05',
+      detail: 'ungraded TCGplayer market',
     })
-    expect(psa9).toMatchObject({ label: 'PSA 9', usd: null, sgd: null, source: null, url: null, asOf: null })
-    expect(psa10).toMatchObject({ label: 'PSA 10', usd: null, sgd: null, source: null, url: null, asOf: null })
+    expect(psa9).toMatchObject({ label: 'PSA 9', usd: null, sgd: null, source: null, url: null, asOf: null, detail: null })
+    expect(psa10).toMatchObject({ label: 'PSA 10', usd: null, sgd: null, source: null, url: null, asOf: null, detail: null })
     expect(NO_PRICE_YET).toBe('No price yet')
   })
 
@@ -50,5 +51,40 @@ describe('advicePrices', () => {
   it('drops a figure that has a number but no date', () => {
     const card = { ...getCard('ST01-007')!, asOf: null }
     expect(advicePrices(card)[0].usd).toBeNull()
+  })
+
+  it('shows a Japanese PSA 10 sold median on that print only', () => {
+    const card = getCard('OP05-100p2')!
+    expect(card.marketUsd).toBe(133.85)
+    const [raw, psa9, psa10] = advicePrices(card)
+    expect(raw.usd).toBe(133.85)
+    expect(raw.detail).toBe('ungraded TCGplayer market')
+    expect(psa9.usd).toBeNull()
+    expect(psa10).toMatchObject({
+      usd: 260,
+      sgd: usdToSgd(260),
+      source: 'OP Box Index',
+      url: 'https://opboxindex.com/cards/op05-100-enel-100-sp.html',
+      asOf: '2026-09-14',
+      detail: 'Japanese printing · sold median',
+    })
+    const base = advicePrices(getCard('OP05-100')!)
+    const other = advicePrices(getCard('OP05-100p1')!)
+    expect(base[2].usd).toBeNull()
+    expect(other[2].usd).toBeNull()
+    expect(base[2].url).toBeNull()
+    expect(other[2].url).toBeNull()
+  })
+
+  it('drops a graded number that does not name its printing', () => {
+    const card = {
+      ...getCard('OP05-100p2')!,
+      psa10Usd: 260,
+      psa10AsOf: '2026-09-14',
+      psa10Source: 'opboxindex',
+      psa10Url: 'https://opboxindex.com/cards/op05-100-enel-100-sp.html',
+      psa10Printing: null,
+    }
+    expect(advicePrices(card)[2].usd).toBeNull()
   })
 })

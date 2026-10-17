@@ -58,7 +58,7 @@ export function AboutPricesScreen() {
           <ul className="list-disc space-y-1.5 pl-5">
             <li>Invent a price, a card, a set name or a date to fill a gap.</li>
             <li>Convert a cost you logged into another currency. Costs stay in the currency you paid.</li>
-            <li>Show live quotes, sold listings or seller offers.</li>
+            <li>Show a live quote, an individual sold listing, or a seller’s offer.</li>
             <li>Carry marketplace or affiliate links. No one is paid when you buy.</li>
             <li>Buy, bid or offer on a card. The photo check is not a desk.</li>
           </ul>
@@ -71,10 +71,21 @@ export function AboutPricesScreen() {
               photo check
             </Link>{' '}
             can rule a PSA 10 out. It never confirms one, and the scores are an AI estimate, not a grade. On the card
-            page, Prices is read-only: raw, PSA 9 and PSA 10. Each figure Piecebook already holds is shown with its
-            source, a link and a date, in US dollars, and the same figure in Singapore dollars at the dated European
-            Central Bank rate. A grade with no sourced price says “No price yet”. The ungraded seed market is never
-            shown as a PSA 9 or a PSA 10, and it is never a sold.
+            page, Prices is read-only: raw, PSA 9 and PSA 10. Raw is the ungraded TCGplayer market for that print as
+            Limitless shows it. PSA 10, when a row has one, is a sold median from{' '}
+            <a
+              href="https://opboxindex.com/free-data.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink"
+            >
+              OP Box Index
+            </a>{' '}
+            for the Japanese printing of that same print id (CC BY 4.0; the line names the printing and links the card
+            page). That source does not publish a PSA 9 price, so PSA 9 says “No price yet” until one does. Each figure
+            is shown with its source, a link and a date, in US dollars, and the same figure in Singapore dollars at the
+            dated European Central Bank rate. A grade with no sourced price says “No price yet”. The ungraded market is
+            never shown as a PSA 9 or a PSA 10, and a parallel never receives another print’s price.
           </p>
         </Section>
 
