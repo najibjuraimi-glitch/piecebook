@@ -88,7 +88,7 @@ export class VisionCapError extends Error {
   }
 }
 
-/** The shrunken photos that were sent, so a refused check can still feed the worksheet. */
+/** The shrunken photos that were sent, so a refused check can still feed the card page. */
 export interface VisionPhotos {
   frontDataUrl: string
   backDataUrl?: string
@@ -211,7 +211,7 @@ async function checkPhotosOnce(front: Blob, back?: Blob | null, centering?: Cent
   try {
     return await postAndParse(photos, centering)
   } catch (err) {
-    // Whatever went wrong after shrinking, the photos are still good for the worksheet.
+    // Whatever went wrong after shrinking, the photos are still good for the card page.
     if (err instanceof VisionRequestError && !err.photos) err.photos = photos
     throw err
   }
@@ -298,7 +298,7 @@ export async function postCheckWithRetry(body: string, deps?: Partial<PostCheckD
   }
 }
 
-/** Turn a vision data URL back into a File so the worksheet can measure it. */
+/** Turn a vision data URL back into a File so the card page can measure it. */
 export function dataUrlToFile(dataUrl: string, name: string): File {
   const comma = dataUrl.indexOf(',')
   const header = comma >= 0 ? dataUrl.slice(0, comma) : ''

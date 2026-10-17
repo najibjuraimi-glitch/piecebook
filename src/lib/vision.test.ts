@@ -121,7 +121,7 @@ describe('checkRequestBody', () => {
 })
 
 describe('VisionRequestError blocked', () => {
-  it('is never retryable and carries the photos for the worksheet', () => {
+  it('is never retryable and carries the photos for the card page', () => {
     const err = new VisionRequestError('declined', 502, {
       code: 'unparseable_model_output',
       reason: 'blocked',

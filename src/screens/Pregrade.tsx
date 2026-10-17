@@ -2,12 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { BackBar, Screen } from '../components/Screen'
 import { SearchField } from '../components/SearchField'
-import { EmptyState } from '../components/EmptyState'
 import { CardArt } from '../components/CardArt'
 import { GhostButton, PrimaryButton } from '../components/Buttons'
 import { ALL_CARDS, type Card } from '../data/seed'
 import { resolveCardNumber } from '../lib/search'
-import { formatDate } from '../lib/format'
 import { copySeedPriceLine } from '../lib/copyPrice'
 import { rankVisionCandidates } from '../lib/visionCandidates'
 import {
@@ -20,7 +18,6 @@ import {
   type VisionPhotos,
 } from '../lib/vision'
 import { writeVisionSession, type CarriedCentering } from '../store/visionSession'
-import { removePrediction, usePredictions, type StoredPhoto } from '../store/predictions'
 import { chooseMeasure, hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide, type Quad } from '../lib/centering'
 import { loadPhotoFile } from '../lib/photoPixels'
 import { downloadBlob, flattenedPhotoFile } from '../lib/saveFlatPhoto'
@@ -33,14 +30,12 @@ import { flagsOf, tipsForOutcome } from '../lib/photoGuide'
 import {
   centeringLine,
   photoCentering,
-  photoCenteringFromStored,
   summariseCentering,
   unmeasured,
   type CenteringSummary,
   type PhotoCentering,
 } from '../lib/centeringSummary'
 
-const VERDICT_LABEL = { go: 'Go', borderline: 'Borderline', 'no-go': 'No-go' } as const
 const EN_ONLY_NOTE = 'Piecebook currently only has English card data and prices.'
 
 export function PregradeScreen() {
@@ -48,7 +43,6 @@ export function PregradeScreen() {
   const debugSave = params.get('debug') === '1'
   const [q, setQ] = useState('')
   const navigate = useNavigate()
-  const rows = usePredictions()
   const match = useMemo(() => resolveCardNumber(q), [q])
   const unknown = q.trim().length >= 3 && !match
   const [frontFile, setFrontFile] = useState<File | null>(null)
@@ -58,7 +52,7 @@ export function PregradeScreen() {
   const [check, setCheck] = useState<VisionCheck | null>(null)
   const [frontDataUrl, setFrontDataUrl] = useState<string | null>(null)
   const [backDataUrl, setBackDataUrl] = useState<string | undefined>()
-  // Shrunken photos from a refused check: typing the number still hands them to the worksheet.
+  // Shrunken photos from a refused check: typing the number still hands them to the card page.
   const [heldPhotos, setHeldPhotos] = useState<VisionPhotos | null>(null)
   // Measured on this phone the moment a photo is picked, before anything leaves; shown whatever the model says.
   const [frontMeasure, setFrontMeasure] = useState<SideMeasure | null>(null)
@@ -70,7 +64,7 @@ export function PregradeScreen() {
   const [frontNote, setFrontNote] = useState<CameraNote | null>(null)
   const [backNote, setBackNote] = useState<CameraNote | null>(null)
   const hasCamera = useMemo(cameraSupported, [])
-  // The measurements that went with the last check, so confirm hands the worksheet the same numbers.
+  // The measurements that went with the last check, so confirm hands the card page the same numbers.
   const [carriedCentering, setCarriedCentering] = useState<CarriedCentering | null>(null)
   const centering = useMemo<CenteringSummary | null>(
     () => (frontMeasure || backMeasure ? summariseCentering(frontMeasure?.centering ?? null, backMeasure?.centering ?? null) : null),
@@ -136,7 +130,7 @@ export function PregradeScreen() {
     setCheck(null)
     setHeldPhotos(null)
     guide.markUsed()
-    // Measured once, here, from the full-size file. The same result travels to the worksheet,
+    // Measured once, here, from the full-size file. The same result travels to the card page,
     // which never re-measures the shrunken copy it receives.
     const fm = frontMeasure ?? (await measureSide(frontFile, 'front', frontNote))
     const bm = backFile ? (backMeasure ?? (await measureSide(backFile, 'back', backNote))) : null
@@ -196,7 +190,7 @@ export function PregradeScreen() {
     input?.focus()
   }
 
-  /** Typed-number path: if a refused check left photos behind, the worksheet still measures them. */
+  /** Typed-number path: if a refused check left photos behind, the card page still measures them. */
   const openTyped = (card: Card) => {
     if (heldPhotos) {
       writeVisionSession({
@@ -282,7 +276,7 @@ export function PregradeScreen() {
               <div className="mt-2">
                 <GhostButton onClick={useSearchInstead}>Type the card number</GhostButton>
                 <p className="mt-2 text-meta text-muted">
-                  Your photos are kept for this visit: the worksheet still measures centering from them.
+                  Your photos are kept for this visit: the card page still measures centering from them.
                 </p>
               </div>
             )}
@@ -312,7 +306,7 @@ export function PregradeScreen() {
             {check.coverage === 'identify_only' && (
               <p className="mt-3 rounded-2xl border border-line bg-surface px-4 py-3 text-body text-ink">
                 The model read the number but declined to describe this card’s condition. Nothing is ruled
-                out; the worksheet still measures centering from your photos.
+                out; the card page still measures centering from your photos.
               </p>
             )}
             {showEnOnlyNote && (
@@ -366,7 +360,7 @@ export function PregradeScreen() {
         <h2 id="pregrade-search" className="text-title text-ink">
           Or type a card number
         </h2>
-        <p className="mt-1 text-meta text-muted">The photo check is a guess. You can always open a worksheet by number.</p>
+        <p className="mt-1 text-meta text-muted">The photo check is a guess. You can always open a card by number.</p>
         <form
           className="mt-3"
           onSubmit={(e) => {
@@ -401,42 +395,6 @@ export function PregradeScreen() {
           {unknown && <p className="mt-3 text-meta text-muted">That number is not in the seed.</p>}
         </form>
       </section>
-
-      <section className="mt-10" aria-labelledby="pregrade-log">
-        <h2 id="pregrade-log" className="text-title text-ink">
-          Prediction log
-        </h2>
-        <p className="mt-1 text-meta text-muted">On this browser only. A submitted row locks; grade entry is later.</p>
-        {rows.length === 0 ? (
-          <EmptyState message="No predictions yet. Open a card number to start a worksheet." />
-        ) : (
-          <ul className="mt-4 divide-y divide-line rounded-2xl border border-line bg-surface">
-            {rows.map((r) => (
-              <li key={r.id} className="flex items-start gap-3 px-4 py-3">
-                <Link
-                  to={`/pregrade/${encodeURIComponent(r.cardNumber)}?p=${encodeURIComponent(r.id)}`}
-                  className="min-w-0 flex-1 rounded-lg py-1 text-ink hover:underline"
-                >
-                  <p className="text-[15px] font-medium leading-5">
-                    {r.cardName} · {r.cardNumber}
-                  </p>
-                  <p className="tabular mt-0.5 text-meta text-muted">
-                    {r.verdict ? VERDICT_LABEL[r.verdict] : 'Draft'}
-                    {r.status === 'submitted' ? ' · submitted' : ' · draft'}
-                    {r.updatedAt ? ` · ${formatDate(r.updatedAt.slice(0, 10))}` : ''}
-                  </p>
-                  <p className="tabular mt-0.5 text-meta text-muted">{storedCenteringLine(r.photos)}</p>
-                </Link>
-                {r.status !== 'submitted' && (
-                  <GhostButton className="!h-11 !min-h-0 !w-auto shrink-0 px-3 text-[14px]" onClick={() => removePrediction(r.id)}>
-                    Remove
-                  </GhostButton>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
     </Screen>
   )
 }
@@ -467,24 +425,6 @@ async function measureSide(file: File, side: PhotoSide, note: CameraNote | null 
   } catch {
     return { centering: unmeasured(side, 'unreadable'), result: null, bitmap: null }
   }
-}
-
-/** One line for the prediction log: both sides' ratios, or why a side was not measured. */
-export function storedCenteringLine(photos: StoredPhoto[]): string {
-  const front = photos.find((p) => p.side === 'front')
-  const back = photos.find((p) => p.side === 'back')
-  const f = front ? photoCenteringFromStored(front) : null
-  const b = back ? photoCenteringFromStored(back) : null
-  if (!f && !b) return 'Centering: not measured.'
-  const parts = [f && shortLine(f), b && shortLine(b)].filter(Boolean)
-  const summary = summariseCentering(f, b)
-  return `Centering: ${parts.join(' · ')}${summary.cannotBeTen ? ' · cannot be a 10' : ''}`
-}
-
-function shortLine(c: PhotoCentering): string {
-  const who = c.side === 'front' ? 'front' : 'back'
-  if (!c.measured) return `${who} not measured`
-  return `${who} ${c.leftRight} ${c.topBottom}`
 }
 
 export function CenteringBlock({ summary }: { summary: CenteringSummary }) {

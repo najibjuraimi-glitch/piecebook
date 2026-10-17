@@ -13,7 +13,7 @@ import {
 const KEY = 'piecebook.vision.session.v1'
 
 /**
- * The centering read on /pregrade, carried as-is to the worksheet. The worksheet
+ * The centering read on /pregrade, carried as-is to the card page. The card page
  * receives shrunken copies of the photos and must never re-measure them: a
  * second read at another size gives other numbers for the same card.
  */
@@ -23,7 +23,7 @@ export interface CarriedCentering {
 }
 
 export interface VisionSession {
-  /** Null when the model refused the card and the user typed the number: photos still go to the worksheet. */
+  /** Null when the model refused the card and the user typed the number: photos still go to the card page. */
   check: VisionCheck | null
   frontDataUrl: string
   backDataUrl?: string
@@ -31,7 +31,7 @@ export interface VisionSession {
   confirmedCardNumber?: string
 }
 
-/** Same-tab copy so confirm → worksheet still works if sessionStorage quota rejects the data URLs. */
+/** Same-tab copy so confirm → card page still works if sessionStorage quota rejects the data URLs. */
 let memory: VisionSession | null = null
 
 const REJECT_CODES: readonly string[] = ['short-side', 'cut-off', 'angled', 'no-card', 'no-print-edge']
@@ -143,7 +143,7 @@ export function writeVisionSession(session: VisionSession): void {
   try {
     sessionStorage.setItem(KEY, JSON.stringify(session))
   } catch {
-    // Quota: memory still carries the photos to the worksheet in this tab.
+    // Quota: memory still carries the photos to the card page in this tab.
   }
 }
 

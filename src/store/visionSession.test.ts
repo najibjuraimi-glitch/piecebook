@@ -9,7 +9,7 @@ const CARD = { width: 1000, height: 1400, card: { x: 120, y: 100, w: 760, h: 106
 describe('visionSession', () => {
   beforeEach(() => clearVisionSession())
 
-  it('carries photos to the worksheet with no check when the model refused the card', () => {
+  it('carries photos to the card page with no check when the model refused the card', () => {
     writeVisionSession({ check: null, frontDataUrl: FRONT, confirmedCardNumber: 'EB02-010_p1' })
     const s = peekVisionSession()
     expect(s).toEqual({ check: null, frontDataUrl: FRONT, backDataUrl: undefined, confirmedCardNumber: 'EB02-010_p1' })
@@ -21,7 +21,7 @@ describe('visionSession', () => {
     expect(peekVisionSession()?.check).toBeNull()
   })
 
-  it('carries the centering measured on /pregrade so the worksheet never re-measures', () => {
+  it('carries the centering measured on /pregrade so the card page never re-measures', () => {
     const front = measurePhoto(makeSyntheticCard(CARD), 'front')
     const back: PhotoResult = { ok: false, side: 'back', code: 'angled', message: 'Back: photo is angled about 12° (need under ~8°).' }
     writeVisionSession({ check: null, frontDataUrl: FRONT, backDataUrl: BACK, centering: { front, back } })
