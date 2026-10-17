@@ -43,6 +43,8 @@ export interface StoredPhoto {
     resolved?: boolean
     /** Sides where no print border could be read, when `resolved` is false. */
     unresolvedSides?: EdgeName[]
+    /** Why each side was kept or dropped. Shown again when the worksheet is reopened. */
+    edgeNotes?: Partial<Record<EdgeName, string>>
   }
 }
 

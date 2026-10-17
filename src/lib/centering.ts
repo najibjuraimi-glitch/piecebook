@@ -1036,6 +1036,11 @@ const BAND = 2
 const STEP_REACH = 3
 /** A colour step below this is noise, never an edge. */
 const MIN_STEP = 24
+/**
+ * Floor for a light frame on a light table. The ink inside the frame is a much
+ * stronger step, and a vote weighted by strength would throw the frame away.
+ */
+const FLAT_STEP = 16
 /** The card edge needs a stronger step than the print edge: ground and stock differ a lot. */
 const MIN_CARD_STEP = 32
 /** A step this big or bigger counts as a full vote when fitting the card edge line. */
@@ -1369,6 +1374,13 @@ function printEdgeDetail(profile: Rgb[], steps: number[], edge: number, dim: num
       if (gap > 18) break
       continue
     }
+    // On a short gap the ink step is stronger than the step onto the frame.
+    // A wiggle just inside full-bleed art is weaker than the step off the table,
+    // so it is not a border and the side stays unmeasured.
+    if (gap < 14 && steps[q] < steps[edge] * 0.55) {
+      drop ??= 'weaker than the card edge'
+      continue
+    }
     // A line drawn on one colour (a power number, a pinstripe) has the same
     // colour on both sides. A print edge enters a different field.
     const afterEnd = Math.min(profile.length, q + 1 + 10)
@@ -1390,6 +1402,7 @@ function dropPhrase(drops: string[]): string {
     : d.startsWith('band not flat') ? 'band not flat'
     : d.startsWith('too close') ? 'too close to the card edge'
     : d.startsWith('still ramping') ? 'still ramping'
+    : d.startsWith('weaker than') ? 'weaker than the card edge'
     : d.startsWith('band too short') ? 'band too short'
     : d.startsWith('past the') ? 'past the widest border'
     : 'no step inward'
@@ -1397,6 +1410,70 @@ function dropPhrase(drops: string[]): string {
   for (const d of drops) counts.set(kind(d), (counts.get(kind(d)) ?? 0) + 1)
   const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]
   return `${top[0]} (${top[1]}/${STATIONS})`
+}
+
+/**
+ * A light frame on a light table is a faint step. The ink just inside it is a
+ * much stronger one, and the strength-weighted line fit keeps the ink. The
+ * card edge is the outermost step into a flat band that ends at a real print
+ * step: the frame. A shadow ramp is not flat across that band, so it is not
+ * the edge. Null when no side has such a band (full art).
+ */
+function flatStockBeforePrint(profile: Rgb[], steps: number[], edge: number, dim: number): boolean {
+  const runEnd = Math.min(profile.length, edge + 5)
+  if (runEnd - (edge + 1) < 4) return false
+  const inside = meanRgb(profile, edge + 1, runEnd)
+  const before = meanRgb(profile, Math.max(0, edge - 8), edge)
+  if (colorDist(inside, before) < MIN_FIELD_CHANGE) return false
+  const maxPrint = edge + dim * MAX_BORDER_FRAC
+  let next = -1
+  for (const q of stepPeaks(steps, MIN_STEP)) {
+    if (q - edge < MIN_BORDER_GAP) continue
+    if (q > maxPrint) break
+    next = q
+    break
+  }
+  if (next < 0) return false
+  // The ink step is the strong one. A wiggle inside art is weaker than the
+  // step from the table onto the art, so that wiggle is not a frame.
+  if (steps[next] < steps[edge]) return false
+  const bandStart = edge + 2
+  const bandEnd = next - 1
+  if (bandEnd - bandStart < 3) return false
+  const mean = meanRgb(profile, bandStart, bandEnd)
+  let spread = 0
+  for (let i = bandStart; i < bandEnd; i++) spread += colorDist(profile[i], mean)
+  spread /= bandEnd - bandStart
+  if (spread > 20) return false
+  const afterEnd = Math.min(profile.length, next + 8)
+  if (afterEnd - (next + 1) < 4) return false
+  return colorDist(mean, meanRgb(profile, next + 1, afterEnd)) >= MIN_FIELD_CHANGE
+}
+
+function outerFlatLine(profiles: Rgb[][], steps: number[][], ts: number[], pad: number, dim: number): EdgeLine | null {
+  const limit = pad + dim * CARD_EDGE_DEPTH_FRAC
+  const tol = Math.max(3, dim * 0.004)
+  const pts: { t: number; d: number }[] = []
+  steps.forEach((s, i) => {
+    const d = stepPeaks(s, FLAT_STEP).find((p) => p <= limit && flatStockBeforePrint(profiles[i], s, p, dim))
+    if (d != null) pts.push({ t: ts[i], d })
+  })
+  const need = Math.max(5, Math.ceil(steps.length * 0.4))
+  if (pts.length < need) return null
+  const slopes: number[] = []
+  for (let a = 0; a < pts.length; a++) {
+    for (let b = a + 1; b < pts.length; b++) {
+      if (pts[b].t - pts[a].t < 0.1) continue
+      slopes.push((pts[b].d - pts[a].d) / (pts[b].t - pts[a].t))
+    }
+  }
+  const slope = slopes.length ? median(slopes) : 0
+  if (Math.abs(slope) > dim * 0.045) return null
+  const offset = median(pts.map((p) => p.d - slope * p.t))
+  const at = (t: number) => offset + slope * t
+  const support = pts.filter((p) => Math.abs(p.d - at(p.t)) <= tol * 2).length
+  if (support < need) return null
+  return { at, support }
 }
 
 /** All stations on one side folded into one answer, or an unresolved print edge when they disagree. */
@@ -1412,7 +1489,11 @@ function readSide(img: PixelImage, edge: 'left' | 'right' | 'top' | 'bottom', pa
     profiles.push(sideProfile(img, edge, t, depth))
   }
   const steps = profiles.map(stepProfile)
-  const line = cardEdgeLine(steps, ts, pad, dim, anchor)
+  const strong = cardEdgeLine(steps, ts, pad, dim, anchor)
+  // No camera outline: a faint outer frame loses the strength vote to the ink.
+  // Use it when it sits outside that ink line. A known outline keeps its own snap.
+  const outer = anchor == null ? outerFlatLine(profiles, steps, ts, pad, dim) : null
+  const line = outer && (!strong || outer.at(0.5) < strong.at(0.5) - 2) ? outer : strong
   const edgeTol = Math.max(3, Math.round(dim * 0.004))
   const localTol = anchor == null ? edgeTol : Math.max(edgeTol, Math.max(6, Math.round(dim * 0.005)))
 

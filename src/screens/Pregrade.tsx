@@ -23,8 +23,8 @@ import { writeVisionSession, type CarriedCentering } from '../store/visionSessio
 import { removePrediction, usePredictions, type StoredPhoto } from '../store/predictions'
 import { chooseMeasure, hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide, type Quad } from '../lib/centering'
 import { loadPhotoFile } from '../lib/photoPixels'
-import { BUILD_SHA } from '../lib/buildInfo'
 import { buildScores } from '../lib/gradeScore'
+import { EdgeReadout } from '../components/EdgeReadout'
 import { CenteringCanvas, GradeScores } from '../components/GradeScores'
 import { PhotoGuide, PhotoTipLinks, usePhotoGuide } from '../components/PhotoGuide'
 import { CameraCapture, cameraSupported, type CameraNote } from '../components/CameraCapture'
@@ -552,16 +552,7 @@ function PhotoPick({
           {measure.centering.cannotBeTen ? ' · cannot be a 10' : ''}
         </p>
       )}
-      {measure?.centering.detail && (
-        <p className="mt-1 text-[12px] leading-4 text-muted" data-testid={`edge-debug-${side}`}>
-          {measure.centering.detail}
-        </p>
-      )}
-      {measure && (
-        <p className="mt-1 text-[11px] text-muted" data-testid={`build-tag-${side}`}>
-          build {BUILD_SHA}
-        </p>
-      )}
+      <EdgeReadout side={side} show={measure != null} detail={measure?.centering.detail} />
       {file && note && (
         <p className="mt-2 text-meta text-muted" data-testid={`camera-note-${side}`}>
           From the camera. {note.usedShot ? `${note.usedShot} ` : ''}

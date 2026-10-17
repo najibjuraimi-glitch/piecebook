@@ -458,6 +458,157 @@ describe('thin frames on a flattened phone shot', () => {
   })
 })
 
+/** An upload: no camera outline. Light tan table, optional soft shadow beside one side. */
+function tableCard(o: {
+  borders: { left: number; right: number; top: number; bottom: number }
+  ground: [number, number, number]
+  stock: [number, number, number]
+  art: (x: number, y: number) => [number, number, number]
+  /** Soft darkening beside the card, not reaching the photo edge. */
+  shadow?: { side: 'left' | 'bottom'; reach: number; darken: number }
+  noise?: number
+}): PixelImage {
+  const card = { x: 140, y: 160, w: 760, h: 1064 }
+  const width = 1100
+  const height = 1500
+  const data = new Uint8ClampedArray(width * height * 4)
+  const grain = o.noise ?? 0
+  let seed = 0x6a09e667
+  const jit = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+    return ((seed >>> 8) / 0x01000000 - 0.5) * 2 * grain
+  }
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4
+      const lx = x - card.x
+      const ly = y - card.y
+      let col: [number, number, number] = [o.ground[0], o.ground[1], o.ground[2]]
+      const sh = o.shadow
+      if (sh?.side === 'left' && y >= card.y && y < card.y + card.h) {
+        const dist = card.x - x
+        if (dist > 0 && dist < sh.reach) {
+          const k = (1 - dist / sh.reach) ** 2 * sh.darken
+          col = [col[0] - k, col[1] - k, col[2] - k * 0.85]
+        }
+      }
+      if (sh?.side === 'bottom' && x >= card.x && x < card.x + card.w) {
+        const dist = y - (card.y + card.h)
+        if (dist > 0 && dist < sh.reach) {
+          const k = (1 - dist / sh.reach) ** 2 * sh.darken
+          col = [col[0] - k, col[1] - k, col[2] - k * 0.85]
+        }
+      }
+      if (lx >= 0 && ly >= 0 && lx < card.w && ly < card.h) {
+        const b = o.borders
+        const inArt = lx >= b.left && lx < card.w - b.right && ly >= b.top && ly < card.h - b.bottom
+        col = inArt ? o.art(lx, ly) : [o.stock[0], o.stock[1], o.stock[2]]
+        if (sh?.side === 'left' && lx < 12) {
+          const k = (1 - lx / 12) * sh.darken * 0.3
+          col = [col[0] - k, col[1] - k, col[2] - k]
+        }
+        if (sh?.side === 'bottom' && ly > card.h - 12) {
+          const k = (1 - (card.h - ly) / 12) * sh.darken * 0.3
+          col = [col[0] - k, col[1] - k, col[2] - k]
+        }
+      }
+      const n = grain ? jit() : 0
+      data[i] = Math.max(0, Math.min(255, col[0] + n))
+      data[i + 1] = Math.max(0, Math.min(255, col[1] + n))
+      data[i + 2] = Math.max(0, Math.min(255, col[2] + n))
+      data[i + 3] = 255
+    }
+  }
+  return { width, height, data }
+}
+
+const TAN: [number, number, number] = [214, 186, 150]
+const CREAM: [number, number, number] = [240, 234, 220]
+const NAVY: [number, number, number] = [18, 32, 78]
+const NAVY_BORDERS = { left: 22, right: 20, top: 24, bottom: 18 }
+
+function busyGreen(x: number, y: number): [number, number, number] {
+  const n = 70 * Math.sin(x / 4.2) * Math.cos(y / 3.4)
+  return [20 + n, 150 + n * 0.2, 40]
+}
+
+function expectBordersNear(
+  result: PhotoResult,
+  borders: { left: number; right: number; top: number; bottom: number },
+  slack: number,
+) {
+  expect(result.ok, !result.ok ? result.message : '').toBe(true)
+  if (!result.ok) return
+  const notes = JSON.stringify(result.measure.edgeNotes)
+  expect(result.measure.resolved, notes).toBe(true)
+  expect(result.measure.cannotBeTen, notes).toBe(false)
+  expect(result.measure.unresolvedSides, notes).toEqual([])
+  for (const side of ['left', 'right', 'top', 'bottom'] as const) {
+    expect(result.measure.edgeNotes?.[side], notes).toMatch(/\d+px on \d+\/21/)
+    expect(Math.abs(result.measure[side] - borders[side]), `${side} ${notes}`).toBeLessThanOrEqual(slack)
+  }
+}
+
+describe('upload with no outline', () => {
+  it('reads a navy back on a light tan table on every side', () => {
+    const img = tableCard({ borders: NAVY_BORDERS, ground: TAN, stock: CREAM, art: () => NAVY, noise: 4 })
+    expectBordersNear(measurePhoto(img, 'back'), NAVY_BORDERS, 4)
+  })
+
+  it('reads that navy back when a soft shadow sits along the left', () => {
+    const img = tableCard({
+      borders: NAVY_BORDERS,
+      ground: TAN,
+      stock: CREAM,
+      art: () => NAVY,
+      noise: 4,
+      shadow: { side: 'left', reach: 36, darken: 46 },
+    })
+    expectBordersNear(measurePhoto(img, 'back'), NAVY_BORDERS, 4)
+  })
+
+  it('reads that navy back when a soft shadow sits along the bottom', () => {
+    const img = tableCard({
+      borders: NAVY_BORDERS,
+      ground: TAN,
+      stock: CREAM,
+      art: () => NAVY,
+      noise: 4,
+      shadow: { side: 'bottom', reach: 36, darken: 46 },
+    })
+    expectBordersNear(measurePhoto(img, 'back'), NAVY_BORDERS, 4)
+  })
+
+  it('reads a thin light frame around busy green foil on every side', () => {
+    const borders = { left: 8, right: 9, top: 8, bottom: 7 }
+    const img = tableCard({ borders, ground: [220, 198, 168], stock: [246, 242, 232], art: busyGreen, noise: 4 })
+    expectBordersNear(measurePhoto(img, 'front'), borders, 3)
+  })
+
+  it('names a side that has no frame and does not rule a 10 out', () => {
+    const img = tableCard({
+      borders: { left: 8, right: 0, top: 8, bottom: 8 },
+      ground: [220, 198, 168],
+      stock: [246, 242, 232],
+      art: busyGreen,
+      noise: 4,
+    })
+    const result = measurePhoto(img, 'front')
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    const notes = JSON.stringify(result.measure.edgeNotes)
+    expect(result.measure.resolved, notes).toBe(false)
+    expect(result.measure.cannotBeTen, notes).toBe(false)
+    expect(result.measure.unresolvedSides, notes).toContain('right')
+    expect(result.measure.edgeNotes?.right, notes).toBeTruthy()
+    expect(centeringLabel(result.measure)).toMatch(/not measured/)
+    expect(centeringLabel(result.measure)).not.toMatch(/\d+\/\d+/)
+    for (const side of ['left', 'top', 'bottom'] as const) {
+      expect(result.measure.edgeNotes?.[side], notes).toMatch(/\d+px on \d+\/21/)
+    }
+  })
+})
+
 describe('chooseMeasure', () => {
   const reading = (resolved: boolean, sides: Array<'top' | 'bottom' | 'left' | 'right'>): PhotoResult =>
     ({ ok: true, side: 'back', measure: { resolved, unresolvedSides: sides } }) as PhotoResult
