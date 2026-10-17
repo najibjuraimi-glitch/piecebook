@@ -1,11 +1,12 @@
-// Piecebook Worker: photo check (/check, Gemini), cloud sync (/sync, KV) and
-// street price (/price and /street, TCGCSV + ECB, cached in KV).
+// Piecebook Worker: photo check (/check, Gemini), cloud sync (/sync, KV),
+// holdings (/holdings, KV) and street price (/price and /street, TCGCSV + ECB, cached in KV).
 // Secret: GEMINI_API_KEY (wrangler secret put). No keys in source.
 // Behind Cloudflare Access once ACCESS_TEAM_DOMAIN + ACCESS_AUD are set: every
 // route but /health then needs a valid Access JWT (see access.js).
 import { accessConfigured, verifyAccess } from "./access.js";
 import { handleSync } from "./sync.js";
 import { handlePrice } from "./price.js";
+import { handleHoldings } from "./holdings.js";
 // Same words and limits as the app. wrangler bundles the TypeScript.
 // /check does not read pixels: it echoes centering the phone already measured.
 // /pregrade decodes a JPEG and measures it here, for agents that have no browser.
@@ -132,7 +133,7 @@ export function corsHeaders(origin, env) {
   return originAllowed(origin, env)
     ? {
         "Access-Control-Allow-Origin": origin,
-        "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, CF-Access-Client-Id, CF-Access-Client-Secret",
         "Access-Control-Max-Age": "600",
         "Vary": "Origin",
@@ -389,7 +390,7 @@ export default {
     const url = new URL(req.url);
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
     // colo: the data center this Worker ran in. With [placement] in wrangler.toml it should be a US code (IAD, EWR, …).
-    if (url.pathname === "/health") return json({ ok: true, model: env.GEMINI_MODEL, access: accessConfigured(env) ? "on" : "off", sync: env.USER_DATA ? "on" : "off", colo: req.cf?.colo || null }, 200, cors);
+    if (url.pathname === "/health") return json({ ok: true, model: env.GEMINI_MODEL, access: accessConfigured(env) ? "on" : "off", sync: env.USER_DATA ? "on" : "off", holdings: env.USER_DATA ? "on" : "off", colo: req.cf?.colo || null }, 200, cors);
     const origin = req.headers.get("Origin");
     if (origin && !cors["Access-Control-Allow-Origin"]) return json({ error: "origin_not_allowed" }, 403, cors);
 
@@ -398,21 +399,28 @@ export default {
     const isPregrade = url.pathname === "/pregrade" && req.method === "POST";
     // Street price: one endpoint, two spellings (Auction's /price, Cards' /street).
     const isPrice = url.pathname === "/price" || url.pathname === "/street";
+    const isHoldings = url.pathname === "/holdings" || url.pathname.startsWith("/holdings/");
     if (url.pathname === "/whoami" && req.method === "GET") {
       const who = await verifyAccess(req, env, deps);
       if (!who.ok) return json({ error: who.error, detail: who.detail }, who.status, cors);
       return json({ identity: who.identity.email, kind: who.identity.kind, readOnly: Boolean(who.identity.readOnly) }, 200, cors);
     }
-    if (!isSync && !isCheck && !isPregrade && !isPrice) return json({ error: "not_found" }, 404, cors);
+    if (!isSync && !isCheck && !isPregrade && !isPrice && !isHoldings) return json({ error: "not_found" }, 404, cors);
 
     // Fail closed once Access is configured. Until then /check stays open for the
     // old public site and /sync says so rather than pretending to be signed in.
+    // Holdings are the same: no Access means the book is not read or written.
     let identity = null;
     const who = await verifyAccess(req, env, deps);
     if (who.ok) identity = who.identity;
-    else if (isSync || isPrice) return json({ error: who.status === 503 && who.error === "access_not_configured" ? (isPrice ? "price_not_configured" : "sync_not_configured") : who.error, detail: who.detail }, who.status, cors);
+    else if (isSync || isPrice || isHoldings) {
+      const unconfigured = who.status === 503 && who.error === "access_not_configured";
+      const error = unconfigured ? (isPrice ? "price_not_configured" : isHoldings ? "holdings_not_configured" : "sync_not_configured") : who.error;
+      return json({ error, detail: who.detail }, who.status, cors);
+    }
     else if (who.status !== 503 || who.error !== "access_not_configured") return json({ error: who.error, detail: who.detail }, who.status, cors);
 
+    if (isHoldings) return handleHoldings(req, env, identity, cors, deps);
     if (isSync) return handleSync(req, env, identity, cors, deps);
     if (isPrice) return handlePrice(req, env, cors, deps);
     // Two 8 MB images as base64 JSON are ~22 MB. Refuse bigger bodies before parsing them into memory.

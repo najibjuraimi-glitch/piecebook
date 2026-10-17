@@ -34,6 +34,13 @@ export function formatSignedUsd(value: number): string {
   return usd.format(0)
 }
 
+/** Signed Singapore dollars, e.g. "+S$1.60" / "−S$43.83". */
+export function formatSignedSgd(value: number): string {
+  if (value > 0) return `+${formatSgd(value)}`
+  if (value < 0) return `−${formatSgd(Math.abs(value))}`
+  return formatSgd(0)
+}
+
 /** Signed percent with two decimals, e.g. "−5.54%" / "+1.20%". */
 export function formatSignedPercent(value: number): string {
   const abs = Math.abs(value).toFixed(2)

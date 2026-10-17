@@ -1,0 +1,12 @@
+Date,Card,Code,Grade/Raw,Where/Seller,Paid SGD,GST SGD,Forwarding SGD,All-in SGD,Market value SGD,P/L SGD,Notes,Picture,Row ID,PriceCharting URL,Status,Sold date,Sold price,Currency,Sale FX to SGD,Channel,Fees SGD,Shipping out SGD,Net SGD,Realized P/L SGD
+2026-08-01,Nami,ST01-007,Raw,Shop A,2.00,0,0,2.00,999,997,Sample copy,,OPB-0001,https://www.pricecharting.com/game/one-piece/nami,Held,,,,,,,,,
+2026-08-02,Nami,ST01-007,Raw,Shop B,0.50,0,0,0.50,999,998.50,Second copy of the same print,,OPB-0002,https://www.pricecharting.com/ignore,Held,,,,,,,,,
+2026-07-12,Enel,OP05-100p2,PSA 10,Seller C,380,20,0,400,350,-50,Cards reading 1 Sep 2026,,OPB-0003,https://www.pricecharting.com/game/one-piece/enel,Held,,,,,,,,,
+2026-09-01,Portgas.D.Ace,OP16-001p1,Raw,Seller D,40,0,0,40,999,959,,,OPB-0004,https://www.pricecharting.com/ignore,Listed,,,,,,,,,
+2026-09-20,Rocks.D.Xebec,OP17-118p2,Raw,Seller E,80,0,0,80,,,Parallel with no seed price,,OPB-0005,,Held,,,,,,,,,
+2026-10-01,Nico Robin,EB05-033,PSA 9,Seller F,15,0,0,15,40,25,as of 12 Oct 2026,,OPB-0006,,Held,,,,,,,,,
+2026-06-15,Sabo,OP05-001,BGS 10,Seller G,20,0,0,20,,,No legal grade for BGS,,OPB-0009,,Held,,,,,,,,,
+2026-08-20,Enel,OP05-100p2,Raw,Seller C,150,0,0,150,999,0,English raw of the same card,,OPB-0010,,Held,,,,,,,,,
+2026-06-01,Sabo,OP05-001,Raw,Shop H,5,0,0,5,,,Sold sample,,OPB-0007,,Sold,2026-09-30,8.00,SGD,,Carousell,0.40,1.00,6.60,1.60
+,Ghost,OP01-001,Raw,Nobody,1,0,0,1,1,0,Blank Row ID is skipped,,,https://www.pricecharting.com/ignore,Held,,,,,,,,,
+TOTAL,TOTAL,,,,,,,,,99999,99999,,,TOTAL,,Sold,,,,,,,,,
