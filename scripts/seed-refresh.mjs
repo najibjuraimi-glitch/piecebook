@@ -306,15 +306,35 @@ function buildRows(set, prints, seededBase) {
  * its own; only reprints appear on PRB / other decks). Keep seed rows we
  * already hold for numbers this run did not see, so a Cards-verified fill is
  * not wiped and the base-checklist gap check stays green.
+ *
+ * A stub that does show up with an empty name (EB05-033's card page on
+ * 17 Oct 2026) must not replace a named row. A later Limitless row that
+ * has a name still replaces the fill.
  */
 function mergeExistingSeed(set, fresh) {
   const file = join(DATA, `${codeKey(set.setCode)}-en-seed.csv`)
   if (!existsSync(file)) return { kept: [], rows: fresh }
-  const have = new Set(fresh.map((r) => r.card_number))
-  const kept = parseCsv(readFileSync(file, 'utf8')).filter((r) => r.card_number && !have.has(r.card_number))
+  const existing = parseCsv(readFileSync(file, 'utf8')).filter((r) => r.card_number)
+  const byExisting = new Map(existing.map((r) => [r.card_number, r]))
+  const kept = []
+  const rows = fresh.map((r) => {
+    const prev = byExisting.get(r.card_number)
+    if (prev?.name && !r.name) {
+      kept.push(prev)
+      return prev
+    }
+    return r
+  })
+  const have = new Set(rows.map((r) => r.card_number))
+  for (const r of existing) {
+    if (!have.has(r.card_number)) {
+      kept.push(r)
+      rows.push(r)
+    }
+  }
   if (kept.length === 0) return { kept, rows: fresh }
   const own = prefixOf(set.setCode)
-  const rows = [...fresh, ...kept].sort((a, b) => {
+  rows.sort((a, b) => {
     const ao = a.card_number.startsWith(own)
     const bo = b.card_number.startsWith(own)
     if (ao !== bo) return ao ? -1 : 1
@@ -339,8 +359,14 @@ function writeAttributes(setCode, rows, prints) {
     : new Map()
   const out = rows.map((r) => {
     const p = byNumber.get(r.card_number)
-    if (p?.attributes) return { card_number: r.card_number, variant: r.variant, ...p.attributes }
-    return previous.get(r.card_number) ?? { card_number: r.card_number, variant: r.variant }
+    const prev = previous.get(r.card_number)
+    // A Limitless stub has no category (EB05-033 rendered `card.category.`).
+    // Keep a row we already filled until the source publishes a real category.
+    if (p?.attributes && (p.attributes.category || !prev?.category)) {
+      return { card_number: r.card_number, variant: r.variant, ...p.attributes }
+    }
+    if (prev) return { ...prev, card_number: r.card_number, variant: r.variant }
+    return { card_number: r.card_number, variant: r.variant }
   })
   const missing = out.filter((o) => !o.category).map((o) => o.card_number)
   if (!DRY) writeFileSync(attrFile, toCsv(out, ATTR_FIELDS))
