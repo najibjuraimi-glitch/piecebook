@@ -8,12 +8,14 @@ import {
   FRONT_TEN_MAX,
   MIN_PRINT_BORDER_PX,
   centeringLabel,
+  chooseMeasure,
   hasPixelGeometry,
   makeSyntheticCard,
   measureFromBorders,
   measurePhoto,
   scaleMeasureTo,
   splitFromPair,
+  type PhotoResult,
   type PixelImage,
 } from './centering'
 
@@ -344,5 +346,25 @@ describe('photo rejects name the side', () => {
     if (result.ok) return
     expect(result.code).toBe('angled')
     expect(result.message).toMatch(/Front/)
+  })
+})
+
+describe('chooseMeasure', () => {
+  const reading = (resolved: boolean, sides: Array<'top' | 'bottom' | 'left' | 'right'>): PhotoResult =>
+    ({ ok: true, side: 'back', measure: { resolved, unresolvedSides: sides } }) as PhotoResult
+  const rejected: PhotoResult = { ok: false, side: 'back', code: 'no-card', message: 'no card' }
+
+  it('keeps the guided reading when it resolves, and the search when the outline does not', () => {
+    const guided = reading(true, [])
+    const searched = reading(false, ['top', 'bottom'])
+    expect(chooseMeasure(guided, searched)).toBe(guided)
+    const badOutline = reading(false, ['top', 'bottom'])
+    const found = reading(true, [])
+    expect(chooseMeasure(badOutline, found)).toBe(found)
+    expect(chooseMeasure(reading(false, ['top', 'bottom']), reading(false, ['top']))).toBeTruthy()
+    const fewer = reading(false, ['top'])
+    expect(chooseMeasure(reading(false, ['top', 'bottom']), fewer)).toBe(fewer)
+    expect(chooseMeasure(rejected, found)).toBe(found)
+    expect(chooseMeasure(guided, rejected)).toBe(guided)
   })
 })

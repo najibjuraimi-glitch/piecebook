@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { GhostButton, PrimaryButton } from './Buttons'
-import { findCardOutline, type PhotoSide, type PixelImage, type Quad } from '../lib/centering'
+import { type PhotoSide, type PixelImage, type Quad } from '../lib/centering'
+import { findCardOutline } from '../lib/cardOutline'
 import {
-  AUTO_CAPTURE_MS,
   CARD_RATIO,
   HINT_TEXT,
   assessFrame,
   flattenCard,
   glareReport,
+  initialLiveView,
   pickCleanerFrame,
+  stepLiveView,
   type FrameAssessment,
   type GlareReport,
   type HintCode,
+  type LiveViewState,
 } from '../lib/cardFrame'
 import { fitForMeasure } from '../lib/photoPixels'
 
@@ -99,7 +102,7 @@ export function CameraCapture({
   const boxRef = useRef<HTMLDivElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const analysisCanvas = useRef<HTMLCanvasElement | null>(null)
-  const readySinceRef = useRef<number | null>(null)
+  const liveRef = useRef<LiveViewState | null>(null)
   const phaseRef = useRef<Phase>('starting')
   const pendingShot = useRef<Shot | null>(null)
   const sideRef = useRef<PhotoSide>(startSide)
@@ -108,6 +111,9 @@ export function CameraCapture({
   const [side, setSideState] = useState<PhotoSide>(startSide)
   const [error, setError] = useState<string | null>(null)
   const [frame, setFrame] = useState<FrameAssessment | null>(null)
+  const [hint, setHint] = useState<HintCode | null>(null)
+  const [ready, setReady] = useState(false)
+  const [offerShutter, setOfferShutter] = useState(false)
   const [holdProgress, setHoldProgress] = useState(0)
   const [videoSize, setVideoSize] = useState({ w: 0, h: 0 })
   const [boxSize, setBoxSize] = useState({ w: 0, h: 0 })
@@ -146,6 +152,8 @@ export function CameraCapture({
   // Start the rear camera. No torch, no flash: a lit card is read, a flashed one is glare.
   useEffect(() => {
     let cancelled = false
+    let videoEl: HTMLVideoElement | null = null
+    let markLive: (() => void) | null = null
     const start = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -159,10 +167,17 @@ export function CameraCapture({
         streamRef.current = stream
         const video = videoRef.current
         if (!video) return
+        videoEl = video
         video.srcObject = stream
-        await video.play().catch(() => undefined)
-        setVideoSize({ w: video.videoWidth, h: video.videoHeight })
-        setPhase('live')
+        markLive = () => {
+          if (cancelled || !video.videoWidth) return
+          setVideoSize({ w: video.videoWidth, h: video.videoHeight })
+          setPhase('live')
+        }
+        video.addEventListener('loadedmetadata', markLive)
+        video.addEventListener('resize', markLive)
+        // play() can resolve late on a phone; the metadata event opens the viewfinder first.
+        void video.play().then(markLive).catch(() => undefined)
       } catch (err) {
         if (cancelled) return
         setError(errorText(err))
@@ -172,6 +187,10 @@ export function CameraCapture({
     void start()
     return () => {
       cancelled = true
+      if (videoEl && markLive) {
+        videoEl.removeEventListener('loadedmetadata', markLive)
+        videoEl.removeEventListener('resize', markLive)
+      }
       streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
     }
@@ -246,7 +265,6 @@ export function CameraCapture({
   const capture = useCallback(async () => {
     if (phaseRef.current !== 'live') return
     setPhase('processing')
-    readySinceRef.current = null
     setHoldProgress(0)
     // Let the "Processing" frame paint before the heavy work.
     await new Promise((r) => window.setTimeout(r, 30))
@@ -275,11 +293,13 @@ export function CameraCapture({
     await finishShot(shot, undefined)
   }, [finishShot, grabFrame, setPhase])
 
-  // Live loop: read a small frame, show hints, fire the shutter after a steady half second.
+  // Live loop: read a small frame, settle the hint, fire the shutter once the card has been steady.
   useEffect(() => {
     if (phase !== 'live') return
     let stopped = false
     let timer = 0
+    liveRef.current = initialLiveView(performance.now())
+    setHoldProgress(0)
     const tick = () => {
       if (stopped || phaseRef.current !== 'live') return
       const video = videoRef.current
@@ -289,19 +309,17 @@ export function CameraCapture({
       const pixels = grabFrame(ANALYSIS_SHORT_SIDE)
       if (pixels) {
         const a = assessFrame(pixels)
-        setFrame(a)
-        const now = performance.now()
-        if (a.ready) {
-          readySinceRef.current ??= now
-          const held = now - readySinceRef.current
-          setHoldProgress(Math.min(1, held / AUTO_CAPTURE_MS))
-          if (held >= AUTO_CAPTURE_MS) {
-            void capture()
-            return
-          }
-        } else {
-          readySinceRef.current = null
-          setHoldProgress(0)
+        const prev = liveRef.current ?? initialLiveView(performance.now())
+        const step = stepLiveView(prev, a, performance.now())
+        liveRef.current = step.state
+        setFrame(a.outline && step.state.outline ? { ...a, outline: { ...a.outline, quad: step.state.outline } } : a)
+        setHint(step.state.shown)
+        setReady(step.ready)
+        setOfferShutter(step.offerShutter)
+        setHoldProgress(step.progress)
+        if (step.capture) {
+          void capture()
+          return
         }
       }
       timer = window.setTimeout(tick, ANALYSIS_EVERY_MS)
@@ -333,6 +351,10 @@ export function CameraCapture({
     pendingShot.current = null
     setRetrying(false)
     setFrame(null)
+    setHint(null)
+    setReady(false)
+    setOfferShutter(false)
+    setHoldProgress(0)
     setPhase('live')
   }
 
@@ -370,8 +392,6 @@ export function CameraCapture({
   const guideW = guideH * CARD_RATIO
   const guideX = vis.x + (vis.w - guideW) / 2
   const guideY = vis.y + (vis.h - guideH) / 2
-  const hint: HintCode | null = frame && !frame.ready ? frame.hints[0] : null
-  const ready = Boolean(frame?.ready)
   const stepLabel = side === 'front' ? 'Front · 1 of 2' : 'Back · 2 of 2'
 
   return (
@@ -417,7 +437,7 @@ export function CameraCapture({
               strokeDasharray={ready ? undefined : `${vis.w * 0.03} ${vis.w * 0.015}`}
             />
             {frame?.outline && (
-              <g data-testid="detected-outline">
+              <g data-testid="detected-outline" data-locked={ready ? 'true' : 'false'}>
                 <polygon
                   points={quadPoints(frame.outline.quad)}
                   fill={ready ? 'rgba(91,211,138,0.14)' : 'rgba(245,177,75,0.10)'}
@@ -462,7 +482,8 @@ export function CameraCapture({
               aria-live="polite"
               data-testid="camera-hint"
             >
-              {ready ? 'Hold still…' : hint ? HINT_TEXT[hint] : 'Looking for the card…'}
+              {ready ? 'Outline locked. Hold still…' : hint ? HINT_TEXT[hint] : 'Looking for the card…'}
+              {offerShutter && !ready && <span className="mt-0.5 block text-meta font-normal text-white/80">Or tap the shutter.</span>}
             </p>
             {ready && (
               <div className="h-1.5 w-40 overflow-hidden rounded-full bg-white/25" aria-hidden="true">

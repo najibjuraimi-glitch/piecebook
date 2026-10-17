@@ -3,7 +3,8 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { decode as decodeJpeg } from 'jpeg-js'
-import { MAX_ANGLE_DEG, MIN_SHORT_SIDE_PX, findCardOutline, makeSyntheticCard, measurePhoto, type PixelImage, type Quad } from './centering'
+import { MAX_ANGLE_DEG, MIN_SHORT_SIDE_PX, makeSyntheticCard, measurePhoto, type PixelImage, type Quad } from './centering'
+import { findCardOutline } from './cardOutline'
 import {
   AUTO_CAPTURE_MS,
   BLOWN_LEVEL,
@@ -20,12 +21,16 @@ import {
   flattenCard,
   glareReport,
   homographyFromQuads,
+  initialLiveView,
   insideQuad,
   invertMat3,
   pickCleanerFrame,
   sharpness,
   shrinkQuad,
+  stepLiveView,
   warpImage,
+  type FrameAssessment,
+  type HintCode,
 } from './cardFrame'
 
 function loadJpegFixture(name: string): PixelImage {
@@ -527,5 +532,67 @@ describe('glare retry: keep the cleaner of two shots', () => {
   it('always says why, for the "which frame was used" line', () => {
     expect(pickCleanerFrame(bad, clean).reason).toMatch(/second/)
     expect(pickCleanerFrame(bad, worse).reason).toMatch(/first/)
+  })
+})
+
+describe('live view: hints settle and auto-capture waits', () => {
+  const quad = (dx = 0): Quad => [
+    { x: 40 + dx, y: 30 },
+    { x: 200 + dx, y: 30 },
+    { x: 200 + dx, y: 250 },
+    { x: 40 + dx, y: 250 },
+  ]
+  const frame = (ready: boolean, hint: HintCode, q: Quad | null): FrameAssessment => ({
+    outline: q ? { quad: q, keystoneDeg: 1, tiltDeg: 0, coverage: 0.4, support: [1, 1, 1, 1], confidence: 1 } : null,
+    hints: ready ? [] : [hint],
+    ready,
+    metrics: null,
+  })
+
+  it('keeps the hint through one dissenting frame and changes it after two', () => {
+    let s = initialLiveView(0)
+    s = stepLiveView(s, frame(false, 'blur', quad()), 100).state
+    let step = stepLiveView(s, frame(false, 'blur', quad(1)), 250)
+    expect(step.state.shown).toBe('blur')
+    step = stepLiveView(step.state, frame(false, 'glare', quad(1)), 400)
+    expect(step.state.shown).toBe('blur')
+    step = stepLiveView(step.state, frame(false, 'glare', quad(1)), 550)
+    expect(step.state.shown).toBe('glare')
+  })
+
+  it('does not auto-capture before the arm delay, then does once the hold is up', () => {
+    let s = initialLiveView(0)
+    s = stepLiveView(s, frame(true, 'blur', quad()), 200).state
+    let step = stepLiveView(s, frame(true, 'blur', quad(1)), 400)
+    expect(step.ready).toBe(true)
+    expect(step.capture).toBe(false)
+    step = stepLiveView(step.state, frame(true, 'blur', quad(1)), 700)
+    expect(step.capture).toBe(false)
+    step = stepLiveView(step.state, frame(true, 'blur', quad(2)), 1100)
+    expect(step.capture).toBe(true)
+  })
+
+  it('one bad frame does not throw away a hold that was already running', () => {
+    let s = initialLiveView(0)
+    s = stepLiveView(s, frame(true, 'blur', quad()), 1000).state
+    s = stepLiveView(s, frame(true, 'blur', quad(1)), 1200).state
+    const running = stepLiveView(s, frame(false, 'blur', quad(1)), 1400)
+    expect(running.state.readySince).toBe(1200)
+    const back = stepLiveView(running.state, frame(true, 'blur', quad(1)), 1550)
+    expect(back.state.readySince).toBe(1200)
+    expect(back.capture).toBe(false)
+    const fired = stepLiveView(back.state, frame(true, 'blur', quad(1)), 1750)
+    expect(fired.capture).toBe(true)
+  })
+
+  it('offers the shutter when a found card stays not-ready', () => {
+    let s = initialLiveView(0)
+    s = stepLiveView(s, frame(false, 'too-far', quad()), 100).state
+    let step = stepLiveView(s, frame(false, 'too-far', quad()), 250)
+    expect(step.offerShutter).toBe(false)
+    expect(step.state.shown).toBe('too-far')
+    step = stepLiveView(step.state, frame(false, 'too-far', quad(20)), 4000)
+    expect(step.offerShutter).toBe(true)
+    expect(step.capture).toBe(false)
   })
 })

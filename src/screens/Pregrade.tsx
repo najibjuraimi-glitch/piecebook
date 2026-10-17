@@ -21,7 +21,7 @@ import {
 } from '../lib/vision'
 import { writeVisionSession, type CarriedCentering } from '../store/visionSession'
 import { removePrediction, usePredictions, type StoredPhoto } from '../store/predictions'
-import { hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide, type Quad } from '../lib/centering'
+import { chooseMeasure, hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide, type Quad } from '../lib/centering'
 import { loadPhotoFile } from '../lib/photoPixels'
 import { buildScores } from '../lib/gradeScore'
 import { CenteringCanvas, GradeScores } from '../components/GradeScores'
@@ -455,7 +455,8 @@ async function measureSide(file: File, side: PhotoSide, note: CameraNote | null 
       const scale = loaded.pixels.width / note.imageWidth
       outline = note.cardQuad.map((p) => ({ x: p.x * scale, y: p.y * scale })) as Quad
     }
-    const result = measurePhoto(loaded.pixels, side, { outline })
+    const guided = measurePhoto(loaded.pixels, side, { outline })
+    const result = outline ? chooseMeasure(guided, measurePhoto(loaded.pixels, side)) : guided
     return { centering: photoCentering(result, side) ?? unmeasured(side, 'unreadable'), result, bitmap: loaded.bitmap }
   } catch {
     return { centering: unmeasured(side, 'unreadable'), result: null, bitmap: null }

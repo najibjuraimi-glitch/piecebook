@@ -4,7 +4,8 @@
  * flatten so a slightly angled shot measures like a square-on one. Nothing
  * here grades a card. Photos can rule a PSA 10 out; they never confirm one.
  */
-import { MIN_SHORT_SIDE_PX, findCardOutline, type CardOutline, type PixelImage, type Point, type Quad } from './centering'
+import { MIN_SHORT_SIDE_PX, type PixelImage, type Point, type Quad } from './centering'
+import { findCardOutline, type CardOutline } from './cardOutline'
 
 /** A standard trading card is 63 × 88 mm. */
 export const CARD_RATIO = 63 / 88
@@ -35,6 +36,14 @@ export const GLARE_BLOB_FRAC = 0.004
 export const GLARE_TOTAL_FRAC = 0.02
 /** How long the card must stay ready before the shutter fires on its own, ms. */
 export const AUTO_CAPTURE_MS = 500
+/** A new hint has to agree this many frames in a row before it replaces the one on screen. */
+export const HINT_SETTLE_FRAMES = 2
+/** After the viewfinder opens or a retake, auto-capture waits this long so the first frames cannot fire it. */
+export const CAPTURE_ARM_MS = 800
+/** Corners may move this far, in analysis pixels, and still count as steady. */
+export const QUAD_STABLE_PX = 8
+/** A card that stays not-ready this long gets "or tap the shutter", so a harsh hint cannot block the shot forever. */
+export const STUCK_HINT_MS = 3500
 
 export type HintCode = 'no-card' | 'off-frame' | 'too-far' | 'too-close' | 'tilted' | 'rotated' | 'dark' | 'blur' | 'glare'
 
@@ -414,6 +423,106 @@ export function flattenCard(image: PixelImage, opts: FlattenOptions = {}): Flatt
   const destToSrc = homographyFromQuads(cardQuad, o.quad)
   if (!destToSrc) return { flattened: false, image, reason: 'degenerate' }
   return { flattened: true, image: warpImage(image, destToSrc, destW, destH), outline: o, cardQuad }
+}
+
+/** Largest distance between matching corners, in pixels. */
+export function quadDrift(a: Quad, b: Quad): number {
+  let worst = 0
+  for (let i = 0; i < 4; i++) worst = Math.max(worst, Math.hypot(a[i].x - b[i].x, a[i].y - b[i].y))
+  return worst
+}
+
+function blendQuad(prev: Quad, next: Quad): Quad {
+  // A small move is eased so the outline does not jitter; a big move snaps.
+  const drift = quadDrift(prev, next)
+  const toward = drift > QUAD_STABLE_PX * 3 ? 1 : 0.65
+  return prev.map((p, i) => ({ x: p.x + (next[i].x - p.x) * toward, y: p.y + (next[i].y - p.y) * toward })) as Quad
+}
+
+/** What the viewfinder is showing, and the clocks auto-capture depends on. */
+export interface LiveViewState {
+  /** Hint on screen. Null means the outline is locked. */
+  shown: HintCode | null
+  /** Latest unsettled reading. Undefined until the first frame. Null means ready. */
+  raw: HintCode | null | undefined
+  rawCount: number
+  /** Smoothed outline in analysis pixels. */
+  outline: Quad | null
+  /** Last raw outline, for the steadiness check. */
+  lastQuad: Quad | null
+  readySince: number | null
+  /** Not-locked frames since the hold started. One is forgiven. */
+  misses: number
+  /** When an outline was first seen in this spell. */
+  cardSince: number | null
+  /** When the viewfinder opened or the shot was retaken. */
+  bornAt: number
+}
+
+export function initialLiveView(now: number): LiveViewState {
+  return { shown: null, raw: undefined, rawCount: 0, outline: null, lastQuad: null, readySince: null, misses: 0, cardSince: null, bornAt: now }
+}
+
+export interface LiveStep {
+  state: LiveViewState
+  /** The shutter should fire on its own. */
+  capture: boolean
+  /** Offer the manual shutter in the hint, because the card has been stuck. */
+  offerShutter: boolean
+  /** The outline is locked: green, and the hold bar is running. */
+  ready: boolean
+  /** 0–1 fill of the hold bar. */
+  progress: number
+}
+
+/**
+ * One analysis frame. A hint replaces the one on screen only after it repeats,
+ * the outline eases instead of jumping, and auto-capture waits out an arm
+ * delay plus a steady hold. A single bad frame does not throw away a hold
+ * that was already going.
+ */
+export function stepLiveView(prev: LiveViewState, frame: FrameAssessment, now: number): LiveStep {
+  const raw: HintCode | null = frame.ready ? null : (frame.hints[0] ?? 'no-card')
+  const rawCount = raw === prev.raw ? prev.rawCount + 1 : 1
+  const shown = raw !== prev.shown && rawCount >= HINT_SETTLE_FRAMES ? raw : prev.shown
+  const outline = frame.outline ? (prev.outline ? blendQuad(prev.outline, frame.outline.quad) : frame.outline.quad) : null
+  const steady = Boolean(frame.outline && prev.lastQuad && quadDrift(prev.lastQuad, frame.outline.quad) <= QUAD_STABLE_PX)
+  const frameLocked = Boolean(frame.ready && steady)
+  // The hint on screen has settled on ready, and this frame agrees.
+  const settledReady = shown === null && raw === null && rawCount >= HINT_SETTLE_FRAMES
+  let misses = prev.misses
+  let readySince = prev.readySince
+  if (frameLocked) {
+    misses = 0
+    readySince ??= now
+  } else if (readySince !== null) {
+    misses += 1
+    if (misses >= 2) {
+      readySince = null
+      misses = 0
+    }
+  }
+  const cardSince = frame.outline ? (prev.cardSince ?? now) : null
+  const capture = Boolean(frameLocked && settledReady && now - prev.bornAt >= CAPTURE_ARM_MS && readySince !== null && now - readySince >= AUTO_CAPTURE_MS)
+  const offerShutter = Boolean(cardSince !== null && shown !== null && now - cardSince >= STUCK_HINT_MS)
+  const progress = readySince === null ? 0 : Math.min(1, (now - readySince) / AUTO_CAPTURE_MS)
+  return {
+    state: {
+      shown,
+      raw,
+      rawCount,
+      outline,
+      lastQuad: frame.outline ? frame.outline.quad : null,
+      readySince,
+      misses,
+      cardSince,
+      bornAt: prev.bornAt,
+    },
+    capture,
+    offerShutter,
+    ready: frameLocked && settledReady,
+    progress,
+  }
 }
 
 /** Of two shots of the same side, the one with less glare on the card; ties keep the first. */
