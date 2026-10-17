@@ -37,6 +37,51 @@ describe('holdings', () => {
     if (replaced.ok) expect(replaced.doc.revision).toBe(2)
   })
 
+  it('maps Market as of and Source, and keeps the CSV Row IDs', () => {
+    const both = [
+      'Row ID,Code,Grade/Raw,All-in SGD,Status,Card,Market value SGD,Market as of,Source,Market source',
+      'OPB-0009,ST01-007,Raw,1,Held,Nami,4,2026-10-09,From source,',
+      'OPB-0001,OP05-100p2,PSA 10,400,Held,Enel,350,2026-09-01,Ignored,From market source',
+      'OPB-0002,ST01-007,Raw,2,Held,Nami,5,2026-10-02,Desk,',
+      'OPB-0003,OP05-001,Raw,3,Held,Sabo,6,2026-10-03,Desk,',
+      'OPB-0004,OP16-001,Raw,4,Held,Ace,7,2026-10-04,Desk,',
+      'OPB-0005,OP17-118,Raw,5,Held,Xebec,,,,',
+      'OPB-0006,EB05-033,PSA 9,15,Held,Robin,40,2026-10-12,Cards,',
+      'OPB-0007,OP05-001,Raw,5,Held,Sabo,12,2026-08-01,,',
+      'OPB-0008,OP01-001,Raw,1,Held,Luffy,2,2026-07-01,Only source,',
+    ].join('\n')
+    const imported = importHoldings(both, emptyHoldings(), false, 0)
+    expect(imported.ok).toBe(true)
+    if (!imported.ok) return
+    expect(imported.doc.copies.map((c) => c.rowId)).toEqual([
+      'OPB-0009',
+      'OPB-0001',
+      'OPB-0002',
+      'OPB-0003',
+      'OPB-0004',
+      'OPB-0005',
+      'OPB-0006',
+      'OPB-0007',
+      'OPB-0008',
+    ])
+    const byId = Object.fromEntries(imported.doc.copies.map((c) => [c.rowId, c]))
+    expect(byId['OPB-0009']).toMatchObject({ marketAsOf: '2026-10-09', marketSource: 'From source' })
+    expect(byId['OPB-0001']).toMatchObject({ marketAsOf: '2026-09-01', marketSource: 'From market source' })
+    expect(byId['OPB-0005']).toMatchObject({ marketValueSgd: null, marketAsOf: null, marketSource: '' })
+    expect(byId['OPB-0007']).toMatchObject({ marketAsOf: '2026-08-01', marketSource: 'Sheet (Cards)' })
+    expect(byId['OPB-0008']).toMatchObject({ marketAsOf: '2026-07-01', marketSource: 'Only source' })
+
+    const sourceOnly = importHoldings(
+      'Row ID,Code,Grade/Raw,All-in SGD,Status,Card,Market value SGD,Market as of,Source\nOPB-0003,ST01-007,Raw,2,Held,Nami,9,2026-10-17,Cards\n',
+      emptyHoldings(),
+      false,
+      0,
+    )
+    expect(sourceOnly.ok).toBe(true)
+    if (!sourceOnly.ok) return
+    expect(sourceOnly.doc.copies[0]).toMatchObject({ rowId: 'OPB-0003', marketAsOf: '2026-10-17', marketSource: 'Cards' })
+  })
+
   it('assigns the next Row ID and sums a blank all-in', () => {
     expect(nextRowId([{ rowId: 'OPB-0009' }, { rowId: 'OPB-0001' }])).toBe('OPB-0010')
     const created = createHolding(emptyHoldings(), {

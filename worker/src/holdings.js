@@ -1,6 +1,8 @@
 /**
  * Holdings API. Piecebook stores the rows in USER_DATA, behind Access.
  * A service token may add and update. The token is never logged or returned.
+ * Each write appends the caller (service client id or Access email) and the time
+ * to the history record. The client secret is not stored.
  *
  *   GET    /holdings
  *   POST   /holdings
@@ -47,9 +49,37 @@ async function readDoc(kv, email) {
   return doc;
 }
 
-async function readHistory(kv, email) {
+const MAX_WRITES = 2000;
+
+async function loadHistory(kv, email) {
   const doc = await kv.get(keyFor(email, HISTORY), "json");
-  return doc && Array.isArray(doc.rows) ? doc.rows : [];
+  return {
+    rows: doc && Array.isArray(doc.rows) ? doc.rows : [],
+    writes: doc && Array.isArray(doc.writes) ? doc.writes : [],
+  };
+}
+
+/** Service token: client id (JWT common_name). Signed-in phone: Access email. Never the secret. */
+function callerOf(identity) {
+  if (identity && identity.kind === "service") return String(identity.name || "").trim();
+  return String((identity && identity.email) || "").trim().toLowerCase();
+}
+
+function writeNote(identity, now, op, rowId) {
+  const note = { at: new Date(now).toISOString(), caller: callerOf(identity), op };
+  if (rowId) note.rowId = rowId;
+  return note;
+}
+
+async function saveHistory(kv, email, rows, writes) {
+  const kept = writes.length > MAX_WRITES ? writes.slice(writes.length - MAX_WRITES) : writes;
+  await kv.put(keyFor(email, HISTORY), JSON.stringify({ rows, writes: kept }));
+  return kept;
+}
+
+async function recordWrite(kv, email, identity, now, op, rowId) {
+  const history = await loadHistory(kv, email);
+  await saveHistory(kv, email, history.rows, history.writes.concat(writeNote(identity, now, op, rowId)));
 }
 
 export async function handleHoldings(req, env, identity, cors, deps = {}) {
@@ -69,11 +99,12 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
 
   if (req.method === "GET" && parts.length === 1) {
     const doc = await readDoc(kv, email);
-    const history = await readHistory(kv, email);
-    return json({ source: "piecebook", revision: doc.revision, copies: doc.copies, history }, 200, cors);
+    const history = await loadHistory(kv, email);
+    return json({ source: "piecebook", revision: doc.revision, copies: doc.copies, history: history.rows, writes: history.writes }, 200, cors);
   }
   if (req.method === "GET" && parts.length === 2 && parts[1] === "history") {
-    return json({ source: "piecebook", history: await readHistory(kv, email) }, 200, cors);
+    const history = await loadHistory(kv, email);
+    return json({ source: "piecebook", history: history.rows, writes: history.writes }, 200, cors);
   }
   if (req.method === "GET") return json({ error: "not_found" }, 404, cors);
 
@@ -96,7 +127,8 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
     const result = createHolding(doc, body);
     if (!result.ok) return fail(result, cors);
     await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
-    log({ evt: "holdings_write", op: "create", rowId: result.copy.rowId, kind: identity.kind });
+    await recordWrite(kv, email, identity, now, "create", result.copy.rowId);
+    log({ evt: "holdings_write", op: "create", rowId: result.copy.rowId, caller: callerOf(identity), at: new Date(now).toISOString() });
     return json({ source: "piecebook", revision: result.doc.revision, copy: result.copy }, 201, cors);
   }
 
@@ -117,16 +149,17 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
     const result = importHoldings(csv, doc, replace, revision);
     if (!result.ok) return fail(result, cors);
     await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
-    log({ evt: "holdings_write", op: "import", imported: result.imported, kind: identity.kind });
+    await recordWrite(kv, email, identity, now, "import");
+    log({ evt: "holdings_write", op: "import", imported: result.imported, caller: callerOf(identity), at: new Date(now).toISOString() });
     return json({ source: "piecebook", revision: result.doc.revision, imported: result.imported, skipped: result.skipped }, 200, cors);
   }
 
   if (req.method === "POST" && parts.length === 2 && parts[1] === "snapshot") {
-    const history = await readHistory(kv, email);
-    const result = acceptSnapshot(history, body, today);
+    const history = await loadHistory(kv, email);
+    const result = acceptSnapshot(history.rows, body, today);
     if (!result.ok) return fail(result, cors);
-    await kv.put(keyFor(email, HISTORY), JSON.stringify({ rows: result.history }));
-    log({ evt: "holdings_snapshot", asOf: today, kind: identity.kind });
+    await saveHistory(kv, email, result.history, history.writes.concat(writeNote(identity, now, "snapshot")));
+    log({ evt: "holdings_write", op: "snapshot", caller: callerOf(identity), at: new Date(now).toISOString() });
     return json({ source: "piecebook", history: result.history }, 200, cors);
   }
 
@@ -142,7 +175,8 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
       const result = patchHolding(doc, rowId, body);
       if (!result.ok) return fail(result, cors);
       await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
-      log({ evt: "holdings_write", op: "patch", rowId, kind: identity.kind });
+      await recordWrite(kv, email, identity, now, "patch", rowId);
+      log({ evt: "holdings_write", op: "patch", rowId, caller: callerOf(identity), at: new Date(now).toISOString() });
       return json({ source: "piecebook", revision: result.doc.revision, copy: result.copy }, 200, cors);
     }
     if (req.method === "POST" && parts.length === 3 && parts[2] === "sold") {
@@ -150,7 +184,8 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
       const result = markSold(doc, rowId, body);
       if (!result.ok) return fail(result, cors);
       await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
-      log({ evt: "holdings_write", op: "sold", rowId, kind: identity.kind });
+      await recordWrite(kv, email, identity, now, "sold", rowId);
+      log({ evt: "holdings_write", op: "sold", rowId, caller: callerOf(identity), at: new Date(now).toISOString() });
       return json({ source: "piecebook", revision: result.doc.revision, copy: result.copy }, 200, cors);
     }
   }

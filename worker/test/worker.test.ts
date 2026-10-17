@@ -375,6 +375,127 @@ describe('/holdings', () => {
     expect(await second.json()).toMatchObject({ error: 'already_imported' })
   })
 
+  it('imports Market as of and Source, and keeps OPB-0001 through OPB-0009', async () => {
+    const kv = new MemoryKV()
+    const e = env({ USER_DATA: kv })
+    const secret = 'super-secret-token-value'
+    const jwt = await signer.sign(serviceClaims())
+    const csv = [
+      'Row ID,Code,Grade/Raw,All-in SGD,Status,Card,Market value SGD,Market as of,Source,Market source',
+      'OPB-0009,ST01-007,Raw,1,Held,Nami,4,2026-10-09,From source,',
+      'OPB-0001,OP05-100p2,PSA 10,400,Held,Enel,350,2026-09-01,Ignored,From market source',
+      'OPB-0002,ST01-007,Raw,2,Held,Nami,5,2026-10-02,Desk,',
+      'OPB-0003,OP05-001,Raw,3,Held,Sabo,6,2026-10-03,Desk,',
+      'OPB-0004,OP16-001,Raw,4,Held,Ace,7,2026-10-04,Desk,',
+      'OPB-0005,OP17-118,Raw,5,Held,Xebec,,,,',
+      'OPB-0006,EB05-033,PSA 9,15,Held,Robin,40,2026-10-12,Cards,',
+      'OPB-0007,OP05-001,Raw,5,Held,Sabo,12,2026-08-01,,',
+      'OPB-0008,OP01-001,Raw,1,Held,Luffy,2,2026-07-01,Only source,',
+    ].join('\n')
+    const res = await call(
+      req('/holdings/import', {
+        method: 'POST',
+        jwt,
+        headers: { 'Content-Type': 'application/json', 'CF-Access-Client-Secret': secret },
+        body: JSON.stringify({ revision: 0, csv }),
+      }),
+      e,
+    )
+    expect(res.status).toBe(200)
+    expect(await res.json()).toMatchObject({ imported: 9, revision: 1 })
+    expect([...kv.store.keys()].filter((k) => k.endsWith(':holdings.v1'))).toEqual(['u:najibjuraimi@gmail.com:holdings.v1'])
+    const stored = JSON.parse(kv.store.get('u:najibjuraimi@gmail.com:holdings.v1')!)
+    expect(stored.copies.map((c: { rowId: string }) => c.rowId)).toEqual([
+      'OPB-0009',
+      'OPB-0001',
+      'OPB-0002',
+      'OPB-0003',
+      'OPB-0004',
+      'OPB-0005',
+      'OPB-0006',
+      'OPB-0007',
+      'OPB-0008',
+    ])
+    const byId = Object.fromEntries(stored.copies.map((c: { rowId: string }) => [c.rowId, c]))
+    expect(byId['OPB-0009']).toMatchObject({ marketAsOf: '2026-10-09', marketSource: 'From source' })
+    expect(byId['OPB-0001']).toMatchObject({ marketAsOf: '2026-09-01', marketSource: 'From market source' })
+    expect(byId['OPB-0007']).toMatchObject({ marketAsOf: '2026-08-01', marketSource: 'Sheet (Cards)' })
+    const history = JSON.parse(kv.store.get('u:najibjuraimi@gmail.com:holdings-history.v1')!)
+    expect(history.writes).toEqual([{ at: '2026-10-16T09:00:00.000Z', caller: 'abc123.access', op: 'import' }])
+    const raw = [...kv.store.values()].join('\n')
+    expect(raw).not.toContain(secret)
+    expect(raw).not.toContain(jwt)
+  })
+
+  it('logs the service client id or the Access email on every holdings write', async () => {
+    const kv = new MemoryKV()
+    const e = env({ USER_DATA: kv })
+    const secret = 'do-not-store-this-secret'
+    const svc = await signer.sign(serviceClaims())
+    const user = await signer.sign(userClaims())
+    const at = '2026-10-16T09:00:00.000Z'
+    const send = (method: string, jwt: string, path: string, body: unknown) =>
+      call(
+        req(path, {
+          method,
+          jwt,
+          headers: { 'Content-Type': 'application/json', 'CF-Access-Client-Secret': secret },
+          body: JSON.stringify(body),
+        }),
+        e,
+      )
+    expect((await send('POST', svc, '/holdings', { revision: 0, card: 'Nami', code: 'ST01-007', allInSgd: 2 })).status).toBe(201)
+    expect((await send('PATCH', user, '/holdings/OPB-0001', { revision: 1, notes: 'phone' })).status).toBe(200)
+    expect((await send('POST', user, '/holdings/OPB-0001/sold', { revision: 2, soldDate: '2026-10-01', soldPrice: 3, currency: 'SGD' })).status).toBe(200)
+    expect(
+      (
+        await send('POST', svc, '/holdings/import', {
+          revision: 3,
+          replace: true,
+          csv: 'Row ID,Code,Grade/Raw,All-in SGD,Status,Card\nOPB-0004,ST01-007,Raw,2,Held,Nami\n',
+        })
+      ).status,
+    ).toBe(200)
+    expect(
+      (
+        await send('POST', svc, '/holdings/snapshot', {
+          asOf: '2026-10-16',
+          heldCopies: 1,
+          listedCopies: 0,
+          soldCopies: 0,
+          costSgd: 2,
+          marketSgd: null,
+          unpricedHeld: 1,
+          unrealizedSgd: null,
+          realizedSgd: null,
+          overallSgd: null,
+          capitalSgd: null,
+          roi: null,
+        })
+      ).status,
+    ).toBe(200)
+
+    const hist = await (await call(req('/holdings/history', { jwt: user }), e)).json()
+    expect(hist.writes).toEqual([
+      { at, caller: 'abc123.access', op: 'create', rowId: 'OPB-0001' },
+      { at, caller: 'najibjuraimi@gmail.com', op: 'patch', rowId: 'OPB-0001' },
+      { at, caller: 'najibjuraimi@gmail.com', op: 'sold', rowId: 'OPB-0001' },
+      { at, caller: 'abc123.access', op: 'import' },
+      { at, caller: 'abc123.access', op: 'snapshot' },
+    ])
+    expect(hist.history).toEqual([
+      expect.objectContaining({ asOf: '2026-10-16', source: 'piecebook', heldCopies: 1 }),
+    ])
+    expect([...kv.store.keys()].filter((k) => k.includes('holdings'))).toEqual([
+      'u:najibjuraimi@gmail.com:holdings.v1',
+      'u:najibjuraimi@gmail.com:holdings-history.v1',
+    ])
+    const raw = [...kv.store.values()].join('\n')
+    expect(raw).not.toContain(secret)
+    expect(raw).not.toContain(svc)
+    expect(raw).not.toContain(user)
+  })
+
   it('says holdings are not configured when KV is missing', async () => {
     const r = await call(req('/holdings', { jwt: await signer.sign(userClaims()) }), env({ USER_DATA: undefined }))
     expect(r.status).toBe(503)

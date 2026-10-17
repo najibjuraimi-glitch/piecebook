@@ -316,7 +316,10 @@ export function parseBoughtMatrix(matrix: string[][]): { copies: BoughtCopy[]; m
     const notes = cell(row, index, 'Notes')
     const marketRaw = parseMoney(cell(row, index, 'Market value SGD'))
     const manualMarketSgd = marketRaw != null && marketRaw >= 0 ? marketRaw : null
-    const sourceCol = cell(row, index, 'Market source')
+    // "Market source" wins when it is filled. "Source" is the same field.
+    // Neither column, with a figure present, stays "Sheet (Cards)".
+    const namedSource = cell(row, index, 'Market source')
+    const sourceCol = namedSource || cell(row, index, 'Source')
     const asOfCell = cell(row, index, 'Market as of')
     const manualAsOf = parseSheetDate(asOfCell) || findDateInText(asOfCell) || findDateInText(notes)
     const sheetRealized = parseMoney(cell(row, index, 'Realized P/L SGD'))

@@ -444,6 +444,7 @@ export function importHoldings(
   if (doc.copies.length > 0 && !replace) return fail(409, 'already_imported', undefined, doc.revision)
   const parsed = parseBoughtMatrix(parseCsv(csv))
   if (parsed.missing.length) return fail(400, 'missing_headers', parsed.missing.join(', '))
+  // Row IDs in the file are stored as written (OPB-0001 stays OPB-0001). Import does not assign new ones.
   const copies = parsed.copies.map(holdingFromBought)
   if (copies.length > MAX_HOLDINGS) return fail(400, 'too_many_rows')
   const seen = new Set<string>()
