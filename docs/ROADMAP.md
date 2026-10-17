@@ -36,7 +36,7 @@ Sizes: **S** is under a day of Code's time, **M** is one to three days, **L** is
 | Auction 3 | PSA cert lookup, cached | 15.2 |
 | Auction 4, Cards 4 | Won-item tracker, portfolio parity with the sheet, validation | 15.3 and 15.4, one ledger |
 | Auction 5 | `/api/check` returns centering and confidence | Centering shipped in PR #42 (quick fix, 16 Oct); confidence is 16.1 |
-| Cards 5 | Glare: retake at an angle, or two photos | 16.2 |
+| Cards 5 | Glare: retake at an angle, or two photos | 16.2 · guided camera with glare retry in draft (keeps the cleaner shot; merging reads still open) |
 | Auction 5 | `/api/check` accepts an eBay item URL | 16.3 |
 | Auction nice to have | Pre-order or buy link on product pages | Later, decision for Jib |
 
@@ -127,6 +127,7 @@ Goal: the desks get more out of each photo without any promise about grades.
 - **User value:** a foil photo with a white glare patch asks for a second shot at an angle instead of returning "unclear".
 - **Change:** when the model flags `glare` or the browser finds a blown-out region over the card, the app and the API both say so and accept a second front photo taken at an angle. The two reads are merged: identity from the clearer shot, surface flags from the union.
 - **Size:** M. **Depends on:** 14.4's resolution signal. **Benefits:** Cards, Jib.
+- **Guided camera (draft PR, 17 Oct 2026):** `/pregrade` gets a "Use camera" option beside upload: rear camera, a 63 × 88 outline, live hints read from the frames on the phone (no card, off-frame, too far or close, tilted, rotated, dark, blur, glare), auto-capture after half a second steady plus a manual shutter, flash off. The shot is flattened from its four corners before it is measured, so a slightly angled photo still reads; when the corners are not found the raw frame is kept and the collector is told centering may be less accurate. Glare asks for a second, tilted shot and keeps the cleaner one, saying which. Still open from this row: merging two shots' reads (identity from one, surface flags from both), and the API side of the retry.
 
 ### 16.3 eBay item URL in, photos out
 

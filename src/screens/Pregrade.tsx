@@ -21,11 +21,12 @@ import {
 } from '../lib/vision'
 import { writeVisionSession, type CarriedCentering } from '../store/visionSession'
 import { removePrediction, usePredictions, type StoredPhoto } from '../store/predictions'
-import { hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide } from '../lib/centering'
+import { hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide, type Quad } from '../lib/centering'
 import { loadPhotoFile } from '../lib/photoPixels'
 import { buildScores } from '../lib/gradeScore'
 import { CenteringCanvas, GradeScores } from '../components/GradeScores'
 import { PhotoGuide, PhotoTipLinks, usePhotoGuide } from '../components/PhotoGuide'
+import { CameraCapture, cameraSupported, type CameraNote } from '../components/CameraCapture'
 import { flagsOf, tipsForOutcome } from '../lib/photoGuide'
 import {
   centeringLine,
@@ -59,6 +60,12 @@ export function PregradeScreen() {
   const [frontMeasure, setFrontMeasure] = useState<SideMeasure | null>(null)
   const [backMeasure, setBackMeasure] = useState<SideMeasure | null>(null)
   const [measuring, setMeasuring] = useState(false)
+  // Which side the guided camera should open on, or null when it is closed.
+  const [cameraSide, setCameraSide] = useState<PhotoSide | null>(null)
+  // What the camera did to each shot (glare retry, flatten), shown with the photo.
+  const [frontNote, setFrontNote] = useState<CameraNote | null>(null)
+  const [backNote, setBackNote] = useState<CameraNote | null>(null)
+  const hasCamera = useMemo(cameraSupported, [])
   // The measurements that went with the last check, so confirm hands the worksheet the same numbers.
   const [carriedCentering, setCarriedCentering] = useState<CarriedCentering | null>(null)
   const centering = useMemo<CenteringSummary | null>(
@@ -85,12 +92,17 @@ export function PregradeScreen() {
     [centering, check, photoError],
   )
 
-  const pickSide = async (file: File | null, side: PhotoSide) => {
+  const pickSide = async (file: File | null, side: PhotoSide, note: CameraNote | null = null) => {
     const set = side === 'front' ? setFrontMeasure : setBackMeasure
     const prev = side === 'front' ? frontMeasure : backMeasure
     prev?.bitmap?.close()
-    if (side === 'front') setFrontFile(file)
-    else setBackFile(file)
+    if (side === 'front') {
+      setFrontFile(file)
+      setFrontNote(note)
+    } else {
+      setBackFile(file)
+      setBackNote(note)
+    }
     setCheck(null)
     setPhotoError(null)
     setCarriedCentering(null)
@@ -100,7 +112,7 @@ export function PregradeScreen() {
     }
     setMeasuring(true)
     try {
-      set(await measureSide(file, side))
+      set(await measureSide(file, side, note))
     } finally {
       setMeasuring(false)
     }
@@ -122,8 +134,8 @@ export function PregradeScreen() {
     guide.markUsed()
     // Measured once, here, from the full-size file. The same result travels to the worksheet,
     // which never re-measures the shrunken copy it receives.
-    const fm = frontMeasure ?? (await measureSide(frontFile, 'front'))
-    const bm = backFile ? (backMeasure ?? (await measureSide(backFile, 'back'))) : null
+    const fm = frontMeasure ?? (await measureSide(frontFile, 'front', frontNote))
+    const bm = backFile ? (backMeasure ?? (await measureSide(backFile, 'back', backNote))) : null
     if (!frontMeasure) setFrontMeasure(fm)
     if (bm && !backMeasure) setBackMeasure(bm)
     const measured = { front: fm.centering, back: bm?.centering ?? null }
@@ -211,10 +223,42 @@ export function PregradeScreen() {
           card — nothing is picked for you.
         </p>
         <PhotoGuide used={guide.used} open={guide.open} onToggle={guide.setOpen} />
+        {hasCamera && (
+          <div className="mt-4 rounded-2xl border border-line bg-surface px-4 py-3">
+            <p className="text-body text-ink">Use the camera: an outline to fit the card, hints as you go, and it shoots when the card is steady.</p>
+            <p className="mt-1 text-meta text-muted">No light box needed: window light, a dark plain background, flash off. Upload still works.</p>
+            <GhostButton className="mt-3" onClick={() => setCameraSide('front')}>
+              Use camera
+            </GhostButton>
+          </div>
+        )}
         <div className="mt-4 grid gap-4 tablet:grid-cols-2">
-          <PhotoPick label="Front" file={frontFile} measure={frontMeasure} side="front" onFile={(f) => void pickSide(f, 'front')} />
-          <PhotoPick label="Back (optional)" file={backFile} measure={backMeasure} side="back" onFile={(f) => void pickSide(f, 'back')} />
+          <PhotoPick
+            label="Front"
+            file={frontFile}
+            measure={frontMeasure}
+            note={frontNote}
+            side="front"
+            onFile={(f) => void pickSide(f, 'front')}
+            onCamera={hasCamera ? () => setCameraSide('front') : undefined}
+          />
+          <PhotoPick
+            label="Back (optional)"
+            file={backFile}
+            measure={backMeasure}
+            note={backNote}
+            side="back"
+            onFile={(f) => void pickSide(f, 'back')}
+            onCamera={hasCamera ? () => setCameraSide('back') : undefined}
+          />
         </div>
+        {cameraSide && (
+          <CameraCapture
+            startSide={cameraSide}
+            onCaptured={(side, file, note) => void pickSide(file, side, note)}
+            onClose={() => setCameraSide(null)}
+          />
+        )}
         <PrimaryButton className="mt-4" disabled={!frontFile || busy || measuring} onClick={() => void runCheck()}>
           {busy ? 'Checking…' : measuring ? 'Measuring…' : 'Check photos'}
         </PrimaryButton>
@@ -398,11 +442,20 @@ interface SideMeasure {
   bitmap: ImageBitmap | null
 }
 
-/** Centering from the full-size file on this phone. A photo that cannot be read says so; nothing is ruled out. */
-async function measureSide(file: File, side: PhotoSide): Promise<SideMeasure> {
+/**
+ * Centering from the full-size file on this phone. A photo that cannot be read
+ * says so; nothing is ruled out. A camera shot that was flattened carries its
+ * card corners, so the card is measured where it is known to be.
+ */
+async function measureSide(file: File, side: PhotoSide, note: CameraNote | null = null): Promise<SideMeasure> {
   try {
     const loaded = await loadPhotoFile(file)
-    const result = measurePhoto(loaded.pixels, side)
+    let outline: Quad | undefined
+    if (note?.cardQuad && note.imageWidth > 0) {
+      const scale = loaded.pixels.width / note.imageWidth
+      outline = note.cardQuad.map((p) => ({ x: p.x * scale, y: p.y * scale })) as Quad
+    }
+    const result = measurePhoto(loaded.pixels, side, { outline })
     return { centering: photoCentering(result, side) ?? unmeasured(side, 'unreadable'), result, bitmap: loaded.bitmap }
   } catch {
     return { centering: unmeasured(side, 'unreadable'), result: null, bitmap: null }
@@ -445,14 +498,18 @@ function PhotoPick({
   label,
   file,
   measure,
+  note,
   side,
   onFile,
+  onCamera,
 }: {
   label: string
   file: File | null
   measure: SideMeasure | null
+  note: CameraNote | null
   side: PhotoSide
   onFile: (f: File | null) => void
+  onCamera?: () => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [url, setUrl] = useState<string | null>(null)
@@ -493,9 +550,18 @@ function PhotoPick({
           {measure.centering.cannotBeTen ? ' · cannot be a 10' : ''}
         </p>
       )}
-      <GhostButton className="mt-3" onClick={() => inputRef.current?.click()}>
-        {file ? 'Replace photo' : 'Upload photo'}
-      </GhostButton>
+      {file && note && (
+        <p className="mt-2 text-meta text-muted" data-testid={`camera-note-${side}`}>
+          From the camera. {note.usedShot ? `${note.usedShot} ` : ''}
+          {note.flattenNote}
+        </p>
+      )}
+      <div className="mt-3 flex flex-col gap-2 tablet:flex-row">
+        <GhostButton onClick={() => inputRef.current?.click()}>{file ? 'Replace photo' : 'Upload photo'}</GhostButton>
+        {onCamera && (
+          <GhostButton onClick={onCamera}>{file ? 'Retake with camera' : 'Use camera'}</GhostButton>
+        )}
+      </div>
     </div>
   )
 }
