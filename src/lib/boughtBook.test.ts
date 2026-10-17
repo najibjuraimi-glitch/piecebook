@@ -8,7 +8,9 @@ import {
   freshUnderCostAlerts,
   headerIndex,
   isStale,
+  legalGrade,
   findDateInText,
+  printCode,
   mergeSnapshotCsv,
   parseBoughtMatrix,
   parseMoney,
@@ -153,6 +155,43 @@ describe('legal values', () => {
     const copy = valued([header, row])[0]
     expect(copy.quote).toMatchObject({ source: 'Sheet (Cards)', sgd: 12, asOf: '', detail: 'Undated' })
     expect(copy.stale).toBe(true)
+  })
+
+  it('prices the card number inside a sheet code and groups on the sheet text', () => {
+    const header = ['Row ID', 'Code', 'Grade/Raw', 'All-in SGD', 'Status', 'Card', 'Market value SGD']
+    const copies = valued([
+      header,
+      ['OPB-0301', 'OP09-004 SP', 'Raw', '10', 'Held', 'Shanks', ''],
+      ['OPB-0302', 'OP09-004 SP', 'PSA 10 (cert 149322006)', '20', 'Held', 'Shanks', '400'],
+      ['OPB-0303', 'OP09-004 SP', 'PSA 10 (cert 149322006)', '21', 'Held', 'Shanks', '400'],
+      ['OPB-0304', 'OP09-004 SP', 'PSA 10 (cert 999)', '22', 'Held', 'Shanks', '400'],
+      ['OPB-0305', 'OP09-004', 'PSA 10', '5', 'Held', 'Shanks', ''],
+    ])
+    const raw = copies.find((c) => c.rowId === 'OPB-0301')!
+    expect(printCode('OP09-004 SP')).toBe('OP09-004')
+    expect(printCode('op05-100p2')).toBe('OP05-100p2')
+    expect(legalGrade('PSA 10 (cert 149322006)')).toBe('psa10')
+    expect(raw.code).toBe('OP09-004 SP')
+    expect(raw.gradeText).toBe('Raw')
+    expect(raw.grade).toBe('raw')
+    expect(raw.quote).toEqual(legalQuote('OP09-004', 'raw'))
+    expect(raw.quote!.sgd).not.toBe(legalQuote('OP09-004p3', 'raw')!.sgd)
+
+    const slab = copies.find((c) => c.rowId === 'OPB-0302')!
+    expect(slab.code).toBe('OP09-004 SP')
+    expect(slab.gradeText).toBe('PSA 10 (cert 149322006)')
+    expect(slab.grade).toBe('psa10')
+    expect(slab.quote).toMatchObject({ source: 'Sheet (Cards)', sgd: 400, usd: null })
+    expect(slab.quote!.detail ?? '').not.toMatch(/japanese/i)
+
+    const groups = summariseBought(copies).holdings
+    const sameCert = groups.find((g) => g.copies.some((c) => c.rowId === 'OPB-0302'))!
+    expect(sameCert.code).toBe('OP09-004 SP')
+    expect(sameCert.gradeText).toBe('PSA 10 (cert 149322006)')
+    expect(sameCert.copies.map((c) => c.rowId).sort()).toEqual(['OPB-0302', 'OPB-0303'])
+    expect(groups.find((g) => g.copies.some((c) => c.rowId === 'OPB-0304'))!.copies).toHaveLength(1)
+    expect(groups.find((g) => g.copies.some((c) => c.rowId === 'OPB-0301'))!.gradeText).toBe('Raw')
+    expect(groups.find((g) => g.copies.some((c) => c.rowId === 'OPB-0305'))!.code).toBe('OP09-004')
   })
 
   it('groups the same code and grade text, and keeps PSA 10 apart from raw', () => {

@@ -6,7 +6,7 @@ import { EmptyState } from '../components/EmptyState'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { StatBlock } from '../components/StatBlock'
 import { alertsFor, readAlertMemory, rememberAlerts } from '../lib/boughtAlerts'
-import { snapshotView, type HoldingGroup, type ValuedCopy } from '../lib/boughtBook'
+import { printCode, snapshotView, type HoldingGroup, type ValuedCopy } from '../lib/boughtBook'
 import { NO_PRICE_YET } from '../lib/cardPrices'
 import { formatDate, formatSgd, formatSignedPercent, formatSignedSgd, formatUsd, todayIso } from '../lib/format'
 import { rateLine } from '../lib/fx'
@@ -83,7 +83,7 @@ function sharedQuote(group: HoldingGroup): ValuedCopy | 'mixed' | null {
 }
 
 function Group({ group, editable }: { group: HoldingGroup; editable: boolean }) {
-  const card = cardFor(group.code)
+  const card = cardFor(printCode(group.code))
   const count = group.copies.length
   const shared = sharedQuote(group)
   const under = group.copies.some((c) => c.underCost)

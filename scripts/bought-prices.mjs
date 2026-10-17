@@ -9,6 +9,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseCsv } from '../src/data/csv.ts'
+import { printCode } from '../src/lib/boughtBook.ts'
 
 const DATA = join(dirname(fileURLToPath(import.meta.url)), '..', 'data')
 const PARALLEL_RE = /p\d+$/i
@@ -78,7 +79,8 @@ function gradedQuote(row, grade) {
 /** @param {string} code @param {'raw' | 'psa9' | 'psa10' | null} grade */
 export function quoteFor(code, grade) {
   if (!code || (grade !== 'raw' && grade !== 'psa9' && grade !== 'psa10')) return null
-  const row = rows.get(code) ?? rows.get(code.toUpperCase()) ?? [...rows.entries()].find(([k]) => k.toUpperCase() === code.toUpperCase())?.[1]
+  const id = printCode(code)
+  const row = rows.get(id) ?? rows.get(id.toUpperCase()) ?? [...rows.entries()].find(([k]) => k.toUpperCase() === id.toUpperCase())?.[1]
   if (!row) return null
   const lang = (row.language || '').trim().toUpperCase()
   if (lang && lang !== 'EN') return null

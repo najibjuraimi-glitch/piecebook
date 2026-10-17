@@ -252,9 +252,18 @@ export function httpsUrl(raw: string): string | null {
   return t
 }
 
-/** Raw, PSA 9 or PSA 10 only. Any other grade text has no legal price. */
+/** The card number inside a sheet code. `OP09-004 SP` is `OP09-004`. A parallel id stays. */
+const PRINT_CODE = /[A-Za-z]{1,4}\d{0,3}-\d{3}(?:p\d+)?/
+
+export function printCode(raw: string): string {
+  const found = raw.match(PRINT_CODE)
+  if (!found) return raw.trim()
+  return found[0].toUpperCase().replace(/P(\d+)$/, 'p$1')
+}
+
+/** Raw, PSA 9 or PSA 10 only. Words after a parenthesis are a cert note, not the grade. */
 export function legalGrade(text: string): LegalGrade | null {
-  const s = text.trim().toLowerCase().replace(/\s+/g, ' ')
+  const s = text.split('(')[0].trim().toLowerCase().replace(/\s+/g, ' ')
   if (!s) return null
   if (/^psa\s*10\b/.test(s)) return 'psa10'
   if (/^psa\s*9\b/.test(s)) return 'psa9'
