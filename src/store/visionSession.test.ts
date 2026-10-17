@@ -4,7 +4,7 @@ import { makeSyntheticCard, measurePhoto, scaleMeasureTo, type PhotoResult } fro
 
 const FRONT = 'data:image/jpeg;base64,AAAA'
 const BACK = 'data:image/jpeg;base64,BBBB'
-const CARD = { width: 1000, height: 1400, card: { x: 120, y: 100, w: 760, h: 1064 }, borders: { left: 120, right: 80, top: 90, bottom: 90 } }
+const CARD = { width: 1000, height: 1400, card: { x: 120, y: 100, w: 760, h: 1064 }, borders: { left: 48, right: 32, top: 36, bottom: 36 } }
 
 describe('visionSession', () => {
   beforeEach(() => clearVisionSession())

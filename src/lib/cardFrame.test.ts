@@ -410,7 +410,7 @@ describe('flattening an angled shot', () => {
     width: W,
     height: H,
     card: { x: 150, y: 140, w: 900, h: 1257 },
-    borders: { left: 120, right: 80, top: 90, bottom: 90 },
+    borders: { left: 48, right: 32, top: 36, bottom: 36 },
     noise: 4,
   })
   const frame: Quad = [
@@ -433,8 +433,11 @@ describe('flattening an angled shot', () => {
 
   it('the square-on shot is the truth: 60/40 · 50/50', () => {
     const t = measurePhoto(flat, 'front')
-    expect(t.ok && t.measure.lr.label).toBe('60/40')
-    expect(t.ok && t.measure.tb.label).toBe('50/50')
+    expect(t.ok).toBe(true)
+    if (!t.ok) return
+    // One pixel of the ink line moves a narrow frame by a point. The bar is ±2.
+    expect(Math.abs(t.measure.lr.largerPct - 60)).toBeLessThanOrEqual(2)
+    expect(Math.abs(t.measure.tb.largerPct - 50)).toBeLessThanOrEqual(2)
   })
 
   it('a slightly angled shot is rejected raw but measures the same once flattened', () => {
@@ -453,8 +456,8 @@ describe('flattening an angled shot', () => {
     expect(m.ok).toBe(true)
     if (!m.ok) return
     expect(m.measure.resolved).toBe(true)
-    expect(m.measure.lr.label).toBe('60/40')
-    expect(m.measure.tb.label).toBe('50/50')
+    expect(Math.abs(m.measure.lr.largerPct - 60)).toBeLessThanOrEqual(2)
+    expect(Math.abs(m.measure.tb.largerPct - 50)).toBeLessThanOrEqual(2)
     expect(m.measure.maxAngleErrorDeg).toBeLessThan(MAX_ANGLE_DEG)
   })
 
@@ -465,8 +468,8 @@ describe('flattening an angled shot', () => {
     expect(m.ok).toBe(true)
     if (!m.ok) return
     expect(m.measure.resolved).toBe(true)
-    expect(m.measure.lr.label).toBe('60/40')
-    expect(m.measure.tb.label).toBe('50/50')
+    expect(Math.abs(m.measure.lr.largerPct - 60)).toBeLessThanOrEqual(2)
+    expect(Math.abs(m.measure.tb.largerPct - 50)).toBeLessThanOrEqual(2)
     expect(m.measure.maxAngleErrorDeg).toBe(0)
     // The outline is trusted for where the card is, not for the print edges: these still come from the pixels.
     expect(m.measure.left).toBeGreaterThan(m.measure.right)
@@ -476,8 +479,10 @@ describe('flattening an angled shot', () => {
     const f = flattenCard(tipped(220))
     expect(f.flattened).toBe(true)
     const m = measurePhoto(f.image, 'front')
-    expect(m.ok && m.measure.lr.label).toBe('60/40')
-    expect(m.ok && m.measure.tb.label).toBe('50/50')
+    expect(m.ok).toBe(true)
+    if (!m.ok) return
+    expect(Math.abs(m.measure.lr.largerPct - 60)).toBeLessThanOrEqual(2)
+    expect(Math.abs(m.measure.tb.largerPct - 50)).toBeLessThanOrEqual(2)
   })
 
   it('the card lands where cardQuad says, with a margin of ground around it', () => {
@@ -495,7 +500,7 @@ describe('flattening an angled shot', () => {
       width: 900,
       height: 1200,
       card: { x: 240, y: 307, w: 420, h: 587 },
-      borders: { left: 56, right: 37, top: 42, bottom: 42 },
+      borders: { left: 30, right: 20, top: 24, bottom: 24 },
       noise: 4,
     })
     const o = findCardOutline(small)

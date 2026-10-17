@@ -28,6 +28,7 @@ import {
   type PricePoint,
 } from '../lib/gradeWorth'
 import { loadPhotoFile } from '../lib/photoPixels'
+import { downloadBlob, flattenedPhotoFile } from '../lib/saveFlatPhoto'
 import { centeringLine, photoCentering, summariseCentering } from '../lib/centeringSummary'
 import { EdgeReadout } from '../components/EdgeReadout'
 import { buildScores } from '../lib/gradeScore'
@@ -336,8 +337,8 @@ function Worksheet({ cardNumber }: { cardNumber: string }) {
           Front and back, square-on. Short side 800px or more. The whole card in the frame. Angled over ~8° is rejected.
         </p>
         <div className="mt-4 grid gap-4 tablet:grid-cols-2">
-          <PhotoSlot side="front" locked={locked} result={front} onResult={setFront} seedDataUrl={frontSeed} />
-          <PhotoSlot side="back" locked={locked} result={back} onResult={setBack} seedDataUrl={backSeed} />
+          <PhotoSlot side="front" locked={locked} result={front} onResult={setFront} seedDataUrl={frontSeed} debugSave={params.get('debug') === '1'} />
+          <PhotoSlot side="back" locked={locked} result={back} onResult={setBack} seedDataUrl={backSeed} debugSave={params.get('debug') === '1'} />
         </div>
         {vision && (
           <div className="mt-4">
@@ -468,17 +469,21 @@ function PhotoSlot({
   result,
   onResult,
   seedDataUrl,
+  debugSave,
 }: {
   side: PhotoSide
   locked: boolean
   result: PhotoResult | null
   onResult: (r: PhotoResult | null) => void
   seedDataUrl?: string | null
+  debugSave?: boolean
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [bitmap, setBitmap] = useState<ImageBitmap | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [saveNote, setSaveNote] = useState<string | null>(null)
 
   useEffect(() => {
     if (!seedDataUrl) return
@@ -513,11 +518,13 @@ function PhotoSlot({
     drawCenteringOverlay(ctx, bitmap, bitmap.width, bitmap.height, result.measure)
   }, [bitmap, result])
 
-  const onFile = async (file: File | undefined) => {
-    if (!file || locked) return
+  const onFile = async (next: File | undefined) => {
+    if (!next || locked) return
+    setFile(next)
+    setSaveNote(null)
     setBusy(true)
     try {
-      const loaded = await loadPhotoFile(file)
+      const loaded = await loadPhotoFile(next)
       setBitmap(loaded.bitmap)
       onResult(measurePhoto(loaded.pixels, side))
     } catch {
@@ -555,9 +562,27 @@ function PhotoSlot({
       {result?.ok && <p className="tabular mt-2 text-meta text-ink">{centeringLabel(result.measure)}</p>}
       <EdgeReadout side={side} show={result != null} detail={result ? photoCentering(result, side)?.detail : undefined} />
       {!locked && (
-        <GhostButton className="mt-3" onClick={() => inputRef.current?.click()} disabled={busy}>
-          {busy ? 'Reading…' : result ? 'Replace photo' : 'Upload photo'}
-        </GhostButton>
+        <div className="mt-3 flex flex-col gap-2">
+          <GhostButton onClick={() => inputRef.current?.click()} disabled={busy}>
+            {busy ? 'Reading…' : result ? 'Replace photo' : 'Upload photo'}
+          </GhostButton>
+          {debugSave && (
+            <GhostButton
+              data-testid={`save-flat-${side}`}
+              disabled={!file}
+              onClick={() => {
+                if (!file) return
+                void flattenedPhotoFile(file, false, side).then((saved) => {
+                  downloadBlob(saved.blob, saved.name)
+                  setSaveNote(saved.note)
+                })
+              }}
+            >
+              Save flattened photo
+            </GhostButton>
+          )}
+          {debugSave && saveNote && <p className="text-meta text-muted">{saveNote}</p>}
+        </div>
       )}
     </div>
   )

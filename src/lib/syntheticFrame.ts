@@ -32,6 +32,8 @@ export interface FrameOptions {
   border?: { colour: Rgb; frac: number }
   /** A bright blown patch on the card, in card-space (0–1) coordinates and radius as share of card width. */
   glare?: { x: number; y: number; r: number }
+  /** A ring inside the art, as a share of card width, that must not be read as the print edge. */
+  decoy?: { frac: number; colour: Rgb }
   seed?: number
 }
 
@@ -84,6 +86,16 @@ function cardColour(u: number, v: number, o: FrameOptions, aspect: number): Rgb 
   const bf = border.frac
   const inBorder = x < bf || x > w - bf || y < bf || y > h - bf
   if (inBorder) return border.colour
+  if (o.decoy) {
+    const df = o.decoy.frac
+    const band = 0.006
+    const on =
+      (x >= df - band && x <= df + band) ||
+      (x >= w - df - band && x <= w - df + band) ||
+      (y >= df - band && y <= df + band) ||
+      (y >= h - df - band && y <= h - df + band)
+    if (on) return o.decoy.colour
+  }
   if (o.face === 'back') {
     // The ONE PIECE back: purple field, a web of thin light lines, a compass disc and a text block.
     let col: Rgb = [...CARD_BACK_PURPLE] as Rgb
