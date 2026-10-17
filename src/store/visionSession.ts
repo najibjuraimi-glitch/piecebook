@@ -37,6 +37,16 @@ let memory: VisionSession | null = null
 const REJECT_CODES: readonly string[] = ['short-side', 'cut-off', 'angled', 'no-card', 'no-print-edge']
 const EDGE_NAMES: readonly string[] = ['left', 'right', 'top', 'bottom']
 
+function edgeNotesOf(raw: unknown): Partial<Record<EdgeName, string>> | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const out: Partial<Record<EdgeName, string>> = {}
+  for (const name of EDGE_NAMES) {
+    const v = (raw as Record<string, unknown>)[name]
+    if (typeof v === 'string' && v.length > 0 && v.length <= 160) out[name as EdgeName] = v
+  }
+  return Object.keys(out).length ? out : undefined
+}
+
 function finite(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v)
 }
@@ -76,11 +86,13 @@ export function parsePhotoResult(raw: unknown, side: PhotoSide): PhotoResult | n
   const unresolvedSides = Array.isArray(m.unresolvedSides)
     ? (m.unresolvedSides.filter((n): n is EdgeName => typeof n === 'string' && EDGE_NAMES.includes(n)) as EdgeName[])
     : undefined
+  const edgeNotes = edgeNotesOf(m.edgeNotes)
   const measure: CenteringMeasure = {
     ...base,
     resolved,
     cannotBeTen: resolved && base.cannotBeTen,
     unresolvedSides,
+    ...(edgeNotes ? { edgeNotes } : {}),
     corners,
     inner,
     maxAngleErrorDeg: finite(m.maxAngleErrorDeg) ? m.maxAngleErrorDeg : 0,

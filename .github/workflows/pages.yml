@@ -42,6 +42,8 @@ jobs:
           VITE_API_BASE: https://piecebook-vision.najibjuraimi.workers.dev
           # No cloud sync on the old origin: it has no Access session to sync with.
           VITE_SYNC: "off"
+          # Shown on a pregrade result so a phone test can name the bundle it ran.
+          VITE_BUILD_SHA: ${{ github.sha }}
           # Flip to the new home (e.g. https://piecebook.pages.dev) to show the "we moved"
           # banner with the Download-my-data button. Empty = no banner.
           VITE_MOVED_TO: ${{ vars.PIECEBOOK_MOVED_TO || '' }}

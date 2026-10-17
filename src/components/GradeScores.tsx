@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { BUILD_SHA } from '../lib/buildInfo'
 import { drawCenteringOverlay, hasPixelGeometry, type CenteringMeasure } from '../lib/centering'
 import { formatScore, type Confidence, type GradeScores as Scores, type PartScore } from '../lib/gradeScore'
 
@@ -28,6 +29,9 @@ export function GradeScores({ scores }: { scores: Scores }) {
       )}
       <p className="mt-3 text-meta text-muted">
         Centering follows {scores.standards.centering}. Corners, edges and surface follow the model’s severity per part. Photos can rule a 10 out. Nothing here confirms one.
+      </p>
+      <p className="mt-2 text-[11px] text-muted" data-testid="build-tag">
+        build {BUILD_SHA}
       </p>
     </div>
   )

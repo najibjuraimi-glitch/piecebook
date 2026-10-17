@@ -23,6 +23,7 @@ import { writeVisionSession, type CarriedCentering } from '../store/visionSessio
 import { removePrediction, usePredictions, type StoredPhoto } from '../store/predictions'
 import { chooseMeasure, hasPixelGeometry, measurePhoto, type PhotoResult, type PhotoSide, type Quad } from '../lib/centering'
 import { loadPhotoFile } from '../lib/photoPixels'
+import { BUILD_SHA } from '../lib/buildInfo'
 import { buildScores } from '../lib/gradeScore'
 import { CenteringCanvas, GradeScores } from '../components/GradeScores'
 import { PhotoGuide, PhotoTipLinks, usePhotoGuide } from '../components/PhotoGuide'
@@ -549,6 +550,16 @@ function PhotoPick({
         <p className="tabular mt-2 text-meta text-ink">
           {measure.centering.leftRight} left to right · {measure.centering.topBottom} top to bottom
           {measure.centering.cannotBeTen ? ' · cannot be a 10' : ''}
+        </p>
+      )}
+      {measure?.centering.detail && (
+        <p className="mt-1 text-[12px] leading-4 text-muted" data-testid={`edge-debug-${side}`}>
+          {measure.centering.detail}
+        </p>
+      )}
+      {measure && (
+        <p className="mt-1 text-[11px] text-muted" data-testid={`build-tag-${side}`}>
+          build {BUILD_SHA}
         </p>
       )}
       {file && note && (
