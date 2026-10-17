@@ -36,7 +36,7 @@ export default defineConfig({
   },
   plugins: [csvAsText(), react()],
   test: {
-    include: ['src/**/*.test.ts', 'worker/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'worker/**/*.test.ts'],
     environment: 'node',
   },
   // Root by default; GitHub Pages project sites live under /piecebook/ (see .github/workflows/pages.yml).

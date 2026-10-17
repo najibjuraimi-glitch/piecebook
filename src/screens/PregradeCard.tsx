@@ -29,6 +29,7 @@ import {
 } from '../lib/gradeWorth'
 import { loadPhotoFile } from '../lib/photoPixels'
 import { centeringLine, photoCentering, summariseCentering } from '../lib/centeringSummary'
+import { EdgeReadout } from '../components/EdgeReadout'
 import { buildScores } from '../lib/gradeScore'
 import { GradeScores } from '../components/GradeScores'
 import { dataUrlToFile, isNonEnglishCardLanguage, type VisionCheck } from '../lib/vision'
@@ -552,6 +553,7 @@ function PhotoSlot({
         <p className="mt-2 text-body text-bad">{result.message}</p>
       )}
       {result?.ok && <p className="tabular mt-2 text-meta text-ink">{centeringLabel(result.measure)}</p>}
+      <EdgeReadout side={side} show={result != null} detail={result ? photoCentering(result, side)?.detail : undefined} />
       {!locked && (
         <GhostButton className="mt-3" onClick={() => inputRef.current?.click()} disabled={busy}>
           {busy ? 'Reading…' : result ? 'Replace photo' : 'Upload photo'}
@@ -893,8 +895,21 @@ function storedPhoto(result: PhotoResult | null): StoredPhoto | null {
       cannotBeTen: result.measure.cannotBeTen,
       resolved: result.measure.resolved,
       unresolvedSides: result.measure.resolved ? undefined : result.measure.unresolvedSides,
+      edgeNotes: edgeNotesOf(result.measure.edgeNotes),
     },
   }
+}
+
+function edgeNotesOf(raw: unknown): Partial<Record<'left' | 'right' | 'top' | 'bottom', string>> | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const out: Partial<Record<'left' | 'right' | 'top' | 'bottom', string>> = {}
+  for (const side of ['left', 'right', 'top', 'bottom'] as const) {
+    const v = (raw as Record<string, unknown>)[side]
+    if (typeof v !== 'string') continue
+    const text = v.trim().slice(0, 160)
+    if (text) out[side] = text
+  }
+  return Object.keys(out).length ? out : undefined
 }
 
 function fromStoredPhoto(existing: PredictionRecord | undefined, side: PhotoSide): PhotoResult | null {
@@ -909,6 +924,7 @@ function fromStoredPhoto(existing: PredictionRecord | undefined, side: PhotoSide
     measure: {
       ...base,
       unresolvedSides: base.resolved ? [] : row.centering.unresolvedSides,
+      edgeNotes: edgeNotesOf(row.centering.edgeNotes),
       corners: [
         { x: 0, y: 0 },
         { x: 1, y: 0 },
