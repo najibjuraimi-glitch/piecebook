@@ -336,6 +336,92 @@ EB-04,Egghead Crisis,EB04-061,Monkey.D.Luffy,SEC,EN,https://limitlesstcg.nyc3.cd
 EB-04,Egghead Crisis,EB04-061p1,Monkey.D.Luffy,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB04/EB04-061_p1_EN.webp,57.15,2026-09-05,Alternate Art
 EB-04,Egghead Crisis,EB04-061p3,Monkey.D.Luffy,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB04/EB04-061_p3_EN.webp,,,Manga Art
 `,i=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-001,Jewelry Bonney,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-001_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-001p1,Jewelry Bonney,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-001_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-002,Doll,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-002_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-003,Pasia,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-003_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-004,Baby 5,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-004_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-004p1,Baby 5,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-004_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-005,Belo Betty,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-005_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-006,Miss Buckingham Stussy,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-006_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-006p1,Miss Buckingham Stussy,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-006_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-006p2,Miss Buckingham Stussy,SP,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-006_p2_EN.webp,,,Special Card
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-007,Monet,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-007_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-008,"Luffy, Now's Your Chance",C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-008_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-009,Fight and Die with Me!!!,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-009_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-010,Nico Robin,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-010_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-010p1,Nico Robin,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-010_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-010p2,Nico Robin,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-010_p2_EN.webp,,,Manga Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-011,Otohime,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-011_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-012,Camie,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-012_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-013,Shirley,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-013_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-014,Shirahoshi,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-014_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-014p1,Shirahoshi,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-014_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-014p2,Shirahoshi,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-014_p2_EN.webp,,,Manga Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-015,Tashigi,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-015_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-016,Nico Robin,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-016_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-016p1,Nico Robin,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-016_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-016p2,Nico Robin,SP,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-016_p2_EN.webp,,,Special Card
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-017,Mermaid Cafe Dancers,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-017_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-018,Rebecca,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-018_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-018p1,Rebecca,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-018_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-019,I Choose to Open This Country to the World!! I Want to Fight on Your Side!!!,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-019_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-020,My name is Shirahoshi!!,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-020_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-021,Alvida,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-021_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-021p1,Alvida,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-021_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-022,Octopako,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-022_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-023,Osome,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-023_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-024,Little Sadi,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-024_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-025,Domino,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-025_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-026,Hina,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-026_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-027,Hibari,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-027_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-028,Boa Hancock,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-028_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-028p1,Boa Hancock,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-028_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-029,Kimono Sleeve Cage,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-029_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-030,"Take Care, Everybody. ♡",R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-030_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-031,Vinsmoke Reiju,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-031_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-031p1,Vinsmoke Reiju,SP,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-031_p1_EN.webp,,,Special Card
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-032,Ulti,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-032_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-033,Nico Robin,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-033_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-034,Sugar,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-034_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-034p1,Sugar,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-034_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-035,Speed,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-035_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-036,Tsuru,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-036_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-037,Black Maria,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-037_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-037p1,Black Maria,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-037_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-038,Russian,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-038_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-039,Pink Hornet,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-039_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-040,"You Need Me, Don't You?!!♡",R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-040_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-041,Koala,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-041_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-042,Shinobu,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-042_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-043,Perona,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-043_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-043p1,Perona,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-043_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-044,Ms. Father's Day,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-044_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-045,Ms. Monday,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-045_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-046,Yamato,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-046_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-046p1,Yamato,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-046_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-047,Ripley,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-047_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-048,Hedgehog Stinger,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-048_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-049,Special Hollow,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-049_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-050,Atlas,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-050_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-051,Ahiru,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-051_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-052,Gloriosa,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-052_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-052p1,Gloriosa,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-052_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-053,Charlotte Praline,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-053_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-054,Charlotte Brulee,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-054_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-055,Nami,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-055_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-055p1,Nami,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-055_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-055p2,Nami,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-055_p2_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-055p3,Nami,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-055_p3_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-056,Nico Olvia,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-056_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-057,Nojiko,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-057_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-057p1,Nojiko,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-057_p1_EN.webp,,,Alternate Art
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-058,Bell-mère,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-058_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-059,Charlotte Pudding!!,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-059_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-060,Take Care of Lilith!!!,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-060_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-061,Nami,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-061_EN.webp,,,
+EB-05,Extra Booster: One Piece Heroines Edition Vol.2,EB05-061p1,Nami,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB05/EB05-061_p1_EN.webp,,,Alternate Art
+`,s=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-01,Romance Dawn,OP01-001,Roronoa Zoro,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP01/OP01-001_EN.webp,2.06,2026-09-05,
 OP-01,Romance Dawn,OP01-001p1,Roronoa Zoro,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP01/OP01-001_p1_EN.webp,614.28,2026-09-05,Alternate Art
 OP-01,Romance Dawn,OP01-002,Trafalgar Law,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP01/OP01-002_EN.webp,2.05,2026-09-05,
@@ -490,7 +576,7 @@ OP-01,Romance Dawn,OP01-120p1,Shanks,SEC,EN,https://limitlesstcg.nyc3.cdn.digita
 OP-01,Romance Dawn,OP01-120p2,Shanks,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP01/OP01-120_p2_EN.webp,3999.47,2026-09-05,Manga Art
 OP-01,Romance Dawn,OP01-121,Yamato,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP01/OP01-121_EN.webp,5.84,2026-09-05,
 OP-01,Romance Dawn,OP01-121p1,Yamato,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP01/OP01-121_p1_EN.webp,136.92,2026-09-05,Alternate Art
-`,s=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,a=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-02,Paramount War,OP02-001,Edward.Newgate,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP02/OP02-001_EN.webp,0.31,2026-09-05,
 OP-02,Paramount War,OP02-001p1,Edward.Newgate,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP02/OP02-001_p1_EN.webp,101.61,2026-09-05,Alternate Art
 OP-02,Paramount War,OP02-002,Monkey.D.Garp,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP02/OP02-002_EN.webp,0.41,2026-09-05,
@@ -645,7 +731,7 @@ OP-02,Paramount War,OP02-120,Uta,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloce
 OP-02,Paramount War,OP02-120p1,Uta,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP02/OP02-120_p1_EN.webp,26.14,2026-09-05,Alternate Art
 OP-02,Paramount War,OP02-121,Kuzan,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP02/OP02-121_EN.webp,2.13,2026-09-05,
 OP-02,Paramount War,OP02-121p1,Kuzan,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP02/OP02-121_p1_EN.webp,11.58,2026-09-05,Alternate Art
-`,a=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,o=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-03,Pillars of Strength,OP03-001,Portgas.D.Ace,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP03/OP03-001_EN.webp,0.42,2026-09-05,
 OP-03,Pillars of Strength,OP03-001p1,Portgas.D.Ace,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP03/OP03-001_p1_EN.webp,80.92,2026-09-05,Alternate Art
 OP-03,Pillars of Strength,OP03-002,Adio,UC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP03/OP03-002_EN.webp,0.08,2026-09-05,
@@ -796,7 +882,7 @@ OP-03,Pillars of Strength,OP03-122p1,Sogeking,SEC,EN,https://limitlesstcg.nyc3.c
 OP-03,Pillars of Strength,OP03-122p2,Sogeking,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP03/OP03-122_p2_EN.webp,908.67,2026-09-05,Manga Art
 OP-03,Pillars of Strength,OP03-123,Charlotte Katakuri,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP03/OP03-123_EN.webp,2.90,2026-09-05,
 OP-03,Pillars of Strength,OP03-123p1,Charlotte Katakuri,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP03/OP03-123_p1_EN.webp,18.85,2026-09-05,Alternate Art
-`,o=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,p=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-04,Kingdoms of Intrigue,OP04-001,Nefeltari Vivi,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP04/OP04-001_EN.webp,0.21,2026-09-05,
 OP-04,Kingdoms of Intrigue,OP04-001p1,Nefeltari Vivi,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP04/OP04-001_p1_EN.webp,142.48,2026-09-05,Alternate Art
 OP-04,Kingdoms of Intrigue,OP04-002,Igaram,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP04/OP04-002_EN.webp,0.21,2026-09-05,
@@ -941,7 +1027,7 @@ OP-04,Kingdoms of Intrigue,OP04-118,Nefeltari Vivi,SEC,EN,https://limitlesstcg.n
 OP-04,Kingdoms of Intrigue,OP04-118p1,Nefeltari Vivi,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP04/OP04-118_p1_EN.webp,35.74,2026-09-05,Alternate Art
 OP-04,Kingdoms of Intrigue,OP04-119,Donquixote Rosinante,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP04/OP04-119_EN.webp,2.13,2026-09-05,
 OP-04,Kingdoms of Intrigue,OP04-119p1,Donquixote Rosinante,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP04/OP04-119_p1_EN.webp,7.50,2026-09-05,Alternate Art
-`,p=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,l=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-05,Awakening of the New Era,OP05-001,Sabo,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP05/OP05-001_EN.webp,0.18,2026-09-05,
 OP-05,Awakening of the New Era,OP05-001p1,Sabo,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP05/OP05-001_p1_EN.webp,14.62,2026-09-05,Alternate Art
 OP-05,Awakening of the New Era,OP05-002,Belo Betty,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP05/OP05-002_EN.webp,0.19,2026-09-05,
@@ -1089,7 +1175,7 @@ OP-05,Awakening of the New Era,OP05-118p1,Kaido,SEC,EN,https://limitlesstcg.nyc3
 OP-05,Awakening of the New Era,OP05-119,Monkey.D.Luffy,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP05/OP05-119_EN.webp,9.09,2026-09-05,
 OP-05,Awakening of the New Era,OP05-119p1,Monkey.D.Luffy,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP05/OP05-119_p1_EN.webp,201.18,2026-09-05,Alternate Art
 OP-05,Awakening of the New Era,OP05-119p2,Monkey.D.Luffy,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP05/OP05-119_p2_EN.webp,5700.00,2026-09-05,Manga Art
-`,l=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,P=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-06,Wings of the Captain,OP06-001,Uta,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP06/OP06-001_EN.webp,0.19,2026-09-05,
 OP-06,Wings of the Captain,OP06-001p1,Uta,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP06/OP06-001_p1_EN.webp,34.84,2026-09-05,Alternate Art
 OP-06,Wings of the Captain,OP06-002,Inazuma,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP06/OP06-002_EN.webp,0.08,2026-09-05,
@@ -1234,7 +1320,7 @@ OP-06,Wings of the Captain,OP06-118p1,Roronoa Zoro,SEC,EN,https://limitlesstcg.n
 OP-06,Wings of the Captain,OP06-118p2,Roronoa Zoro,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP06/OP06-118_p2_EN.webp,2490.00,2026-09-05,Manga Art
 OP-06,Wings of the Captain,OP06-119,Sanji,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP06/OP06-119_EN.webp,6.14,2026-09-05,
 OP-06,Wings of the Captain,OP06-119p1,Sanji,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP06/OP06-119_p1_EN.webp,35.28,2026-09-05,Alternate Art
-`,P=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,O=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-07,500 Years in the Future,OP07-001,Monkey.D.Dragon,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP07/OP07-001_EN.webp,0.17,2026-09-05,
 OP-07,500 Years in the Future,OP07-001p1,Monkey.D.Dragon,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP07/OP07-001_p1_EN.webp,20.42,2026-09-05,Alternate Art
 OP-07,500 Years in the Future,OP07-002,Ain,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP07/OP07-002_EN.webp,0.23,2026-09-05,
@@ -1379,7 +1465,7 @@ OP-07,500 Years in the Future,OP07-118,Sabo,SEC,EN,https://limitlesstcg.nyc3.cdn
 OP-07,500 Years in the Future,OP07-118p1,Sabo,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP07/OP07-118_p1_EN.webp,9.68,2026-09-05,Alternate Art
 OP-07,500 Years in the Future,OP07-119,Portgas.D.Ace,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP07/OP07-119_EN.webp,1.69,2026-09-05,
 OP-07,500 Years in the Future,OP07-119p1,Portgas.D.Ace,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP07/OP07-119_p1_EN.webp,16.97,2026-09-05,Alternate Art
-`,O=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,d=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-08,Two Legends,OP08-001,Tony Tony.Chopper,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP08/OP08-001_EN.webp,0.28,2026-09-05,
 OP-08,Two Legends,OP08-001p1,Tony Tony.Chopper,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP08/OP08-001_p1_EN.webp,84.43,2026-09-05,Alternate Art
 OP-08,Two Legends,OP08-002,Marco,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP08/OP08-002_EN.webp,0.17,2026-09-05,
@@ -1524,7 +1610,7 @@ OP-08,Two Legends,OP08-118p1,Silvers Rayleigh,SEC,EN,https://limitlesstcg.nyc3.c
 OP-08,Two Legends,OP08-118p2,Silvers Rayleigh,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP08/OP08-118_p2_EN.webp,569.88,2026-09-05,Manga Art
 OP-08,Two Legends,OP08-119,Kaido & Linlin,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP08/OP08-119_EN.webp,3.55,2026-09-05,
 OP-08,Two Legends,OP08-119p1,Kaido & Linlin,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP08/OP08-119_p1_EN.webp,10.23,2026-09-05,Alternate Art
-`,d=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,E=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-09,Emperors in the New World,OP09-001,Shanks,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-001_EN.webp,0.23,2026-09-05,
 OP-09,Emperors in the New World,OP09-001p1,Shanks,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-001_p1_EN.webp,39.39,2026-09-05,Alternate Art
 OP-09,Emperors in the New World,OP09-002,Uta,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-002_EN.webp,0.29,2026-09-05,
@@ -1821,7 +1907,7 @@ OP-10,Royal Blood,OP10-118p1,Monkey.D.Luffy,SEC,EN,https://limitlesstcg.nyc3.cdn
 OP-10,Royal Blood,OP10-119,Trafalgar Law,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP10/OP10-119_EN.webp,7.25,2026-09-05,
 OP-10,Royal Blood,OP10-119p1,Trafalgar Law,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP10/OP10-119_p1_EN.webp,26.40,2026-09-05,Alternate Art
 OP-10,Royal Blood,OP10-119p2,Trafalgar Law,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP10/OP10-119_p2_EN.webp,701.28,2026-09-05,Manga Art
-`,E=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,m=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-11,A Fist of Divine Speed,OP11-001,Koby,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP11/OP11-001_EN.webp,0.16,2026-09-05,
 OP-11,A Fist of Divine Speed,OP11-001p1,Koby,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP11/OP11-001_p1_EN.webp,28.66,2026-09-05,Alternate Art
 OP-11,A Fist of Divine Speed,OP11-002,Ain,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP11/OP11-002_EN.webp,0.07,2026-09-05,
@@ -1969,7 +2055,7 @@ OP-11,A Fist of Divine Speed,OP11-118p1,Monkey.D.Luffy,SEC,EN,https://limitlesst
 OP-11,A Fist of Divine Speed,OP11-118p2,Monkey.D.Luffy,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP11/OP11-118_p2_EN.webp,1263.08,2026-09-05,Manga Art
 OP-11,A Fist of Divine Speed,OP11-119,Koby,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP11/OP11-119_EN.webp,1.82,2026-09-05,
 OP-11,A Fist of Divine Speed,OP11-119p1,Koby,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP11/OP11-119_p1_EN.webp,9.56,2026-09-05,Alternate Art
-`,m=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,r=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-12,Legacy of the Master,OP12-001,Silvers Rayleigh,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP12/OP12-001_EN.webp,0.16,2026-09-05,
 OP-12,Legacy of the Master,OP12-001p1,Silvers Rayleigh,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP12/OP12-001_p1_EN.webp,19.86,2026-09-05,Alternate Art
 OP-12,Legacy of the Master,OP12-002,Edward.Newgate,UC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP12/OP12-002_EN.webp,0.13,2026-09-05,
@@ -2116,7 +2202,7 @@ OP-12,Legacy of the Master,OP12-118p1,Jewelry Bonney,SEC,EN,https://limitlesstcg
 OP-12,Legacy of the Master,OP12-118p2,Jewelry Bonney,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP12/OP12-118_p2_EN.webp,772.94,2026-09-05,Manga Art
 OP-12,Legacy of the Master,OP12-119,Bartholomew Kuma,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP12/OP12-119_EN.webp,13.99,2026-09-05,
 OP-12,Legacy of the Master,OP12-119p1,Bartholomew Kuma,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP12/OP12-119_p1_EN.webp,24.11,2026-09-05,Alternate Art
-`,r=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,N=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-13,Carrying on His Will,OP13-001,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP13/OP13-001_EN.webp,0.21,2026-09-05,
 OP-13,Carrying on His Will,OP13-001p1,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP13/OP13-001_p1_EN.webp,49.03,2026-09-05,Alternate Art
 OP-13,Carrying on His Will,OP13-002,Portgas.D.Ace,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP13/OP13-002_EN.webp,0.15,2026-09-05,
@@ -2282,7 +2368,7 @@ OP-13,Carrying on His Will,OP13-120p1,Sabo,SEC,EN,https://limitlesstcg.nyc3.cdn.
 OP-13,Carrying on His Will,OP13-120p2,Sabo,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP13/OP13-120_p2_EN.webp,748.62,2026-09-05,Manga Art
 OP-13,Carrying on His Will,OP13-120p3,Sabo,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP13/OP13-120_p3_EN.webp,4800.00,2026-09-05,Manga Art
 OP-13,Carrying on His Will,OP13-120p4,Sabo,SP,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP13/OP13-120_p4_EN.webp,126.11,2026-09-05,Special Card
-`,N=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,h=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-14,The Azure Sea's Seven,OP14-001,Trafalgar Law,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP14/OP14-001_EN.webp,0.18,2026-09-05,
 OP-14,The Azure Sea's Seven,OP14-001p1,Trafalgar Law,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP14/OP14-001_p1_EN.webp,21.23,2026-09-05,Alternate Art
 OP-14,The Azure Sea's Seven,OP14-002,Urouge,UC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP14/OP14-002_EN.webp,0.08,2026-09-05,
@@ -2432,7 +2518,7 @@ OP-14,The Azure Sea's Seven,OP14-119p1,Dracule Mihawk,SEC,EN,https://limitlesstc
 OP-14,The Azure Sea's Seven,OP14-119p2,Dracule Mihawk,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP14/OP14-119_p2_EN.webp,722.85,2026-09-05,Manga Art
 OP-14,The Azure Sea's Seven,OP14-120,Crocodile,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP14/OP14-120_EN.webp,10.10,2026-09-05,
 OP-14,The Azure Sea's Seven,OP14-120p1,Crocodile,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP14/OP14-120_p1_EN.webp,35.13,2026-09-05,Alternate Art
-`,h=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,_=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-15,Adventure on Kami's Island,OP15-001,Krieg,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP15/OP15-001_EN.webp,0.11,2026-09-05,
 OP-15,Adventure on Kami's Island,OP15-001p1,Krieg,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP15/OP15-001_p1_EN.webp,11.82,2026-09-05,Alternate Art
 OP-15,Adventure on Kami's Island,OP15-002,Lucy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP15/OP15-002_EN.webp,0.19,2026-09-05,
@@ -2579,7 +2665,7 @@ OP-15,Adventure on Kami's Island,OP15-118p1,Enel,SEC,EN,https://limitlesstcg.nyc
 OP-15,Adventure on Kami's Island,OP15-118p2,Enel,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP15/OP15-118_p2_EN.webp,1051.34,2026-09-05,Manga Art
 OP-15,Adventure on Kami's Island,OP15-119,Monkey.D.Luffy,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP15/OP15-119_EN.webp,10.96,2026-09-05,
 OP-15,Adventure on Kami's Island,OP15-119p1,Monkey.D.Luffy,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP15/OP15-119_p1_EN.webp,46.79,2026-09-05,Alternate Art
-`,_=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,y=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-16,The Time of Battle,OP16-001,Portgas.D.Ace,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP16/OP16-001_EN.webp,0.18,2026-09-05,
 OP-16,The Time of Battle,OP16-001p1,Portgas.D.Ace,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP16/OP16-001_p1_EN.webp,49.36,2026-09-05,Alternate Art
 OP-16,The Time of Battle,OP16-002,Izo,UC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP16/OP16-002_EN.webp,0.12,2026-09-05,
@@ -2729,7 +2815,7 @@ OP-16,The Time of Battle,OP16-118,Portgas.D.Ace,SEC,EN,https://limitlesstcg.nyc3
 OP-16,The Time of Battle,OP16-118p1,Portgas.D.Ace,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP16/OP16-118_p1_EN.webp,26.63,2026-09-05,Alternate Art
 OP-16,The Time of Battle,OP16-119,Marshall.D.Teach,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP16/OP16-119_EN.webp,31.43,2026-09-05,
 OP-16,The Time of Battle,OP16-119p1,Marshall.D.Teach,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP16/OP16-119_p1_EN.webp,42.70,2026-09-05,Alternate Art
-`,y=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,w=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 OP-17,The World's Strongest Warriors,OP17-001,Edward.Newgate,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP17/OP17-001_EN.webp,0.11,2026-09-05,
 OP-17,The World's Strongest Warriors,OP17-001p1,Edward.Newgate,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP17/OP17-001_p1_EN.webp,18.93,2026-09-05,Alternate Art
 OP-17,The World's Strongest Warriors,OP17-002,Atmos,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP17/OP17-002_EN.webp,0.05,2026-09-05,
@@ -2888,7 +2974,7 @@ OP-17,The World's Strongest Warriors,OP17-118p1,Rocks.D.Xebec,SEC,EN,https://lim
 OP-17,The World's Strongest Warriors,OP17-118p2,Rocks.D.Xebec,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP17/OP17-118_p2_EN.webp,,,Manga Art
 OP-17,The World's Strongest Warriors,OP17-119,Loki,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP17/OP17-119_EN.webp,32.90,2026-09-05,
 OP-17,The World's Strongest Warriors,OP17-119p1,Loki,SEC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP17/OP17-119_p1_EN.webp,69.71,2026-09-05,Alternate Art
-`,w=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,S=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 PRB-01,One Piece Card The Best,PRB01-001,Sanji,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/PRB01/PRB01-001_EN.webp,0.81,2026-09-05,
 PRB-01,One Piece Card The Best,PRB01-001p1,Sanji,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/PRB01/PRB01-001_p1_EN.webp,108.51,2026-09-05,Alternate Art
 PRB-01,One Piece Card The Best,EB01-006p2,Tony Tony.Chopper,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/EB01/EB01-006_p2_EN.webp,3492.00,2026-09-05,Parallel
@@ -3208,7 +3294,7 @@ PRB-01,One Piece Card The Best,ST10-010p3,Trafalgar Law,SR,EN,https://limitlesst
 PRB-01,One Piece Card The Best,ST12-014,Duval,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST12/ST12-014_EN.webp,0.19,2026-09-05,
 PRB-01,One Piece Card The Best,ST12-014p1,Duval,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST12/ST12-014_p1_EN.webp,0.29,2026-09-05,Pirate Foil
 PRB-01,One Piece Card The Best,ST12-014p2,Duval,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST12/ST12-014_p2_EN.webp,6.54,2026-09-05,Full Art
-`,S=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,b=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 PRB-02,One Piece Card The Best Vol.2,PRB02-001,Koby,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/PRB02/PRB02-001_EN.webp,10.55,2026-09-05,
 PRB-02,One Piece Card The Best Vol.2,PRB02-001p1,Koby,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/PRB02/PRB02-001_p1_EN.webp,37.00,2026-09-05,Alternate Art
 PRB-02,One Piece Card The Best Vol.2,PRB02-002,Trafalgar Law,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/PRB02/PRB02-002_EN.webp,1.64,2026-09-05,
@@ -3525,7 +3611,7 @@ PRB-02,One Piece Card The Best Vol.2,ST20-003,Charlotte Brulee,C,EN,https://limi
 PRB-02,One Piece Card The Best Vol.2,ST20-003p1,Charlotte Brulee,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST20/ST20-003_p1_EN.webp,0.16,2026-09-05,Pirate Foil
 PRB-02,One Piece Card The Best Vol.2,ST21-003,Sanji,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST21/ST21-003_EN.webp,1.49,2026-09-05,
 PRB-02,One Piece Card The Best Vol.2,ST21-003p2,Sanji,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST21/ST21-003_p2_EN.webp,1.12,2026-09-05,Pirate Foil
-`,b=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,T=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-01,Straw Hat Crew,ST01-001,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST01/ST01-001_EN.webp,41.41,2026-09-05,
 ST-01,Straw Hat Crew,ST01-002,Usopp,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST01/ST01-002_EN.webp,0.15,2026-09-05,
 ST-01,Straw Hat Crew,ST01-003,Karoo,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST01/ST01-003_EN.webp,0.16,2026-09-05,
@@ -3543,7 +3629,7 @@ ST-01,Straw Hat Crew,ST01-014,Guard Point,C,EN,https://limitlesstcg.nyc3.cdn.dig
 ST-01,Straw Hat Crew,ST01-015,Gum-Gum Jet Pistol,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST01/ST01-015_EN.webp,0.22,2026-09-05,
 ST-01,Straw Hat Crew,ST01-016,Diable Jambe,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST01/ST01-016_EN.webp,0.56,2026-09-05,
 ST-01,Straw Hat Crew,ST01-017,Thousand Sunny,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST01/ST01-017_EN.webp,0.17,2026-09-05,
-`,T=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,B=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-02,Worst Generation,ST02-001,"Eustass""Captain""Kid",L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST02/ST02-001_EN.webp,2.30,2026-09-05,
 ST-02,Worst Generation,ST02-002,Vito,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST02/ST02-002_EN.webp,0.09,2026-09-05,
 ST-02,Worst Generation,ST02-003,Urouge,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST02/ST02-003_EN.webp,0.18,2026-09-05,
@@ -3579,7 +3665,7 @@ ST-03,The Seven Warlords of The Sea,ST03-014,Marshall.D.Teach,C,EN,https://limit
 ST-03,The Seven Warlords of The Sea,ST03-015,Sables,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST03/ST03-015_EN.webp,1.55,2026-09-05,
 ST-03,The Seven Warlords of The Sea,ST03-016,Thrust Pad Cannon,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST03/ST03-016_EN.webp,0.12,2026-09-05,
 ST-03,The Seven Warlords of The Sea,ST03-017,Love-Love Mellow,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST03/ST03-017_EN.webp,1.62,2026-09-05,
-`,B=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,u=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-04,Animal Kingdom Pirates,ST04-001,Kaido,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST04/ST04-001_EN.webp,2.80,2026-09-05,
 ST-04,Animal Kingdom Pirates,ST04-002,Ulti,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST04/ST04-002_EN.webp,0.21,2026-09-05,
 ST-04,Animal Kingdom Pirates,ST04-003,Kaido,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST04/ST04-003_EN.webp,0.31,2026-09-05,
@@ -3597,7 +3683,7 @@ ST-04,Animal Kingdom Pirates,ST04-014,"Lead Performer ""Disaster""",C,EN,https:/
 ST-04,Animal Kingdom Pirates,ST04-015,Brachio Bomber,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST04/ST04-015_EN.webp,0.17,2026-09-05,
 ST-04,Animal Kingdom Pirates,ST04-016,Blast Breath,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST04/ST04-016_EN.webp,0.09,2026-09-05,
 ST-04,Animal Kingdom Pirates,ST04-017,Onigashima Island,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST04/ST04-017_EN.webp,0.28,2026-09-05,
-`,u=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,R=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-05,Film Edition,ST05-001,Shanks,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST05/ST05-001_EN.webp,5.62,2026-09-05,
 ST-05,Film Edition,ST05-002,Ain,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST05/ST05-002_EN.webp,0.28,2026-09-05,
 ST-05,Film Edition,ST05-003,Ann,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST05/ST05-003_EN.webp,0.09,2026-09-05,
@@ -3615,7 +3701,7 @@ ST-05,Film Edition,ST05-014,Buena Festa,C,EN,https://limitlesstcg.nyc3.cdn.digit
 ST-05,Film Edition,ST05-015,Dr. Indigo,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST05/ST05-015_EN.webp,0.07,2026-09-05,
 ST-05,Film Edition,ST05-016,Lion's Threat Imperial Earth Bind,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST05/ST05-016_EN.webp,0.32,2026-09-05,
 ST-05,Film Edition,ST05-017,Union Armada,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST05/ST05-017_EN.webp,0.19,2026-09-05,
-`,R=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,A=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-06,Absolute Justice,ST06-001,Sakazuki,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST06/ST06-001_EN.webp,1.65,2026-09-05,
 ST-06,Absolute Justice,ST06-002,Koby,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST06/ST06-002_EN.webp,0.17,2026-09-05,
 ST-06,Absolute Justice,ST06-003,Jango,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST06/ST06-003_EN.webp,0.12,2026-09-05,
@@ -3633,7 +3719,7 @@ ST-06,Absolute Justice,ST06-014,Shockwave,C,EN,https://limitlesstcg.nyc3.cdn.dig
 ST-06,Absolute Justice,ST06-015,Great Eruption,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST06/ST06-015_EN.webp,3.18,2026-09-05,
 ST-06,Absolute Justice,ST06-016,White Out,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST06/ST06-016_EN.webp,0.13,2026-09-05,
 ST-06,Absolute Justice,ST06-017,Navy HQ,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST06/ST06-017_EN.webp,0.98,2026-09-05,
-`,A=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,f=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-07,Big Mom Pirates,ST07-001,Charlotte Linlin,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST07/ST07-001_EN.webp,2.78,2026-09-05,
 ST-07,Big Mom Pirates,ST07-002,Charlotte Anana,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST07/ST07-002_EN.webp,0.08,2026-09-05,
 ST-07,Big Mom Pirates,ST07-003,Charlotte Katakuri,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST07/ST07-003_EN.webp,0.71,2026-09-05,
@@ -3651,7 +3737,7 @@ ST-07,Big Mom Pirates,ST07-014,Pekoms,C,EN,https://limitlesstcg.nyc3.cdn.digital
 ST-07,Big Mom Pirates,ST07-015,Soul Pocus,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST07/ST07-015_EN.webp,0.52,2026-09-05,
 ST-07,Big Mom Pirates,ST07-016,Power Mochi,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST07/ST07-016_EN.webp,0.23,2026-09-05,
 ST-07,Big Mom Pirates,ST07-017,Queen Mama Chanter,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST07/ST07-017_EN.webp,0.34,2026-09-05,
-`,f=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,k=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-08,Monkey.D.Luffy,ST08-001,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST08/ST08-001_EN.webp,5.58,2026-09-05,
 ST-08,Monkey.D.Luffy,ST08-002,Uta,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST08/ST08-002_EN.webp,1.08,2026-09-05,
 ST-08,Monkey.D.Luffy,ST08-003,Gaimon,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST08/ST08-003_EN.webp,0.09,2026-09-05,
@@ -3667,7 +3753,7 @@ ST-08,Monkey.D.Luffy,ST08-012,Laboon,C,EN,https://limitlesstcg.nyc3.cdn.digitalo
 ST-08,Monkey.D.Luffy,ST08-013,Mr.2.Bon.Kurei(Bentham),C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST08/ST08-013_EN.webp,0.15,2026-09-05,
 ST-08,Monkey.D.Luffy,ST08-014,Gum-Gum Bell,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST08/ST08-014_EN.webp,0.21,2026-09-05,
 ST-08,Monkey.D.Luffy,ST08-015,Gum-Gum Pistol,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST08/ST08-015_EN.webp,0.24,2026-09-05,
-`,k=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,L=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-09,Yamato,ST09-001,Yamato,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST09/ST09-001_EN.webp,4.07,2026-09-05,
 ST-09,Yamato,ST09-002,Uzuki Tempura,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST09/ST09-002_EN.webp,0.08,2026-09-05,
 ST-09,Yamato,ST09-003,Ulti,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST09/ST09-003_EN.webp,0.20,2026-09-05,
@@ -3683,7 +3769,7 @@ ST-09,Yamato,ST09-012,Yamato,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspac
 ST-09,Yamato,ST09-013,Yamato,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST09/ST09-013_EN.webp,0.14,2026-09-05,
 ST-09,Yamato,ST09-014,Narikabura Arrow,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST09/ST09-014_EN.webp,0.14,2026-09-05,
 ST-09,Yamato,ST09-015,Thunder Bagua,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST09/ST09-015_EN.webp,0.20,2026-09-05,
-`,L=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,W=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-10,Ultra Deck: The Three Captains,ST10-001,Trafalgar Law,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST10/ST10-001_EN.webp,3.42,2026-09-05,
 ST-10,Ultra Deck: The Three Captains,ST10-002,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST10/ST10-002_EN.webp,11.20,2026-09-05,
 ST-10,Ultra Deck: The Three Captains,ST10-003,"Eustass""Captain""Kid",L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST10/ST10-003_EN.webp,1.88,2026-09-05,
@@ -3703,7 +3789,7 @@ ST-10,Ultra Deck: The Three Captains,ST10-016,Gum-Gum Kong Gatling,C,EN,https://
 ST-10,Ultra Deck: The Three Captains,ST10-017,Punk Vise,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST10/ST10-017_EN.webp,0.21,2026-09-05,
 ST-10,Ultra Deck: The Three Captains,OP01-016p3,Nami,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP01/OP01-016_p3_EN.webp,5.46,2026-09-05,Parallel
 ST-10,Ultra Deck: The Three Captains,OP01-025p3,Roronoa Zoro,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP01/OP01-025_p3_EN.webp,1.34,2026-09-05,Parallel
-`,W=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,D=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-11,Uta,ST11-001,Uta,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST11/ST11-001_EN.webp,4.50,2026-09-05,
 ST-11,Uta,ST11-002,Uta,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST11/ST11-002_EN.webp,1.30,2026-09-05,
 ST-11,Uta,ST11-003,Backlight,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST11/ST11-003_EN.webp,0.16,2026-09-05,
@@ -3719,7 +3805,7 @@ ST-11,Uta,OP02-040,Brook,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.c
 ST-11,Uta,OP02-041,Monkey.D.Luffy,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP02/OP02-041_EN.webp,0.39,2026-09-05,
 ST-11,Uta,OP02-043,Roronoa Zoro,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP02/OP02-043_EN.webp,0.14,2026-09-05,
 ST-11,Uta,OP02-045,Three Sword Style Oni Giri,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP02/OP02-045_EN.webp,0.06,2026-09-05,
-`,D=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,M=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-12,Zoro and Sanji,ST12-001,Roronoa Zoro & Sanji,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST12/ST12-001_EN.webp,12.15,2026-09-05,
 ST-12,Zoro and Sanji,ST12-002,Kuina,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST12/ST12-002_EN.webp,0.11,2026-09-05,
 ST-12,Zoro and Sanji,ST12-003,Dracule Mihawk,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST12/ST12-003_EN.webp,6.48,2026-09-05,
@@ -3737,7 +3823,7 @@ ST-12,Zoro and Sanji,ST12-014,Duval,C,EN,https://limitlesstcg.nyc3.cdn.digitaloc
 ST-12,Zoro and Sanji,ST12-015,Patty & Carne,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST12/ST12-015_EN.webp,0.09,2026-09-05,
 ST-12,Zoro and Sanji,ST12-016,Lion Strike,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST12/ST12-016_EN.webp,0.26,2026-09-05,
 ST-12,Zoro and Sanji,ST12-017,Plastic Surgery Shot,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST12/ST12-017_EN.webp,0.16,2026-09-05,
-`,M=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,U=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-13,Ultra Deck: The Three Brothers,ST13-001,Sabo,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-001_EN.webp,2.09,2026-09-05,
 ST-13,Ultra Deck: The Three Brothers,ST13-001p1,Sabo,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-001_p1_EN.webp,18.81,2026-09-05,Parallel
 ST-13,Ultra Deck: The Three Brothers,ST13-002,Portgas.D.Ace,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-002_EN.webp,2.21,2026-09-05,
@@ -3773,7 +3859,7 @@ ST-13,Ultra Deck: The Three Brothers,ST13-016p1,Yamato,C,EN,https://limitlesstcg
 ST-13,Ultra Deck: The Three Brothers,ST13-017,Flame Dragon King,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-017_EN.webp,1.84,2026-09-05,
 ST-13,Ultra Deck: The Three Brothers,ST13-018,Gum-Gum Jet Spear,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-018_EN.webp,0.21,2026-09-05,
 ST-13,Ultra Deck: The Three Brothers,ST13-019,The Three Brothers' Bond,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-019_EN.webp,0.25,2026-09-05,
-`,U=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,K=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-14,3D2Y,ST14-001,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST14/ST14-001_EN.webp,6.28,2026-10-16,
 ST-14,3D2Y,ST14-002,Usopp,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST14/ST14-002_EN.webp,0.17,2026-10-16,
 ST-14,3D2Y,ST14-003,Sanji,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST14/ST14-003_EN.webp,3.87,2026-10-16,
@@ -3796,7 +3882,7 @@ ST-14,3D2Y,ST14-016,I Have My Crew!!,C,EN,https://limitlesstcg.nyc3.cdn.digitalo
 ST-14,3D2Y,ST14-016p1,I Have My Crew!!,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST14/ST14-016_p1_EN.webp,0.33,2026-09-05,Pirate Foil
 ST-14,3D2Y,ST14-017,Thousand Sunny,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST14/ST14-017_EN.webp,5.82,2026-09-05,
 ST-14,3D2Y,ST14-017p1,Thousand Sunny,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST14/ST14-017_p1_EN.webp,3.10,2026-09-05,Pirate Foil
-`,K=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,v=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-15,RED Edward.Newgate,ST15-001,Atmos,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST15/ST15-001_EN.webp,0.07,2026-09-05,
 ST-15,RED Edward.Newgate,ST15-002,Edward.Newgate,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST15/ST15-002_EN.webp,1.40,2026-09-05,
 ST-15,RED Edward.Newgate,ST15-003,Kingdew,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST15/ST15-003_EN.webp,0.12,2026-09-05,
@@ -3812,7 +3898,7 @@ ST-15,RED Edward.Newgate,OP03-006,Speed Jil,C,EN,https://limitlesstcg.nyc3.cdn.d
 ST-15,RED Edward.Newgate,OP03-007,Namule,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP03/OP03-007_EN.webp,0.05,2026-09-05,
 ST-15,RED Edward.Newgate,OP03-009,Haruta,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP03/OP03-009_EN.webp,0.06,2026-09-05,
 ST-15,RED Edward.Newgate,OP03-010,Fossa,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP03/OP03-010_EN.webp,0.06,2026-09-05,
-`,v=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,F=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-16,GREEN Uta,ST16-001,Uta,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST16/ST16-001_EN.webp,0.56,2026-09-05,
 ST-16,GREEN Uta,ST16-002,Gordon,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST16/ST16-002_EN.webp,0.09,2026-09-05,
 ST-16,GREEN Uta,ST16-003,Charlotte Katakuri,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST16/ST16-003_EN.webp,0.11,2026-09-05,
@@ -3828,7 +3914,7 @@ ST-16,GREEN Uta,ST11-001p1,Uta,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceansp
 ST-16,GREEN Uta,ST11-003p2,Backlight,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST11/ST11-003_p2_EN.webp,0.18,2026-09-05,Common
 ST-16,GREEN Uta,ST11-004p2,New Genesis,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST11/ST11-004_p2_EN.webp,0.35,2026-09-05,Super Rare
 ST-16,GREEN Uta,ST11-005p2,I'm invincible,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST11/ST11-005_p2_EN.webp,0.19,2026-09-05,Common
-`,F=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,H=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-17,BLUE Donquixote Doflamingo,ST17-001,Crocodile,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST17/ST17-001_EN.webp,0.13,2026-09-05,
 ST-17,BLUE Donquixote Doflamingo,ST17-002,Trafalgar Law,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST17/ST17-002_EN.webp,0.55,2026-09-05,
 ST-17,BLUE Donquixote Doflamingo,ST17-003,Buggy,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST17/ST17-003_EN.webp,0.44,2026-09-05,
@@ -3844,7 +3930,7 @@ ST-17,BLUE Donquixote Doflamingo,ST03-002,Edward Weevil,C,EN,https://limitlesstc
 ST-17,BLUE Donquixote Doflamingo,ST03-004,Gecko Moria,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST03/ST03-004_EN.webp,0.18,2026-09-05,
 ST-17,BLUE Donquixote Doflamingo,ST03-005,Dracule Mihawk,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST03/ST03-005_EN.webp,0.13,2026-09-05,
 ST-17,BLUE Donquixote Doflamingo,ST03-008,Trafalgar Law,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST03/ST03-008_EN.webp,0.15,2026-09-05,
-`,H=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,V=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-18,PURPLE Monkey.D.Luffy,ST18-001,Uso-Hachi,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST18/ST18-001_EN.webp,4.78,2026-09-05,
 ST-18,PURPLE Monkey.D.Luffy,ST18-002,O-Nami,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST18/ST18-002_EN.webp,0.25,2026-09-05,
 ST-18,PURPLE Monkey.D.Luffy,ST18-003,San-Gorou,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST18/ST18-003_EN.webp,0.20,2026-09-05,
@@ -3892,7 +3978,7 @@ ST-20,YELLOW Charlotte Katakuri,OP03-118,Ikoku Sovereignty,UC,EN,https://limitle
 ST-20,YELLOW Charlotte Katakuri,OP03-121,Thunder Bolt,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP03/OP03-121_EN.webp,0.05,2026-09-05,
 ST-20,YELLOW Charlotte Katakuri,ST07-005,Charlotte Daifuku,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST07/ST07-005_EN.webp,0.10,2026-09-05,
 ST-20,YELLOW Charlotte Katakuri,ST07-014,Pekoms,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST07/ST07-014_EN.webp,0.05,2026-09-05,
-`,V=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,Y=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-21,Gear 5,ST21-001,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST21/ST21-001_EN.webp,4.99,2026-09-05,
 ST-21,Gear 5,ST21-001p1,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST21/ST21-001_p1_EN.webp,98.06,2026-09-05,Parallel
 ST-21,Gear 5,ST21-002,Usopp,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST21/ST21-002_EN.webp,0.22,2026-09-05,
@@ -3957,7 +4043,7 @@ ST-22,Ace & Newgate,ST22-014p1,A.O.,C,EN,https://limitlesstcg.nyc3.cdn.digitaloc
 ST-22,Ace & Newgate,ST22-015,I Am Whitebeard!!,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST22/ST22-015_EN.webp,0.60,2026-09-05,
 ST-22,Ace & Newgate,ST22-016,Take That Back!! Take Back What You Said!!,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST22/ST22-016_EN.webp,0.16,2026-09-05,
 ST-22,Ace & Newgate,ST22-017,Fire Fist,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST22/ST22-017_EN.webp,0.13,2026-09-05,
-`,Y=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,J=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-23,RED Shanks,ST23-001,Uta,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST23/ST23-001_EN.webp,20.02,2026-09-05,
 ST-23,RED Shanks,ST23-002,Shanks,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST23/ST23-002_EN.webp,1.15,2026-09-05,
 ST-23,RED Shanks,ST23-003,Benn.Beckman,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST23/ST23-003_EN.webp,0.11,2026-09-05,
@@ -3973,7 +4059,7 @@ ST-23,RED Shanks,OP09-014,Limejuice,UC,EN,https://limitlesstcg.nyc3.cdn.digitalo
 ST-23,RED Shanks,OP09-015,Lucky.Roux,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-015_EN.webp,0.14,2026-09-05,
 ST-23,RED Shanks,OP09-016,Rockstar,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-016_EN.webp,0.04,2026-09-05,
 ST-23,RED Shanks,OP09-020,Come On!! We'll Fight You!!,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-020_EN.webp,0.16,2026-09-05,
-`,J=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,x=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-24,GREEN Jewelry Bonney,ST24-001,"Capone""Gang""Bege",C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST24/ST24-001_EN.webp,0.09,2026-09-05,
 ST-24,GREEN Jewelry Bonney,ST24-002,Kid & Killer,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST24/ST24-002_EN.webp,1.27,2026-09-05,
 ST-24,GREEN Jewelry Bonney,ST24-003,Basil Hawkins,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST24/ST24-003_EN.webp,0.11,2026-09-05,
@@ -4005,7 +4091,7 @@ ST-25,BLUE Buggy,OP09-055,Mr.1(Daz.Bonez),C,EN,https://limitlesstcg.nyc3.cdn.dig
 ST-25,BLUE Buggy,OP09-056,Mr.3(Galdino),R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-056_EN.webp,0.12,2026-09-05,
 ST-25,BLUE Buggy,OP09-057,Cross Guild,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-057_EN.webp,0.15,2026-09-05,
 ST-25,BLUE Buggy,P-084,Buggy,P,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/P/P-084_EN.webp,0.54,2026-09-05,
-`,x=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,Z=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-26,PURPLE/BLACK Monkey.D.Luffy,ST26-001,Soba Mask,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST26/ST26-001_EN.webp,0.12,2026-09-05,
 ST-26,PURPLE/BLACK Monkey.D.Luffy,ST26-002,Tony Tony.Chopper,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST26/ST26-002_EN.webp,0.32,2026-09-05,
 ST-26,PURPLE/BLACK Monkey.D.Luffy,ST26-003,Nico Robin,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST26/ST26-003_EN.webp,2.03,2026-09-05,
@@ -4021,7 +4107,7 @@ ST-26,PURPLE/BLACK Monkey.D.Luffy,OP09-076,Roronoa Zoro,R,EN,https://limitlesstc
 ST-26,PURPLE/BLACK Monkey.D.Luffy,OP09-077,Gum-Gum Lightning,UC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-077_EN.webp,0.19,2026-09-05,
 ST-26,PURPLE/BLACK Monkey.D.Luffy,OP09-078,Gum-Gum Giant,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-078_EN.webp,2.00,2026-09-05,
 ST-26,PURPLE/BLACK Monkey.D.Luffy,ST14-010,Brook,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST14/ST14-010_EN.webp,0.13,2026-09-05,
-`,Z=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,q=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-27,BLACK Marshall.D.Teach,ST27-001,Avalo Pizarro,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST27/ST27-001_EN.webp,0.12,2026-09-05,
 ST-27,BLACK Marshall.D.Teach,ST27-002,Catarina Devon,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST27/ST27-002_EN.webp,0.11,2026-09-05,
 ST-27,BLACK Marshall.D.Teach,ST27-003,Kuzan,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST27/ST27-003_EN.webp,0.98,2026-09-05,
@@ -4037,7 +4123,7 @@ ST-27,BLACK Marshall.D.Teach,OP09-091,Vasco Shot,C,EN,https://limitlesstcg.nyc3.
 ST-27,BLACK Marshall.D.Teach,OP09-095,Laffitte,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-095_EN.webp,0.23,2026-09-05,
 ST-27,BLACK Marshall.D.Teach,OP09-099,Fullalead,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-099_EN.webp,0.14,2026-09-05,
 ST-27,BLACK Marshall.D.Teach,OP10-084,Sanjuan.Wolf,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP10/OP10-084_EN.webp,0.04,2026-09-05,
-`,q=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,X=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-28,GREEN/YELLOW Yamato,ST28-001,Ashura Doji,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST28/ST28-001_EN.webp,0.18,2026-09-05,
 ST-28,GREEN/YELLOW Yamato,ST28-002,Izo,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST28/ST28-002_EN.webp,0.21,2026-09-05,
 ST-28,GREEN/YELLOW Yamato,ST28-003,Kin'emon,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST28/ST28-003_EN.webp,0.53,2026-09-05,
@@ -4053,7 +4139,7 @@ ST-28,GREEN/YELLOW Yamato,OP06-112,Raizo,C,EN,https://limitlesstcg.nyc3.cdn.digi
 ST-28,GREEN/YELLOW Yamato,OP07-116,Blaze Slice,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP07/OP07-116_EN.webp,0.22,2026-09-05,
 ST-28,GREEN/YELLOW Yamato,OP09-035,Portgas.D.Ace,UC,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-035_EN.webp,0.16,2026-09-05,
 ST-28,GREEN/YELLOW Yamato,ST13-016,Yamato,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST13/ST13-016_EN.webp,0.29,2026-09-05,
-`,X=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,Q=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-29,Egghead,ST29-001,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST29/ST29-001_EN.webp,2.07,2026-09-05,
 ST-29,Egghead,ST29-001p1,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST29/ST29-001_p1_EN.webp,26.04,2026-09-05,Parallel
 ST-29,Egghead,ST29-002,Usopp,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST29/ST29-002_EN.webp,0.12,2026-09-05,
@@ -4085,7 +4171,7 @@ ST-29,Egghead,ST29-014p1,Roronoa Zoro,SR,EN,https://limitlesstcg.nyc3.cdn.digita
 ST-29,Egghead,ST29-015,Raw Heat Strike,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST29/ST29-015_EN.webp,0.20,2026-09-05,
 ST-29,Egghead,ST29-016,Kizaru!! Compared to Two Years Ago We're a Hundred Times Stronger Now!!,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST29/ST29-016_EN.webp,0.34,2026-09-05,
 ST-29,Egghead,ST29-017,Iai Death Lion Song,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST29/ST29-017_EN.webp,0.12,2026-09-05,
-`,Q=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,$=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-30,Luffy & Ace,ST30-001,Luffy & Ace,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST30/ST30-001_EN.webp,3.67,2026-09-05,
 ST-30,Luffy & Ace,ST30-001p1,Luffy & Ace,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST30/ST30-001_p1_EN.webp,59.81,2026-09-05,Parallel
 ST-30,Luffy & Ace,ST30-002,Inazuma,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST30/ST30-002_EN.webp,0.19,2026-09-05,
@@ -4120,46 +4206,46 @@ ST-30,Luffy & Ace,ST30-016,"Can You Still Fight, Luffy?! Of Course!!",C,EN,https
 ST-30,Luffy & Ace,ST30-016p1,"Can You Still Fight, Luffy?! Of Course!!",C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST30/ST30-016_p1_EN.webp,2.48,2026-09-05,Parallel
 ST-30,Luffy & Ace,ST30-017,And You Get Yourself in Big Trouble!!,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST30/ST30-017_EN.webp,0.14,2026-09-05,
 ST-30,Luffy & Ace,ST30-017p1,And You Get Yourself in Big Trouble!!,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST30/ST30-017_p1_EN.webp,0.67,2026-09-05,Parallel
-`,$=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,ee=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-31,RED Monkey.D.Luffy,ST31-001,Sanji,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST31/ST31-001_EN.webp,2.70,2026-09-05,
 ST-31,RED Monkey.D.Luffy,ST31-002,Jinbe,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST31/ST31-002_EN.webp,0.17,2026-09-05,
 ST-31,RED Monkey.D.Luffy,ST31-003,Brook,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST31/ST31-003_EN.webp,0.16,2026-09-05,
 ST-31,RED Monkey.D.Luffy,ST31-004,Monkey.D.Luffy,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST31/ST31-004_EN.webp,2.64,2026-09-05,
 ST-31,RED Monkey.D.Luffy,ST31-005,Thousand Sunny,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST31/ST31-005_EN.webp,6.12,2026-09-05,
 ST-31,RED Monkey.D.Luffy,ST21-001p3,Monkey.D.Luffy,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST21/ST21-001_p3_EN.webp,3.13,2026-09-05,Leader
-`,ee=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,ce=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-32,GREEN Roronoa Zoro,ST32-001,Kin'emon,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST32/ST32-001_EN.webp,0.40,2026-09-05,
 ST-32,GREEN Roronoa Zoro,ST32-002,Kouzuki Oden,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST32/ST32-002_EN.webp,10.71,2026-09-05,
 ST-32,GREEN Roronoa Zoro,ST32-003,Dracule Mihawk,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST32/ST32-003_EN.webp,4.57,2026-09-05,
 ST-32,GREEN Roronoa Zoro,ST32-004,Silvers Rayleigh,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST32/ST32-004_EN.webp,0.16,2026-09-05,
 ST-32,GREEN Roronoa Zoro,ST32-005,Roronoa Zoro,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST32/ST32-005_EN.webp,0.90,2026-09-05,
 ST-32,GREEN Roronoa Zoro,OP12-020p5,Roronoa Zoro,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP12/OP12-020_p5_EN.webp,2.10,2026-09-05,Leader
-`,ce=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,te=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-33,BLUE Kuzan,ST33-001,Koby,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST33/ST33-001_EN.webp,0.26,2026-09-05,
 ST-33,BLUE Kuzan,ST33-002,Sakazuki,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST33/ST33-002_EN.webp,0.19,2026-09-05,
 ST-33,BLUE Kuzan,ST33-003,Smoker,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST33/ST33-003_EN.webp,1.42,2026-09-05,
 ST-33,BLUE Kuzan,ST33-004,Borsalino,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST33/ST33-004_EN.webp,2.78,2026-09-05,
 ST-33,BLUE Kuzan,ST33-005,Monkey.D.Garp,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST33/ST33-005_EN.webp,1.44,2026-09-05,
 ST-33,BLUE Kuzan,OP12-040p2,Kuzan,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP12/OP12-040_p2_EN.webp,0.81,2026-09-05,Leader
-`,te=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,ne=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-34,PURPLE Charlotte Katakuri,ST34-001,Charlotte Katakuri,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST34/ST34-001_EN.webp,0.72,2026-09-05,
 ST-34,PURPLE Charlotte Katakuri,ST34-002,Charlotte Cracker,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST34/ST34-002_EN.webp,0.16,2026-09-05,
 ST-34,PURPLE Charlotte Katakuri,ST34-003,Charlotte Brulee,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST34/ST34-003_EN.webp,6.63,2026-09-05,
 ST-34,PURPLE Charlotte Katakuri,ST34-004,Charlotte Linlin,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST34/ST34-004_EN.webp,8.07,2026-09-05,
 ST-34,PURPLE Charlotte Katakuri,ST34-005,Baron Tamago & Pekoms,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST34/ST34-005_EN.webp,0.12,2026-09-05,
 ST-34,PURPLE Charlotte Katakuri,OP11-062p2,Charlotte Katakuri,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP11/OP11-062_p2_EN.webp,0.87,2026-09-05,Leader
-`,ne=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,ie=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-35,RED/BLACK Sabo,ST35-001,Hack,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST35/ST35-001_EN.webp,0.17,2026-09-05,
 ST-35,RED/BLACK Sabo,ST35-002,Lindbergh,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST35/ST35-002_EN.webp,0.49,2026-09-05,
 ST-35,RED/BLACK Sabo,ST35-003,Karasu,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST35/ST35-003_EN.webp,0.18,2026-09-05,
 ST-35,RED/BLACK Sabo,ST35-004,Koala,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST35/ST35-004_EN.webp,0.87,2026-09-05,
 ST-35,RED/BLACK Sabo,ST35-005,Bartholomew Kuma,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST35/ST35-005_EN.webp,1.15,2026-09-05,
 ST-35,RED/BLACK Sabo,OP13-004p2,Sabo,L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP13/OP13-004_p2_EN.webp,2.83,2026-09-05,Leader
-`,ie=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
+`,se=`set_code,set_name,card_number,name,rarity,language,image_url,market_usd,as_of,variant
 ST-36,"YELLOW Eustass""Captain""Kid",ST36-001,Cavendish,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST36/ST36-001_EN.webp,0.16,2026-09-05,
 ST-36,"YELLOW Eustass""Captain""Kid",ST36-002,Killer,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST36/ST36-002_EN.webp,1.54,2026-09-05,
 ST-36,"YELLOW Eustass""Captain""Kid",ST36-003,Scratchmen Apoo,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST36/ST36-003_EN.webp,0.94,2026-09-05,
 ST-36,"YELLOW Eustass""Captain""Kid",ST36-004,Bartolomeo,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST36/ST36-004_EN.webp,0.18,2026-09-05,
 ST-36,"YELLOW Eustass""Captain""Kid",ST36-005,"Eustass""Captain""Kid",SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/ST36/ST36-005_EN.webp,2.34,2026-09-05,
 ST-36,"YELLOW Eustass""Captain""Kid",OP10-099p2,"Eustass""Captain""Kid",L,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP10/OP10-099_p2_EN.webp,0.68,2026-09-05,Leader
-`;export{s as $,k as A,f as B,A as C,R as D,u as E,B as F,C as G,T as H,b as I,S as J,w as K,y as L,_ as M,h as N,N as O,r as P,m as Q,E as R,g as S,d as T,O as U,P as V,l as W,p as X,o as Y,a as Z,ie as _,ne as a,i as a0,n as a1,t as a2,c as a3,e as a4,te as b,ce as c,ee as d,$ as e,Q as f,X as g,q as h,Z as i,x as j,j as k,J as l,Y as m,z as n,V as o,G as p,I as q,H as r,F as s,v as t,K as u,U as v,M as w,D as x,W as y,L as z};
+`;export{a as $,L as A,k as B,f as C,A as D,R as E,u as F,C as G,B as H,T as I,b as J,S as K,w as L,y as M,_ as N,h as O,N as P,r as Q,m as R,g as S,E as T,d as U,O as V,P as W,l as X,p as Y,o as Z,se as _,ie as a,s as a0,i as a1,n as a2,t as a3,c as a4,e as a5,ne as b,te as c,ce as d,ee as e,$ as f,Q as g,X as h,q as i,Z as j,j as k,x as l,J as m,z as n,Y as o,G as p,I as q,V as r,H as s,F as t,v as u,K as v,U as w,M as x,D as y,W as z};
