@@ -1,6 +1,8 @@
 # Piecebook V1 — Pre-grade + Grade-worth
 (Design addendum, free first slice; approved by Jib 16 Oct 2026)
 
+The typed worksheet described below (PSA pop, solds, cost in, Save draft / Mark submitted) was removed from `/pregrade/:cardNumber`. The page keeps the photo check and shows a read-only Prices card instead. This file is the record of what was approved, not the current screen.
+
 Owner: Code  
 For: Jib  
 Covers: Phase 11 slices 11.1–11.4 at the free level  

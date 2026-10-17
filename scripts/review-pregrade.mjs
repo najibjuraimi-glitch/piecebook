@@ -96,11 +96,6 @@ async function go(page, path) {
   await page.getByRole('heading', { level: 1 }).waitFor({ timeout: 15_000 })
 }
 
-async function fillNami(page) {
-  await page.getByRole('button', { name: 'Fill the labelled Nami worksheet' }).click()
-  await page.waitForTimeout(200)
-}
-
 async function uploadPair(page) {
   const inputs = page.locator('input[type="file"]')
   await inputs.nth(0).setInputFiles({ name: 'front.png', mimeType: 'image/png', buffer: frontPng })
@@ -117,7 +112,6 @@ console.log(`Pre-grade shots → ${OUT}`)
   await shot(page, 'phone-pregrade.png')
   await go(page, '/pregrade/ST01-007')
   await shot(page, 'phone-nami-empty.png')
-  await fillNami(page)
   await uploadPair(page)
   await shot(page, 'phone-nami-nogo.png')
   await context.close()
@@ -128,7 +122,6 @@ console.log(`Pre-grade shots → ${OUT}`)
   await go(page, '/pregrade')
   await shot(page, 'wide-pregrade.png')
   await go(page, '/pregrade/ST01-007')
-  await fillNami(page)
   await uploadPair(page)
   await shot(page, 'wide-nami-nogo.png')
   await context.close()

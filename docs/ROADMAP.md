@@ -88,7 +88,7 @@ Goal: one formula and one book, shared by the phone and both desks, so the sprea
 ### 15.1 Max-bid calculator endpoint, one shared formula
 
 - **User value:** "Street is US$1,030. What is my max all-in and max bid on eBay, and on Goldin with the buyer's premium?" answered the same way everywhere.
-- **Shape:** `GET /api/maxbid?street=1030&venue=ebay|goldin&grade=raw|psa10`. Returns max all-in and max bid in USD and SGD, the cost lines it added (Buy&Ship Portland forwarding, 9% Singapore GST, FX at the dated rate, Goldin's buyer's premium of about 22% as read per listing, never assumed), and a `sit` flag when the best available ask is more than 10% under street. The formula is the grade-worth math from Phase 11 (`src/lib/gradeWorth.ts`) moved into a shared module the Worker and the app both import. One formula, one set of tests.
+- **Shape:** `GET /api/maxbid?street=1030&venue=ebay|goldin&grade=raw|psa10`. Returns max all-in and max bid in USD and SGD, the cost lines it added (Buy&Ship Portland forwarding, 9% Singapore GST, FX at the dated rate, Goldin's buyer's premium of about 22% as read per listing, never assumed), and a `sit` flag when the best available ask is more than 10% under street. The typed Phase 11 worksheet was removed from the card page, so this formula would be new shared code, with its own tests, not a revival of that worksheet.
 - **Size:** M. **Depends on:** 14.1 for the street input, Phase 11.3 math. **Benefits:** Auction, Cards, Jib.
 - **Guardrail:** it returns a number. It never places, schedules or suggests placing a bid.
 

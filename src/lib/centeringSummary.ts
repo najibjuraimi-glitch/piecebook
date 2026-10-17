@@ -159,7 +159,7 @@ export function photoCentering(result: PhotoResult | null, side: PhotoSide): Pho
   return detail && c.measured ? { ...c, detail } : c
 }
 
-/** From a stored prediction photo (the log keeps border pixels, never the image). */
+/** Border pixels from an older pre-grade row. The card page no longer reopens those rows. */
 export function photoCenteringFromStored(photo: {
   side: PhotoSide
   reject?: { code: RejectCode; message: string }

@@ -17,6 +17,7 @@ export const USER_DATA_KEYS = [
   'piecebook.v1',
   'piecebook.decks.v1',
   'piecebook.watchlist.v1',
+  // Older typed drafts. The card page no longer shows or edits them; export and sync still carry the key.
   'piecebook.pregrade.v1',
   'piecebook.displayCurrency.v1',
   'piecebook.readerCutoff.v1',

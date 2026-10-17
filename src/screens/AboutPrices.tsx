@@ -60,23 +60,29 @@ export function AboutPricesScreen() {
             <li>Convert a cost you logged into another currency. Costs stay in the currency you paid.</li>
             <li>Show live quotes, sold listings or seller offers.</li>
             <li>Carry marketplace or affiliate links. No one is paid when you buy.</li>
-            <li>Buy, bid or offer on a card. Pre-grade is a worksheet, not a desk.</li>
+            <li>Buy, bid or offer on a card. The photo check is not a desk.</li>
           </ul>
         </Section>
 
         <Section title="Pre-grade">
           <p>
-            The <Link to="/pregrade" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">pre-grade worksheet</Link> uses
-            only numbers you type — a PSA pop, solds, shipping — each with a source and a date. A guess must say it is a
-            guess. The seed market on the card is never treated as a sold. Photos can rule a PSA 10 out on centering; they
-            never confirm one. Corners, edges and surface are not read yet.
+            The{' '}
+            <Link to="/pregrade" className="text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
+              photo check
+            </Link>{' '}
+            can rule a PSA 10 out. It never confirms one, and the scores are an AI estimate, not a grade. On the card
+            page, Prices is read-only: raw, PSA 9 and PSA 10. Each figure Piecebook already holds is shown with its
+            source, a link and a date, in US dollars, and the same figure in Singapore dollars at the dated European
+            Central Bank rate. A grade with no sourced price says “No price yet”. The ungraded seed market is never
+            shown as a PSA 9 or a PSA 10, and it is never a sold.
           </p>
         </Section>
 
         <Section title="Your data">
           <p>
-            Owned cards, quantities, cost basis, your watchlist and pre-grade predictions live only in this browser. Nothing
-            is sent anywhere, and there are no accounts. Clearing site data removes them.
+            Owned cards, quantities, cost basis, your watchlist and older pre-grade drafts live only in this browser. The
+            card page no longer shows those drafts. Nothing is sent anywhere, and there are no accounts. Clearing site
+            data removes them.
           </p>
         </Section>
 
