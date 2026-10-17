@@ -307,7 +307,17 @@ function refineQuadOnPixels(image: PixelImage, rough: Quad): Quad {
   return out as Quad
 }
 
-export function measurePhoto(image: PixelImage, side: PhotoSide): PhotoResult {
+export interface MeasureOptions {
+  /**
+   * Card corners already known in this image's pixels (top-left, top-right,
+   * bottom-right, bottom-left), e.g. from the camera's flatten. The outline
+   * search is skipped and these are trusted; the print edges are still read
+   * from the pixels.
+   */
+  outline?: Quad
+}
+
+export function measurePhoto(image: PixelImage, side: PhotoSide, opts: MeasureOptions = {}): PhotoResult {
   const short = Math.min(image.width, image.height)
   if (short < MIN_SHORT_SIDE_PX) {
     return {
@@ -318,29 +328,46 @@ export function measurePhoto(image: PixelImage, side: PhotoSide): PhotoResult {
     }
   }
 
-  const found = resolveCardBlob(image)
-  if (found.reject === 'no-card') {
-    return {
-      ok: false,
-      side,
-      code: 'no-card',
-      message: `${side === 'front' ? 'Front' : 'Back'}: could not find a card outline on a contrasting ground.`,
+  let rect: [Point, Point, Point, Point]
+  let keystone: number
+  let tilt: number
+  let box: { minX: number; minY: number; maxX: number; maxY: number }
+  if (opts.outline) {
+    const q = opts.outline
+    rect = orderQuad(q)
+    keystone = quadKeystoneDeg(q)
+    tilt = axisTiltDeg(q)
+    box = {
+      minX: Math.floor(Math.min(q[0].x, q[1].x, q[2].x, q[3].x)),
+      minY: Math.floor(Math.min(q[0].y, q[1].y, q[2].y, q[3].y)),
+      maxX: Math.ceil(Math.max(q[0].x, q[1].x, q[2].x, q[3].x)),
+      maxY: Math.ceil(Math.max(q[0].y, q[1].y, q[2].y, q[3].y)),
     }
-  }
-  if (found.reject === 'cut-off' || !found.blob) {
-    return {
-      ok: false,
-      side,
-      code: 'cut-off',
-      message: `${side === 'front' ? 'Front' : 'Back'}: the card is cut off at the frame.`,
+  } else {
+    const found = resolveCardBlob(image)
+    if (found.reject === 'no-card') {
+      return {
+        ok: false,
+        side,
+        code: 'no-card',
+        message: `${side === 'front' ? 'Front' : 'Back'}: could not find a card outline on a contrasting ground.`,
+      }
     }
+    if (found.reject === 'cut-off' || !found.blob) {
+      return {
+        ok: false,
+        side,
+        code: 'cut-off',
+        message: `${side === 'front' ? 'Front' : 'Back'}: the card is cut off at the frame.`,
+      }
+    }
+    const blob = found.blob
+    const hull = convexHull(blob.points.length > 2400 ? thinPoints(blob.points, 2400) : blob.points)
+    rect = minAreaRect(hull)
+    keystone = blobKeystoneDeg(hull, rect)
+    tilt = axisTiltDeg(rect)
+    box = blob
   }
-  const blob = found.blob
-
-  const hull = convexHull(blob.points.length > 2400 ? thinPoints(blob.points, 2400) : blob.points)
-  const rect = minAreaRect(hull)
-  const keystone = blobKeystoneDeg(hull, rect)
-  const tilt = axisTiltDeg(rect)
   if (keystone > MAX_ANGLE_DEG) {
     return {
       ok: false,
@@ -359,10 +386,10 @@ export function measurePhoto(image: PixelImage, side: PhotoSide): PhotoResult {
   let frame: PixelImage
   let toImage: (p: Point) => Point
   if (aligned) {
-    const x0 = Math.max(0, blob.minX - pad)
-    const y0 = Math.max(0, blob.minY - pad)
-    const x1 = Math.min(image.width - 1, blob.maxX + pad)
-    const y1 = Math.min(image.height - 1, blob.maxY + pad)
+    const x0 = Math.max(0, box.minX - pad)
+    const y0 = Math.max(0, box.minY - pad)
+    const x1 = Math.min(image.width - 1, box.maxX + pad)
+    const y1 = Math.min(image.height - 1, box.maxY + pad)
     frame = cropRect(image, x0, y0, x1, y1)
     toImage = (p) => ({ x: x0 + p.x, y: y0 + p.y })
   } else {

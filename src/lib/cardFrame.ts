@@ -36,7 +36,7 @@ export const GLARE_TOTAL_FRAC = 0.02
 /** How long the card must stay ready before the shutter fires on its own, ms. */
 export const AUTO_CAPTURE_MS = 500
 
-export type HintCode = 'no-card' | 'off-frame' | 'too-far' | 'too-close' | 'tilted' | 'dark' | 'blur' | 'glare'
+export type HintCode = 'no-card' | 'off-frame' | 'too-far' | 'too-close' | 'tilted' | 'rotated' | 'dark' | 'blur' | 'glare'
 
 export const HINT_TEXT: Record<HintCode, string> = {
   'no-card': 'Point at the card on a plain, darker background.',
@@ -44,6 +44,7 @@ export const HINT_TEXT: Record<HintCode, string> = {
   'too-far': 'Move closer so the card fills the outline.',
   'too-close': 'Move back a touch: leave a margin around the card.',
   tilted: 'Hold the phone flat over the card, straight down.',
+  rotated: 'Turn the phone or the card so the edges line up with the outline.',
   dark: 'Too dark. Face a window or hold a sheet of white paper to bounce light in.',
   blur: 'Hold still. Tap the card to focus if it stays soft.',
   glare: 'Glare on the card. Tilt it a little, or move the lamp out of the foil.',
@@ -236,8 +237,8 @@ export function brightness(img: PixelImage, quad?: Quad, stride = 2): number {
 
 /**
  * One live frame → outline, hints and readiness. Order of hints is the order
- * a collector should fix them: find the card, frame it, hold it flat, then
- * light, focus and glare.
+ * a collector should fix them: find the card, frame it, hold it flat and
+ * square, then light, focus and glare.
  */
 export function assessFrame(img: PixelImage): FrameAssessment {
   const found = findCardOutline(img)
@@ -248,7 +249,8 @@ export function assessFrame(img: PixelImage): FrameAssessment {
   const hints: HintCode[] = []
   if (o.coverage < MIN_COVERAGE) hints.push('too-far')
   else if (o.coverage > MAX_COVERAGE) hints.push('too-close')
-  if (o.keystoneDeg > MAX_LIVE_KEYSTONE_DEG || o.tiltDeg > MAX_LIVE_TILT_DEG) hints.push('tilted')
+  if (o.keystoneDeg > MAX_LIVE_KEYSTONE_DEG) hints.push('tilted')
+  else if (o.tiltDeg > MAX_LIVE_TILT_DEG) hints.push('rotated')
   const metrics: FrameMetrics = {
     sharpness: sharpness(img, o.quad),
     brightness: brightness(img, o.quad),

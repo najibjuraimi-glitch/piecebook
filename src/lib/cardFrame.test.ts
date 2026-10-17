@@ -11,6 +11,7 @@ import {
   FLATTEN_MARGIN_FRAC,
   HINT_TEXT,
   MAX_LIVE_KEYSTONE_DEG,
+  MAX_LIVE_TILT_DEG,
   MIN_COVERAGE,
   MIN_SHARPNESS,
   applyHomography,
@@ -269,6 +270,20 @@ describe('live frame hints', () => {
     expect(a.hints).toContain('tilted')
   })
 
+  it('an in-plane turn is asked to line up with the outline, not to hold flat', () => {
+    const img = makeSyntheticCard({
+      width: 240,
+      height: 320,
+      card: { x: 60, y: 60, w: 120, h: 168 },
+      borders: { left: 10, right: 8, top: 9, bottom: 9 },
+      rotateDeg: 14,
+    })
+    const a = assessFrame(img)
+    expect(a.outline?.tiltDeg).toBeGreaterThan(MAX_LIVE_TILT_DEG)
+    expect(a.hints).toContain('rotated')
+    expect(a.hints).not.toContain('tilted')
+  })
+
   it('every hint has short plain wording and the auto-capture hold is about half a second', () => {
     for (const text of Object.values(HINT_TEXT)) {
       expect(text.length).toBeLessThan(90)
@@ -436,6 +451,20 @@ describe('flattening an angled shot', () => {
     expect(m.measure.lr.label).toBe('60/40')
     expect(m.measure.tb.label).toBe('50/50')
     expect(m.measure.maxAngleErrorDeg).toBeLessThan(MAX_ANGLE_DEG)
+  })
+
+  it('with the flattened corners handed over, the measure skips the search and reads the same', () => {
+    const f = flattenCard(tipped(90))
+    if (!f.flattened) throw new Error('expected flatten')
+    const m = measurePhoto(f.image, 'front', { outline: f.cardQuad })
+    expect(m.ok).toBe(true)
+    if (!m.ok) return
+    expect(m.measure.resolved).toBe(true)
+    expect(m.measure.lr.label).toBe('60/40')
+    expect(m.measure.tb.label).toBe('50/50')
+    expect(m.measure.maxAngleErrorDeg).toBe(0)
+    // The outline is trusted for where the card is, not for the print edges: these still come from the pixels.
+    expect(m.measure.left).toBeGreaterThan(m.measure.right)
   })
 
   it('a strongly angled shot flattens too', () => {
