@@ -18,7 +18,7 @@ import {
 import { photoWouldChangeTheCall } from '../lib/photoNote'
 import { loadPhotoFile } from '../lib/photoPixels'
 import { downloadBlob, flattenedPhotoFile } from '../lib/saveFlatPhoto'
-import { centeringLine, photoCentering, summariseCentering } from '../lib/centeringSummary'
+import { FULL_ART_NOTE, centeringLine, photoCentering, summariseCentering, withFullArtFront } from '../lib/centeringSummary'
 import { EdgeReadout } from '../components/EdgeReadout'
 import { buildScores } from '../lib/gradeScore'
 import { GradeScores } from '../components/GradeScores'
@@ -48,31 +48,35 @@ function CardCheck({ cardNumber, debugSave }: { cardNumber: string; debugSave: b
   const [backSeed, setBackSeed] = useState<string | null>(sessionMatch?.backDataUrl ?? null)
   const [vision, setVision] = useState<VisionCheck | null>(sessionMatch?.check ?? null)
 
-  const centeringCannotBeTen = Boolean((front?.ok && front.measure.cannotBeTen) || (back?.ok && back.measure.cannotBeTen))
-  const centeringSummary = summariseCentering(photoCentering(front, 'front'), photoCentering(back, 'back'))
+  const borderless = card.frontBorder === 'none'
+  const slab = Boolean(vision?.identify.graded_slab)
+  const frontCentering = withFullArtFront(photoCentering(front, 'front'), borderless)
+  const backCentering = photoCentering(back, 'back')
+  const centeringSummary = summariseCentering(frontCentering, backCentering)
+  const centeringCannotBeTen = centeringSummary.cannotBeTen
   const scores = useMemo(
     () =>
-      front || back || vision
+      !slab && (front || back || vision)
         ? buildScores({
-            front: photoCentering(front, 'front'),
+            front: withFullArtFront(photoCentering(front, 'front'), borderless),
             back: photoCentering(back, 'back'),
             backSent: Boolean(back || backSeed),
             condition: vision && vision.coverage === 'full' ? vision.condition : null,
           })
         : null,
-    [front, back, backSeed, vision],
+    [front, back, backSeed, vision, borderless, slab],
   )
   const visionRuledOut = Boolean(vision?.condition.psa10_ruled_out)
-  const cannotBeTen = Boolean(centeringCannotBeTen || visionRuledOut)
+  const cannotBeTen = Boolean(!slab && (centeringCannotBeTen || visionRuledOut))
   const photoNote = photoWouldChangeTheCall({
-    frontReject: front && !front.ok ? front.message : null,
+    frontReject: borderless ? null : front && !front.ok ? front.message : null,
     backReject: back && !back.ok ? back.message : null,
-    frontCannotBeTen: Boolean(front?.ok && front.measure.cannotBeTen),
+    frontCannotBeTen: borderless ? false : Boolean(front?.ok && front.measure.cannotBeTen),
     backCannotBeTen: Boolean(back?.ok && back.measure.cannotBeTen),
     hasFront: Boolean(front),
     hasBack: Boolean(back),
     visionRead: vision?.coverage === 'full',
-    visionRuledOut,
+    visionRuledOut: slab ? false : visionRuledOut,
   })
 
   useEffect(() => {
@@ -156,13 +160,18 @@ function CardCheck({ cardNumber, debugSave }: { cardNumber: string; debugSave: b
           Front and back, square-on. Short side 800px or more. The whole card in the frame. Angled over ~8° is rejected.
         </p>
         <div className="mt-4 grid gap-4 tablet:grid-cols-2">
-          <PhotoSlot side="front" result={front} onResult={setFront} seedDataUrl={frontSeed} debugSave={debugSave} />
+          <PhotoSlot side="front" result={front} onResult={setFront} seedDataUrl={frontSeed} debugSave={debugSave} fullArt={borderless} />
           <PhotoSlot side="back" result={back} onResult={setBack} seedDataUrl={backSeed} debugSave={debugSave} />
         </div>
         {vision && (
           <div className="mt-4">
             <VisionGuess check={vision} />
           </div>
+        )}
+        {slab && (
+          <p className="mt-4 rounded-2xl border border-line bg-surface px-4 py-3 text-body text-ink">
+            This photo shows a graded slab. Piecebook does not pre-grade a card that is already in a slab.
+          </p>
         )}
         {scores && (
           <div className="mt-4">
@@ -172,9 +181,11 @@ function CardCheck({ cardNumber, debugSave }: { cardNumber: string; debugSave: b
         {(front || back) && (
           <div className="mt-4 rounded-2xl border border-line bg-surface px-4 py-3" aria-label="Centering">
             <p className="text-meta font-medium text-muted">Centering</p>
-            <p className="tabular mt-1 text-body text-ink">{centeringLine(photoCentering(front, 'front'), 'front')}</p>
-            <p className="tabular mt-0.5 text-body text-ink">{centeringLine(photoCentering(back, 'back'), 'back')}</p>
-            <p className={`mt-2 text-body ${centeringSummary.cannotBeTen ? 'font-medium text-bad' : 'text-ink'}`}>{centeringSummary.verdict}</p>
+            <p className="tabular mt-1 text-body text-ink">{centeringLine(frontCentering, 'front')}</p>
+            <p className="tabular mt-0.5 text-body text-ink">{centeringLine(backCentering, 'back')}</p>
+            {!slab && (
+              <p className={`mt-2 text-body ${centeringSummary.cannotBeTen ? 'font-medium text-bad' : 'text-ink'}`}>{centeringSummary.verdict}</p>
+            )}
           </div>
         )}
         <p className="mt-4 text-body text-ink">{photoNote}</p>
@@ -265,12 +276,15 @@ function PhotoSlot({
   onResult,
   seedDataUrl,
   debugSave,
+  fullArt = false,
 }: {
   side: PhotoSide
   result: PhotoResult | null
   onResult: (r: PhotoResult | null) => void
   seedDataUrl?: string | null
   debugSave?: boolean
+  /** Seed metadata says this front has no print border. A measured edge here is not a read. */
+  fullArt?: boolean
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -300,7 +314,7 @@ function PhotoSlot({
     }
   }, [seedDataUrl, side])
 
-  const drawable = Boolean(result?.ok && bitmap && hasPixelGeometry(result.measure))
+  const drawable = !fullArt && Boolean(result?.ok && bitmap && hasPixelGeometry(result.measure))
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -349,11 +363,12 @@ function PhotoSlot({
       {!drawable && seedDataUrl && (
         <img src={seedDataUrl} alt="" className="mt-2 max-h-64 w-full rounded-xl object-contain" />
       )}
-      {result && !result.ok && (
+      {fullArt && result && <p className="mt-2 text-body text-ink">{FULL_ART_NOTE}</p>}
+      {!fullArt && result && !result.ok && (
         <p className="mt-2 text-body text-bad">{result.message}</p>
       )}
-      {result?.ok && <p className="tabular mt-2 text-meta text-ink">{centeringLabel(result.measure)}</p>}
-      <EdgeReadout side={side} show={result != null} detail={result ? photoCentering(result, side)?.detail : undefined} />
+      {!fullArt && result?.ok && <p className="tabular mt-2 text-meta text-ink">{centeringLabel(result.measure)}</p>}
+      {!fullArt && <EdgeReadout side={side} show={result != null} detail={result ? photoCentering(result, side)?.detail : undefined} />}
       <div className="mt-3 flex flex-col gap-2">
         <GhostButton onClick={() => inputRef.current?.click()} disabled={busy}>
           {busy ? 'Reading…' : result ? 'Replace photo' : 'Upload photo'}

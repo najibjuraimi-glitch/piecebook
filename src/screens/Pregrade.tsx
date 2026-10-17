@@ -7,7 +7,7 @@ import { GhostButton, PrimaryButton } from '../components/Buttons'
 import { ALL_CARDS, type Card } from '../data/seed'
 import { resolveCardNumber } from '../lib/search'
 import { copySeedPriceLine } from '../lib/copyPrice'
-import { rankVisionCandidates } from '../lib/visionCandidates'
+import { codeNameDisagreement, missingPrintNote, nameScore, rankVisionCandidates } from '../lib/visionCandidates'
 import {
   cardLanguageLabel,
   checkPhotos,
@@ -28,13 +28,18 @@ import { PhotoGuide, PhotoTipLinks, usePhotoGuide } from '../components/PhotoGui
 import { CameraCapture, cameraSupported, type CameraNote } from '../components/CameraCapture'
 import { flagsOf, tipsForOutcome } from '../lib/photoGuide'
 import {
+  FULL_ART_NOTE,
   centeringLine,
+  fullArtFront,
   photoCentering,
   summariseCentering,
   unmeasured,
   type CenteringSummary,
   type PhotoCentering,
 } from '../lib/centeringSummary'
+
+const SLAB_NOTE = 'This photo shows a graded slab. Piecebook does not pre-grade a card that is already in a slab.'
+type CheckPhase = 'measuring' | 'sending' | 'reading'
 
 const EN_ONLY_NOTE = 'Piecebook currently only has English card data and prices.'
 
@@ -58,6 +63,7 @@ export function PregradeScreen() {
   const [frontMeasure, setFrontMeasure] = useState<SideMeasure | null>(null)
   const [backMeasure, setBackMeasure] = useState<SideMeasure | null>(null)
   const [measuring, setMeasuring] = useState(false)
+  const [phase, setPhase] = useState<CheckPhase | null>(null)
   // Which side the guided camera should open on, or null when it is closed.
   const [cameraSide, setCameraSide] = useState<PhotoSide | null>(null)
   // What the camera did to each shot (glare retry, flatten), shown with the photo.
@@ -66,14 +72,15 @@ export function PregradeScreen() {
   const hasCamera = useMemo(cameraSupported, [])
   // The measurements that went with the last check, so confirm hands the card page the same numbers.
   const [carriedCentering, setCarriedCentering] = useState<CarriedCentering | null>(null)
-  const centering = useMemo<CenteringSummary | null>(
-    () => (frontMeasure || backMeasure ? summariseCentering(frontMeasure?.centering ?? null, backMeasure?.centering ?? null) : null),
-    [frontMeasure, backMeasure],
-  )
+  const centering = useMemo<CenteringSummary | null>(() => {
+    if (!frontMeasure && !backMeasure) return null
+    const front = borderlessFront(check) ? fullArtFront() : (frontMeasure?.centering ?? null)
+    return summariseCentering(front, backMeasure?.centering ?? null)
+  }, [frontMeasure, backMeasure, check])
   // Scores need an attempt at the model (or its refusal) so the condition part is honest about what it rests on.
   const scores = useMemo(
     () =>
-      centering && (check || photoError)
+      !check?.identify.graded_slab && centering && (check || photoError)
         ? buildScores({
             front: centering.front,
             back: centering.back,
@@ -120,12 +127,17 @@ export function PregradeScreen() {
     () => (check ? rankVisionCandidates(check.identify, ALL_CARDS, 5) : []),
     [check],
   )
+  const borderless = borderlessFront(check)
+  const disagreement = check ? codeNameDisagreement(check.identify, ALL_CARDS) : null
+  const missingPrint = check ? missingPrintNote(check.identify, ALL_CARDS) : null
+  const slab = Boolean(check?.identify.graded_slab)
   const language = check?.identify.language ?? null
   const showEnOnlyNote = isNonEnglishCardLanguage(language)
 
   const runCheck = async () => {
     if (!frontFile || busy) return
     setBusy(true)
+    setPhase('measuring')
     setPhotoError(null)
     setCheck(null)
     setHeldPhotos(null)
@@ -139,6 +151,8 @@ export function PregradeScreen() {
     const measured = { front: fm.centering, back: bm?.centering ?? null }
     const carried = { front: fm.result, back: bm?.result ?? null }
     setCarriedCentering(carried)
+    setPhase('sending')
+    const readingTimer = window.setTimeout(() => setPhase('reading'), 700)
     try {
       const payload = await checkPhotos(frontFile, backFile, measured)
       setCheck(payload.check)
@@ -168,6 +182,8 @@ export function PregradeScreen() {
         setPhotoError({ text: 'The photo check could not run.', retry: true })
       }
     } finally {
+      window.clearTimeout(readingTimer)
+      setPhase(null)
       setBusy(false)
     }
   }
@@ -235,6 +251,7 @@ export function PregradeScreen() {
             label="Front"
             file={frontFile}
             measure={frontMeasure}
+            borderless={borderless}
             note={frontNote}
             side="front"
             debugSave={debugSave}
@@ -260,10 +277,18 @@ export function PregradeScreen() {
           />
         )}
         <PrimaryButton className="mt-4" disabled={!frontFile || busy || measuring} onClick={() => void runCheck()}>
-          {busy ? 'Checking…' : measuring ? 'Measuring…' : 'Check photos'}
+          {busy ? phaseLabel(phase) : measuring ? 'Measuring…' : 'Check photos'}
         </PrimaryButton>
-        {centering && <CenteringBlock summary={centering} />}
+        {(busy || measuring) && (
+          <p className="mt-2 text-meta text-muted" role="status" aria-live="polite">
+            {busy ? phaseDetail(phase) : 'Measuring centering…'}
+          </p>
+        )}
+        {centering && <CenteringBlock summary={centering} hideVerdict={slab} />}
         <PhotoTipLinks tips={resultTips} onOpen={guide.openTip} />
+        {slab && (
+          <p className="mt-4 rounded-2xl border border-line bg-surface px-4 py-3 text-body text-ink">{SLAB_NOTE}</p>
+        )}
         {scores && (
           <div className="mt-4">
             <GradeScores scores={scores} />
@@ -297,12 +322,18 @@ export function PregradeScreen() {
           <div className="mt-6">
             <p className="text-[15px] font-medium leading-5 text-ink">
               Read as {check.identify.name ?? 'an unnamed card'}
-              {check.identify.set_code ? ` · ${check.identify.set_code}` : ''}
+              {!disagreement && check.identify.set_code ? ` · ${check.identify.set_code}` : ''}
               {check.identify.rarity ? ` · ${check.identify.rarity}` : ''}
               {check.identify.parallel_guess ? ` · ${check.identify.parallel_guess}` : ''}
               {' · '}
               {cardLanguageLabel(language)}
             </p>
+            {disagreement && (
+              <p className="mt-2 text-body text-ink">
+                {disagreement.code} is {disagreement.owner} in the seed, not {check.identify.name}.
+              </p>
+            )}
+            {missingPrint && <p className="mt-2 text-body text-ink">{missingPrint}</p>}
             {check.coverage === 'identify_only' && (
               <p className="mt-3 rounded-2xl border border-line bg-surface px-4 py-3 text-body text-ink">
                 The model read the number but declined to describe this card’s condition. Nothing is ruled
@@ -427,13 +458,34 @@ async function measureSide(file: File, side: PhotoSide, note: CameraNote | null 
   }
 }
 
-export function CenteringBlock({ summary }: { summary: CenteringSummary }) {
+/** The agreed top candidate is a borderless print, and the read name does not belong to a different card. */
+function borderlessFront(check: VisionCheck | null): boolean {
+  if (!check) return false
+  const top = rankVisionCandidates(check.identify, ALL_CARDS, 5)[0]?.card
+  if (!top || top.frontBorder !== 'none') return false
+  const name = check.identify.name?.trim() ?? ''
+  return !name || nameScore(name, top.name) >= 55
+}
+
+function phaseLabel(phase: CheckPhase | null): string {
+  if (phase === 'reading') return 'Reading…'
+  if (phase === 'sending') return 'Sending…'
+  return 'Measuring…'
+}
+
+function phaseDetail(phase: CheckPhase | null): string {
+  if (phase === 'reading') return 'Reading the card…'
+  if (phase === 'sending') return 'Sending photos…'
+  return 'Measuring centering…'
+}
+
+export function CenteringBlock({ summary, hideVerdict = false }: { summary: CenteringSummary; hideVerdict?: boolean }) {
   return (
     <div className="mt-4 rounded-2xl border border-line bg-surface px-4 py-3" aria-label="Centering">
       <p className="text-meta font-medium text-muted">Centering, measured on this phone</p>
       <p className="tabular mt-1 text-body text-ink">{centeringLine(summary.front, 'front')}</p>
       <p className="tabular mt-0.5 text-body text-ink">{centeringLine(summary.back, 'back')}</p>
-      <p className={`mt-2 text-body ${summary.cannotBeTen ? 'font-medium text-bad' : 'text-ink'}`}>{summary.verdict}</p>
+      {!hideVerdict && <p className={`mt-2 text-body ${summary.cannotBeTen ? 'font-medium text-bad' : 'text-ink'}`}>{summary.verdict}</p>}
       <p className="mt-1 text-meta text-muted">
         A 10 needs {summary.limits.front} or better on the front and {summary.limits.back} or better on the back. Centering can rule a 10 out. It never confirms one.
       </p>
@@ -445,6 +497,7 @@ function PhotoPick({
   label,
   file,
   measure,
+  borderless,
   note,
   side,
   debugSave,
@@ -454,6 +507,7 @@ function PhotoPick({
   label: string
   file: File | null
   measure: SideMeasure | null
+  borderless?: boolean
   note: CameraNote | null
   side: PhotoSide
   debugSave?: boolean
@@ -474,7 +528,8 @@ function PhotoPick({
     return () => URL.revokeObjectURL(next)
   }, [file])
 
-  const drawable = Boolean(measure?.bitmap && measure.result?.ok && hasPixelGeometry(measure.result.measure))
+  const fullArt = Boolean(borderless && side === 'front')
+  const drawable = !fullArt && Boolean(measure?.bitmap && measure.result?.ok && hasPixelGeometry(measure.result.measure))
 
   return (
     <div className="rounded-2xl border border-line bg-surface p-3">
@@ -490,17 +545,18 @@ function PhotoPick({
         <CenteringCanvas bitmap={measure.bitmap} measure={measure.result.measure} side={side} />
       )}
       {!drawable && url && <img src={url} alt="" className="mt-2 max-h-44 w-full rounded-xl object-contain" />}
-      {measure && !measure.centering.measured && (
+      {fullArt && <p className="mt-2 text-body text-ink">{FULL_ART_NOTE}</p>}
+      {!fullArt && measure && !measure.centering.measured && (
         // A card that was found but whose print edge was not read is a limit of the photo, not a fault in it.
         <p className={`mt-2 text-body ${measure.centering.reason === 'no-print-edge' ? 'text-muted' : 'text-bad'}`}>{measure.centering.note}</p>
       )}
-      {measure?.centering.measured && (
+      {!fullArt && measure?.centering.measured && (
         <p className="tabular mt-2 text-meta text-ink">
           {measure.centering.leftRight} left to right · {measure.centering.topBottom} top to bottom
           {measure.centering.cannotBeTen ? ' · cannot be a 10' : ''}
         </p>
       )}
-      <EdgeReadout side={side} show={measure != null} detail={measure?.centering.detail} />
+      {!fullArt && <EdgeReadout side={side} show={measure != null} detail={measure?.centering.detail} />}
       {file && note && (
         <p className="mt-2 text-meta text-muted" data-testid={`camera-note-${side}`}>
           From the camera. {note.usedShot ? `${note.usedShot} ` : ''}

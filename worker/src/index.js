@@ -6,8 +6,13 @@
 import { accessConfigured, verifyAccess } from "./access.js";
 import { handleSync } from "./sync.js";
 import { handlePrice } from "./price.js";
-// Same words and limits as the app. wrangler bundles the TypeScript; no pixels are read here.
-import { parsePhotoCentering, summariseCentering } from "../../src/lib/centeringSummary.ts";
+// Same words and limits as the app. wrangler bundles the TypeScript.
+// /check does not read pixels: it echoes centering the phone already measured.
+// /pregrade decodes a JPEG and measures it here, for agents that have no browser.
+import jpeg from "jpeg-js";
+import { measurePhoto } from "../../src/lib/centering.ts";
+import { parsePhotoCentering, photoCentering, summariseCentering, unmeasured, withFullArtFront } from "../../src/lib/centeringSummary.ts";
+import { identifyIsBorderless } from "../../src/lib/frontBorder.ts";
 import { CONFIDENCES, SEVERITIES, buildScores } from "../../src/lib/gradeScore.ts";
 
 // The prompts ask for labels, never for printed text. Transcribing a card's
@@ -31,6 +36,7 @@ parallel_guess — pick one:
 - "base" only for the standard set print with no parallel treatment.
 - null if you cannot tell.
 The attack attribute "Special" (Strike / Slash / Special next to power) is not enough by itself. Foil plus SPECIAL / SP as a rarity mark is. Do not default to "base" when the foil or stamp says SP, SPECIAL, Alternate, or Manga.
+graded_slab: true only for a grading-company slab with a certification label. A sleeve, toploader, magnetic holder, or stand is not a slab. Otherwise false.
 2. CONDITION: inspect corners, edges and surface. For each, list the defect flags you can actually see from the allowed list, add at most twelve words of your own describing where and how bad, and give:
 - severity, one of "none" (no defect visible), "light" (visible only up close), "moderate" (plain at arm's length), "heavy" (damage), "unclear" (the photo does not let you judge this part). Be strict: a defect you can see is at least "light".
 - confidence, one of "high", "medium", "low", for how well these photos show that part.
@@ -72,8 +78,9 @@ const IDENTIFY_FULL = {
     rarity: { type: "STRING", enum: RARITIES, nullable: true },
     parallel_guess: { type: "STRING", enum: PARALLELS, nullable: true },
     confidence: { type: "NUMBER" },
+    graded_slab: { type: "BOOLEAN" },
   },
-  required: ["set_code", "language", "name", "rarity", "parallel_guess", "confidence"],
+  required: ["set_code", "language", "name", "rarity", "parallel_guess", "confidence", "graded_slab"],
 };
 const SCHEMA = {
   type: "OBJECT",
@@ -87,6 +94,15 @@ const SCHEMA = {
   required: ["identify", "condition"],
 };
 const MINIMAL_SCHEMA = { type: "OBJECT", properties: { identify: IDENTIFY_MINIMAL }, required: ["identify"] };
+
+export const SLAB_NOTE = "This photo shows a graded slab. Piecebook does not pre-grade a card that is already in a slab.";
+
+const CHECK_ID = /^[A-Za-z0-9_-]{8,80}$/;
+
+/** A retry key the phone sends with every attempt of one card. Anything else is ignored. */
+export function validCheckId(v) {
+  return typeof v === "string" && CHECK_ID.test(v) ? v : null;
+}
 
 export const PROMPTS = {
   full: { name: "full", text: PROMPT, schema: SCHEMA, requireCondition: true },
@@ -289,10 +305,12 @@ async function readImages(req) {
     for (const k of ["front", "back"]) { const f = fd.get(k); if (f && typeof f !== "string") out[k] = { mime: f.type || "image/jpeg", data: b64FromBuffer(await f.arrayBuffer()) }; }
     const c = fd.get("centering");
     if (typeof c === "string" && c.trim()) { try { out.centering = JSON.parse(c); } catch { out.centering = undefined; } }
+    const id = fd.get("checkId");
+    if (typeof id === "string") out.checkId = id;
     return out;
   }
   const body = await req.json();
-  return { front: parseDataUrl(body.front), back: parseDataUrl(body.back), centering: body.centering };
+  return { front: parseDataUrl(body.front), back: parseDataUrl(body.back), centering: body.centering, checkId: body.checkId };
 }
 
 /**
@@ -310,6 +328,61 @@ export function centeringBlock(raw) {
   return summariseCentering(front, back, "device");
 }
 
+function jpegPixels(img) {
+  const mime = String(img?.mime || "").toLowerCase();
+  if (!mime.includes("jpeg") && !mime.includes("jpg")) return null;
+  try {
+    const bytes = Uint8Array.from(atob(img.data), (c) => c.charCodeAt(0));
+    const decoded = jpeg.decode(bytes, { useTArray: true, formatAsRGBA: true, maxResolutionInMP: 24 });
+    if (!decoded?.width || !decoded?.height || !decoded?.data) return null;
+    return { width: decoded.width, height: decoded.height, data: new Uint8ClampedArray(decoded.data) };
+  } catch {
+    return null;
+  }
+}
+
+function measureDecoded(img, side) {
+  if (!img) return null;
+  const pixels = jpegPixels(img);
+  if (!pixels) return unmeasured(side, "unreadable");
+  try {
+    return photoCentering(measurePhoto(pixels, side), side) ?? unmeasured(side, "unreadable");
+  } catch {
+    return unmeasured(side, "unreadable");
+  }
+}
+
+/**
+ * Centering for POST /pregrade. The worker decodes the JPEG and measures it.
+ * A client-supplied centering block is ignored. PNG and a JPEG that will not
+ * decode stay unmeasured; the model still runs.
+ */
+export function centeringFromPhotos(imgs) {
+  const front = measureDecoded(imgs?.front, "front");
+  const back = imgs?.back ? measureDecoded(imgs.back, "back") : null;
+  if (!front && !back) return summariseCentering(null, null, "none");
+  return summariseCentering(front, back, "device");
+}
+
+/**
+ * Count a successful answer once. The same checkId on a later attempt (a timeout
+ * retry of one card) returns the current count and does not add another.
+ * A failed answer never calls this, so the counter is left as it was.
+ */
+async function chargeCap(env, key, day, checkId) {
+  const cap = parseInt(env.DAILY_CAP || "60", 10);
+  const used = parseInt((await env.VISION_CAP.get(key)) || "0", 10);
+  if (used >= cap) return { limited: true, used };
+  if (checkId) {
+    const seenKey = `seen:${day}:${checkId}`;
+    if (await env.VISION_CAP.get(seenKey)) return { limited: false, used };
+    await env.VISION_CAP.put(seenKey, "1", { expirationTtl: 60 * 60 * 48 });
+  }
+  const next = used + 1;
+  await env.VISION_CAP.put(key, String(next), { expirationTtl: 60 * 60 * 48 });
+  return { limited: false, used: next };
+}
+
 export default {
   async fetch(req, env, _ctx, deps = {}) {
     const cors = corsHeaders(req.headers.get("Origin"), env);
@@ -322,6 +395,7 @@ export default {
 
     const isSync = url.pathname === "/sync" || url.pathname.startsWith("/sync/");
     const isCheck = url.pathname === "/check" && req.method === "POST";
+    const isPregrade = url.pathname === "/pregrade" && req.method === "POST";
     // Street price: one endpoint, two spellings (Auction's /price, Cards' /street).
     const isPrice = url.pathname === "/price" || url.pathname === "/street";
     if (url.pathname === "/whoami" && req.method === "GET") {
@@ -329,7 +403,7 @@ export default {
       if (!who.ok) return json({ error: who.error, detail: who.detail }, who.status, cors);
       return json({ identity: who.identity.email, kind: who.identity.kind, readOnly: Boolean(who.identity.readOnly) }, 200, cors);
     }
-    if (!isSync && !isCheck && !isPrice) return json({ error: "not_found" }, 404, cors);
+    if (!isSync && !isCheck && !isPregrade && !isPrice) return json({ error: "not_found" }, 404, cors);
 
     // Fail closed once Access is configured. Until then /check stays open for the
     // old public site and /sync says so rather than pretending to be signed in.
@@ -350,21 +424,16 @@ export default {
     if (!imgs.front) return json({ error: "front_required" }, 400, cors);
     const size = (imgs.front.data.length + (imgs.back?.data.length || 0)) * 0.75;
     if (size > MAX_IMAGE_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
-    const centering = centeringBlock(imgs.centering);
 
     // Daily cap (UTC day). KV is eventually consistent; good enough as a spend guard.
-    // The slot is reserved before the call and handed back on any failure, so
-    // only answers that reach the phone count against the day.
+    // The counter moves only after a successful answer, and a repeated checkId
+    // (the phone retrying one card) does not add a second charge.
     const day = new Date().toISOString().slice(0, 10);
     const key = `count:${day}`;
     const cap = parseInt(env.DAILY_CAP || "60", 10);
     const used = parseInt((await env.VISION_CAP.get(key)) || "0", 10);
     if (used >= cap) return json({ error: "daily_cap_reached", cap, used }, 429, cors);
-    await env.VISION_CAP.put(key, String(used + 1), { expirationTtl: 60 * 60 * 48 });
-    const fail = async (body, status) => {
-      await refundCap(env, key);
-      return json(body, status, cors);
-    };
+    const fail = (body, status) => json(body, status, cors);
 
     const images = [{ inline_data: { mime_type: imgs.front.mime, data: imgs.front.data } }];
     if (imgs.back) images.push({ inline_data: { mime_type: imgs.back.mime, data: imgs.back.data } });
@@ -423,10 +492,35 @@ export default {
       return fail({ error: "unparseable_model_output", status, reason: extracted.reason, finishReason: extracted.finishReason, prompt: prompt.name, detail: FAILURE_HINT[extracted.reason] || FAILURE_HINT.invalid_json }, 502);
     }
     const result = normaliseResult(extracted.result, prompt);
+    // /check echoes the phone's borders. /pregrade measures the JPEG and ignores a client block.
+    let centering = isPregrade ? centeringFromPhotos(imgs) : centeringBlock(imgs.centering);
+    const spoken = extracted.result?.identify?.set_code
+    const borderless = identifyIsBorderless(result.identify) || identifyIsBorderless({
+      set_code: typeof spoken === "string" ? spoken : null,
+      parallel_guess: result.identify.parallel_guess,
+    })
+    if (isPregrade && borderless) {
+      centering = summariseCentering(withFullArtFront(centering.front, true), centering.back, "device");
+    }
+    const slab = result.identify.graded_slab === true;
     // Scores: an AI estimate, never a grade. Same function as the app (src/lib/gradeScore.ts).
     // backSent is about the photo the model saw, not whether the back's centering was measured.
-    const scores = buildScores({ front: centering.front, back: centering.back, backSent: Boolean(imgs.back), condition: result.coverage === "full" ? result.condition : null });
-    return json({ ...result, centering, scores, ai_guess: true, model: env.GEMINI_MODEL, usage: { today: used + 1, cap }, disclaimer: "AI guess. Photos can rule out a PSA 10 but never confirm one." }, 200, cors);
+    // A graded slab is not pre-graded.
+    const scores = slab
+      ? null
+      : buildScores({ front: centering.front, back: centering.back, backSent: Boolean(imgs.back), condition: result.coverage === "full" ? result.condition : null });
+    const charged = await chargeCap(env, key, day, validCheckId(imgs.checkId));
+    if (charged.limited) return json({ error: "daily_cap_reached", cap, used: charged.used }, 429, cors);
+    return json({
+      ...result,
+      centering,
+      scores,
+      ...(slab ? { slab: SLAB_NOTE } : {}),
+      ai_guess: true,
+      model: env.GEMINI_MODEL,
+      usage: { today: charged.used, cap },
+      disclaimer: "AI guess. Photos can rule out a PSA 10 but never confirm one.",
+    }, 200, cors);
   },
 };
 
@@ -441,6 +535,7 @@ export function normaliseResult(raw, prompt) {
     parallel_guess: PARALLELS.includes(id.parallel_guess) ? id.parallel_guess : null,
     language: normLang(id.language),
     confidence: Number.isFinite(Number(id.confidence)) ? Math.min(1, Math.max(0, Number(id.confidence))) : 0,
+    graded_slab: id.graded_slab === true,
   };
   const full = prompt.requireCondition && raw.condition && typeof raw.condition === "object";
   const section = (s) => ({
@@ -459,10 +554,3 @@ export function normaliseResult(raw, prompt) {
   return { identify, condition, coverage: full ? "full" : "identify_only" };
 }
 
-/** Hand a reserved daily-cap slot back. Best effort: a refund must never turn a 502 into a 500. */
-async function refundCap(env, key) {
-  try {
-    const cur = parseInt((await env.VISION_CAP.get(key)) || "0", 10);
-    await env.VISION_CAP.put(key, String(Math.max(0, cur - 1)), { expirationTtl: 60 * 60 * 48 });
-  } catch { /* the cap is a spend guard, not a ledger */ }
-}

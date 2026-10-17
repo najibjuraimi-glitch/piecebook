@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { centeringFromBorders, unmeasured } from './centeringSummary'
+import { centeringFromBorders, fullArtFront, unmeasured, withFullArtFront } from './centeringSummary'
 import {
   PSA_CENTERING,
   SEVERITY_BANDS,
@@ -70,8 +70,36 @@ describe('scoreCentering', () => {
     expect(s.caveats).toEqual(['front print edge not found'])
     // The resolved back carries the score; the front's failure is a caveat, not a 50/50.
     const mixed = scoreCentering(front(0, 0, 0, 0), back(53, 47, 52, 48))
-    expect(mixed).toMatchObject({ score: 10, confidence: 'medium', caveats: ['front print edge not found', 'front not measured'] })
+    expect(mixed).toMatchObject({ score: 10, confidence: 'low', caveats: ['front print edge not found', 'front not measured'] })
     expect(mixed.basis).not.toContain('front 50/50')
+  })
+
+  it('scores a full-art front from the back alone, at high confidence when the back is clean', () => {
+    const back = centeringFromBorders('back', 56, 55, 74, 79)
+    const s = scoreCentering(fullArtFront(), back)
+    expect(s).toMatchObject({ score: 10, confidence: 'high', caveats: [] })
+    expect(s.basis).toContain('back 50/50 left to right, 48/52 top to bottom')
+    expect(s.basis).not.toMatch(/front /)
+    const scores = buildScores({ front: fullArtFront(), back, condition: cond() })
+    expect(scores.overall.text).toBe('9.5 or better · 10 not ruled out.')
+    expect(scores.corners.confidence).toBe('high')
+    expect(scores.corners.caveats).toEqual([])
+    const angled = withFullArtFront(unmeasured('front', 'angled', 'Front: photo is angled about 20° (need under ~8°).'), true)
+    const mixed = buildScores({ front: angled, back, condition: cond() })
+    expect(mixed.centering.confidence).toBe('high')
+    expect(mixed.corners.confidence).toBe('low')
+    expect(mixed.corners.caveats).toEqual(['front photo angled'])
+    expect(mixed.centering.caveats).toEqual([])
+  })
+
+  it('a photo under 1000px on the short side is a resolution warning and does not leave a 10 in play', () => {
+    const soft = front(50, 50)
+    if (soft.measured) soft.shortSide = 810
+    const s = buildScores({ front: soft, back: back(50, 50), condition: cond() })
+    expect(s.resolutionWarning).toMatch(/Resolution warning: front photo is 810px/)
+    expect(s.overall.confidence).toBe('low')
+    expect(s.overall.text).not.toMatch(/10 not ruled out/)
+    expect(s.corners.confidence).toBe('low')
   })
 })
 
@@ -119,15 +147,15 @@ describe('buildScores', () => {
   it('says a 10 is ruled out by centering and caps the top at 9.5', () => {
     const s = buildScores({ front: front(60, 40), back: back(50, 50), condition: cond() })
     expect(s.centering.score).toBe(9)
-    expect(s.overall).toMatchObject({ high: 9, tenRuledOut: true, tenRuledOutBy: ['centering'], text: '9 to 9.' })
+    expect(s.overall).toMatchObject({ high: 9, tenRuledOut: true, tenRuledOutBy: ['centering'], text: '9.' })
     const byModel = buildScores({ front: front(50, 50), back: back(50, 50), condition: cond({ psa10_ruled_out: true }) })
-    expect(byModel.overall).toMatchObject({ low: 9.5, high: 9.5, tenRuledOut: true, tenRuledOutBy: ['the model saw a clear defect'], text: '9.5 to 9.5.' })
+    expect(byModel.overall).toMatchObject({ low: 9.5, high: 9.5, tenRuledOut: true, tenRuledOutBy: ['the model saw a clear defect'], text: '9.5.' })
   })
 
   it('widens the low end with lower confidence and names why', () => {
     const s = buildScores({ front: unmeasured('front', 'short-side'), back: null, condition: cond({ surface: sec('none', ['glare']) }) })
     expect(s.centering.score).toBeNull()
-    expect(s.overall).toMatchObject({ low: 8.5, high: 10, confidence: 'low', text: '8.5 or better · 10 not ruled out. From 3 of 4 parts.' })
+    expect(s.overall).toMatchObject({ low: 8.5, high: 9.5, confidence: 'low', text: '8.5 to 9.5. From 3 of 4 parts.' })
     expect(s.lowConfidenceReasons).toEqual(['front photo under 800px', 'glare'])
     const angled = buildScores({ front: front(50, 50), back: unmeasured('back', 'angled'), condition: cond() })
     expect(angled.overall.confidence).toBe('low')
@@ -149,8 +177,9 @@ describe('buildScores', () => {
     expect(sentNoBlock.corners.confidence).toBe('high')
     // Back sent but could not be measured: corners and edges still rest on both photos.
     const sentUnmeasured = buildScores({ front: front(50, 50), back: unmeasured('back', 'no-print-edge'), backSent: true, condition: cond() })
-    expect(sentUnmeasured.corners.caveats).toEqual([])
-    expect(sentUnmeasured.edges.caveats).toEqual([])
+    expect(sentUnmeasured.corners.caveats).toEqual(['back print edge not found'])
+    expect(sentUnmeasured.edges.caveats).toEqual(['back print edge not found'])
+    expect(sentUnmeasured.corners.confidence).toBe('low')
     expect(sentUnmeasured.centering.caveats).toEqual(['back print edge not found', 'back not measured'])
     // No back at all.
     const notSent = buildScores({ front: front(50, 50), back: null, backSent: false, condition: cond() })

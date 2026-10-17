@@ -25,6 +25,8 @@ export interface VisionIdentify {
   confidence: number
   /** OCR text. The Worker no longer sends it (it tripped Gemini's recitation filter); kept for stored predictions. */
   read_text: string
+  /** True when the photo is a grading-company slab. Piecebook does not pre-grade it. */
+  graded_slab: boolean
 }
 
 /** `identify_only`: the model refused to describe the card, so the condition block is empty and nothing is ruled out. */
@@ -208,8 +210,9 @@ async function checkPhotosOnce(front: Blob, back?: Blob | null, centering?: Cent
   const frontDataUrl = await downscaleForVision(front)
   const backDataUrl = back ? await downscaleForVision(back) : undefined
   const photos: VisionPhotos = { frontDataUrl, backDataUrl }
+  const checkId = crypto.randomUUID()
   try {
-    return await postAndParse(photos, centering)
+    return await postAndParse(photos, centering, checkId)
   } catch (err) {
     // Whatever went wrong after shrinking, the photos are still good for the card page.
     if (err instanceof VisionRequestError && !err.photos) err.photos = photos
@@ -218,17 +221,18 @@ async function checkPhotosOnce(front: Blob, back?: Blob | null, centering?: Cent
 }
 
 /** The JSON body for POST /check: photos as data URLs, plus the centering block when it was measured. */
-export function checkRequestBody(photos: VisionPhotos, centering?: CenteringToSend | null): string {
+export function checkRequestBody(photos: VisionPhotos, centering?: CenteringToSend | null, checkId?: string): string {
   const { frontDataUrl, backDataUrl } = photos
-  const body: { front: string; back?: string; centering?: CenteringToSend } = { front: frontDataUrl }
+  const body: { front: string; back?: string; centering?: CenteringToSend; checkId?: string } = { front: frontDataUrl }
   if (backDataUrl) body.back = backDataUrl
   if (centering && (centering.front || centering.back)) body.centering = centering
+  if (checkId) body.checkId = checkId
   return JSON.stringify(body)
 }
 
-async function postAndParse(photos: VisionPhotos, centering?: CenteringToSend | null): Promise<VisionCheckPayload> {
+async function postAndParse(photos: VisionPhotos, centering?: CenteringToSend | null, checkId?: string): Promise<VisionCheckPayload> {
   const { frontDataUrl, backDataUrl } = photos
-  const jsonBody = checkRequestBody(photos, centering)
+  const jsonBody = checkRequestBody(photos, centering, checkId)
   const retried = await postCheckWithRetry(jsonBody)
   let payload: unknown
   try {
@@ -339,6 +343,7 @@ export function asVisionCheck(raw: unknown): VisionCheck | null {
       language: normalizeCardLanguage(id.language),
       confidence: Number.isFinite(Number(id.confidence)) ? Number(id.confidence) : 0,
       read_text: typeof id.read_text === 'string' ? id.read_text : '',
+      graded_slab: (id as { graded_slab?: unknown }).graded_slab === true,
     },
     condition: {
       corners,

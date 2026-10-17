@@ -18,6 +18,11 @@ export function GradeScores({ scores }: { scores: Scores }) {
         {confidenceWord(o.confidence)}
         {o.tenRuledOut ? ` · a 10 is ruled out by ${o.tenRuledOutBy.join(' and ')}` : ''}
       </p>
+      {scores.resolutionWarning && (
+        <p className="mt-2 text-body text-ink" role="status">
+          {scores.resolutionWarning}
+        </p>
+      )}
       <dl className="mt-3 divide-y divide-line">
         <PartRow label="Centering" part={scores.centering} />
         <PartRow label="Corners" part={scores.corners} />
@@ -37,15 +42,21 @@ export function GradeScores({ scores }: { scores: Scores }) {
   )
 }
 
+function partHeadline(part: PartScore): string {
+  if (part.score == null) return 'No score'
+  if (part.score >= 10 && part.confidence === 'high') return '10 not ruled out'
+  return formatScore(part.score)
+}
+
 function PartRow({ label, part }: { label: string; part: PartScore }) {
   return (
     <div className="flex items-start gap-3 py-2">
       <dt className="w-20 shrink-0 text-meta font-medium text-muted">{label}</dt>
       <dd className="min-w-0 flex-1">
         <p className="tabular text-body text-ink">
-          <span className="font-medium">{part.score == null ? 'No score' : part.score >= 10 ? '10 not ruled out' : formatScore(part.score)}</span>
+          <span className="font-medium">{partHeadline(part)}</span>
           {part.score != null && part.low != null && part.high != null && part.low !== part.high
-            ? ` · ${formatScore(part.low)} ${part.high >= 10 ? 'or better' : `to ${formatScore(part.high)}`}`
+            ? ` · ${formatScore(part.low)} ${part.high >= 10 && part.confidence === 'high' ? 'or better' : `to ${formatScore(part.high)}`}`
             : ''}
           {` · ${confidenceWord(part.confidence)}`}
         </p>

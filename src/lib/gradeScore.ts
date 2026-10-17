@@ -7,11 +7,14 @@
  * Everything here is an AI estimate, never a grade. Photos can rule a PSA 10
  * out; nothing here confirms one, so the top of a range reads "10 not ruled out".
  */
-import { BACK_TEN_MAX, FRONT_TEN_MAX, measureFromBorders, type PhotoSide } from './centering'
+import { BACK_TEN_MAX, FRONT_TEN_MAX, MIN_SHORT_SIDE_PX, measureFromBorders, type PhotoSide } from './centering'
 import type { MeasuredCentering, PhotoCentering } from './centeringSummary'
 
 export const SEVERITIES = ['none', 'light', 'moderate', 'heavy', 'unclear'] as const
 export type Severity = (typeof SEVERITIES)[number]
+/** Under this short side the read is too soft to leave a 10 in play, even when the card was found. */
+export const SOFT_SHORT_SIDE_PX = 1000
+
 export const CONFIDENCES = ['high', 'medium', 'low'] as const
 export type Confidence = (typeof CONFIDENCES)[number]
 
@@ -101,6 +104,8 @@ export interface GradeScores {
   }
   /** The photo-quality problems that pulled confidence down, deduplicated. */
   lowConfidenceReasons: string[]
+  /** Set when a photo's short side is under SOFT_SHORT_SIDE_PX. */
+  resolutionWarning: string | null
   standards: { centering: typeof PSA_CENTERING.source; url: typeof PSA_CENTERING.url }
 }
 
@@ -146,18 +151,33 @@ function sideWord(side: PhotoSide): string {
   return side === 'front' ? 'Front' : 'Back'
 }
 
-/** Photo-quality problems from the centering block: under 800px, angled, unreadable. */
+function isFullArt(c: PhotoCentering | null): boolean {
+  return Boolean(c && !c.measured && c.reason === 'full-art')
+}
+
+/** Photo-quality problems from the centering block. A full-art front is not one of them. */
 function photoCaveats(c: PhotoCentering | null, side: PhotoSide): string[] {
-  if (!c || c.measured) return []
+  if (!c || c.measured || isFullArt(c)) return []
   const who = sideWord(side).toLowerCase()
-  if (c.reason === 'short-side') return [`${who} photo under 800px`]
+  if (c.reason === 'short-side') return [`${who} photo under ${MIN_SHORT_SIDE_PX}px`]
   if (c.reason === 'angled') return [`${who} photo angled`]
   if (c.reason === 'not_sent') return []
+  if (c.reason === 'full-art') return []
   if (c.reason === 'no-print-edge') return [`${who} print edge not found`]
   if (c.reason === 'no-card') return [`${who} card outline not found`]
   if (c.reason === 'cut-off') return [`${who} card cut off at the frame`]
+  if (c.reason === 'holder') return [`${who} photo shows a holder or stand`]
+  if (c.reason === 'sleeve') return [`${who} photo shows a sleeve`]
+  if (c.reason === 'hand') return [`${who} photo shows a hand on the card`]
   return [`${who} photo could not be measured`]
 }
+
+function resolutionCaveat(c: PhotoCentering | null, side: PhotoSide): string | null {
+  if (!c?.shortSide || c.shortSide >= SOFT_SHORT_SIDE_PX || c.shortSide < MIN_SHORT_SIDE_PX) return null
+  return `${sideWord(side).toLowerCase()} photo is ${c.shortSide}px on the short side`
+}
+
+const PHOTO_QUALITY = /under 800px|on the short side|angled|print edge|outline not found|cut off|holder or stand|sleeve|hand on the card|could not be measured/
 
 function worsePct(c: MeasuredCentering): { pct: number } {
   const m = measureFromBorders(c.left, c.right, c.top, c.bottom, c.side)
@@ -166,8 +186,10 @@ function worsePct(c: MeasuredCentering): { pct: number } {
 
 export function scoreCentering(front: PhotoCentering | null, back: PhotoCentering | null): PartScore {
   const caveats = [...photoCaveats(front, 'front'), ...photoCaveats(back, 'back')]
+  for (const bit of [resolutionCaveat(front, 'front'), resolutionCaveat(back, 'back')]) if (bit) caveats.push(bit)
+  const frontFullArt = isFullArt(front)
   const sides: { side: PhotoSide; c: PhotoCentering | null }[] = [
-    { side: 'front', c: front },
+    { side: 'front', c: frontFullArt ? null : front },
     { side: 'back', c: back },
   ]
   const graded: { side: PhotoSide; grade: number }[] = []
@@ -184,9 +206,11 @@ export function scoreCentering(front: PhotoCentering | null, back: PhotoCenterin
     return `${g.side} ${c.leftRight} left to right, ${c.topBottom} top to bottom`
   })
   const score = worst.grade
-  let confidence: Confidence = graded.length === 2 ? 'high' : 'medium'
-  if (graded.length === 1) caveats.push(graded[0].side === 'front' ? 'back not measured' : 'front not measured')
-  if (caveats.some((c) => /under 800px|angled/.test(c))) confidence = 'low'
+  // A full-art front is not a missing measurement. The back is the whole read, and it can be high confidence.
+  const backOnlyFullArt = frontFullArt && graded.length === 1 && graded[0].side === 'back'
+  let confidence: Confidence = graded.length === 2 || backOnlyFullArt ? 'high' : 'medium'
+  if (graded.length === 1 && !backOnlyFullArt) caveats.push(graded[0].side === 'front' ? 'back not measured' : 'front not measured')
+  if (caveats.some((c) => PHOTO_QUALITY.test(c))) confidence = 'low'
   return {
     part: 'centering',
     score,
@@ -221,7 +245,7 @@ export function scorePart(part: Exclude<PartName, 'centering'>, section: Section
     caveats.push('back not sent')
     confidence = lowestConfidence(confidence, 'medium')
   }
-  if (lowFlags.length || caveats.some((c) => /under 800px|angled/.test(c))) confidence = 'low'
+  if (lowFlags.length || caveats.some((c) => PHOTO_QUALITY.test(c))) confidence = 'low'
   return {
     part,
     score: band.score,
@@ -237,10 +261,25 @@ export function formatScore(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1)
 }
 
+function resolutionWarningOf(front: PhotoCentering | null, back: PhotoCentering | null): string | null {
+  const bits = [resolutionCaveat(front, 'front'), resolutionCaveat(back, 'back')].filter((b): b is string => Boolean(b))
+  for (const [c, side] of [
+    [front, 'front'],
+    [back, 'back'],
+  ] as const) {
+    if (c && !c.measured && c.reason === 'short-side' && c.shortSide) bits.push(`${side} photo is ${c.shortSide}px on the short side`)
+  }
+  if (!bits.length) return null
+  return `Resolution warning: ${bits.join('; ')}. Photos under ${SOFT_SHORT_SIDE_PX}px are a weak read.`
+}
+
 export function buildScores(input: ScoreInput): GradeScores {
-  // A print edge the scan could not read says nothing about the photo the model saw of the
-  // corners and edges; only photo-quality problems travel to the other parts.
-  const photo = [...photoCaveats(input.front, 'front'), ...photoCaveats(input.back, 'back')].filter((c) => !/print edge/.test(c))
+  // A failed centering read lowers confidence in the corners, edges and surface too.
+  // A full-art front has no border to fail. A bad photo of that front (angle, a hand,
+  // too small) still lowers the other parts; it does not lower the centering score.
+  const photo = [...photoCaveats(input.front, 'front'), ...photoCaveats(input.back, 'back')]
+  if (input.front && !input.front.measured && input.front.photoProblem) photo.push(input.front.photoProblem)
+  for (const bit of [resolutionCaveat(input.front, 'front'), resolutionCaveat(input.back, 'back')]) if (bit) photo.push(bit)
   const backMissing =
     input.backSent != null ? !input.backSent : !input.back || (!input.back.measured && input.back.reason === 'not_sent')
   const centering = scoreCentering(input.front, input.back)
@@ -269,15 +308,29 @@ export function buildScores(input: ScoreInput): GradeScores {
     high = Math.min(...scored.map((p) => p.high as number))
     confidence = lowestConfidence(...scored.map((p) => p.confidence))
     if (tenRuledOut) high = Math.min(high, 9.5)
+    // "10 not ruled out" is only honest at high confidence. A soft photo or a failed edge stays at 9.5.
+    if (confidence !== 'high') high = Math.min(high, 9.5)
     if (confidence === 'medium') low -= 0.5
     if (confidence === 'low') low -= 1
     low = Math.max(1, Math.round(low * 2) / 2)
     high = Math.max(low, Math.round(high * 2) / 2)
     const partial = scored.length < 4 ? ` From ${scored.length} of 4 parts.` : ''
-    text = high >= 10 ? `${formatScore(low)} or better · 10 not ruled out.${partial}` : `${formatScore(low)} to ${formatScore(high)}.${partial}`
+    text =
+      high >= 10 && confidence === 'high'
+        ? `${formatScore(low)} or better · 10 not ruled out.${partial}`
+        : low === high
+          ? `${formatScore(low)}.${partial}`
+          : `${formatScore(low)} to ${formatScore(high)}.${partial}`
   }
 
-  const lowConfidenceReasons = [...new Set([centering, corners, edges, surface].flatMap((p) => p.caveats).filter((c) => /under 800px|angled|glare|blur|unclear/.test(c)))]
+  const lowConfidenceReasons = [
+    ...new Set(
+      [centering, corners, edges, surface]
+        .flatMap((p) => p.caveats)
+        .filter((c) => /under 800px|on the short side|angled|glare|blur|unclear|print edge|outline not found|holder or stand|sleeve|hand on the card/.test(c)),
+    ),
+  ]
+  const resolutionWarning = resolutionWarningOf(input.front, input.back)
 
   return {
     estimate: true,
@@ -288,6 +341,7 @@ export function buildScores(input: ScoreInput): GradeScores {
     surface,
     overall: { low, high, text, confidence, tenRuledOut, tenRuledOutBy },
     lowConfidenceReasons,
+    resolutionWarning,
     standards: { centering: PSA_CENTERING.source, url: PSA_CENTERING.url },
   }
 }

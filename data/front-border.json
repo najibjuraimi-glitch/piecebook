@@ -1,0 +1,542 @@
+{
+  "asOf": "2026-10-17",
+  "source": "Official Limitless CDN scans sampled 2026-10-17. A print is listed only when the outer band is not a flat light frame (share of light, low-chroma pixels under 0.55 at both 2px and 8px). The words Full Art and Special Card are not this list: OP09-020p1 is an SP with a light frame and is omitted, and OP09-057p1 was left off because the edge was ambiguous.",
+  "prints": [
+    {
+      "cardNumber": "EB02-061p3",
+      "baseNumber": "EB02-061"
+    },
+    {
+      "cardNumber": "EB03-003p2",
+      "baseNumber": "EB03-003"
+    },
+    {
+      "cardNumber": "EB03-018p2",
+      "baseNumber": "EB03-018"
+    },
+    {
+      "cardNumber": "EB03-024p2",
+      "baseNumber": "EB03-024"
+    },
+    {
+      "cardNumber": "EB03-026p2",
+      "baseNumber": "EB03-026"
+    },
+    {
+      "cardNumber": "EB03-031p2",
+      "baseNumber": "EB03-031"
+    },
+    {
+      "cardNumber": "EB03-042p2",
+      "baseNumber": "EB03-042"
+    },
+    {
+      "cardNumber": "EB03-045p2",
+      "baseNumber": "EB03-045"
+    },
+    {
+      "cardNumber": "EB03-053p2",
+      "baseNumber": "EB03-053"
+    },
+    {
+      "cardNumber": "EB03-055p2",
+      "baseNumber": "EB03-055"
+    },
+    {
+      "cardNumber": "EB04-003p1",
+      "baseNumber": "EB04-003"
+    },
+    {
+      "cardNumber": "EB04-007p2",
+      "baseNumber": "EB04-007"
+    },
+    {
+      "cardNumber": "EB04-039p1",
+      "baseNumber": "EB04-039"
+    },
+    {
+      "cardNumber": "EB04-054p1",
+      "baseNumber": "EB04-054"
+    },
+    {
+      "cardNumber": "EB05-006p2",
+      "baseNumber": "EB05-006"
+    },
+    {
+      "cardNumber": "EB05-016p2",
+      "baseNumber": "EB05-016"
+    },
+    {
+      "cardNumber": "EB05-031p1",
+      "baseNumber": "EB05-031"
+    },
+    {
+      "cardNumber": "OP01-006p4",
+      "baseNumber": "OP01-006"
+    },
+    {
+      "cardNumber": "OP01-008p1",
+      "baseNumber": "OP01-008"
+    },
+    {
+      "cardNumber": "OP01-033p5",
+      "baseNumber": "OP01-033"
+    },
+    {
+      "cardNumber": "OP01-034p1",
+      "baseNumber": "OP01-034"
+    },
+    {
+      "cardNumber": "OP01-048p1",
+      "baseNumber": "OP01-048"
+    },
+    {
+      "cardNumber": "OP01-052p4",
+      "baseNumber": "OP01-052"
+    },
+    {
+      "cardNumber": "OP01-064p1",
+      "baseNumber": "OP01-064"
+    },
+    {
+      "cardNumber": "OP01-077p1",
+      "baseNumber": "OP01-077"
+    },
+    {
+      "cardNumber": "OP01-078p2",
+      "baseNumber": "OP01-078"
+    },
+    {
+      "cardNumber": "OP01-109p1",
+      "baseNumber": "OP01-109"
+    },
+    {
+      "cardNumber": "OP02-009p1",
+      "baseNumber": "OP02-009"
+    },
+    {
+      "cardNumber": "OP02-015p3",
+      "baseNumber": "OP02-015"
+    },
+    {
+      "cardNumber": "OP02-018p5",
+      "baseNumber": "OP02-018"
+    },
+    {
+      "cardNumber": "OP02-031p1",
+      "baseNumber": "OP02-031"
+    },
+    {
+      "cardNumber": "OP02-059p1",
+      "baseNumber": "OP02-059"
+    },
+    {
+      "cardNumber": "OP02-086p1",
+      "baseNumber": "OP02-086"
+    },
+    {
+      "cardNumber": "OP02-105p1",
+      "baseNumber": "OP02-105"
+    },
+    {
+      "cardNumber": "OP02-106p4",
+      "baseNumber": "OP02-106"
+    },
+    {
+      "cardNumber": "OP02-108p1",
+      "baseNumber": "OP02-108"
+    },
+    {
+      "cardNumber": "OP03-003p3",
+      "baseNumber": "OP03-003"
+    },
+    {
+      "cardNumber": "OP03-060p2",
+      "baseNumber": "OP03-060"
+    },
+    {
+      "cardNumber": "OP03-079p2",
+      "baseNumber": "OP03-079"
+    },
+    {
+      "cardNumber": "OP03-089p3",
+      "baseNumber": "OP03-089"
+    },
+    {
+      "cardNumber": "OP03-110p2",
+      "baseNumber": "OP03-110"
+    },
+    {
+      "cardNumber": "OP03-116p7",
+      "baseNumber": "OP03-116"
+    },
+    {
+      "cardNumber": "OP04-029p2",
+      "baseNumber": "OP04-029"
+    },
+    {
+      "cardNumber": "OP04-032p2",
+      "baseNumber": "OP04-032"
+    },
+    {
+      "cardNumber": "OP04-089p2",
+      "baseNumber": "OP04-089"
+    },
+    {
+      "cardNumber": "OP04-100p4",
+      "baseNumber": "OP04-100"
+    },
+    {
+      "cardNumber": "OP05-010p2",
+      "baseNumber": "OP05-010"
+    },
+    {
+      "cardNumber": "OP05-015p3",
+      "baseNumber": "OP05-015"
+    },
+    {
+      "cardNumber": "OP05-034p3",
+      "baseNumber": "OP05-034"
+    },
+    {
+      "cardNumber": "OP05-073p2",
+      "baseNumber": "OP05-073"
+    },
+    {
+      "cardNumber": "OP05-081p2",
+      "baseNumber": "OP05-081"
+    },
+    {
+      "cardNumber": "OP05-082p2",
+      "baseNumber": "OP05-082"
+    },
+    {
+      "cardNumber": "OP05-091p4",
+      "baseNumber": "OP05-091"
+    },
+    {
+      "cardNumber": "OP05-100p2",
+      "baseNumber": "OP05-100"
+    },
+    {
+      "cardNumber": "OP05-105p2",
+      "baseNumber": "OP05-105"
+    },
+    {
+      "cardNumber": "OP06-003p2",
+      "baseNumber": "OP06-003"
+    },
+    {
+      "cardNumber": "OP06-007p2",
+      "baseNumber": "OP06-007"
+    },
+    {
+      "cardNumber": "OP06-023p2",
+      "baseNumber": "OP06-023"
+    },
+    {
+      "cardNumber": "OP06-036p2",
+      "baseNumber": "OP06-036"
+    },
+    {
+      "cardNumber": "OP06-047p4",
+      "baseNumber": "OP06-047"
+    },
+    {
+      "cardNumber": "OP06-060p2",
+      "baseNumber": "OP06-060"
+    },
+    {
+      "cardNumber": "OP06-064p2",
+      "baseNumber": "OP06-064"
+    },
+    {
+      "cardNumber": "OP06-065p2",
+      "baseNumber": "OP06-065"
+    },
+    {
+      "cardNumber": "OP06-066p2",
+      "baseNumber": "OP06-066"
+    },
+    {
+      "cardNumber": "OP06-067p2",
+      "baseNumber": "OP06-067"
+    },
+    {
+      "cardNumber": "OP06-068p2",
+      "baseNumber": "OP06-068"
+    },
+    {
+      "cardNumber": "OP06-091p2",
+      "baseNumber": "OP06-091"
+    },
+    {
+      "cardNumber": "OP06-100p2",
+      "baseNumber": "OP06-100"
+    },
+    {
+      "cardNumber": "OP06-110p3",
+      "baseNumber": "OP06-110"
+    },
+    {
+      "cardNumber": "OP06-114p2",
+      "baseNumber": "OP06-114"
+    },
+    {
+      "cardNumber": "OP08-023p2",
+      "baseNumber": "OP08-023"
+    },
+    {
+      "cardNumber": "OP09-004p3",
+      "baseNumber": "OP09-004"
+    },
+    {
+      "cardNumber": "OP09-051p3",
+      "baseNumber": "OP09-051"
+    },
+    {
+      "cardNumber": "OP09-078p1",
+      "baseNumber": "OP09-078"
+    },
+    {
+      "cardNumber": "OP09-093p3",
+      "baseNumber": "OP09-093"
+    },
+    {
+      "cardNumber": "OP09-096p1",
+      "baseNumber": "OP09-096"
+    },
+    {
+      "cardNumber": "OP10-119p3",
+      "baseNumber": "OP10-119"
+    },
+    {
+      "cardNumber": "OP13-118p4",
+      "baseNumber": "OP13-118"
+    },
+    {
+      "cardNumber": "OP13-119p4",
+      "baseNumber": "OP13-119"
+    },
+    {
+      "cardNumber": "OP13-120p4",
+      "baseNumber": "OP13-120"
+    },
+    {
+      "cardNumber": "OP14-112p2",
+      "baseNumber": "OP14-112"
+    },
+    {
+      "cardNumber": "P-014p2",
+      "baseNumber": "P-014"
+    },
+    {
+      "cardNumber": "P-029p3",
+      "baseNumber": "P-029"
+    },
+    {
+      "cardNumber": "P-053p2",
+      "baseNumber": "P-053"
+    },
+    {
+      "cardNumber": "P-055p2",
+      "baseNumber": "P-055"
+    },
+    {
+      "cardNumber": "ST01-006p7",
+      "baseNumber": "ST01-006"
+    },
+    {
+      "cardNumber": "ST02-004p2",
+      "baseNumber": "ST02-004"
+    },
+    {
+      "cardNumber": "ST03-005p5",
+      "baseNumber": "ST03-005"
+    },
+    {
+      "cardNumber": "ST03-008p7",
+      "baseNumber": "ST03-008"
+    },
+    {
+      "cardNumber": "ST03-013p2",
+      "baseNumber": "ST03-013"
+    },
+    {
+      "cardNumber": "ST04-005p4",
+      "baseNumber": "ST04-005"
+    },
+    {
+      "cardNumber": "ST06-010p2",
+      "baseNumber": "ST06-010"
+    },
+    {
+      "cardNumber": "ST07-007p3",
+      "baseNumber": "ST07-007"
+    },
+    {
+      "cardNumber": "ST12-014p2",
+      "baseNumber": "ST12-014"
+    },
+    {
+      "cardNumber": "ST21-002p1",
+      "baseNumber": "ST21-002"
+    },
+    {
+      "cardNumber": "ST21-003p1",
+      "baseNumber": "ST21-003"
+    },
+    {
+      "cardNumber": "ST21-004p1",
+      "baseNumber": "ST21-004"
+    },
+    {
+      "cardNumber": "ST21-005p1",
+      "baseNumber": "ST21-005"
+    },
+    {
+      "cardNumber": "ST21-006p1",
+      "baseNumber": "ST21-006"
+    },
+    {
+      "cardNumber": "ST21-007p1",
+      "baseNumber": "ST21-007"
+    },
+    {
+      "cardNumber": "ST21-008p1",
+      "baseNumber": "ST21-008"
+    },
+    {
+      "cardNumber": "ST21-009p1",
+      "baseNumber": "ST21-009"
+    },
+    {
+      "cardNumber": "ST21-010p1",
+      "baseNumber": "ST21-010"
+    },
+    {
+      "cardNumber": "ST21-011p1",
+      "baseNumber": "ST21-011"
+    },
+    {
+      "cardNumber": "ST21-012p1",
+      "baseNumber": "ST21-012"
+    },
+    {
+      "cardNumber": "ST21-013p1",
+      "baseNumber": "ST21-013"
+    },
+    {
+      "cardNumber": "ST21-014p1",
+      "baseNumber": "ST21-014"
+    },
+    {
+      "cardNumber": "ST21-015p1",
+      "baseNumber": "ST21-015"
+    },
+    {
+      "cardNumber": "ST29-002p1",
+      "baseNumber": "ST29-002"
+    },
+    {
+      "cardNumber": "ST29-003p1",
+      "baseNumber": "ST29-003"
+    },
+    {
+      "cardNumber": "ST29-004p1",
+      "baseNumber": "ST29-004"
+    },
+    {
+      "cardNumber": "ST29-005p1",
+      "baseNumber": "ST29-005"
+    },
+    {
+      "cardNumber": "ST29-006p1",
+      "baseNumber": "ST29-006"
+    },
+    {
+      "cardNumber": "ST29-007p1",
+      "baseNumber": "ST29-007"
+    },
+    {
+      "cardNumber": "ST29-008p1",
+      "baseNumber": "ST29-008"
+    },
+    {
+      "cardNumber": "ST29-009p1",
+      "baseNumber": "ST29-009"
+    },
+    {
+      "cardNumber": "ST29-010p1",
+      "baseNumber": "ST29-010"
+    },
+    {
+      "cardNumber": "ST29-011p1",
+      "baseNumber": "ST29-011"
+    },
+    {
+      "cardNumber": "ST29-012p1",
+      "baseNumber": "ST29-012"
+    },
+    {
+      "cardNumber": "ST29-013p1",
+      "baseNumber": "ST29-013"
+    },
+    {
+      "cardNumber": "ST29-014p1",
+      "baseNumber": "ST29-014"
+    },
+    {
+      "cardNumber": "ST30-002p1",
+      "baseNumber": "ST30-002"
+    },
+    {
+      "cardNumber": "ST30-003p1",
+      "baseNumber": "ST30-003"
+    },
+    {
+      "cardNumber": "ST30-004p1",
+      "baseNumber": "ST30-004"
+    },
+    {
+      "cardNumber": "ST30-005p1",
+      "baseNumber": "ST30-005"
+    },
+    {
+      "cardNumber": "ST30-006p1",
+      "baseNumber": "ST30-006"
+    },
+    {
+      "cardNumber": "ST30-007p1",
+      "baseNumber": "ST30-007"
+    },
+    {
+      "cardNumber": "ST30-008p1",
+      "baseNumber": "ST30-008"
+    },
+    {
+      "cardNumber": "ST30-009p1",
+      "baseNumber": "ST30-009"
+    },
+    {
+      "cardNumber": "ST30-010p1",
+      "baseNumber": "ST30-010"
+    },
+    {
+      "cardNumber": "ST30-011p1",
+      "baseNumber": "ST30-011"
+    },
+    {
+      "cardNumber": "ST30-012p1",
+      "baseNumber": "ST30-012"
+    },
+    {
+      "cardNumber": "ST30-013p1",
+      "baseNumber": "ST30-013"
+    },
+    {
+      "cardNumber": "ST30-014p1",
+      "baseNumber": "ST30-014"
+    }
+  ]
+}

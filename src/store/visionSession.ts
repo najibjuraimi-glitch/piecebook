@@ -34,7 +34,7 @@ export interface VisionSession {
 /** Same-tab copy so confirm → card page still works if sessionStorage quota rejects the data URLs. */
 let memory: VisionSession | null = null
 
-const REJECT_CODES: readonly string[] = ['short-side', 'cut-off', 'angled', 'no-card', 'no-print-edge']
+const REJECT_CODES: readonly string[] = ['short-side', 'cut-off', 'angled', 'no-card', 'no-print-edge', 'holder', 'sleeve', 'hand']
 const EDGE_NAMES: readonly string[] = ['left', 'right', 'top', 'bottom']
 
 function edgeNotesOf(raw: unknown): Partial<Record<EdgeName, string>> | undefined {

@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   CENTERING_LIMITS,
+  FULL_ART_NOTE,
   WORKER_NOT_MEASURED_NOTE,
   centeringFromBorders,
   centeringLine,
+  fullArtFront,
   parseCenteringSummary,
   parsePhotoCentering,
   edgeDetail,
@@ -81,12 +83,12 @@ describe('centeringFromBorders', () => {
 describe('photoCentering and the stored form', () => {
   it('recomputes the ratios from the pixel borders of a live measurement', () => {
     const c = photoCentering(measured('front', 30, 70, 48, 52), 'front')
-    expect(c).toMatchObject({ measured: true, leftRight: '70/30', topBottom: '52/48', cannotBeTen: true })
+    expect(c).toMatchObject({ measured: true, leftRight: '30/70', topBottom: '48/52', cannotBeTen: true })
   })
 
   it('carries a reject as unmeasured with its message', () => {
     const c = photoCentering({ ok: false, side: 'back', code: 'short-side', message: 'Back: short side is 448px (need 800).' }, 'back')
-    expect(c).toEqual({ side: 'back', measured: false, reason: 'short-side', note: 'Back: short side is 448px (need 800).' })
+    expect(c).toEqual({ side: 'back', measured: false, reason: 'short-side', note: 'Back: short side is 448px (need 800).', shortSide: 448 })
   })
 
   it('turns a found card with no print edge into "not measured" naming the sides, not a 50/50', () => {
@@ -191,11 +193,23 @@ describe('summariseCentering', () => {
       'Centering does not rule a 10 out. Front: card found, but no print border could be read on the right and bottom. Nothing ruled out.',
     )
   })
+
+  it('reads Zoro back pixels 56/55 and 74/79 as shares that sum to 100, and a full-art front is not an edge failure', () => {
+    // 56px + 55px and 74px + 79px are border widths, not percentages.
+    const back = centeringFromBorders('back', 56, 55, 74, 79)
+    expect(back).toMatchObject({ measured: true, leftRight: '50/50', topBottom: '48/52', cannotBeTen: false })
+    const s = summariseCentering(fullArtFront(), back)
+    expect(s.cannotBeTen).toBe(false)
+    expect(s.verdict).toBe('Centering does not rule a 10 out. From the back only.')
+    expect(s.note).toContain(FULL_ART_NOTE)
+    expect(s.note).not.toMatch(/print border|edge failure|hand or shadow/)
+    expect(fullArtFront().note).toBe('Front centering not applicable (full art)')
+  })
 })
 
 describe('centeringLine', () => {
   it('writes both axes in plain words', () => {
-    expect(centeringLine(centeringFromBorders('front', 55, 45, 48, 52), 'front')).toBe('Front 55/45 left to right · 52/48 top to bottom')
+    expect(centeringLine(centeringFromBorders('front', 55, 45, 48, 52), 'front')).toBe('Front 55/45 left to right · 48/52 top to bottom')
     expect(centeringLine(centeringFromBorders('back', 80, 20, 50, 50), 'back')).toBe('Back 80/20 left to right · 50/50 top to bottom · over 75/25, cannot be a 10')
     expect(centeringLine(centeringFromBorders('front', 1, 60, 50, 50), 'front')).toBe(
       'Front: card found, but no print border could be read on the left. Nothing ruled out.',
