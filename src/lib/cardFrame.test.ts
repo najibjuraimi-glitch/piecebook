@@ -3,13 +3,15 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { decode as decodeJpeg } from 'jpeg-js'
-import { MIN_SHORT_SIDE_PX, findCardOutline, makeSyntheticCard, measurePhoto, type PixelImage, type Quad } from './centering'
+import { MAX_ANGLE_DEG, MIN_SHORT_SIDE_PX, findCardOutline, makeSyntheticCard, measurePhoto, type PixelImage, type Quad } from './centering'
 import {
   AUTO_CAPTURE_MS,
   BLOWN_LEVEL,
   CARD_RATIO,
+  FLATTEN_MARGIN_FRAC,
   HINT_TEXT,
   MAX_LIVE_KEYSTONE_DEG,
+  MIN_COVERAGE,
   MIN_SHARPNESS,
   applyHomography,
   assessFrame,
@@ -425,7 +427,7 @@ describe('flattening an angled shot', () => {
     expect(f.flattened).toBe(true)
     if (!f.flattened) return
     expect(f.outline.keystoneDeg).toBeGreaterThan(MAX_LIVE_KEYSTONE_DEG)
-    expect(f.image.width / f.image.height).toBeCloseTo((CARD_RATIO + 2 * 0.08 * CARD_RATIO) / (1 + 2 * 0.08 * CARD_RATIO), 1)
+    expect(f.image.width / f.image.height).toBeCloseTo((CARD_RATIO * (1 + 2 * FLATTEN_MARGIN_FRAC)) / (1 + 2 * FLATTEN_MARGIN_FRAC * CARD_RATIO), 1)
     expect(Math.min(f.image.width, f.image.height)).toBeGreaterThanOrEqual(MIN_SHORT_SIDE_PX)
     const m = measurePhoto(f.image, 'front')
     expect(m.ok).toBe(true)
@@ -433,7 +435,7 @@ describe('flattening an angled shot', () => {
     expect(m.measure.resolved).toBe(true)
     expect(m.measure.lr.label).toBe('60/40')
     expect(m.measure.tb.label).toBe('50/50')
-    expect(m.measure.maxAngleErrorDeg).toBeLessThan(3)
+    expect(m.measure.maxAngleErrorDeg).toBeLessThan(MAX_ANGLE_DEG)
   })
 
   it('a strongly angled shot flattens too', () => {
@@ -454,19 +456,22 @@ describe('flattening an angled shot', () => {
     expect(f.cardQuad[0].x).toBeGreaterThan(20)
   })
 
-  it('a small card is drawn up to the measuring floor rather than under it', () => {
+  it('a small card (the least the live view accepts) is drawn up to the measuring floor rather than under it', () => {
     const small = makeSyntheticCard({
       width: 900,
       height: 1200,
-      card: { x: 300, y: 400, w: 300, h: 419 },
-      borders: { left: 40, right: 26, top: 30, bottom: 30 },
+      card: { x: 240, y: 307, w: 420, h: 587 },
+      borders: { left: 56, right: 37, top: 42, bottom: 42 },
       noise: 4,
     })
+    const o = findCardOutline(small)
+    expect(o.ok && o.outline.coverage).toBeGreaterThan(MIN_COVERAGE)
     const f = flattenCard(small)
     expect(f.flattened).toBe(true)
     expect(Math.min(f.image.width, f.image.height)).toBeGreaterThanOrEqual(MIN_SHORT_SIDE_PX)
     const m = measurePhoto(f.image, 'front')
     expect(m.ok).toBe(true)
+    expect(m.ok && m.measure.lr.label).toBe('60/40')
   })
 
   it('falls back to the raw image with a reason when no corners are found', () => {

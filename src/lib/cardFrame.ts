@@ -361,6 +361,13 @@ export function warpImage(src: PixelImage, destToSrc: Mat3, destW: number, destH
   return { width: destW, height: destH, data: out }
 }
 
+/**
+ * Margin of ground kept around the flattened card, as a share of its width.
+ * Wide enough that the card stays under ~70% of the output, where the
+ * frame-median colour mask still separates it from the ground.
+ */
+export const FLATTEN_MARGIN_FRAC = 0.12
+
 export interface FlattenOptions {
   /** Margin of background kept around the card, as a share of the card's width. */
   marginFrac?: number
@@ -388,7 +395,7 @@ export function flattenCard(image: PixelImage, opts: FlattenOptions = {}): Flatt
   if (widthPx < 8 || heightPx < 8) return { flattened: false, image, reason: 'degenerate' }
   // Keep the source's pixel density on the card; the aspect comes from the real card, not the photo.
   // Never come out under the measuring floor: a foreshortened card is drawn up to it.
-  const marginFrac = opts.marginFrac ?? 0.08
+  const marginFrac = opts.marginFrac ?? FLATTEN_MARGIN_FRAC
   const maxH = opts.maxCardHeight ?? 2000
   const minCardW = Math.ceil(MIN_SHORT_SIDE_PX / (1 + 2 * marginFrac)) + 2
   const cardH = Math.round(Math.min(maxH, Math.max(heightPx, widthPx / CARD_RATIO, minCardW / CARD_RATIO)))
