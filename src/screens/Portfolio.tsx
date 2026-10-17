@@ -76,9 +76,13 @@ function Group({ group }: { group: HoldingGroup }) {
         )}
         <div className="shrink-0 text-right">
           <p className="tabular text-[15px] font-semibold text-ink">{group.marketSgd == null ? NO_PRICE_YET : formatSgd(group.marketSgd)}</p>
-          <p className={`tabular text-meta ${toneOf(group.unrealizedSgd) === 'good' ? 'text-good' : toneOf(group.unrealizedSgd) === 'bad' ? 'text-bad' : 'text-muted'}`}>
-            {group.costSgd == null ? DASH : `${formatSgd(group.costSgd)} all-in`}
-          </p>
+                <p className={`tabular text-meta ${toneOf(group.unrealizedSgd) === 'good' ? 'text-good' : toneOf(group.unrealizedSgd) === 'bad' ? 'text-bad' : 'text-muted'}`}>
+                  {group.unrealizedSgd != null
+                    ? formatSignedSgd(group.unrealizedSgd)
+                    : group.costSgd == null
+                      ? DASH
+                      : `${formatSgd(group.costSgd)} all‑in`}
+                </p>
         </div>
       </div>
       {group.copies[0]?.quote && (
@@ -105,7 +109,7 @@ function Group({ group }: { group: HoldingGroup }) {
             </p>
             <p className="tabular mt-0.5 text-meta text-muted">
               {copy.gradeText ? `${copy.gradeText} · ` : ''}
-              {copy.allInSgd == null ? 'No all-in' : `${formatSgd(copy.allInSgd)} all-in`}
+              {copy.allInSgd == null ? 'No all-in' : `${formatSgd(copy.allInSgd)} all‑in`}
               {copy.quote ? ` · ${formatSgd(copy.quote.sgd)}` : ` · ${NO_PRICE_YET}`}
               {copy.unrealizedSgd != null ? ` · ${formatSignedSgd(copy.unrealizedSgd)}` : ''}
               {copy.underCost ? ' · Under cost' : ''}
@@ -211,7 +215,7 @@ export function PortfolioScreen() {
             {alerts.map((alert) => (
               <li key={alert.rowId} className="text-[15px] leading-6 text-ink">
                 {alert.cardName || alert.code} · {alert.code}
-                {alert.gradeText ? ` · ${alert.gradeText}` : ''} · {formatSgd(alert.legalSgd)} against {formatSgd(alert.allInSgd)} all-in
+                {alert.gradeText ? ` · ${alert.gradeText}` : ''} · {formatSgd(alert.legalSgd)} against {formatSgd(alert.allInSgd)} all‑in
                 {alert.previousLowSgd != null ? ` · New low, was ${formatSgd(alert.previousLowSgd)}` : ''}
               </li>
             ))}
@@ -234,7 +238,7 @@ export function PortfolioScreen() {
             <StatBlock
               label="Cost basis"
               value={money(summary.costSgd)}
-              subline="All-in from the sheet, in S$. Not converted."
+              subline="All‑in from the sheet, in S$. Not converted."
             />
             <StatBlock
               label="Market value"
