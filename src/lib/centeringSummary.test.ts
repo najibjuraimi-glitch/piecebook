@@ -6,6 +6,7 @@ import {
   centeringLine,
   parseCenteringSummary,
   parsePhotoCentering,
+  edgeDetail,
   photoCentering,
   photoCenteringFromStored,
   summariseCentering,
@@ -210,5 +211,15 @@ describe('parseCenteringSummary', () => {
     expect(s).toMatchObject({ source: 'device', cannotBeTen: true, back: null })
     expect(parseCenteringSummary(undefined)).toBeNull()
     expect(parseCenteringSummary({ source: 'none', front: null, back: null })).toMatchObject({ source: 'none', verdict: WORKER_NOT_MEASURED_NOTE })
+  })
+})
+
+describe('edgeDetail', () => {
+  it('joins the per-side reasons in side order', () => {
+    expect(edgeDetail({ left: '36px on 14/21', bottom: 'band not flat (8/21)' })).toBe(
+      'left: 36px on 14/21 · bottom: band not flat (8/21)',
+    )
+    expect(edgeDetail(undefined)).toBeUndefined()
+    expect(edgeDetail({})).toBeUndefined()
   })
 })

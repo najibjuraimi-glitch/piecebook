@@ -38,6 +38,8 @@ export interface MeasuredCentering {
   topBottom: string
   resolved: true
   cannotBeTen: boolean
+  /** Per-side width or why that side was not a border. Shown on the result, not sent as the grade. */
+  detail?: string
 }
 
 export interface UnmeasuredCentering {
@@ -45,6 +47,8 @@ export interface UnmeasuredCentering {
   measured: false
   reason: UnmeasuredReason
   note: string
+  /** Per-side width or why that side was not a border. Shown on the result, not sent as the grade. */
+  detail?: string
 }
 
 export type PhotoCentering = MeasuredCentering | UnmeasuredCentering
@@ -131,13 +135,28 @@ export function unmeasured(side: PhotoSide, reason: UnmeasuredReason, note?: str
   return { side, measured: false, reason, note: text.slice(0, MAX_NOTE) }
 }
 
+/** `left 36px on 14/21 · top: band not flat (8/21)`. Empty when the measure named no sides. */
+export function edgeDetail(notes: Partial<Record<EdgeName, string>> | undefined): string | undefined {
+  if (!notes) return undefined
+  const text = (['left', 'right', 'top', 'bottom'] as const)
+    .map((s) => (notes[s] ? `${s}: ${notes[s]}` : ''))
+    .filter(Boolean)
+    .join(' · ')
+  return text || undefined
+}
+
 /** From a live measurement on the phone. */
 export function photoCentering(result: PhotoResult | null, side: PhotoSide): PhotoCentering | null {
   if (!result) return null
   if (!result.ok) return unmeasured(side, result.code, result.message)
   const m = result.measure
-  if (!m.resolved) return unmeasured(side, 'no-print-edge', noPrintEdgeNote(side, m.unresolvedSides))
-  return centeringFromBorders(side, m.left, m.right, m.top, m.bottom)
+  const detail = edgeDetail(m.edgeNotes)
+  if (!m.resolved) {
+    const u = unmeasured(side, 'no-print-edge', noPrintEdgeNote(side, m.unresolvedSides))
+    return detail ? { ...u, detail } : u
+  }
+  const c = centeringFromBorders(side, m.left, m.right, m.top, m.bottom)
+  return detail && c.measured ? { ...c, detail } : c
 }
 
 /** From a stored prediction photo (the log keeps border pixels, never the image). */

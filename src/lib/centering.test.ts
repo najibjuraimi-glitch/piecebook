@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { decode as decodeJpeg } from 'jpeg-js'
+import { decode as decodeJpeg, encode as encodeJpeg } from 'jpeg-js'
+import { flattenCard } from './cardFrame'
 import {
   BACK_TEN_MAX,
   FRONT_TEN_MAX,
@@ -475,4 +476,130 @@ describe('chooseMeasure', () => {
     expect(chooseMeasure(rejected, found)).toBe(found)
     expect(chooseMeasure(guided, rejected)).toBe(guided)
   })
+})
+
+function jpegRoundtrip(img: PixelImage): PixelImage {
+  const encoded = encodeJpeg({ data: img.data, width: img.width, height: img.height }, 92)
+  const raw = decodeJpeg(encoded.data, { useTArray: true })
+  return { width: raw.width, height: raw.height, data: new Uint8ClampedArray(raw.data) }
+}
+
+/** Move the left and bottom edges of a quad outward (positive) into a shadow, or inward (negative). */
+function outsetLeftBottom(q: Quad, left: number, bottom: number): Quad {
+  return [
+    { x: q[0].x - left, y: q[0].y },
+    { x: q[1].x, y: q[1].y },
+    { x: q[2].x, y: q[2].y + bottom },
+    { x: q[3].x - left, y: q[3].y + bottom },
+  ]
+}
+
+describe('outline shifted by a shadow', () => {
+  it('reads the border when the left and bottom outlines sit in a shadow outside the card', () => {
+    const cardW = 1000
+    const cardH = 1400
+    const margin = 160
+    const width = cardW + margin * 2
+    const height = cardH + margin * 2
+    const data = new Uint8ClampedArray(width * height * 4)
+    const border = 32
+    const shadow = 18
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = (y * width + x) * 4
+        const lx = x - margin
+        const ly = y - margin
+        // Overhead light: the whole left and bottom of the frame is in shadow, so the
+        // only hard edge on those sides is the card. The outline sits in that shadow.
+        let col: [number, number, number] = lx < cardW / 2 || ly > cardH / 2 ? [62, 60, 54] : [150, 148, 140]
+        if (lx >= 0 && ly >= 0 && lx < cardW && ly < cardH) {
+          const inArt = lx >= border && lx < cardW - border && ly >= border && ly < cardH - border
+          col = inArt ? [36, 48, 120] : [150, 42, 48]
+        }
+        data[i] = col[0]
+        data[i + 1] = col[1]
+        data[i + 2] = col[2]
+        data[i + 3] = 255
+      }
+    }
+    const quad: Quad = [
+      { x: margin, y: margin },
+      { x: margin + cardW - 1, y: margin },
+      { x: margin + cardW - 1, y: margin + cardH - 1 },
+      { x: margin, y: margin + cardH - 1 },
+    ]
+    const shifted = outsetLeftBottom(quad, shadow, shadow)
+    const result = measurePhoto(jpegRoundtrip({ width, height, data }), 'back', { outline: shifted })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(true)
+    expect(result.measure.cannotBeTen).toBe(false)
+    expect(result.measure.edgeNotes).toBeTruthy()
+    for (const px of [result.measure.left, result.measure.right, result.measure.top, result.measure.bottom]) {
+      expect(Math.abs(px - border)).toBeLessThanOrEqual(4)
+    }
+    expect(result.measure.edgeNotes?.left).toMatch(/outside/)
+    expect(result.measure.edgeNotes?.bottom).toMatch(/outside/)
+  })
+
+  it('still reads the border when the outline sits a little inside the card', () => {
+    const f = flattenedFrame({
+      borders: { left: 32, right: 32, top: 32, bottom: 32 },
+      stock: [150, 42, 48],
+      art: () => [36, 48, 120],
+      outlineShift: -12,
+    })
+    const result = measurePhoto(f.img, 'back', { outline: f.quad })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(true)
+    expect(result.measure.cannotBeTen).toBe(false)
+    expect(Math.abs(result.measure.left - 32)).toBeLessThanOrEqual(4)
+    expect(result.measure.edgeNotes?.left).toMatch(/inside/)
+  })
+})
+
+describe('real phone shots', () => {
+  it('reads the red back even when the flatten left and bottom edges sit in the shadow', () => {
+    const src = loadJpegFixture('op-back-red.jpg')
+    const flat = flattenCard(src)
+    expect(flat.flattened).toBe(true)
+    if (!flat.flattened) return
+    const img = jpegRoundtrip(flat.image)
+    const straight = measurePhoto(img, 'back', { outline: flat.cardQuad })
+    expect(straight.ok).toBe(true)
+    if (!straight.ok) return
+    expect(straight.measure.resolved).toBe(true)
+    expect(straight.measure.cannotBeTen).toBe(false)
+    for (const px of [straight.measure.left, straight.measure.right, straight.measure.top, straight.measure.bottom]) {
+      expect(px).toBeGreaterThan(20)
+      expect(px).toBeLessThan(55)
+    }
+    const shifted = measurePhoto(img, 'back', { outline: outsetLeftBottom(flat.cardQuad, 18, 18) })
+    expect(shifted.ok).toBe(true)
+    if (!shifted.ok) return
+    expect(shifted.measure.resolved).toBe(true)
+    expect(shifted.measure.cannotBeTen).toBe(false)
+    expect(shifted.measure.unresolvedSides).toEqual([])
+    expect(Math.abs(shifted.measure.left - straight.measure.left)).toBeLessThanOrEqual(6)
+    expect(Math.abs(shifted.measure.bottom - straight.measure.bottom)).toBeLessThanOrEqual(6)
+    expect(shifted.measure.edgeNotes?.left).toMatch(/outside/)
+    expect(shifted.measure.edgeNotes?.bottom).toMatch(/outside/)
+  }, 30_000)
+
+  it('does not invent a bottom border or rule out a 10 on the Luffy leader', () => {
+    const src = loadJpegFixture('luffy-eb02-010-front.jpg')
+    const flat = flattenCard(src)
+    expect(flat.flattened).toBe(true)
+    if (!flat.flattened) return
+    const result = measurePhoto(jpegRoundtrip(flat.image), 'front', { outline: flat.cardQuad })
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+    expect(result.measure.resolved).toBe(false)
+    expect(result.measure.cannotBeTen).toBe(false)
+    expect(result.measure.unresolvedSides).toEqual(expect.arrayContaining(['bottom']))
+    expect(result.measure.edgeNotes?.bottom).toMatch(/\d+\/21/)
+    expect(centeringLabel(result.measure)).toMatch(/not measured/)
+    expect(centeringLabel(result.measure)).not.toMatch(/\d+\/\d+/)
+  }, 30_000)
 })

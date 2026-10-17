@@ -1,6 +1,18 @@
+import { execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { defineConfig, type Plugin } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+
+/** Seven-character sha shown on a pregrade result, so a phone test names the bundle it ran. */
+function buildSha(): string {
+  const fromEnv = process.env.VITE_BUILD_SHA?.trim()
+  if (fromEnv) return fromEnv.slice(0, 7)
+  try {
+    return execSync('git rev-parse --short=7 HEAD', { encoding: 'utf8' }).trim()
+  } catch {
+    return 'dev'
+  }
+}
 
 /**
  * The Worker imports data/tcgplayer-products.csv as text (wrangler's Text rule);
@@ -19,6 +31,9 @@ function csvAsText(): Plugin {
 }
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_BUILD_SHA': JSON.stringify(buildSha()),
+  },
   plugins: [csvAsText(), react()],
   test: {
     include: ['src/**/*.test.ts', 'worker/**/*.test.ts'],
