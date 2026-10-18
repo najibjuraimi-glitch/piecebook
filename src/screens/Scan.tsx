@@ -1,13 +1,18 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { cameraSupported } from '../components/CameraCapture'
+import { ScanLive, type LiveScanResult } from '../components/ScanLive'
 import { BackBar, Screen } from '../components/Screen'
 import { ALL_CARDS } from '../data/seed'
 import { VISION_URL } from '../config/vision'
+import { getHoldings } from '../lib/holdingsClient'
 import { isStale } from '../lib/boughtBook'
 import { todayIso, formatSgd, formatUsd } from '../lib/format'
 import { legalQuote } from '../lib/loadBought'
 import { characterForPrint } from '../lib/printCharacter'
+import { bookPrices, preferLiveScan, type BookPrice } from '../lib/scanLabel'
 import { choosePrint, lotOfferPath, summariseRows, type ScanBox, type ScanRow, type ScanSummary, type WatchTarget } from '../lib/scanMatch'
+import { getWatchlist } from '../lib/watchlistClient'
 
 const field =
   'mt-1.5 block h-11 w-full rounded-xl border border-line bg-paper/60 px-3.5 text-body text-ink placeholder:text-muted/70 focus:border-ink focus:bg-surface focus:outline-none'
@@ -31,6 +36,10 @@ function quoteFor(id: string, grade: 'raw' | 'psa9' | 'psa10') {
   return legalQuote(id, grade)
 }
 
+function coarsePointer(): boolean {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches
+}
+
 /**
  * One photo of a case, binder or listing. The image is sent once and is not kept on the server.
  * Saving keeps the reading, not the photo bytes.
@@ -48,27 +57,37 @@ export function ScanScreen() {
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
+  const [live, setLive] = useState(() => preferLiveScan(cameraSupported(), coarsePointer()))
+  const [cameraNote, setCameraNote] = useState<string | null>(null)
+  const [jpRows, setJpRows] = useState<BookPrice[]>([])
+  const fileRef = useRef<HTMLInputElement>(null)
   const photo = preview || imageUrl.trim() || null
   const crops = useBrowserCrops(photo, scan?.cards ?? [])
   const rows = useMemo(() => prints(), [])
 
-  const run = async () => {
-    setBusy(true)
-    setError(null)
-    setSaved(false)
+  useEffect(() => {
+    const ac = new AbortController()
+    void Promise.all([getWatchlist(ac.signal).catch(() => null), getHoldings(ac.signal).catch(() => null)]).then(([watch, holdings]) => {
+      if (ac.signal.aborted) return
+      setJpRows(bookPrices({
+        watch: watch?.ok ? watch.data?.items ?? [] : [],
+        holdings: holdings?.ok ? holdings.data?.copies ?? [] : [],
+      }))
+    })
+    return () => ac.abort()
+  }, [])
+
+  const requestScan = async (shot: File | null): Promise<LiveScanResult> => {
+    const body: Record<string, unknown> = {
+      caption,
+      lotAskSgd: lotAsk.trim() ? Number(lotAsk) : null,
+      lotAskCurrency: lotCurrency,
+    }
+    if (shot) body.image = await fileToDataUrl(shot)
+    else if (file) body.image = await fileToDataUrl(file)
+    else if (imageUrl.trim()) body.imageUrl = imageUrl.trim()
+    else return { ok: false, error: 'Add a photo or an image link.' }
     try {
-      const body: Record<string, unknown> = {
-        caption,
-        lotAskSgd: lotAsk.trim() ? Number(lotAsk) : null,
-        lotAskCurrency: lotCurrency,
-      }
-      if (file) body.image = await fileToDataUrl(file)
-      else if (imageUrl.trim()) body.imageUrl = imageUrl.trim()
-      else {
-        setError('Add a photo or an image link.')
-        setBusy(false)
-        return
-      }
       const res = await fetch(`${VISION_URL}/scan`, {
         method: 'POST',
         credentials: 'include',
@@ -77,16 +96,45 @@ export function ScanScreen() {
       })
       const data = await res.json().catch(() => null)
       if (!res.ok || !data?.cards) {
-        setError(data?.error === 'daily_cap_reached' ? 'The daily photo limit is used up.' : 'That photo could not be read.')
-        setBusy(false)
-        return
+        return { ok: false, error: data?.error === 'daily_cap_reached' ? 'The daily photo limit is used up.' : 'That photo could not be read.' }
       }
-      setScan(data as ScanSummary)
-      setTargets(Array.isArray(data.targets) ? data.targets : [])
+      return {
+        ok: true,
+        scan: data as ScanSummary,
+        usage: data.usage && typeof data.usage.cap === 'number' ? { today: Number(data.usage.today) || 0, cap: Number(data.usage.cap) } : null,
+        targets: Array.isArray(data.targets) ? data.targets : [],
+      }
     } catch {
-      setError('That photo could not be read.')
+      return { ok: false, error: 'That photo could not be read.' }
+    }
+  }
+
+  const run = async () => {
+    setBusy(true)
+    setError(null)
+    setSaved(false)
+    const result = await requestScan(null)
+    if (!result.ok) setError(result.error)
+    else {
+      setScan(result.scan)
+      setTargets(result.targets)
     }
     setBusy(false)
+  }
+
+  const openCamera = () => {
+    if (!cameraSupported()) {
+      setCameraNote('No camera on this device. Upload a photo instead.')
+      fileRef.current?.click()
+      return
+    }
+    setCameraNote(null)
+    setLive(true)
+  }
+
+  const useUpload = () => {
+    setLive(false)
+    fileRef.current?.click()
   }
 
   const pick = (index: number, printId: string) => {
@@ -109,15 +157,23 @@ export function ScanScreen() {
     <Screen>
       <BackBar title="Scan" subline="One photo of a case or a listing" fallbackTo="/portfolio" />
       <div className="space-y-4">
-        <div>
-          <label htmlFor="scan-file" className={label}>
-            Photo
-          </label>
+        <div className="space-y-3">
+          {cameraNote && (
+            <p className="text-body text-ink" role="alert">
+              {cameraNote}
+            </p>
+          )}
+          <button type="button" onClick={openCamera} className="inline-flex h-14 w-full items-center justify-center rounded-xl bg-ink text-[17px] font-semibold text-paper">
+            Scan with camera
+          </button>
+          <button type="button" onClick={() => fileRef.current?.click()} className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-line text-[16px] font-semibold text-ink">
+            Upload photo
+          </button>
           <input
+            ref={fileRef}
             id="scan-file"
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={(e) => {
               const next = e.target.files?.[0] ?? null
               setFile(next)
@@ -126,7 +182,7 @@ export function ScanScreen() {
                 return next ? URL.createObjectURL(next) : null
               })
             }}
-            className="mt-1.5 block w-full text-meta text-ink"
+            className="sr-only"
           />
         </div>
         <div>
@@ -199,6 +255,28 @@ export function ScanScreen() {
           </div>
           <p className="text-meta text-muted">The photo is not kept. Save stores the reading on this phone.</p>
         </section>
+      )}
+      {live && (
+        <ScanLive
+          jpRows={jpRows}
+          onScan={requestScan}
+          onClose={() => setLive(false)}
+          onUpload={useUpload}
+          onUnavailable={(message) => {
+            setLive(false)
+            setCameraNote(message)
+            fileRef.current?.click()
+          }}
+          onFreeze={({ scan: frozen, file: shot }) => {
+            setFile(shot)
+            setPreview((current) => {
+              if (current?.startsWith('blob:')) URL.revokeObjectURL(current)
+              return URL.createObjectURL(shot)
+            })
+            setScan(frozen)
+            setLive(false)
+          }}
+        />
       )}
     </Screen>
   )

@@ -2,6 +2,8 @@
 
 Phone page: `/scan`. Portfolio links to it. `POST /api/scan` is the same call for a service token.
 
+On a phone with a camera, `/scan` opens the rear camera. Hold the case still for about a second and the phone sends that full-resolution frame to `/api/scan`. Labels sit on the cards: the code and grade that were read, an EN or JP tag, the street price, and the sticker when it was read. Green means the sticker is more than 10% under street. Amber is 5% to 10% under. A missing sticker stays neutral. A JP card turns green or amber only against a manual JP price on a watch or holding row; otherwise the label says **no JP comp** and is not compared with an English price. The same steady view is not scanned again. Automatic scans wait four seconds apart, and the corner shows how many scans are left today. Pause holds the camera. Freeze keeps the last reading and opens the list with the lot total. **Take photo** and **Upload photo** stay available. Without a camera, or if permission is refused, the page uses the file picker. A desktop pointer starts on Upload photo.
+
 Send one photo: a camera shot, an upload, or an `imageUrl`. The URL is fetched only as an image. The listing page is not opened, and the photo is not stored. **Save scan** keeps the reading on the phone, not the bytes.
 
 The vision Worker finds each card, reads a slab label before the card face, and returns a box, a grid position, a print guess, a language, a sticker, and a condition estimate. The estimate is not a grade and not a PSA prediction. **Close-up check** opens `/pregrade` for a front and back of one card.

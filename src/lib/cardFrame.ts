@@ -525,6 +525,86 @@ export function stepLiveView(prev: LiveViewState, frame: FrameAssessment, now: n
   }
 }
 
+/** A case scan waits this long on one steady view before it sends the photo. */
+export const SCENE_STEADY_MS = 1000
+/** Do not send another automatic scan until this long after the last one. */
+export const SCAN_INTERVAL_MS = 4000
+
+export interface SceneHold {
+  /** The view the current steady spell is measured against. */
+  anchor: Quad | null
+  steadySince: number | null
+  misses: number
+  /** This spell already sent a scan. */
+  scanned: boolean
+}
+
+export function initialSceneHold(): SceneHold {
+  return { anchor: null, steadySince: null, misses: 0, scanned: false }
+}
+
+export function markSceneScanned(state: SceneHold): SceneHold {
+  return { ...state, scanned: true }
+}
+
+/** True when an automatic scan is allowed. The first scan of a session does not wait. */
+export function scanIntervalOpen(lastScanAt: number | null, now: number): boolean {
+  return lastScanAt == null || now - lastScanAt >= SCAN_INTERVAL_MS
+}
+
+/**
+ * Steadiness for a whole case, using the same corner drift as the card viewfinder.
+ * A small shift stays in the spell. A large shift, or two frames that leave the
+ * steady band, ends it so the next still second can scan again.
+ */
+export function stepSceneHold(prev: SceneHold, quad: Quad, now: number): { state: SceneHold; steady: boolean; moved: boolean; ready: boolean } {
+  if (!prev.anchor) {
+    return { state: { anchor: quad, steadySince: null, misses: 0, scanned: false }, steady: false, moved: false, ready: false }
+  }
+  const drift = quadDrift(prev.anchor, quad)
+  if (drift <= QUAD_STABLE_PX) {
+    const steadySince = prev.steadySince ?? now
+    const state = { anchor: prev.anchor, steadySince, misses: 0, scanned: prev.scanned }
+    return { state, steady: true, moved: false, ready: !state.scanned && now - steadySince >= SCENE_STEADY_MS }
+  }
+  if (drift > QUAD_STABLE_PX * 3 || prev.misses + 1 >= 2) {
+    return { state: { anchor: quad, steadySince: null, misses: 0, scanned: false }, steady: false, moved: true, ready: false }
+  }
+  return { state: { ...prev, misses: prev.misses + 1 }, steady: false, moved: false, ready: false }
+}
+
+/**
+ * Four luminance centroids, one per quadrant, in the same corner order as a card quad.
+ * A still camera keeps them put. A pan moves them, and `quadDrift` reads that motion.
+ */
+export function sceneQuad(img: PixelImage): Quad {
+  const midX = img.width / 2
+  const midY = img.height / 2
+  const acc = [
+    { x: 0, y: 0, w: 0 },
+    { x: 0, y: 0, w: 0 },
+    { x: 0, y: 0, w: 0 },
+    { x: 0, y: 0, w: 0 },
+  ]
+  const step = Math.max(1, Math.floor(Math.min(img.width, img.height) / 80))
+  for (let y = 0; y < img.height; y += step) {
+    for (let x = 0; x < img.width; x += step) {
+      const i = (y * img.width + x) * 4
+      const weight = 0.2126 * img.data[i] + 0.7152 * img.data[i + 1] + 0.0722 * img.data[i + 2]
+      if (weight < 1) continue
+      const qi = (x < midX ? 0 : 1) + (y < midY ? 0 : 2)
+      acc[qi].x += x * weight
+      acc[qi].y += y * weight
+      acc[qi].w += weight
+    }
+  }
+  const at = (qi: number, cx: number, cy: number) => {
+    const bin = acc[qi]
+    return bin.w > 0 ? { x: bin.x / bin.w, y: bin.y / bin.w } : { x: cx, y: cy }
+  }
+  return [at(0, midX * 0.5, midY * 0.5), at(1, midX * 1.5, midY * 0.5), at(3, midX * 1.5, midY * 1.5), at(2, midX * 0.5, midY * 1.5)]
+}
+
 /** Of two shots of the same side, the one with less glare on the card; ties keep the first. */
 export function pickCleanerFrame(a: GlareReport, b: GlareReport): { index: 0 | 1; reason: string } {
   const score = (g: GlareReport) => g.largestFraction * 4 + g.fraction

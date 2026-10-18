@@ -21,13 +21,21 @@ import {
   flattenCard,
   glareReport,
   homographyFromQuads,
+  QUAD_STABLE_PX,
+  SCAN_INTERVAL_MS,
+  SCENE_STEADY_MS,
   initialLiveView,
+  initialSceneHold,
   insideQuad,
   invertMat3,
+  markSceneScanned,
   pickCleanerFrame,
+  scanIntervalOpen,
+  sceneQuad,
   sharpness,
   shrinkQuad,
   stepLiveView,
+  stepSceneHold,
   warpImage,
   type FrameAssessment,
   type HintCode,
@@ -599,5 +607,94 @@ describe('live view: hints settle and auto-capture waits', () => {
     step = stepLiveView(step.state, frame(false, 'too-far', quad(20)), 4000)
     expect(step.offerShutter).toBe(true)
     expect(step.capture).toBe(false)
+  })
+})
+
+function solid(width: number, height: number, rgb: [number, number, number]): PixelImage {
+  const data = new Uint8ClampedArray(width * height * 4)
+  for (let i = 0; i < data.length; i += 4) {
+    data[i] = rgb[0]
+    data[i + 1] = rgb[1]
+    data[i + 2] = rgb[2]
+    data[i + 3] = 255
+  }
+  return { width, height, data }
+}
+
+describe('case view: one steady second, then not the same scene again', () => {
+  const quad = (dx = 0) =>
+    [
+      { x: 20 + dx, y: 10 },
+      { x: 80 + dx, y: 12 },
+      { x: 78 + dx, y: 70 },
+      { x: 22 + dx, y: 68 },
+    ] as Quad
+
+  it('is ready after a second of the same view and does not scan that view again', () => {
+    let state = initialSceneHold()
+    let step = stepSceneHold(state, quad(), 0)
+    expect(step.ready).toBe(false)
+    step = stepSceneHold(step.state, quad(2), 100)
+    expect(step.steady).toBe(true)
+    expect(step.ready).toBe(false)
+    expect(step.state.steadySince).toBe(100)
+    step = stepSceneHold(step.state, quad(1), 100 + SCENE_STEADY_MS - 1)
+    expect(step.ready).toBe(false)
+    step = stepSceneHold(step.state, quad(1), 100 + SCENE_STEADY_MS)
+    expect(step.ready).toBe(true)
+    step = stepSceneHold(markSceneScanned(step.state), quad(1), 5000)
+    expect(step.ready).toBe(false)
+    expect(step.moved).toBe(false)
+  })
+
+  it('ends the spell when the phone moves past the card steadiness band', () => {
+    let step = stepSceneHold(initialSceneHold(), quad(), 0)
+    step = stepSceneHold(step.state, quad(1), 200)
+    const moved = stepSceneHold(markSceneScanned(step.state), quad(QUAD_STABLE_PX * 3 + 5), 800)
+    expect(moved.moved).toBe(true)
+    expect(moved.state.scanned).toBe(false)
+    expect(moved.state.steadySince).toBeNull()
+    const held = stepSceneHold(moved.state, quad(QUAD_STABLE_PX * 3 + 5), 900)
+    expect(held.ready).toBe(false)
+    const again = stepSceneHold(held.state, quad(QUAD_STABLE_PX * 3 + 5), 900 + SCENE_STEADY_MS)
+    expect(again.ready).toBe(true)
+  })
+
+  it('forgives one frame that leaves the band and resets on the next', () => {
+    let step = stepSceneHold(initialSceneHold(), quad(), 0)
+    step = stepSceneHold(step.state, quad(), 100)
+    const wobble = stepSceneHold(step.state, quad(QUAD_STABLE_PX + 2), 200)
+    expect(wobble.moved).toBe(false)
+    expect(wobble.state.steadySince).toBe(100)
+    const lost = stepSceneHold(wobble.state, quad(QUAD_STABLE_PX + 2), 300)
+    expect(lost.moved).toBe(true)
+  })
+
+  it('waits four seconds between automatic scans, and lets the first one go', () => {
+    expect(scanIntervalOpen(null, 1000)).toBe(true)
+    expect(scanIntervalOpen(1000, 1000 + SCAN_INTERVAL_MS - 1)).toBe(false)
+    expect(scanIntervalOpen(1000, 1000 + SCAN_INTERVAL_MS)).toBe(true)
+  })
+
+  it('reads a still frame as the same quad and a shifted frame as motion', () => {
+    const still = solid(40, 40, [180, 180, 180])
+    expect(sceneQuad(still)).toEqual(sceneQuad(still))
+    const spot = (x0: number, y0: number) => {
+      const img = solid(200, 200, [0, 0, 0])
+      for (let y = y0; y < y0 + 16; y++) {
+        for (let x = x0; x < x0 + 16; x++) {
+          const i = (y * 200 + x) * 4
+          img.data[i] = img.data[i + 1] = img.data[i + 2] = 255
+        }
+      }
+      return img
+    }
+    const drift = Math.max(
+      ...sceneQuad(spot(4, 4)).map((point, i) => {
+        const other = sceneQuad(spot(80, 80))[i]
+        return Math.hypot(point.x - other.x, point.y - other.y)
+      }),
+    )
+    expect(drift).toBeGreaterThan(QUAD_STABLE_PX * 3)
   })
 })
