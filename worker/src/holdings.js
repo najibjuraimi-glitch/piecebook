@@ -10,10 +10,12 @@
  *   POST   /holdings/snapshot
  *   GET    /holdings/history
  *   PATCH  /holdings/:rowId
+ *   DELETE /holdings/:rowId
  *   POST   /holdings/:rowId/sold
  */
 import { writerAllowed } from "./access.js";
-import { acceptSnapshot, createHolding, emptyHoldings, importHoldings, markSold, patchHolding } from "../../src/lib/holdings.ts";
+import { forgetAlertKey, normaliseAlerts } from "../../src/lib/alertsBook.ts";
+import { acceptSnapshot, createHolding, deleteHolding, emptyHoldings, importHoldings, markSold, patchHolding } from "../../src/lib/holdings.ts";
 
 const STORE = "holdings.v1";
 const HISTORY = "holdings-history.v1";
@@ -172,6 +174,16 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
     } catch {
       return json({ error: "bad_row_id" }, 400, cors);
     }
+    if (req.method === "DELETE" && parts.length === 2) {
+      const doc = await readDoc(kv, email);
+      const result = deleteHolding(doc, rowId, body);
+      if (!result.ok) return fail(result, cors);
+      await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
+      await recordWrite(kv, email, identity, now, "delete", rowId);
+      await clearHoldingAlert(kv, email, rowId);
+      log({ evt: "holdings_write", op: "delete", rowId, caller: callerOf(identity), at: new Date(now).toISOString() });
+      return json({ source: "piecebook", revision: result.doc.revision }, 200, cors);
+    }
     if (req.method === "PATCH" && parts.length === 2) {
       const doc = await readDoc(kv, email);
       const result = patchHolding(doc, rowId, body);
@@ -193,4 +205,11 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
   }
 
   return json({ error: "method_not_allowed" }, 405, cors);
+}
+
+async function clearHoldingAlert(kv, email, rowId) {
+  const alerts = normaliseAlerts(await kv.get(keyFor(email, "alerts.v1"), "json"));
+  const result = forgetAlertKey(alerts, "underAllIn", rowId);
+  if (!result.changed) return;
+  await kv.put(keyFor(email, "alerts.v1"), JSON.stringify(result.doc));
 }

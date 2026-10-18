@@ -124,7 +124,14 @@ describe('legal values', () => {
     expect(nami.manualMarketSgd).toBe(999)
     expect(nami.quote).toMatchObject({ source: 'Limitless', sgd: 0.9, asOf: '2026-09-05' })
     expect(nami.quote!.sgd).not.toBe(999)
-    expect(enel.quote).toMatchObject({ source: 'Sheet (Cards)', sgd: 350, asOf: '2026-09-01', usd: null, detail: null })
+    expect(enel.quote).toMatchObject({
+      source: 'Sheet (Cards)',
+      sgd: 350,
+      asOf: '2026-09-01',
+      usd: null,
+      detail: null,
+      url: 'https://www.pricecharting.com/game/one-piece/enel',
+    })
     expect(enel.quote!.detail ?? '').not.toMatch(/japanese/i)
     expect(enel.stale).toBe(true)
     expect(enelRaw.quote).toMatchObject({ source: 'Limitless', sgd: 171.72 })
@@ -170,12 +177,14 @@ describe('legal values', () => {
     const raw = copies.find((c) => c.rowId === 'OPB-0301')!
     expect(printCode('OP09-004 SP')).toBe('OP09-004')
     expect(printCode('op05-100p2')).toBe('OP05-100p2')
+    expect(printCode('OP09-004P3')).toBe('OP09-004p3')
     expect(legalGrade('PSA 10 (cert 149322006)')).toBe('psa10')
     expect(raw.code).toBe('OP09-004 SP')
     expect(raw.gradeText).toBe('Raw')
     expect(raw.grade).toBe('raw')
-    expect(raw.quote).toEqual(legalQuote('OP09-004p3', 'raw'))
-    expect(raw.quote!.sgd).not.toBe(legalQuote('OP09-004', 'raw')!.sgd)
+    expect(raw.quote).toBeNull()
+    expect(legalQuote('OP09-004 SP', 'raw')).toBeNull()
+    expect(legalQuote('OP09-004', 'raw')).not.toBeNull()
 
     const slab = copies.find((c) => c.rowId === 'OPB-0302')!
     expect(slab.code).toBe('OP09-004 SP')
@@ -192,6 +201,38 @@ describe('legal values', () => {
     expect(groups.find((g) => g.copies.some((c) => c.rowId === 'OPB-0304'))!.copies).toHaveLength(1)
     expect(groups.find((g) => g.copies.some((c) => c.rowId === 'OPB-0301'))!.gradeText).toBe('Raw')
     expect(groups.find((g) => g.copies.some((c) => c.rowId === 'OPB-0305'))!.code).toBe('OP09-004')
+    expect(copies.find((c) => c.rowId === 'OPB-0305')!.quote).toBeNull()
+  })
+
+  it('prices the cutover variant codes from the manual figure, not the base print', () => {
+    const header = ['Row ID', 'Code', 'Grade/Raw', 'All-in SGD', 'Status', 'Card', 'Market value SGD', 'PriceCharting URL']
+    const copies = valued([
+      header,
+      ['OPB-0003', 'OP13-028 SP', 'Raw', '400', 'Held', 'Shanks', '500', 'https://www.pricecharting.com/a'],
+      ['OPB-0004', 'OP12-030 SP', 'Raw', '400', 'Held', 'Mihawk', '510', 'https://www.pricecharting.com/b'],
+      ['OPB-0005', 'OP09-004 manga', 'Raw', '400', 'Held', 'Shanks', '520', 'https://www.pricecharting.com/c'],
+      ['OPB-0009', 'EB02-010 alt art', 'Raw', '400', 'Held', 'Luffy', '530', 'https://www.pricecharting.com/d'],
+    ])
+    const manuals = { 'OPB-0003': 500, 'OPB-0004': 510, 'OPB-0005': 520, 'OPB-0009': 530 }
+    const bases = ['OP13-028', 'OP12-030', 'OP09-004', 'EB02-010']
+    copies.forEach((copy, i) => {
+      const base = legalQuote(bases[i], 'raw')
+      expect(base).not.toBeNull()
+      expect(copy.quote).toMatchObject({
+        source: 'Sheet (Cards)',
+        sgd: manuals[copy.rowId as keyof typeof manuals],
+        usd: null,
+        url: `https://www.pricecharting.com/${'abcd'[i]}`,
+      })
+      expect(copy.quote!.sgd).not.toBe(base!.sgd)
+      expect(copy.underCost).toBe(false)
+    })
+    const named = valued([
+      ['Row ID', 'Code', 'Grade/Raw', 'All-in SGD', 'Status', 'Card', 'Market value SGD', 'Exact print'],
+      ['OPB-0401', 'OP13-028 SP', 'Raw', '400', 'Held', 'Shanks', '500', 'OP13-028'],
+    ])[0]
+    expect(named.quote).toEqual(legalQuote('OP13-028', 'raw'))
+    expect(named.quote!.sgd).not.toBe(500)
   })
 
   it('uses an exact print when the sheet code is a variant, and the manual figure when it is not one print', () => {

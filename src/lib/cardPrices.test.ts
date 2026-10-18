@@ -36,7 +36,7 @@ describe('advicePrices', () => {
     const [raw, psa9, psa10] = advicePrices(card)
     expect(raw.usd).toBe(49.36)
     expect(raw.sgd).toBe(usdToSgd(49.36))
-    expect(raw.url).toBe('https://onepiece.limitlesstcg.com/cards/en/OP16-001')
+    expect(raw.url).toBeNull()
     expect(psa9.usd).toBeNull()
     expect(psa10.usd).toBeNull()
   })

@@ -20,7 +20,7 @@ Every row includes `priceSgd`, `url`, `source`, `asOf`, and `stale`. When there 
 
 `hit` is true only when there is a target and the price is at or under it and the price is not stale. A null target is not a hit. A price dated more than 7 days ago is marked `stale`, still shown, and is not a hit. No price is not a hit and is not marked stale.
 
-`GET /watchlist?format=targets` returns `{ print, parallel, language, grade, targetSgd, externalId }` for each row. Auction uses that list to scan. `parallel` is the seed’s variant label, or null on a base print.
+`GET /watchlist?format=targets` returns `{ id, print, parallel, language, grade, targetSgd, externalId }` for each row. Auction uses that list to scan. `parallel` is the seed’s variant label, or null on a base print. A capital P in a print id (`EB03-053P2`) is the same print as `EB03-053p2`. A Limitless link for a parallel is omitted; it is never the base card’s page.
 
 ## Phone
 
@@ -53,9 +53,9 @@ curl -s "${H[@]}" -X DELETE "$PIECEBOOK_API/watchlist/WL-0001" -H 'Content-Type:
 
 ## Alerts
 
-Cards polls `GET /alerts`. Piecebook does not push alerts. The response is the under-all-in hits from the holdings book and the watchlist hits from this book, for the same owner. Each alert has `type` (`underAllIn` or `watchlist`), `url`, `source`, `asOf`, `stale`, `firedAt`, and `dismissed`. `?since=` is an ISO timestamp; only alerts whose `firedAt` is later than that are returned. `?includeDismissed=1` also returns alerts that already fired at this price. Without it, those stay out.
+Cards polls `GET /alerts`. Piecebook does not push alerts. The response is the under-all-in hits from the holdings book and the watchlist hits from this book, for the same owner. Each alert has `type` (`underAllIn` or `watchlist`), `url`, `source`, `asOf`, `stale`, `firedAt`, and `dismissed`. A watchlist hit also has `externalId`. `firedAt` is stamped once when that price is a new low, and a later GET of the same price does not move it. GET writes that stamp only when it is new, and only if the alerts revision is still the one it read, so a dismiss is not overwritten. `?since=` is an ISO timestamp; only alerts whose `firedAt` is later than that are returned. `?includeDismissed=1` and `?includeDismissed=true` also return alerts that already fired at this price. Without it, those stay out.
 
-An under-all-in hit fires once per Row ID when the active price (English or manual) is under all-in, and again only when that price is strictly lower. A watchlist hit fires when the English price is at or under the target, and again only on a strictly lower price. No price means no hit.
+An under-all-in hit fires once per Row ID when the active price (English or manual) is under all-in, and again only when that price is strictly lower. A watchlist hit fires when the English price is at or under the target, and again only on a strictly lower price. No price means no hit. Deleting the holding or the watch row clears that alert’s `firedAt` and its dismissal, and does not change the alerts revision.
 
 Dismissals are stored at `u:<email>:alerts.v1`, so they hold on every device. The sample Portfolio book still uses this browser’s `piecebook.boughtAlerts.v1` until a signed-in read succeeds.
 

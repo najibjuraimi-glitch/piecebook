@@ -214,7 +214,7 @@ function PricesCard({ card }: { card: Card }) {
       </p>
       <ul className="mt-4 divide-y divide-line">
         {rows.map((row) => {
-          const priced = row.usd != null && row.sgd != null && row.source && row.url && row.asOf
+          const priced = row.usd != null && row.sgd != null && row.source && row.asOf
           return (
             <li key={row.grade} className="py-3 first:pt-0 last:pb-0" data-testid={`price-${row.grade}`}>
               <p className="text-meta font-medium text-muted">{row.label}</p>
@@ -225,14 +225,18 @@ function PricesCard({ card }: { card: Card }) {
                     <span className="ml-2 text-[15px] font-medium text-muted">{formatSgd(row.sgd!)}</span>
                   </p>
                   <p className="mt-1 text-meta text-ink">
-                    <a
-                      href={row.url!}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline decoration-line underline-offset-2 hover:decoration-ink"
-                    >
-                      {row.source}
-                    </a>
+                    {row.url ? (
+                      <a
+                        href={row.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline decoration-line underline-offset-2 hover:decoration-ink"
+                      >
+                        {row.source}
+                      </a>
+                    ) : (
+                      <span>{row.source}</span>
+                    )}
                     <span className="text-muted"> · {row.detail} · {formatDate(row.asOf!)}</span>
                   </p>
                 </>

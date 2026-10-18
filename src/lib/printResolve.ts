@@ -1,8 +1,7 @@
 /**
- * A sheet code is a price only when it names one seed print.
- * `OP09-004` and `OP09-004p3` are print ids. `OP09-004 SP` is a variant word:
- * it prices only when that word matches one print, and never the base print
- * just because the number sits inside the text.
+ * Print ids are `OP09-004` and `OP09-004p3`. A capital P is the same id.
+ * A variant word such as `OP09-004 SP` is not an id. Holdings never price
+ * from the sheet code. Watchlist rows store an id, or they are rejected.
  */
 
 export interface PrintRow {
@@ -20,7 +19,7 @@ export interface WatchPrintFailure {
   candidates: string[]
 }
 
-const PRINT = /[A-Za-z]{1,4}\d{0,3}-\d{3}(?:p\d+)?/
+const PRINT = /[A-Za-z]{1,4}\d{0,3}-\d{3}(?:[pP]\d+)?/
 
 export function canonicalPrintId(raw: string): string {
   return raw.toUpperCase().replace(/P(\d+)$/, 'p$1')
@@ -67,7 +66,15 @@ function findExact(rows: PrintRow[], id: string): PrintRow | undefined {
   return rows.find((row) => row.cardNumber.toUpperCase() === want)
 }
 
-/** The one print a holding may be priced as. Null means there is no stored price. */
+/** An id with no leftover words, capital P accepted (`OP09-004P3` is `OP09-004p3`). */
+export function exactPrintId(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null
+  const split = splitPrintCode(raw)
+  if (!split || split.rest) return null
+  return split.id
+}
+
+/** The one print a variant word names. Holdings do not use this for a stored price. */
 export function resolveHoldingPrint(code: string, rows: PrintRow[]): PrintRow | null {
   const split = splitPrintCode(code)
   if (!split) return null

@@ -88,6 +88,7 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
           language: print ? print.language || null : null,
           grade: item.grade,
           targetSgd: item.targetSgd ?? null,
+          id: item.id,
           externalId: item.externalId ?? null,
         };
       });

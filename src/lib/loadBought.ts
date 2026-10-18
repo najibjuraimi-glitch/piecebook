@@ -1,8 +1,8 @@
 import fixtureCsv from '../../data/bought-fixture.csv?raw'
 import historyCsv from '../../data/portfolio-history.csv?raw'
 import { parseCsv } from '../data/csv'
-import { ALL_CARDS, getCard, type Card } from '../data/seed'
-import { resolveHoldingPrint, type PrintRow } from './printResolve'
+import { getCard, type Card } from '../data/seed'
+import { exactPrintId } from './printResolve'
 import { advicePrices } from './cardPrices'
 import {
   parseBoughtMatrix,
@@ -35,18 +35,10 @@ export interface LoadedBook {
  * median is not a price for an English holding. Raw is the Limitless
  * ungraded market of this exact print.
  */
-const PRINTS: PrintRow[] = ALL_CARDS.map((card) => ({
-  cardNumber: card.cardNumber,
-  baseNumber: card.baseNumber,
-  variant: card.variant || '',
-  rarity: card.rarity,
-  language: card.language,
-}))
-
 export function legalQuote(code: string, grade: LegalGrade | null): PriceQuote | null {
   if (!code || !grade) return null
-  const print = resolveHoldingPrint(code, PRINTS)
-  const card = print ? getCard(print.cardNumber) : undefined
+  const id = exactPrintId(code)
+  const card = id ? getCard(id) : undefined
   if (!card || card.language.toUpperCase() !== 'EN') return null
   if (grade !== 'raw') {
     const printing = grade === 'psa10' ? card.psa10Printing : card.psa9Printing

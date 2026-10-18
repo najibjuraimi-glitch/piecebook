@@ -10,7 +10,7 @@
  * target. The same price does not fire again. A Japanese price is never used.
  */
 import { valueCopies } from "../../src/lib/boughtBook.ts";
-import { currentAlerts, dismissAlertIds, forgetWatchId, normaliseAlerts } from "../../src/lib/alertsBook.ts";
+import { currentAlerts, dismissAlertIds, forgetAlertKey, nextFiredStamp, normaliseAlerts } from "../../src/lib/alertsBook.ts";
 import { boughtCopyFromHolding, emptyHoldings } from "../../src/lib/holdings.ts";
 import { emptyWatch, valueWatchItems } from "../../src/lib/watchlist.ts";
 import { writerAllowed } from "./access.js";
@@ -75,30 +75,39 @@ export async function handleAlerts(req, env, identity, cors, deps = {}) {
   if (declared > MAX_BODY) return json({ error: "too_large" }, 413, cors);
 
   if (req.method === "GET" && parts.length === 1) {
-    const includeDismissed = url.searchParams.get("includeDismissed") === "1";
+    const dismissedFlag = url.searchParams.get("includeDismissed");
+    const includeDismissed = dismissedFlag === "1" || dismissedFlag === "true";
     const sinceRaw = url.searchParams.get("since");
     let sinceMs = null;
     if (sinceRaw) {
       sinceMs = Date.parse(sinceRaw);
       if (!Number.isFinite(sinceMs)) return json({ error: "bad_since" }, 400, cors);
     }
-    const alerts = await readAlerts(kv, email);
-    const current = hitsFor(await readHoldings(kv, email), await readWatch(kv, email), alerts, today, includeDismissed);
+    let alerts = await readAlerts(kv, email);
+    let current = hitsFor(await readHoldings(kv, email), await readWatch(kv, email), alerts, today, includeDismissed);
     const nowIso = new Date(now).toISOString();
-    const firedAt = { ...(alerts.firedAt || {}) };
-    let changed = false;
+    let plan = nextFiredStamp(alerts, [...current.underAllIn, ...current.watchlist], nowIso);
+    if (plan.changed) {
+      const fresh = await readAlerts(kv, email);
+      if (fresh.revision === alerts.revision) {
+        current = hitsFor(await readHoldings(kv, email), await readWatch(kv, email), fresh, today, includeDismissed);
+        plan = nextFiredStamp(fresh, [...current.underAllIn, ...current.watchlist], nowIso);
+        if (plan.changed) {
+          alerts = { ...fresh, firedAt: plan.firedAt, firedPrice: plan.firedPrice };
+          await kv.put(keyFor(email, ALERTS), JSON.stringify(alerts));
+        } else alerts = fresh;
+      } else {
+        alerts = fresh;
+        current = hitsFor(await readHoldings(kv, email), await readWatch(kv, email), fresh, today, includeDismissed);
+        plan = { firedAt: fresh.firedAt, firedPrice: fresh.firedPrice, changed: false };
+      }
+    }
     const stamp = (alert) => {
       const key = alert.type === "watchlist" ? `watchlist:${alert.id}` : `underAllIn:${alert.rowId}`;
-      const isNew = !alert.dismissed && (alert.previousLowSgd != null || !firedAt[key]);
-      if (isNew && firedAt[key] !== nowIso) {
-        firedAt[key] = nowIso;
-        changed = true;
-      }
-      return { ...alert, firedAt: firedAt[key] || null };
+      return { ...alert, firedAt: plan.firedAt[key] || alerts.firedAt[key] || null };
     };
     let underAllIn = current.underAllIn.map(stamp);
     let watchlist = current.watchlist.map(stamp);
-    if (changed) await kv.put(keyFor(email, ALERTS), JSON.stringify({ ...alerts, firedAt }));
     if (sinceMs != null) {
       const after = (alert) => alert.firedAt && Date.parse(alert.firedAt) > sinceMs;
       underAllIn = underAllIn.filter(after);
@@ -118,13 +127,21 @@ export async function handleAlerts(req, env, identity, cors, deps = {}) {
         return json({ error: "bad_request" }, 400, cors);
       }
     }
-    const alerts = await readAlerts(kv, email);
-    const current = hitsFor(await readHoldings(kv, email), await readWatch(kv, email), alerts, today);
-    const result = dismissAlertIds(alerts, body, current.underAllIn, current.watchlist, writeNote(identity, now, "dismiss"));
+    let alerts = await readAlerts(kv, email);
+    let current = hitsFor(await readHoldings(kv, email), await readWatch(kv, email), alerts, today);
+    let result = dismissAlertIds(alerts, body, current.underAllIn, current.watchlist, writeNote(identity, now, "dismiss"));
     if (!result.ok) return fail(result, cors);
     if (result.changed) {
-      await kv.put(keyFor(email, ALERTS), JSON.stringify(result.doc));
-      log({ evt: "alerts_write", op: "dismiss", caller: callerOf(identity), at: new Date(now).toISOString() });
+      const fresh = await readAlerts(kv, email);
+      if (fresh.revision !== alerts.revision) return json({ error: "revision_conflict", revision: fresh.revision }, 409, cors);
+      current = hitsFor(await readHoldings(kv, email), await readWatch(kv, email), fresh, today);
+      result = dismissAlertIds(fresh, body, current.underAllIn, current.watchlist, writeNote(identity, now, "dismiss"));
+      if (!result.ok) return fail(result, cors);
+      if (result.changed) {
+        alerts = result.doc;
+        await kv.put(keyFor(email, ALERTS), JSON.stringify(alerts));
+        log({ evt: "alerts_write", op: "dismiss", caller: callerOf(identity), at: new Date(now).toISOString() });
+      }
     }
     const next = hitsFor(await readHoldings(kv, email), await readWatch(kv, email), result.doc, today);
     return json({ source: "piecebook", revision: result.doc.revision, ...next, writes: result.doc.writes }, 200, cors);
@@ -134,9 +151,17 @@ export async function handleAlerts(req, env, identity, cors, deps = {}) {
 }
 
 /** Called when a watch row is removed, so that id's dismissal does not silence a later row. */
-export async function forgetWatchAlert(kv, email, id) {
+async function forgetKind(kv, email, kind, id) {
   const alerts = await readAlerts(kv, email);
-  const result = forgetWatchId(alerts, id);
+  const result = forgetAlertKey(alerts, kind, id);
   if (!result.changed) return;
   await kv.put(keyFor(email, ALERTS), JSON.stringify(result.doc));
+}
+
+export async function forgetWatchAlert(kv, email, id) {
+  await forgetKind(kv, email, "watchlist", id);
+}
+
+export async function forgetHoldingAlert(kv, email, rowId) {
+  await forgetKind(kv, email, "underAllIn", rowId);
 }

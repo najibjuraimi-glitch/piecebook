@@ -68,6 +68,7 @@ export interface WatchHit {
   previousLowSgd: number | null
   dismissed?: boolean
   firedAt?: string | null
+  externalId?: string | null
 }
 
 export interface WatchFailure {
@@ -162,6 +163,7 @@ export function watchAlertList(items: ValuedWatchItem[], memory: AlertMemory, in
       stale: false,
       previousLowSgd: prev ?? null,
       dismissed,
+      externalId: item.externalId ?? null,
     })
   }
   return hits
@@ -186,6 +188,7 @@ export function freshWatchHits(items: ValuedWatchItem[], memory: AlertMemory): W
         stale: item.stale,
         previousLowSgd: prev ?? null,
         dismissed: false,
+        externalId: item.externalId ?? null,
       })
     }
   }

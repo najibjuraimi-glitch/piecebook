@@ -15,8 +15,10 @@ export interface AlertsDoc {
   revision: number
   underAllIn: AlertMemory
   watchlist: AlertMemory
-  /** First time each alert fired, keyed `underAllIn:<rowId>` or `watchlist:<id>`. Not a revision. */
+  /** Time each alert first fired at the current low. Keyed `underAllIn:<rowId>` or `watchlist:<id>`. */
   firedAt: Record<string, string>
+  /** The price that firedAt belongs to. A strictly lower price is a new low. */
+  firedPrice: Record<string, number>
   writes: AlertWrite[]
 }
 
@@ -31,7 +33,7 @@ export interface AlertsFailure {
 const MAX_WRITES = 2000
 
 export function emptyAlerts(): AlertsDoc {
-  return { revision: 0, underAllIn: {}, watchlist: {}, firedAt: {}, writes: [] }
+  return { revision: 0, underAllIn: {}, watchlist: {}, firedAt: {}, firedPrice: {}, writes: [] }
 }
 
 export function normaliseAlerts(doc: unknown): AlertsDoc {
@@ -42,6 +44,7 @@ export function normaliseAlerts(doc: unknown): AlertsDoc {
     underAllIn: memoryOf(raw.underAllIn),
     watchlist: memoryOf(raw.watchlist),
     firedAt: stringsOf((raw as { firedAt?: unknown }).firedAt),
+    firedPrice: memoryOf((raw as { firedPrice?: unknown }).firedPrice),
     writes: Array.isArray(raw.writes) ? raw.writes.filter(isWrite) : [],
   }
 }
@@ -127,15 +130,52 @@ export function dismissAlertIds(
       underAllIn: dismissAlerts(doc.underAllIn, underHits),
       watchlist: dismissWatchHits(doc.watchlist, watchHits),
       firedAt: doc.firedAt,
+      firedPrice: doc.firedPrice,
       writes: writes.length > MAX_WRITES ? writes.slice(writes.length - MAX_WRITES) : writes,
     },
   }
 }
 
-/** Drop one watch id's dismissal without moving the alerts revision. */
+/** Drop one alert's dismissal and firedAt without moving the alerts revision. */
+export function forgetAlertKey(doc: AlertsDoc, kind: 'watchlist' | 'underAllIn', id: string): { doc: AlertsDoc; changed: boolean } {
+  const stamp = `${kind}:${id}`
+  const memory = { ...(kind === 'watchlist' ? doc.watchlist : doc.underAllIn) }
+  const hadMemory = memory[id] != null
+  const hadFire = doc.firedAt[stamp] != null || doc.firedPrice[stamp] != null
+  if (!hadMemory && !hadFire) return { doc, changed: false }
+  delete memory[id]
+  const firedAt = { ...doc.firedAt }
+  const firedPrice = { ...doc.firedPrice }
+  delete firedAt[stamp]
+  delete firedPrice[stamp]
+  if (kind === 'watchlist') return { changed: true, doc: { ...doc, watchlist: memory, firedAt, firedPrice } }
+  return { changed: true, doc: { ...doc, underAllIn: memory, firedAt, firedPrice } }
+}
+
 export function forgetWatchId(doc: AlertsDoc, id: string): { doc: AlertsDoc; changed: boolean } {
-  if (doc.watchlist[id] == null) return { doc, changed: false }
-  const watchlist = { ...doc.watchlist }
-  delete watchlist[id]
-  return { changed: true, doc: { ...doc, watchlist } }
+  return forgetAlertKey(doc, 'watchlist', id)
+}
+
+/** Stamp firedAt only when this price is a new low. The same price keeps its time. */
+export function nextFiredStamp(
+  doc: AlertsDoc,
+  alerts: Array<{ type?: string; rowId?: string; id?: string; dismissed?: boolean; legalSgd?: number; priceSgd?: number }>,
+  nowIso: string,
+): { firedAt: Record<string, string>; firedPrice: Record<string, number>; changed: boolean } {
+  const firedAt = { ...doc.firedAt }
+  const firedPrice = { ...doc.firedPrice }
+  let changed = false
+  for (const alert of alerts) {
+    if (alert.dismissed) continue
+    const key = alertKey(alert)
+    const price = alert.type === 'watchlist' ? alert.priceSgd : alert.legalSgd
+    if (price == null) continue
+    const prev = firedPrice[key]
+    if (prev == null || price < prev) {
+      firedAt[key] = nowIso
+      firedPrice[key] = price
+      changed = true
+    }
+  }
+  return { firedAt, firedPrice, changed }
 }

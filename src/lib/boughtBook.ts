@@ -5,6 +5,8 @@
  * figure is used. Nothing here writes to a spreadsheet.
  */
 
+import { exactPrintId } from './printResolve'
+
 export const STALE_AFTER_DAYS = 7
 
 export const BOUGHT_HEADERS = [
@@ -261,8 +263,8 @@ export function httpsUrl(raw: string): string | null {
   return t
 }
 
-/** The card number inside a sheet code. `OP09-004 SP` is `OP09-004`. A parallel id stays. */
-const PRINT_CODE = /[A-Za-z]{1,4}\d{0,3}-\d{3}(?:p\d+)?/
+/** The card number inside a sheet code. `OP09-004 SP` is `OP09-004`. A parallel id stays. Capital P is the same as p. */
+const PRINT_CODE = /[A-Za-z]{1,4}\d{0,3}-\d{3}(?:[pP]\d+)?/
 
 export function printCode(raw: string): string {
   const found = raw.match(PRINT_CODE)
@@ -403,7 +405,7 @@ function manualQuote(copy: BoughtCopy): PriceQuote | null {
     usd: null,
     sgd: round2(copy.manualMarketSgd),
     source: copy.manualSource.trim() || 'Manual',
-    url: null,
+    url: copy.priceChartingUrl ?? null,
     asOf,
     detail: asOf ? null : 'Undated',
   }
@@ -425,9 +427,8 @@ export function valueCopies(
   today: string,
 ): ValuedCopy[] {
   return copies.map((copy) => {
-    const exact = copy.exactPrint?.trim()
-    const code = exact ? (/^[A-Za-z]{1,4}\d{0,3}-\d{3}(?:p\d+)?$/.test(exact) ? exact : '') : copy.code
-    return valueCopy(copy, code ? quoteFor(code, copy.grade) : null, today)
+    const id = exactPrintId(copy.exactPrint)
+    return valueCopy(copy, id ? quoteFor(id, copy.grade) : null, today)
   })
 }
 

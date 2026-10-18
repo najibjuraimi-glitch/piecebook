@@ -296,7 +296,7 @@ function applyFields(base: Holding, body: Record<string, unknown>, keys: string[
         next.exactPrint = null
         continue
       }
-      if (typeof value !== 'string' || !/^[A-Za-z]{1,4}\d{0,3}-\d{3}(?:p\d+)?$/.test(value.trim())) return fail(400, 'bad_field', key)
+      if (typeof value !== 'string' || !/^[A-Za-z]{1,4}\d{0,3}-\d{3}(?:[pP]\d+)?$/.test(value.trim())) return fail(400, 'bad_field', key)
       next.exactPrint = value.trim().toUpperCase().replace(/P(\d+)$/, 'p$1')
       continue
     }
@@ -436,6 +436,19 @@ export function patchHolding(
 }
 
 const SALE_KEYS = ['soldDate', 'soldPrice', 'currency', 'saleFx', 'channel', 'feesSgd', 'shippingOutSgd', 'netSgd', 'realizedSgd']
+
+export function deleteHolding(
+  doc: HoldingsDoc,
+  rowId: string,
+  body: unknown,
+): { ok: true; doc: HoldingsDoc } | HoldingFailure {
+  const raw = asRecord(body)
+  if (!raw) return fail(400, 'bad_request')
+  const rev = checkRevision(doc, raw)
+  if (rev) return rev
+  if (!doc.copies.some((copy) => copy.rowId === rowId)) return fail(404, 'not_found')
+  return { ok: true, doc: { revision: doc.revision + 1, copies: doc.copies.filter((copy) => copy.rowId !== rowId) } }
+}
 
 export function markSold(
   doc: HoldingsDoc,

@@ -6,7 +6,7 @@
  */
 import { parseCsv } from '../data/csv'
 import { type LegalGrade, type PriceQuote } from './boughtBook'
-import { resolveHoldingPrint, type PrintRow } from './printResolve'
+import { exactPrintId, type PrintRow } from './printResolve'
 import { usdToSgd } from './fx'
 
 const PARALLEL_RE = /p\d+$/i
@@ -39,12 +39,12 @@ function rawQuote(row: SeedRow): PriceQuote | null {
   const asOf = /^\d{4}-\d{2}-\d{2}$/.test(row.as_of || '') ? row.as_of : null
   const usd = row.market_usd === '' || row.market_usd == null ? NaN : Number(row.market_usd)
   if (!Number.isFinite(usd) || usd < 0 || !asOf) return null
-  const base = row.card_number.replace(PARALLEL_RE, '')
+  const parallel = PARALLEL_RE.test(row.card_number)
   return {
     usd,
     sgd: usdToSgd(usd),
     source: 'Limitless',
-    url: `https://onepiece.limitlesstcg.com/cards/en/${encodeURIComponent(base)}`,
+    url: parallel ? null : `https://onepiece.limitlesstcg.com/cards/en/${encodeURIComponent(row.card_number)}`,
     asOf,
     detail: 'ungraded TCGplayer market',
   }
@@ -86,22 +86,12 @@ function rowFor(rows: Map<string, SeedRow>, id: string): SeedRow | undefined {
   return rows.get(id) ?? rows.get(id.toUpperCase()) ?? [...rows.entries()].find(([key]) => key.toUpperCase() === id.toUpperCase())?.[1]
 }
 
-const printCache = new WeakMap<Map<string, SeedRow>, PrintRow[]>()
-
-function printsFor(rows: Map<string, SeedRow>): PrintRow[] {
-  const cached = printCache.get(rows)
-  if (cached) return cached
-  const prints = printsFromSeedRows(rows.values())
-  printCache.set(rows, prints)
-  return prints
-}
-
-/** English stored quote for this print and grade. A variant word prices only when it names one print. Never the base, and never a Japanese figure. */
+/** English stored quote for an exact print id. A variant word is not a price. Never the base, and never a Japanese figure. */
 export function quoteStored(rows: Map<string, SeedRow>, code: string, grade: LegalGrade | null): PriceQuote | null {
   if (!code || (grade !== 'raw' && grade !== 'psa9' && grade !== 'psa10')) return null
-  const print = resolveHoldingPrint(code, printsFor(rows))
-  if (!print) return null
-  const row = rowFor(rows, print.cardNumber)
+  const id = exactPrintId(code)
+  if (!id) return null
+  const row = rowFor(rows, id)
   if (!row) return null
   const lang = (row.language || '').trim().toUpperCase()
   if (lang !== 'EN') return null
