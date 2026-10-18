@@ -102,7 +102,9 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
           priceSgd: valued.priceSgd,
           source: valued.source,
           asOf: valued.asOf,
+          url: valued.url,
           stale: valued.stale,
+          hit: valued.hit,
         };
       });
       return json({ source: "piecebook", revision: doc.revision, targets }, 200, cors);
