@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISION_URL } from '../config/vision'
-import { compareFrames, greyDownscale, initialSceneHold, markSceneScanned, nextDryStreak, scanIntervalOpen, sceneMoved, stepSceneHold, substantialSceneChange, type GreyFrame, type SceneHold } from '../lib/cardFrame'
+import { compareFrames, emptySeen, forgetsSeenCards, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, scanIntervalOpen, sceneMoved, stepFrameHold, stepSceneHold, substantialSceneChange, unreadBoxMotion, type GreyFrame, type SceneHold } from '../lib/cardFrame'
 import type { PixelImage } from '../lib/centering'
 import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
 import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
@@ -116,7 +116,13 @@ export function ScanLive({
   const lastScanAt = useRef<number | null>(null)
   const busyRef = useRef(false)
   const failuresRef = useRef(0)
-  const seenCards = useRef(new Set<string>())
+  const seenCards = useRef(emptySeen())
+  const seenFrame = useRef<GreyFrame | null>(null)
+  const pauseAnchor = useRef<GreyFrame | null>(null)
+  const movedReads = useRef(0)
+  const prevTickFrame = useRef<GreyFrame | null>(null)
+  const frameSteadySince = useRef<number | null>(null)
+  const heldRef = useRef(false)
   const dryStreak = useRef(0)
   const autoPausedRef = useRef(false)
   const usageFromScan = useRef(false)
@@ -134,9 +140,14 @@ export function ScanLive({
   const [readPct, setReadPct] = useState(0)
   const [readError, setReadError] = useState<string | null>(null)
   const [autoPaused, setAutoPaused] = useState(false)
+  const [held, setHeld] = useState(false)
+  const [labelShift, setLabelShift] = useState({ x: 0, y: 0 })
   const [shot, setShot] = useState<LiveShot | null>(null)
   const [labelsCurrent, setLabelsCurrent] = useState(false)
   const [shutterReady, setShutterReady] = useState(false)
+  const shutterReadyRef = useRef(false)
+  const queuedTap = useRef(false)
+  const shutterTimer = useRef(0)
   const [usage, setUsage] = useState<{ today: number; cap: number } | null>(null)
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [videoSize, setVideoSize] = useState({ w: 0, h: 0 })
@@ -180,7 +191,6 @@ export function ScanLive({
     let cancelled = false
     let videoEl: HTMLVideoElement | null = null
     let markLive: (() => void) | null = null
-    let shutterTimer = 0
     const open = async () => {
       const high = { audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } } }
       const plain = { audio: false, video: { facingMode: { ideal: 'environment' } } }
@@ -209,7 +219,15 @@ export function ScanLive({
         video.addEventListener('loadedmetadata', markLive)
         video.addEventListener('resize', markLive)
         void video.play().then(markLive).catch(() => undefined)
-        shutterTimer = window.setTimeout(() => setShutterReady(true), SHUTTER_WAIT_MS)
+        window.clearTimeout(shutterTimer.current)
+        shutterTimer.current = window.setTimeout(() => {
+          shutterReadyRef.current = true
+          setShutterReady(true)
+          if (queuedTap.current) {
+            queuedTap.current = false
+            void sendRef.current(true)
+          }
+        }, SHUTTER_WAIT_MS)
       } catch (err) {
         if (cancelled) return
         unavailableRef.current(cameraErrorText(err))
@@ -218,7 +236,7 @@ export function ScanLive({
     void open()
     return () => {
       cancelled = true
-      window.clearTimeout(shutterTimer)
+      window.clearTimeout(shutterTimer.current)
       if (videoEl && markLive) {
         videoEl.removeEventListener('loadedmetadata', markLive)
         videoEl.removeEventListener('resize', markLive)
@@ -238,28 +256,58 @@ export function ScanLive({
 
   const clearAutoPause = useCallback(() => {
     autoPausedRef.current = false
+    pauseAnchor.current = null
     dryStreak.current = 0
     setAutoPaused(false)
   }, [])
 
+  const forgetSeen = () => {
+    seenCards.current = emptySeen()
+    seenFrame.current = null
+    dryStreak.current = 0
+  }
+
   const armShutter = useCallback(() => {
+    shutterReadyRef.current = false
     setShutterReady(false)
-    window.setTimeout(() => setShutterReady(true), SHUTTER_WAIT_MS)
+    window.clearTimeout(shutterTimer.current)
+    shutterTimer.current = window.setTimeout(() => {
+      shutterReadyRef.current = true
+      setShutterReady(true)
+      if (queuedTap.current) {
+        queuedTap.current = false
+        void sendRef.current(true)
+      }
+    }, SHUTTER_WAIT_MS)
   }, [])
 
   const send = useCallback(
     async (manual: boolean) => {
       if (busyRef.current) return
-      if (manual && !shutterReady) return
+      if (manual && !shutterReadyRef.current) {
+        queuedTap.current = true
+        return
+      }
       if (!manual && (autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
       const video = videoRef.current
       const stream = streamRef.current
       if (!video || !stream) return
       busyRef.current = true
+      if (heldRef.current) {
+        if (manual) {
+          movedReads.current = 0
+          frameSteadySince.current = null
+        }
+        heldRef.current = false
+        setHeld(false)
+      }
       if (!manual) holdRef.current = markSceneScanned(holdRef.current)
       const signature = frameGrey()
       setReading(true)
-      if (manual) setShutterReady(false)
+      if (manual) {
+        shutterReadyRef.current = false
+        setShutterReady(false)
+      }
       try {
         const blob = await captureStill(video, stream)
         if (!blob) {
@@ -284,30 +332,46 @@ export function ScanLive({
         failuresRef.current = 0
         const nowFrame = frameGrey()
         const motion = signature && nowFrame ? compareFrames(signature, nowFrame) : null
-        const movedSince = Boolean(motion && sceneMoved(motion))
+        const show = placeRead(motion) === 'show'
         setReadError(null)
         setShot({ scan: result.scan, file, targets: result.targets })
         if (result.usage) {
           usageFromScan.current = true
           setUsage(result.usage)
         }
-        setLabelsCurrent(!movedSince)
         setDim(false)
-        if (movedSince) {
-          if (motion && substantialSceneChange(motion)) {
-            seenCards.current = new Set()
-            dryStreak.current = 0
-          }
-          if (autoPausedRef.current) {
-            autoPausedRef.current = false
-            setAutoPaused(false)
-          }
+        if (motion && sceneMoved(motion)) movedReads.current += 1
+        else movedReads.current = 0
+        if (movedReads.current >= MOVED_HOLD_AFTER) {
+          heldRef.current = true
+          frameSteadySince.current = null
+          setHeld(true)
+        } else if (heldRef.current) {
+          heldRef.current = false
+          setHeld(false)
+        }
+        if (!show) {
+          setLabelsCurrent(false)
+          setLabelShift({ x: 0, y: 0 })
+          if (forgetsSeenCards(motion)) forgetSeen()
+          holdRef.current = rearmAfterDiscard(holdRef.current)
         } else {
-          const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards)
+          const width = signature?.width ?? nowFrame?.width ?? 1
+          const height = signature?.height ?? nowFrame?.height ?? 1
+          setLabelsCurrent(true)
+          setLabelShift(labelOffset(motion, width, height) ?? { x: 0, y: 0 })
+          const current = signature ?? nowFrame
+          const from = seenFrame.current
+          const between = from && current ? compareFrames(from, current) : null
+          if (forgetsSeenCards(between)) forgetSeen()
+          const boxMotion = unreadBoxMotion(between, from?.width ?? width, from?.height ?? height)
+          const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards, boxMotion)
           seenCards.current = outcome.seen
+          if (current) seenFrame.current = current
           dryStreak.current = outcome.streak
           if (outcome.pause) {
             autoPausedRef.current = true
+            pauseAnchor.current = current
             setAutoPaused(true)
           } else if (outcome.streak === 0) {
             autoPausedRef.current = false
@@ -320,7 +384,7 @@ export function ScanLive({
         if (manual) armShutter()
       }
     },
-    [armShutter, frameGrey, onScan, shutterReady],
+    [armShutter, frameGrey, onScan],
   )
   sendRef.current = send
 
@@ -349,22 +413,40 @@ export function ScanLive({
       if (video) {
         const pixels = analysisFrame(video, canvas)
         if (pixels) {
-          const step = stepSceneHold(holdRef.current, greyDownscale(pixels), Date.now())
+          const frame = greyDownscale(pixels)
+          const now = Date.now()
+          const step = stepSceneHold(holdRef.current, frame, now)
           holdRef.current = step.state
+          if (autoPausedRef.current && pauseAnchor.current) {
+            const fromPause = compareFrames(pauseAnchor.current, frame)
+            if (substantialSceneChange(fromPause)) {
+              forgetSeen()
+              autoPausedRef.current = false
+              pauseAnchor.current = null
+              setAutoPaused(false)
+              failuresRef.current = 0
+              holdRef.current = { anchor: frame, steadySince: now, misses: 0, scanned: false }
+            }
+          }
           if (step.moved) {
             failuresRef.current = 0
             setDim(true)
-            if (step.motion && substantialSceneChange(step.motion)) {
-              seenCards.current = new Set()
-              dryStreak.current = 0
-            }
-            if (autoPausedRef.current) {
-              autoPausedRef.current = false
-              dryStreak.current = 0
-              setAutoPaused(false)
-            }
+            if (forgetsSeenCards(step.motion)) forgetSeen()
           } else if (step.steady) setDim(false)
-          if (step.ready && !autoPausedRef.current) void sendRef.current(false)
+          if (movedReads.current >= MOVED_HOLD_AFTER) {
+            const hop = prevTickFrame.current ? compareFrames(prevTickFrame.current, frame) : null
+            const hopped = Boolean(hop && sceneMoved(hop))
+            const settled = stepFrameHold(frameSteadySince.current, hopped, now, MOVED_HOLD_MS)
+            frameSteadySince.current = settled.since
+            if (!heldRef.current) {
+              heldRef.current = true
+              setHeld(true)
+            }
+            if (settled.ready && !autoPausedRef.current) void sendRef.current(false)
+          } else if (step.ready && !autoPausedRef.current) {
+            void sendRef.current(false)
+          }
+          prevTickFrame.current = frame
         }
       }
       timer = window.setTimeout(tick, 200)
@@ -381,7 +463,11 @@ export function ScanLive({
   const lowCap = capLeft != null && capLeft <= 10
   const scan = labelsCurrent ? shot?.scan ?? null : null
   const spots = placeOverlayLabels(
-    (scan?.cards ?? []).filter((card) => card.box).map((card) => ({ index: card.index, x: card.box!.x * place.w, y: card.box!.y * place.h })),
+    (scan?.cards ?? []).filter((card) => card.box).map((card) => ({
+      index: card.index,
+      x: (card.box!.x + labelShift.x) * place.w,
+      y: (card.box!.y + labelShift.y) * place.h,
+    })),
     { x: place.x, y: place.y, w: place.w, h: place.h },
   )
   const spotFor = new Map(spots.map((spot) => [spot.index, spot]))
@@ -440,6 +526,11 @@ export function ScanLive({
               <div className={`h-full bg-white ${readPct >= 1 ? 'scan-read-bar w-1/3' : ''}`} style={readPct >= 1 ? undefined : { width: `${readPct * 100}%` }} />
             </div>
           </div>
+        )}
+        {held && !reading && !autoPaused && (
+          <button type="button" data-testid="scan-settle" onClick={() => void sendRef.current(true)} className="absolute inset-x-4 bottom-4 rounded-xl bg-white px-3 py-3 text-center text-[16px] font-semibold text-black">
+            Hold still, tap to scan
+          </button>
         )}
         {autoPaused && labelsCurrent && (
           <button type="button" data-testid="scan-hold" onClick={clearAutoPause} className="absolute inset-x-4 top-16 rounded-xl bg-white px-3 py-3 text-center text-[16px] font-semibold text-black">

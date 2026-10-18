@@ -22,22 +22,35 @@ import {
   glareReport,
   homographyFromQuads,
   SCAN_INTERVAL_MS,
+  BOX_MOTION_RESIDUAL,
+  MOVED_HOLD_MS,
   SCENE_MOVE_FRAC,
   SCENE_MOVE_MAD,
   SCENE_STEADY_MS,
+  boxIoU,
   compareFrames,
+  emptySeen,
   greyDownscale,
   initialLiveView,
   initialSceneHold,
   insideQuad,
   invertMat3,
+  forgetsSeenCards,
+  labelOffset,
   markSceneScanned,
   nextDryStreak,
+  placeRead,
+  rearmAfterDiscard,
   pickCleanerFrame,
   scanIntervalOpen,
   sceneMoved,
   sharpness,
+  simulateDriftScans,
+  simulatePausedMotion,
+  steadyWaitMs,
+  stepFrameHold,
   substantialSceneChange,
+  unreadBoxMotion,
   shrinkQuad,
   stepLiveView,
   stepSceneHold,
@@ -792,7 +805,7 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(sceneMoved(still)).toBe(false)
   })
 
-  it('keeps a 0.5% to 1% tremble and a 10% exposure change on the same view', () => {
+  it('keeps a 0.5% to 1% tremble and a 10% exposure change on the generated case grid', () => {
     const full = loadJpegFixture('full.jpg')
     const anchor = greyDownscale(full)
     for (const frac of [0.0025, -0.0025, 0.005, -0.005, 0.01, -0.01]) {
@@ -817,14 +830,39 @@ describe('case view: one steady second, then not the same scene again', () => {
     step = stepSceneHold(step.state, greyDownscale(expose(full, 1.1)), t)
     expect(step.moved).toBe(false)
     expect(step.steady).toBe(true)
-    const ten = compareFrames(anchor, greyDownscale(translateImage(full, 0.1)))
-    const twenty = compareFrames(anchor, greyDownscale(translateImage(full, 0.2)))
-    expect(substantialSceneChange(ten)).toBe(false)
-    expect(substantialSceneChange(twenty)).toBe(true)
+  })
+
+  it('resets a portrait frame on a sideways pan of about 20% of the width', () => {
+    const portrait = loadJpegFixture('portrait.jpg')
+    const anchor = greyDownscale(portrait)
+    expect(anchor.height).toBeGreaterThan(anchor.width)
+    const side = compareFrames(anchor, greyDownscale(translateImage(portrait, 0.2)))
+    expect(Math.abs(Math.abs(side.dx) / anchor.width - 0.2)).toBeLessThan(0.04)
+    expect(side.shiftFrac).toBeGreaterThanOrEqual(0.18)
+    expect(substantialSceneChange(side)).toBe(true)
+    const smaller = compareFrames(anchor, greyDownscale(translateImage(portrait, 0.1)))
+    expect(sceneMoved(smaller)).toBe(true)
+    expect(substantialSceneChange(smaller)).toBe(false)
+  })
+
+  it('waits three seconds of steadiness after two moved reads, and one second otherwise', () => {
+    expect(steadyWaitMs(0)).toBe(SCENE_STEADY_MS)
+    expect(steadyWaitMs(1)).toBe(SCENE_STEADY_MS)
+    expect(steadyWaitMs(2)).toBe(MOVED_HOLD_MS)
+    let step = stepSceneHold(initialSceneHold(), base, 0, MOVED_HOLD_MS)
+    step = stepSceneHold(step.state, base, 100, MOVED_HOLD_MS)
+    step = stepSceneHold(step.state, base, 100 + SCENE_STEADY_MS, MOVED_HOLD_MS)
+    expect(step.steady).toBe(true)
+    expect(step.ready).toBe(false)
+    step = stepSceneHold(step.state, base, 100 + MOVED_HOLD_MS, MOVED_HOLD_MS)
+    expect(step.ready).toBe(true)
+    const jumped = stepSceneHold(step.state, base, 50, MOVED_HOLD_MS)
+    expect(jumped.state.steadySince).toBe(50)
+    expect(jumped.ready).toBe(false)
   })
 
   it('pauses after three scans that add no new card', () => {
-    let seen = new Set<string>()
+    let seen = emptySeen()
     let streak = 0
     const step = (cards: { printId?: string | null; codeText?: string | null }[]) => {
       const next = nextDryStreak(seen, streak, cards)
@@ -839,7 +877,7 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(step([{ printId: '', codeText: '  ' }]).pause).toBe(true)
     expect(streak).toBe(3)
     const box = { x: 0.1, y: 0.2, w: 0.2, h: 0.3 }
-    const unread = nextDryStreak(new Set(), 2, [{ printId: '', codeText: '', box }])
+    const unread = nextDryStreak(emptySeen(), 2, [{ printId: '', codeText: '', box }])
     expect(unread.streak).toBe(0)
     expect(unread.pause).toBe(false)
     const samePlace = nextDryStreak(unread.seen, 0, [{ codeText: '', box: { x: 0.12, y: 0.18, w: 0.22, h: 0.28 } }])
@@ -852,5 +890,97 @@ describe('case view: one steady second, then not the same scene again', () => {
     const again = nextDryStreak(resumed.seen, resumed.streak, [{ codeText: 'EB04-003' }])
     expect(again.streak).toBe(1)
     expect(again.pause).toBe(false)
+  })
+
+  it('matches an unread slab by overlap after the shift, including y 0.25 and 0.247', () => {
+    const firstBox = { x: 0.2, y: 0.25, w: 0.3, h: 0.4 }
+    const nudged = { x: 0.2, y: 0.247, w: 0.3, h: 0.4 }
+    expect(Math.round(firstBox.y * 10) / 10).not.toBe(Math.round(nudged.y * 10) / 10)
+    expect(boxIoU(firstBox, nudged)).toBeGreaterThanOrEqual(0.5)
+    const first = nextDryStreak(emptySeen(), 2, [{ printId: '', codeText: '', box: firstBox }])
+    expect(first.streak).toBe(0)
+    expect(first.pause).toBe(false)
+    const second = nextDryStreak(first.seen, 0, [{ box: nudged }])
+    expect(second.streak).toBe(1)
+    expect(second.pause).toBe(false)
+    const slid = { x: 0.4, y: 0.25, w: 0.3, h: 0.4 }
+    expect(boxIoU(firstBox, slid)).toBeLessThan(0.5)
+    const width = 100
+    const shifted = nextDryStreak(first.seen, 0, [{ box: slid }], { dx: 0.2 * width, dy: 0, width, height: 80 })
+    expect(shifted.streak).toBe(1)
+    const trusted = { mad: 0, residual: BOX_MOTION_RESIDUAL - 1, dx: 20, dy: 0, shiftFrac: 0.2 }
+    const shaky = { ...trusted, residual: BOX_MOTION_RESIDUAL }
+    expect(unreadBoxMotion(trusted, width, 80)).toEqual({ dx: 20, dy: 0, width, height: 80 })
+    expect(unreadBoxMotion(shaky, width, 80)).toBeNull()
+    const refused = nextDryStreak(first.seen, 2, [{ box: slid }], unreadBoxMotion(shaky, width, 80))
+    expect(refused.streak).toBe(0)
+    expect(refused.pause).toBe(false)
+  })
+
+  it('stops a slow drift within three scans or with a pause', () => {
+    for (const drift of [0.003, 0.002]) {
+      const session = simulateDriftScans(drift, 360_000, 33_700)
+      expect(session.scans <= 3 || session.paused).toBe(true)
+    }
+  })
+
+  it('resumes a pause on a 45% pan and not on a slow drift', () => {
+    const pan = simulatePausedMotion(0.3, 1_500, 30_000)
+    expect(pan.resumed).toBe(true)
+    expect(pan.scans).toBeGreaterThan(0)
+    const drift = simulatePausedMotion(0.003, 60_000)
+    expect(drift.resumed).toBe(false)
+    expect(drift.scans).toBe(0)
+    const swapped = { mad: 20, residual: 8.1, dx: 8, dy: 0, shiftFrac: 0.08 }
+    expect(placeRead(swapped)).toBe('discard')
+    const slide = { mad: 20, residual: 5, dx: 8, dy: 0, shiftFrac: 0.08 }
+    expect(placeRead(slide)).toBe('show')
+    expect(labelOffset(slide, 100, 80)).toEqual({ x: 0.08, y: 0 })
+  })
+
+  it('shows a 0.75% tremor on the case grid unshifted, and a discard scans again', () => {
+    const full = loadJpegFixture('full.jpg')
+    const anchor = greyDownscale(full)
+    const motion = compareFrames(anchor, greyDownscale(translateSubpixel(full, 0.0075, 0.00225)))
+    expect(motion.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(motion.residual).toBeGreaterThanOrEqual(BOX_MOTION_RESIDUAL)
+    expect(placeRead(motion)).toBe('show')
+    expect(labelOffset(motion, anchor.width, anchor.height)).toEqual({ x: 0, y: 0 })
+    expect(sceneMoved(motion)).toBe(false)
+    expect(forgetsSeenCards(motion)).toBe(false)
+
+    const shadow = { mad: 20, residual: SCENE_MOVE_MAD + 3, dx: 1, dy: 0, shiftFrac: 0.02 }
+    expect(substantialSceneChange(shadow)).toBe(true)
+    expect(placeRead(shadow)).toBe('discard')
+    expect(forgetsSeenCards(shadow)).toBe(false)
+    const slidAway = { mad: 20, residual: 0, dx: 25, dy: 0, shiftFrac: 0.25 }
+    expect(forgetsSeenCards(slidAway)).toBe(true)
+    expect(placeRead(slidAway)).toBe('discard')
+
+    let step = stepSceneHold(initialSceneHold(), anchor, 0)
+    step = stepSceneHold(step.state, anchor, 100)
+    expect(step.steady).toBe(true)
+    expect(step.ready).toBe(false)
+    step = stepSceneHold(step.state, anchor, 100 + SCENE_STEADY_MS)
+    expect(step.ready).toBe(true)
+    const scanned = stepSceneHold(markSceneScanned(step.state), anchor, 100 + SCENE_STEADY_MS + 50)
+    expect(scanned.ready).toBe(false)
+    const rearmed = stepSceneHold(rearmAfterDiscard(scanned.state), anchor, 100 + SCENE_STEADY_MS + 100)
+    expect(rearmed.ready).toBe(true)
+    expect(rearmed.state.scanned).toBe(false)
+  })
+
+  it('times the moving-read hold from one frame to the next', () => {
+    let hold = stepFrameHold(null, false, 0)
+    expect(hold.ready).toBe(false)
+    hold = stepFrameHold(hold.since, false, SCENE_STEADY_MS)
+    expect(hold.ready).toBe(false)
+    hold = stepFrameHold(hold.since, true, SCENE_STEADY_MS + 200)
+    expect(hold.since).toBeNull()
+    hold = stepFrameHold(hold.since, false, 2000)
+    hold = stepFrameHold(hold.since, false, 2000 + MOVED_HOLD_MS)
+    expect(hold.ready).toBe(true)
+    const driftPerTick = 0.003 * 0.2
+    expect(driftPerTick).toBeLessThan(SCENE_MOVE_FRAC)
   })
 })

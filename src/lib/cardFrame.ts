@@ -527,6 +527,10 @@ export function stepLiveView(prev: LiveViewState, frame: FrameAssessment, now: n
 
 /** A case scan waits this long on one steady view before it sends the photo. */
 export const SCENE_STEADY_MS = 1000
+/** After this many reads that moved, automatic scans wait for a longer steady spell. */
+export const MOVED_HOLD_AFTER = 2
+/** Steady spell required once two reads in a row were taken while the phone was moving. */
+export const MOVED_HOLD_MS = 3000
 /** Do not send another automatic scan until this long after the last one. */
 export const SCAN_INTERVAL_MS = 4000
 /** Downscaled greyscale long edge used to see a pan across a case. */
@@ -537,6 +541,8 @@ export const SCENE_MOVE_FRAC = 0.06
 export const SCENE_RESET_FRAC = 0.2
 /** Residual difference, after aligning and removing exposure, above which the picture itself changed. */
 export const SCENE_MOVE_MAD = 12
+/** Unread boxes are shifted into the new frame only when the aligned pictures still agree. */
+export const BOX_MOTION_RESIDUAL = 6
 
 export interface GreyFrame {
   width: number
@@ -551,7 +557,7 @@ export interface FrameMotion {
   residual: number
   dx: number
   dy: number
-  /** Shift length as a share of the long edge. */
+  /** Shift length. X is a share of the width and y a share of the height, then combined. */
   shiftFrac: number
 }
 
@@ -752,12 +758,14 @@ export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
       residual = atZero
     }
   }
-  const shiftFrac = Math.hypot(shift.dx, shift.dy) / Math.max(anchor.width, anchor.height, 1)
+  const width = Math.max(anchor.width, 1)
+  const height = Math.max(anchor.height, 1)
+  const shiftFrac = Math.hypot(shift.dx / width, shift.dy / height)
   return { mad, residual, dx: shift.dx, dy: shift.dy, shiftFrac }
 }
 
 /**
- * Moved when the frame slid by about 6% of its length.
+ * Moved when the frame slid by about 6% of its width or its height.
  * A tremble or an exposure change stays put: the residual after aligning,
  * removing the mean, and blurring has to clear the bar on its own.
  */
@@ -765,9 +773,59 @@ export function sceneMoved(motion: FrameMotion): boolean {
   return motion.shiftFrac >= SCENE_MOVE_FRAC || motion.residual >= SCENE_MOVE_MAD
 }
 
-/** A large slide, or a picture that still disagrees after aligning. The seen cards belong to the view before this. */
+/** A slide of about 20% of the width or the height, or a picture that still disagrees after aligning. */
 export function substantialSceneChange(motion: FrameMotion): boolean {
   return motion.shiftFrac >= SCENE_RESET_FRAC || motion.residual >= SCENE_MOVE_MAD
+}
+
+/** One second against the anchor, or three after two moved reads. The three is frame-to-frame, not against the anchor. */
+export function steadyWaitMs(movedReads: number): number {
+  return movedReads >= MOVED_HOLD_AFTER ? MOVED_HOLD_MS : SCENE_STEADY_MS
+}
+
+/**
+ * Steadiness of the hold, measured from the previous frame to this one.
+ * A slow drift never trips it. A jerk clears the clock.
+ */
+export function stepFrameHold(since: number | null, frameMoved: boolean, now: number, holdMs = MOVED_HOLD_MS): { since: number | null; ready: boolean } {
+  if (frameMoved) return { since: null, ready: false }
+  const started = since != null && since <= now ? since : now
+  return { since: started, ready: now - started >= holdMs }
+}
+
+/**
+ * A returned read is kept when the phone has barely moved.
+ * The residual check applies only once the shift is a real slide (about 6%).
+ * Below that, drop the read only when the scene itself changed, and show it unshifted.
+ */
+export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
+  if (!motion) return 'show'
+  if (motion.shiftFrac < SCENE_MOVE_FRAC) return substantialSceneChange(motion) ? 'discard' : 'show'
+  if (motion.residual >= BOX_MOTION_RESIDUAL || substantialSceneChange(motion)) return 'discard'
+  return 'show'
+}
+
+/** Fraction to add to each label. Null when the read is discarded. Zero when the shift is under 6%. */
+export function labelOffset(motion: FrameMotion | null, width: number, height: number): { x: number; y: number } | null {
+  if (!motion || placeRead(motion) === 'discard') return placeRead(motion) === 'discard' ? null : { x: 0, y: 0 }
+  if (motion.shiftFrac < SCENE_MOVE_FRAC) return { x: 0, y: 0 }
+  return { x: motion.dx / Math.max(width, 1), y: motion.dy / Math.max(height, 1) }
+}
+
+/** A moving shadow (high residual, shift under 6%) does not wipe the cards already seen. */
+export function forgetsSeenCards(motion: FrameMotion | null): boolean {
+  return Boolean(motion && motion.shiftFrac >= SCENE_MOVE_FRAC && substantialSceneChange(motion))
+}
+
+/** A discarded read must be allowed to scan again. The same steady view is not stranded. */
+export function rearmAfterDiscard(state: SceneHold): SceneHold {
+  return { ...state, scanned: false }
+}
+
+/** Shift for unread boxes. A residual of 6 or more is not trusted. */
+export function unreadBoxMotion(motion: FrameMotion | null, width: number, height: number): BoxMotion | null {
+  if (!motion || motion.residual >= BOX_MOTION_RESIDUAL) return null
+  return { dx: motion.dx, dy: motion.dy, width, height }
 }
 
 /**
@@ -775,15 +833,20 @@ export function substantialSceneChange(motion: FrameMotion): boolean {
  * across a grid of slabs counts even when each quadrant stays the same brightness.
  * One mild flicker is forgiven. A real shift ends the spell.
  */
-export function stepSceneHold(prev: SceneHold, frame: GreyFrame, now: number): { state: SceneHold; steady: boolean; moved: boolean; ready: boolean; motion: FrameMotion | null } {
+export function stepSceneHold(
+  prev: SceneHold,
+  frame: GreyFrame,
+  now: number,
+  steadyMs = SCENE_STEADY_MS,
+): { state: SceneHold; steady: boolean; moved: boolean; ready: boolean; motion: FrameMotion | null } {
   if (!prev.anchor) {
     return { state: { anchor: frame, steadySince: null, misses: 0, scanned: false }, steady: false, moved: false, ready: false, motion: null }
   }
   const motion = compareFrames(prev.anchor, frame)
   if (!sceneMoved(motion)) {
-    const steadySince = prev.steadySince ?? now
+    const steadySince = prev.steadySince != null && prev.steadySince <= now ? prev.steadySince : now
     const state = { anchor: prev.anchor, steadySince, misses: 0, scanned: prev.scanned }
-    return { state, steady: true, moved: false, ready: !state.scanned && now - steadySince >= SCENE_STEADY_MS, motion }
+    return { state, steady: true, moved: false, ready: !state.scanned && now - steadySince >= steadyMs, motion }
   }
   const hard = motion.shiftFrac >= SCENE_MOVE_FRAC
   if (!hard && prev.misses < 1) {
@@ -792,38 +855,218 @@ export function stepSceneHold(prev: SceneHold, frame: GreyFrame, now: number): {
   return { state: { anchor: frame, steadySince: null, misses: 0, scanned: false }, steady: false, moved: true, ready: false, motion }
 }
 
-/** Print id, otherwise the code text. An unread slab is its place in this view. Blank when there is nothing to tell it by. */
-export function scanCardKey(card: { printId?: string | null; codeText?: string | null; box?: { x: number; y: number; w: number; h: number } | null }): string {
+/** Print id, otherwise the code text. An unread slab is matched by its box, not by this key. */
+export function scanCardKey(card: { printId?: string | null; codeText?: string | null }): string {
   const printId = (card.printId || '').trim()
   if (printId) return printId
-  const code = (card.codeText || '').trim()
-  if (code) return code
-  const box = card.box
-  if (!box) return ''
-  const q = (n: number) => Math.round(n * 10) / 10
-  return `box:${q(box.x)}:${q(box.y)}:${q(box.w)}:${q(box.h)}`
+  return (card.codeText || '').trim()
 }
+
+export interface CardBox {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/** Named cards, plus the boxes of slabs that had no code. Boxes are in the last frame's fractions. */
+export interface SeenCards {
+  keys: Set<string>
+  boxes: CardBox[]
+}
+
+export function emptySeen(): SeenCards {
+  return { keys: new Set(), boxes: [] }
+}
+
+/** Overlap over union. Zero when either box has no area. */
+export function boxIoU(a: CardBox, b: CardBox): number {
+  const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)
+  const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y)
+  if (w <= 0 || h <= 0) return 0
+  const inter = w * h
+  const union = a.w * a.h + b.w * b.h - inter
+  return union > 0 ? inter / union : 0
+}
+
+/** Move a box by a greyscale shift. dx is pixels across the frame width, dy across the height. */
+export function shiftBox(box: CardBox, dx: number, dy: number, width: number, height: number): CardBox {
+  return {
+    x: box.x + dx / Math.max(width, 1),
+    y: box.y + dy / Math.max(height, 1),
+    w: box.w,
+    h: box.h,
+  }
+}
+
+export interface BoxMotion {
+  dx: number
+  dy: number
+  width: number
+  height: number
+}
+
+const BOX_MATCH_IOU = 0.5
 
 /**
  * How many scans in a row added no new card. Three pauses the camera.
- * An empty key is not a new card. A key already seen is not a new card.
+ * An unread slab matches a box already seen when the overlap, after the
+ * measured shift between the two frames, is at least half the union.
  */
 export function nextDryStreak(
-  seen: ReadonlySet<string>,
+  seen: SeenCards,
   streak: number,
-  cards: { printId?: string | null; codeText?: string | null; box?: { x: number; y: number; w: number; h: number } | null }[],
-): { seen: Set<string>; streak: number; pause: boolean } {
-  const nextSeen = new Set(seen)
+  cards: { printId?: string | null; codeText?: string | null; box?: CardBox | null }[],
+  motion: BoxMotion | null = null,
+): { seen: SeenCards; streak: number; pause: boolean } {
+  const keys = new Set(seen.keys)
+  const boxes = seen.boxes.map((box) => (motion ? shiftBox(box, motion.dx, motion.dy, motion.width, motion.height) : { ...box }))
   let fresh = false
   for (const card of cards) {
     const key = scanCardKey(card)
-    if (!key || nextSeen.has(key)) continue
-    nextSeen.add(key)
+    if (key) {
+      if (keys.has(key)) continue
+      keys.add(key)
+      fresh = true
+      continue
+    }
+    const box = card.box
+    if (!box || !(box.w > 0) || !(box.h > 0)) continue
+    const hit = boxes.findIndex((prev) => boxIoU(prev, box) >= BOX_MATCH_IOU)
+    if (hit >= 0) {
+      boxes[hit] = { x: box.x, y: box.y, w: box.w, h: box.h }
+      continue
+    }
+    boxes.push({ x: box.x, y: box.y, w: box.w, h: box.h })
     fresh = true
   }
-  if (fresh) return { seen: nextSeen, streak: 0, pause: false }
+  if (fresh) return { seen: { keys, boxes }, streak: 0, pause: false }
   const next = streak + 1
-  return { seen: nextSeen, streak: next, pause: next >= 3 }
+  return { seen: { keys, boxes }, streak: next, pause: next >= 3 }
+}
+
+export interface DriftSession {
+  scans: number
+  moved: number
+  paused: boolean
+}
+
+/**
+ * A phone drifting while each read takes tens of seconds.
+ * Moderate slides are kept and count toward the pause. The hold after two
+ * moved reads is frame-to-frame, so the drift itself does not reset it.
+ */
+export function simulateDriftScans(driftPerSec: number, durationMs = 360_000, readMs = 33_700): DriftSession {
+  const dt = 200
+  let t = 0
+  let pos = 0
+  let anchor = 0
+  let steadySince: number | null = null
+  let scanned = false
+  let prev = 0
+  let frameSteady: number | null = null
+  let movedReads = 0
+  let seen = emptySeen()
+  let streak = 0
+  let paused = false
+  let lastScanAt: number | null = null
+  let readingUntil: number | null = null
+  let capturePos = 0
+  let scans = 0
+  let moved = 0
+  const card = { printId: 'OP09-004p2', box: { x: 0.2, y: 0.25, w: 0.3, h: 0.4 } }
+  const asMotion = (delta: number): FrameMotion => ({
+    mad: 0,
+    residual: 0,
+    dx: delta * 100,
+    dy: 0,
+    shiftFrac: Math.abs(delta),
+  })
+
+  while (t <= durationMs) {
+    if (readingUntil != null && t >= readingUntil) {
+      const motion = asMotion(pos - capturePos)
+      if (sceneMoved(motion)) {
+        moved += 1
+        movedReads += 1
+      } else {
+        movedReads = 0
+      }
+      if (placeRead(motion) === 'discard') {
+        if (forgetsSeenCards(motion)) {
+          seen = emptySeen()
+          streak = 0
+        }
+      } else {
+        const outcome = nextDryStreak(seen, streak, [card], unreadBoxMotion(motion, 100, 100))
+        seen = outcome.seen
+        streak = outcome.streak
+        if (outcome.pause) paused = true
+      }
+      lastScanAt = t
+      readingUntil = null
+      anchor = pos
+      steadySince = null
+      scanned = false
+      frameSteady = null
+    }
+    if (readingUntil == null && !paused) {
+      const hop = Math.abs(pos - prev)
+      if (movedReads >= MOVED_HOLD_AFTER) {
+        const step = stepFrameHold(frameSteady, hop >= SCENE_MOVE_FRAC, t)
+        frameSteady = step.since
+        if (step.ready && scanIntervalOpen(lastScanAt, t)) {
+          scans += 1
+          readingUntil = t + readMs
+          capturePos = pos
+          frameSteady = null
+        }
+      } else if (Math.abs(pos - anchor) >= SCENE_MOVE_FRAC) {
+        anchor = pos
+        steadySince = null
+        scanned = false
+      } else {
+        if (steadySince == null || steadySince > t) steadySince = t
+        if (!scanned && t - steadySince >= SCENE_STEADY_MS && scanIntervalOpen(lastScanAt, t)) {
+          scans += 1
+          scanned = true
+          readingUntil = t + readMs
+          capturePos = pos
+        }
+      }
+    }
+    prev = pos
+    pos += driftPerSec * (dt / 1000)
+    t += dt
+  }
+  return { scans, moved, paused }
+}
+
+/**
+ * While paused, motion accumulates from the frame that caused the pause.
+ * That anchor does not reset at 6%, so a real pan resumes and a slow drift does not.
+ * After a resume, a still second starts one scan.
+ */
+export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs = 0): { resumed: boolean; scans: number } {
+  const dt = 200
+  let t = 0
+  let pos = 0
+  let resumed = false
+  let scans = 0
+  let steadySince: number | null = null
+  const end = moveMs + holdMs
+  while (t <= end) {
+    if (!resumed) {
+      const motion: FrameMotion = { mad: 0, residual: 0, dx: pos * 100, dy: 0, shiftFrac: Math.abs(pos) }
+      if (substantialSceneChange(motion)) resumed = true
+    } else if (scans === 0) {
+      if (steadySince == null || steadySince > t) steadySince = t
+      if (t - steadySince >= SCENE_STEADY_MS) scans += 1
+    }
+    if (t < moveMs) pos += driftPerSec * (dt / 1000)
+    t += dt
+  }
+  return { resumed, scans }
 }
 
 /** Of two shots of the same side, the one with less glare on the card; ties keep the first. */

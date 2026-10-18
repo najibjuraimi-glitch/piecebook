@@ -429,6 +429,7 @@ describe('scan camera', () => {
     expect(bar?.getAttribute('data-indeterminate')).toBe('true')
     expect(bar?.hasAttribute('aria-valuenow')).toBe(false)
     clock.mockRestore()
+    pan = 200
     await act(async () => {
       release?.()
       await new Promise((resolve) => setTimeout(resolve, 40))
@@ -436,9 +437,66 @@ describe('scan camera', () => {
     expect(view.querySelector('[data-testid="scan-moved"]')?.textContent).toBe('moved, rescanning')
     expect(view.querySelector('[data-testid="scan-hold"]')).toBeNull()
     expect(view.textContent).not.toContain('Paused to save scans')
-    expect(await waitUntil(() => scans.length >= 4, 8000)).toBe(true)
+    expect(await waitUntil(() => scans.length >= 4, 12000)).toBe(true)
     expect(view.textContent).not.toContain('Paused to save scans')
-  }, 30000)
+  }, 40000)
+
+  it('holds after two slid reads and a tap scans', async () => {
+    installPointer(true)
+    installCamera('ok')
+    let release: (() => void) | null = null
+    vi.stubGlobal('fetch', async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input)
+      const method = (init?.method || 'GET').toUpperCase()
+      if (url.endsWith('/scan') && method === 'GET') return json({ usage: { today: 1, cap: 60 } })
+      if (url.endsWith('/scan')) {
+        scans.push(url)
+        return new Promise((resolve) => {
+          release = () => resolve(json(scanPayload([enCard])))
+        })
+      }
+      if (url.endsWith('/watchlist')) return json({ revision: 0, items: [] })
+      if (url.endsWith('/holdings')) return json({ revision: 0, copies: [], history: [] })
+      return json({ error: 'no' }, 404)
+    })
+    const view = await renderScan()
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-pause"]')?.click()
+    })
+    const shoot = async (nextPan: number) => {
+      await waitUntil(() => view.querySelector<HTMLButtonElement>('[data-testid="scan-shutter"]')?.disabled === false, 2500)
+      await act(async () => {
+        view.querySelector<HTMLButtonElement>('[data-testid="scan-shutter"]')?.click()
+        await new Promise((resolve) => setTimeout(resolve, 40))
+      })
+      pan = nextPan
+      await act(async () => {
+        release?.()
+        await new Promise((resolve) => setTimeout(resolve, 40))
+      })
+    }
+    await wait(1600)
+    await shoot(40)
+    expect(view.querySelector('[data-testid="scan-label-0"]')).not.toBeNull()
+    expect(view.querySelector('[data-testid="scan-moved"]')).toBeNull()
+    await shoot(80)
+    expect(view.textContent).toContain('Hold still, tap to scan')
+    expect(view.querySelector<HTMLButtonElement>('[data-testid="scan-shutter"]')?.disabled).toBe(true)
+    const before = scans.length
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-settle"]')?.click()
+      await new Promise((resolve) => setTimeout(resolve, 40))
+    })
+    expect(scans.length).toBe(before)
+    expect(await waitUntil(() => scans.length > before, 3000)).toBe(true)
+    pan = 80
+    await act(async () => {
+      release?.()
+      await new Promise((resolve) => setTimeout(resolve, 40))
+    })
+    expect(scans.length).toBeGreaterThan(before)
+    expect(view.textContent).not.toContain('Hold still, tap to scan')
+  }, 15000)
 
   it('aborts the scan request when the live view unmounts', async () => {
     installPointer(true)
@@ -567,10 +625,14 @@ describe('scan camera', () => {
     await wait(4500)
     expect(scans.length).toBe(n)
     expect(view.querySelector('[data-testid="scan-pause"]')?.textContent).toBe('Resume')
-    pan = 160
-    await wait(700)
-    expect(view.textContent).not.toContain('Paused to save scans, move or tap to resume')
-  }, 30000)
+    const from = pan
+    const steps = 12
+    for (let i = 1; i <= steps; i += 1) {
+      pan = from + Math.round((90 * i) / steps)
+      await wait(220)
+    }
+    expect(await waitUntil(() => !(view.textContent || '').includes('Paused to save scans, move or tap to resume'), 4000)).toBe(true)
+  }, 35000)
 
   it('stays paused when the case moves during a manual pause', async () => {
     installPointer(true)
