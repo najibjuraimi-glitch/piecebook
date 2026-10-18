@@ -12,6 +12,7 @@
  * quotes; a missing one is "No price yet". Japanese prices are not used.
  */
 import { createWatchItem, deleteWatchItem, emptyWatch, patchWatchItem, valueWatchItems } from "../../src/lib/watchlist.ts";
+import { forgetWatchAlert } from "./alerts.js";
 import { bookEmail, callerOf, keyFor, writeNote } from "./holdings.js";
 import { storedQuote } from "./storedPrice.js";
 
@@ -123,6 +124,7 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
       if (!result.ok) return fail(result, cors);
       await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
       await recordWrite(kv, email, identity, now, "delete", id);
+      await forgetWatchAlert(kv, email, id, identity, now);
       log({ evt: "watchlist_write", op: "delete", rowId: id, caller: callerOf(identity), at: new Date(now).toISOString() });
       return json({ source: "piecebook", revision: result.doc.revision }, 200, cors);
     }

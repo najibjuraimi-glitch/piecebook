@@ -6,8 +6,8 @@
  */
 import { NO_PRICE_YET } from './cardPrices'
 import {
+  isEnglishStoredQuote,
   isStale,
-  legalGrade,
   parseMoney,
   parseSheetDate,
   round2,
@@ -33,6 +33,8 @@ export interface WatchItem {
 export interface WatchDoc {
   revision: number
   items: WatchItem[]
+  /** Next WL number. Stays above every id this book has assigned, including deleted ones. */
+  next?: number
 }
 
 export interface ValuedWatchItem extends WatchItem {
@@ -65,33 +67,46 @@ export interface WatchFailure {
   revision?: number
 }
 
-const GRADE_LABEL: Record<LegalGrade, WatchGrade> = {
-  raw: 'Raw',
-  psa9: 'PSA 9',
-  psa10: 'PSA 10',
-}
-
 export function emptyWatch(): WatchDoc {
   return { revision: 0, items: [] }
 }
 
-export function nextWatchId(items: { id: string }[]): string {
-  let max = 0
-  for (const item of items) {
-    const m = /^WL-(\d+)$/.exec(item.id)
-    if (m) max = Math.max(max, Number(m[1]))
+function idNumber(id: string): number | null {
+  const m = /^WL-(\d+)$/.exec(id)
+  return m ? Number(m[1]) : null
+}
+
+/** One past the highest id still in the book, and one past every id this book has already assigned. */
+export function highWater(doc: WatchDoc): number {
+  let next = Number.isInteger(doc.next) && (doc.next as number) > 0 ? (doc.next as number) : 1
+  for (const item of doc.items) {
+    const n = idNumber(item.id)
+    if (n != null) next = Math.max(next, n + 1)
   }
-  return `WL-${String(max + 1).padStart(4, '0')}`
+  return next
+}
+
+function formatWatchId(n: number): string {
+  return `WL-${String(n).padStart(4, '0')}`
+}
+
+function canonicalGrade(grade: string): LegalGrade | null {
+  if (grade === 'Raw') return 'raw'
+  if (grade === 'PSA 9') return 'psa9'
+  if (grade === 'PSA 10') return 'psa10'
+  return null
 }
 
 export type QuoteFor = (code: string, grade: LegalGrade | null) => PriceQuote | null
 
 export function valueWatchItem(item: WatchItem, quoteFor: QuoteFor, today: string): ValuedWatchItem {
-  const quote = quoteFor(item.code, legalGrade(item.grade))
+  const grade = typeof item.grade === 'string' ? canonicalGrade(item.grade) : null
+  const quoted = grade ? quoteFor(item.code, grade) : null
+  const quote = isEnglishStoredQuote(quoted) ? quoted : null
   if (!quote) {
     return { ...item, priceSgd: null, source: null, asOf: null, priceLabel: NO_PRICE_YET, hit: false, stale: false }
   }
-  const stale = quote.asOf ? isStale(quote.asOf, today) : true
+  const stale = isStale(quote.asOf, today)
   return {
     ...item,
     priceSgd: quote.sgd,
@@ -170,9 +185,11 @@ function readCode(value: unknown): string | WatchFailure {
 
 function readGrade(value: unknown): WatchGrade | WatchFailure {
   if (typeof value !== 'string') return fail(400, 'bad_field', 'grade')
-  const grade = legalGrade(value)
-  if (!grade) return fail(400, 'bad_field', 'grade')
-  return GRADE_LABEL[grade]
+  const s = value.trim().toLowerCase().replace(/\s+/g, ' ')
+  if (s === 'raw') return 'Raw'
+  if (s === 'psa 9' || s === 'psa9') return 'PSA 9'
+  if (s === 'psa 10' || s === 'psa10') return 'PSA 10'
+  return fail(400, 'bad_field', 'grade')
 }
 
 function readTarget(value: unknown): number | WatchFailure {
@@ -240,7 +257,7 @@ export function createWatchItem(
   const rev = checkRevision(doc, raw)
   if (rev) return rev
   if (doc.items.length >= MAX_WATCH) return fail(400, 'too_many_rows')
-  let id = nextWatchId(doc.items)
+  let id = formatWatchId(highWater(doc))
   if (Object.prototype.hasOwnProperty.call(raw, 'id') && raw.id != null && raw.id !== '') {
     if (typeof raw.id !== 'string' || !WATCH_ID_RE.test(raw.id.trim())) return fail(400, 'bad_id')
     id = raw.id.trim()
@@ -251,7 +268,8 @@ export function createWatchItem(
   if (!applied.code) return fail(400, 'bad_field', 'code')
   if (!Object.prototype.hasOwnProperty.call(raw, 'grade')) return fail(400, 'bad_field', 'grade')
   if (!Object.prototype.hasOwnProperty.call(raw, 'targetSgd')) return fail(400, 'bad_field', 'targetSgd')
-  return { ok: true, doc: { revision: doc.revision + 1, items: [...doc.items, applied] }, item: applied }
+  const used = idNumber(id) ?? highWater(doc) - 1
+  return { ok: true, doc: { revision: doc.revision + 1, next: Math.max(highWater(doc), used + 1), items: [...doc.items, applied] }, item: applied }
 }
 
 export function patchWatchItem(
@@ -271,7 +289,7 @@ export function patchWatchItem(
   if (!applied.code) return fail(400, 'bad_field', 'code')
   const items = doc.items.slice()
   items[idx] = { ...applied, id }
-  return { ok: true, doc: { revision: doc.revision + 1, items }, item: items[idx] }
+  return { ok: true, doc: { revision: doc.revision + 1, next: highWater(doc), items }, item: items[idx] }
 }
 
 export function deleteWatchItem(doc: WatchDoc, id: string, body: unknown): { ok: true; doc: WatchDoc } | WatchFailure {
@@ -280,5 +298,5 @@ export function deleteWatchItem(doc: WatchDoc, id: string, body: unknown): { ok:
   const rev = checkRevision(doc, raw)
   if (rev) return rev
   if (!doc.items.some((item) => item.id === id)) return fail(404, 'not_found')
-  return { ok: true, doc: { revision: doc.revision + 1, items: doc.items.filter((item) => item.id !== id) } }
+  return { ok: true, doc: { revision: doc.revision + 1, next: highWater(doc), items: doc.items.filter((item) => item.id !== id) } }
 }

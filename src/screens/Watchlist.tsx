@@ -8,7 +8,11 @@ import { formatDate, formatSgd } from '../lib/format'
 import { getWatchlist } from '../lib/watchlistClient'
 import type { ValuedWatchItem, WatchHit } from '../lib/watchlist'
 
-function priceLine(item: ValuedWatchItem): string {
+function isAbort(err: unknown): boolean {
+  return err instanceof Error && err.name === 'AbortError'
+}
+
+export function priceLine(item: ValuedWatchItem): string {
   if (item.priceSgd == null || !item.source) return NO_PRICE_YET
   const when = item.asOf ? formatDate(item.asOf) : ''
   return [formatSgd(item.priceSgd), item.source, when].filter(Boolean).join(' · ')
@@ -33,7 +37,8 @@ export function WatchlistScreen() {
         setItems(res.data.items)
         setNote(null)
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        if (isAbort(err)) return
         setItems([])
         setNote('Sign in to keep a watchlist.')
       })

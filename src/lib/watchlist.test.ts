@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { ALL_CARDS } from '../data/seed'
-import { legalGrade } from './boughtBook'
+import { legalGrade, type PriceQuote } from './boughtBook'
 import { legalQuote } from './loadBought'
+import { quoteStored, rowsFromSeedTexts } from './storedQuotes'
 import {
   createWatchItem,
   deleteWatchItem,
@@ -47,8 +48,15 @@ describe('watchlist book', () => {
     if (!edited.ok) return
     const gone = deleteWatchItem(edited.doc, 'WL-0001', { revision: 2 })
     expect(gone).toMatchObject({ ok: true, doc: { revision: 3, items: [] } })
+    if (!gone.ok) return
+    const again = createWatchItem(gone.doc, { revision: 3, code: 'OP09-004', grade: 'Raw', targetSgd: 5 }, TODAY)
+    expect(again).toMatchObject({ ok: true, item: { id: 'WL-0002' } })
+    const stale = deleteWatchItem(edited.doc, 'WL-0001', { revision: 1 })
+    expect(stale).toMatchObject({ ok: false, error: 'revision_conflict', revision: 2 })
     const missing = deleteWatchItem(edited.doc, 'WL-0099', { revision: 2 })
     expect(missing).toMatchObject({ ok: false, status: 404 })
+    const nearMint = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004', grade: 'Near Mint', targetSgd: 1 }, TODAY)
+    expect(nearMint).toMatchObject({ ok: false, error: 'bad_field', detail: 'grade' })
   })
 
   it('prices the card number inside a sheet code and never a Japanese printing', () => {
@@ -83,6 +91,45 @@ describe('watchlist book', () => {
     expect(legalQuote('OP09-004p2', 'psa10')).toBeNull()
     expect(manga.priceLabel).toBe('No price yet')
     expect(manga.hit).toBe(false)
+
+    const japanese: PriceQuote = {
+      usd: 1601,
+      sgd: 2053.92,
+      source: 'OP Box Index',
+      url: 'https://opboxindex.com/cards/op09-004p2',
+      asOf: '2026-10-01',
+      detail: 'Japanese printing · sold median',
+    }
+    const leaked = valueWatchItem({ id: 'WL-0004', code: 'OP09-004p2', grade: 'PSA 10', targetSgd: 99999, notes: '', added: TODAY }, () => japanese, TODAY)
+    expect(leaked.priceLabel).toBe('No price yet')
+    expect(leaked.priceSgd).toBeNull()
+    expect(leaked.hit).toBe(false)
+    expect(leaked.stale).toBe(false)
+
+    const fresh = valueWatchItem(
+      { id: 'WL-0005', code: 'OP09-004', grade: 'Raw', targetSgd: 999, notes: '', added: TODAY },
+      () => ({ ...rawQuote!, asOf: '2026-10-09' }),
+      TODAY,
+    )
+    const older = valueWatchItem(
+      { id: 'WL-0006', code: 'OP09-004', grade: 'Raw', targetSgd: 999, notes: '', added: TODAY },
+      () => ({ ...rawQuote!, asOf: '2026-10-08' }),
+      TODAY,
+    )
+    expect(fresh.stale).toBe(false)
+    expect(fresh.hit).toBe(true)
+    expect(older.stale).toBe(true)
+    expect(older.priceLabel).toBeNull()
+  })
+
+  it('does not price a blank language or a Japanese printing from the seed text', () => {
+    const rows = rowsFromSeedTexts([
+      'card_number,language,market_usd,as_of,psa10_usd,psa10_as_of,psa10_source,psa10_url,psa10_printing\nZZ-001,,1.00,2026-10-01,,,,,\nZZ-002,JP,2.00,2026-10-01,,,,,\nZZ-003,EN,3.00,2026-10-01,100,2026-10-01,opboxindex,https://opboxindex.com/cards/zz,japanese\n',
+    ])
+    expect(quoteStored(rows, 'ZZ-001', 'raw')).toBeNull()
+    expect(quoteStored(rows, 'ZZ-002', 'raw')).toBeNull()
+    expect(quoteStored(rows, 'ZZ-003', 'psa10')).toBeNull()
+    expect(quoteStored(rows, 'ZZ-003', 'raw')?.source).toBe('Limitless')
   })
 
   it('uses the same English figure as the book for every print', () => {

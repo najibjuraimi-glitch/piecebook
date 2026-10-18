@@ -171,6 +171,10 @@ describe('Watchlist form', () => {
     )
     await renderEdit()
     expect(text()).toContain('WL-0001')
+    expect(text()).toContain('Limitless')
+    expect(text()).toContain('5 Sep 2026')
+    expect(text()).toContain('At or under target')
+    expect(text()).toContain('Stale, older than 7 days')
     const notes = host!.querySelector('textarea') as HTMLTextAreaElement
     await act(async () => {
       typeInto(notes, 'updated')

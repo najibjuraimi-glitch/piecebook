@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import worker, { originAllowed } from '../src/index.js'
+import { storedQuote } from '../src/storedPrice.js'
 import { resetAccessCacheForTests, verifyAccess } from '../src/access.js'
 
 // --- helpers -------------------------------------------------------------
@@ -537,7 +538,11 @@ describe('/watchlist and /alerts', () => {
     expect(created.status).toBe(201)
     const createdBody = await created.json()
     expect(createdBody.item).toMatchObject({ id: 'WL-0001', code: 'OP09-004 SP', grade: 'Raw', hit: true, stale: true, source: 'Limitless' })
-    expect(createdBody.item.priceSgd).toBeGreaterThan(0)
+    const base = storedQuote('OP09-004', 'raw')
+    const parallel = storedQuote('OP09-004p3', 'raw')
+    expect(createdBody.item.priceSgd).toBe(base.sgd)
+    expect(createdBody.item.priceSgd).not.toBe(parallel.sgd)
+    expect(createdBody.item.asOf).toBe(base.asOf)
     expect(createdBody.item.priceLabel).toBeNull()
     expect(JSON.stringify(createdBody)).not.toContain('Japanese')
     expect(JSON.stringify(createdBody)).not.toContain(secret)
@@ -598,6 +603,13 @@ describe('/watchlist and /alerts', () => {
     expect((await send('POST', svc, '/holdings', { revision: 0, card: 'Nami', code: 'ST01-007', grade: 'Raw', allInSgd: 50, marketValueSgd: 4, marketSource: 'Cards', marketAsOf: '2026-10-16' })).status).toBe(201)
     expect((await send('POST', svc, '/watchlist', { revision: 0, code: 'OP09-004', grade: 'Raw', targetSgd: 999 })).status).toBe(201)
     expect((await send('POST', svc, '/watchlist', { revision: 1, code: 'OP09-004p2', grade: 'PSA 10', targetSgd: 99999 })).status).toBe(201)
+    const stored = await (await call(req('/watchlist', { jwt: svc }), e)).json()
+    expect(stored.items.find((row: { code: string }) => row.code === 'OP09-004p2')).toMatchObject({
+      priceSgd: null,
+      priceLabel: 'No price yet',
+      hit: false,
+      stale: false,
+    })
 
     const first = await (await call(req('/alerts', { jwt: svc }), e)).json()
     expect(first.underAllIn.map((row: { rowId: string }) => row.rowId)).toEqual(['OPB-0001'])
@@ -628,5 +640,14 @@ describe('/watchlist and /alerts', () => {
 
     const clash = await send('POST', svc, '/alerts/dismiss', { revision: 0, underAllIn: ['OPB-0001'], watchlist: [] })
     expect(clash.status).toBe(409)
+
+    expect((await send('DELETE', user, '/watchlist/WL-0001', { revision: 2 })).status).toBe(200)
+    const reused = await send('POST', svc, '/watchlist', { revision: 3, id: 'WL-0001', code: 'OP09-004', grade: 'Raw', targetSgd: 999 })
+    expect(reused.status).toBe(201)
+    const afterReuse = await (await call(req('/alerts', { jwt: user }), e)).json()
+    expect(afterReuse.watchlist.map((row: { id: string }) => row.id)).toEqual(['WL-0001'])
+    const auto = await send('POST', svc, '/watchlist', { revision: 4, code: 'ST01-007', grade: 'Raw', targetSgd: 1 })
+    expect(auto.status).toBe(201)
+    expect((await auto.json()).item.id).toBe('WL-0003')
   })
 })

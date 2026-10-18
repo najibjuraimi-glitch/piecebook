@@ -76,7 +76,7 @@ export function quoteStored(rows: Map<string, SeedRow>, code: string, grade: Leg
   const row = rowFor(rows, code)
   if (!row) return null
   const lang = (row.language || '').trim().toUpperCase()
-  if (lang && lang !== 'EN') return null
+  if (lang !== 'EN') return null
   if (grade === 'raw') return rawQuote(row)
   const quote = gradedQuote(row, grade)
   if (!quote) return null

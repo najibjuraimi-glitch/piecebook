@@ -10,7 +10,7 @@
  * target. The same price does not fire again. A Japanese price is never used.
  */
 import { valueCopies } from "../../src/lib/boughtBook.ts";
-import { currentAlerts, dismissAlertIds, normaliseAlerts } from "../../src/lib/alertsBook.ts";
+import { currentAlerts, dismissAlertIds, forgetWatchId, normaliseAlerts } from "../../src/lib/alertsBook.ts";
 import { boughtCopyFromHolding, emptyHoldings } from "../../src/lib/holdings.ts";
 import { emptyWatch, valueWatchItems } from "../../src/lib/watchlist.ts";
 import { bookEmail, callerOf, keyFor, writeNote } from "./holdings.js";
@@ -102,4 +102,12 @@ export async function handleAlerts(req, env, identity, cors, deps = {}) {
   }
 
   return json({ error: "method_not_allowed" }, 405, cors);
+}
+
+/** Called when a watch row is removed, so that id's dismissal does not silence a later row. */
+export async function forgetWatchAlert(kv, email, id, identity, now) {
+  const alerts = await readAlerts(kv, email);
+  const result = forgetWatchId(alerts, id, writeNote(identity, now, "forget", id));
+  if (!result.changed) return;
+  await kv.put(keyFor(email, ALERTS), JSON.stringify(result.doc));
 }

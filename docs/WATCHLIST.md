@@ -8,7 +8,7 @@ Rows live in the Worker’s `USER_DATA` KV, behind the same Cloudflare Access lo
 
 ## What a row stores
 
-`id` (`WL-xxxx`), print code, target grade (`Raw`, `PSA 9`, or `PSA 10`), target price SGD, notes, and the date it was added. Piecebook assigns the next `WL-xxxx` when the id is omitted. An id the caller sends is kept. `CH-001` is not an id.
+`id` (`WL-xxxx`), print code, target grade (`Raw`, `PSA 9`, or `PSA 10`), target price SGD, notes, and the date it was added. Piecebook assigns the next `WL-xxxx` when the id is omitted, and does not assign an id again after it is removed. An id the caller sends is kept, including one that was removed. `CH-001` is not an id. `Near Mint` and `Ungraded` are not grades here. Removing a row also clears that id's alert dismissal, so a later row with the same id can fire again.
 
 ## The price on a row
 
@@ -20,7 +20,7 @@ The read includes `priceSgd`, `source`, and `asOf`. When there is no English pri
 
 ## Phone
 
-Portfolio links to Watchlist. **Add a target** (`/watchlist/new`), **Edit target** (`/watchlist/:id`), and **Remove** on the edit form. The list shows the price, its source and date, **No price yet**, **At or under target**, and **Stale, older than 7 days**.
+Portfolio links to Watchlist. **Add a target** (`/watchlist/new`), **Edit target** (`/watchlist/:id`), and **Remove** on the edit form. The list and the edit form show the price, its source and date, **No price yet**, **At or under target**, and **Stale, older than 7 days**. A price dated more than 7 days ago is stale. A price from 7 days ago is not.
 
 ## Agent API
 

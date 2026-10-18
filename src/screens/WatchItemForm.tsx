@@ -6,6 +6,7 @@ import { parseMoney } from '../lib/boughtBook'
 import { todayIso } from '../lib/format'
 import { deleteWatchItem, getWatchlist, patchWatchItem, postWatchItem } from '../lib/watchlistClient'
 import type { WatchGrade } from '../lib/watchlist'
+import { priceLine } from './Watchlist'
 
 const field =
   'mt-1.5 block h-11 w-full rounded-xl border border-line bg-paper/60 px-3.5 text-body text-ink placeholder:text-muted/70 focus:border-ink focus:bg-surface focus:outline-none'
@@ -32,6 +33,9 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
   const [target, setTarget] = useState('')
   const [notes, setNotes] = useState('')
   const [added, setAdded] = useState(todayIso())
+  const [priced, setPriced] = useState<string | null>(null)
+  const [stale, setStale] = useState(false)
+  const [hit, setHit] = useState(false)
 
   useEffect(() => {
     const ac = new AbortController()
@@ -54,10 +58,16 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
           setTarget(String(found.targetSgd))
           setNotes(found.notes)
           setAdded(found.added)
+          setPriced(priceLine(found))
+          setStale(found.stale)
+          setHit(found.hit)
         }
         setReady(true)
       })
-      .catch(() => setReady(true))
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === 'AbortError') return
+        setReady(true)
+      })
     return () => ac.abort()
   }, [mode, id])
 
@@ -138,6 +148,13 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
               ))}
             </div>
           </div>
+          {mode === 'edit' && priced && (
+            <p className="text-meta text-ink">
+              {priced}
+              {hit ? ' · At or under target' : ''}
+              {stale ? ' · Stale, older than 7 days' : ''}
+            </p>
+          )}
           <div>
             <label htmlFor={`${ids}-target`} className={label}>
               Target price SGD

@@ -109,3 +109,20 @@ export function dismissAlertIds(
     },
   }
 }
+
+/** Drop one watch id's dismissal. A later row that reuses the id can fire again. */
+export function forgetWatchId(doc: AlertsDoc, id: string, write: AlertWrite): { doc: AlertsDoc; changed: boolean } {
+  if (doc.watchlist[id] == null) return { doc, changed: false }
+  const watchlist = { ...doc.watchlist }
+  delete watchlist[id]
+  const writes = doc.writes.concat(write)
+  return {
+    changed: true,
+    doc: {
+      revision: doc.revision + 1,
+      underAllIn: doc.underAllIn,
+      watchlist,
+      writes: writes.length > MAX_WRITES ? writes.slice(writes.length - MAX_WRITES) : writes,
+    },
+  }
+}
