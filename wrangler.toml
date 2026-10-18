@@ -2,6 +2,12 @@
 # Pages' Git integration reads this on every build; the binding below wires
 # functions/api/[[path]].js to the Worker so /api/* is same-origin for the
 # browser. See docs/CLOUDFLARE-SETUP.md step 3.
+#
+# Pages does not inherit bindings the way Workers environments do. `services`
+# is a non-inheritable key: the top-level binding is what `wrangler pages dev`
+# and production use. A preview override must name `services` itself. Production
+# repeats the same binding so a preview override cannot leave production without one.
+# https://developers.cloudflare.com/pages/functions/wrangler-configuration/#non-inheritable-keys
 name = "piecebook"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-10-01"
@@ -9,3 +15,11 @@ compatibility_date = "2026-10-01"
 [[services]]
 binding = "VISION"
 service = "piecebook-vision"
+
+[[env.production.services]]
+binding = "VISION"
+service = "piecebook-vision"
+
+[[env.preview.services]]
+binding = "VISION"
+service = "piecebook-vision-staging"

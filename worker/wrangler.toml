@@ -68,18 +68,17 @@ kv_namespaces = [
   { binding = "USER_DATA", id = "local-user-data" },
 ]
 
-# Staging Worker for Pages previews. Do not deploy until the KV ids below are
-# real namespaces (`npx wrangler kv namespace create`). `npm run worker:deploy`
-# does not pass --env staging, so this block is not production.
-# Deploy, when the ids are real: `npx wrangler deploy --config worker/wrangler.toml --env staging`
+# Staging Worker for Pages previews. Already deployed as piecebook-vision-staging.
+# `npm run worker:deploy` does not pass --env staging, so it stays on production.
+# Redeploy staging with: `npx wrangler deploy --config worker/wrangler.toml --env staging`
 [env.staging]
 name = "piecebook-vision-staging"
 vars = { GEMINI_MODEL = "gemini-3.8-flash", DAILY_CAP = "60", ACCESS_TEAM_DOMAIN = "https://piecebook.cloudflareaccess.com", ACCESS_AUD = "413881efdd7d08215540d0aa34ee8dae0cdc169deb17ce0e12fe0e66424febea", OWNER_EMAIL = "najibjuraimi@gmail.com", SERVICE_TOKEN_WRITE = "0", ALLOWED_ORIGINS = "https://najibjuraimi-glitch.github.io,https://piecebook.pages.dev,https://*.piecebook.pages.dev" }
 
 [[env.staging.kv_namespaces]]
 binding = "USER_DATA"
-id = "REPLACE_WITH_STAGING_USER_DATA"
+id = "a993b4a3c7c04b9885889353ffdf71e0"
 
 [[env.staging.kv_namespaces]]
 binding = "VISION_CAP"
-id = "REPLACE_WITH_STAGING_VISION_CAP"
+id = "c67ef759e4874946b0015b68c895525e"

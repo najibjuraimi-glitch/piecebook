@@ -63,9 +63,11 @@ The Git connection needs the GitHub app authorisation, which only a browser sess
    "moved" banner (step 11).
 5. **Save and Deploy**. The repo's root `wrangler.toml` tells Pages to bind the Worker as
    `VISION` for the `/api/*` function; the `functions/` folder is picked up automatically.
+   Production (`[[env.production.services]]` and the top-level `[[services]]`) points at
+   `piecebook-vision`. Preview (`[[env.preview.services]]`) points at `piecebook-vision-staging`.
 6. Check: `https://piecebook.pages.dev/api/health` →
-   `{"ok":true,"model":"…","access":"off","sync":"off"}`. If you see `api_not_bound`, go to the Pages
-   project → **Settings → Bindings → Service bindings** and add `VISION` → `piecebook-vision` by hand.
+   `{"ok":true,"model":"…","access":"off","sync":"off"}`. If you see `api_not_bound`, the
+   `VISION` service binding is missing from the root `wrangler.toml`.
 
 At this point the new site works exactly like the old one (public, local-only data).
 
@@ -230,16 +232,17 @@ dismissals. A signed-in phone is still allowed. Leave it unset and the check is 
 
 ## Staging Worker for Pages previews
 
-Production Pages binds `VISION` to `piecebook-vision` (root `wrangler.toml`). A preview should not
-share that book. `worker/wrangler.toml` `[env.staging]` is a separate Worker, `piecebook-vision-staging`,
-with its own KV placeholders (`REPLACE_WITH_STAGING_USER_DATA` and `REPLACE_WITH_STAGING_VISION_CAP`).
-Create the namespaces, paste the ids over the placeholders, then
-`npx wrangler deploy --config worker/wrangler.toml --env staging`. Do not use `npm run worker:deploy`
-for that; that command deploys production.
+`worker/wrangler.toml` `[env.staging]` is the Worker `piecebook-vision-staging`. Its KV is not the
+production book: `USER_DATA` is `a993b4a3c7c04b9885889353ffdf71e0` and `VISION_CAP` is
+`c67ef759e4874946b0015b68c895525e`. That Worker is already deployed. `npm run worker:deploy` does
+not pass `--env staging`, so it stays on production. Redeploy staging with
+`npx wrangler deploy --config worker/wrangler.toml --env staging`.
 
-In the Pages project, Settings → Bindings, set the **Preview** service binding `VISION` to
-`piecebook-vision-staging` and leave the **Production** binding on `piecebook-vision`.
-`https://<preview>.piecebook.pages.dev/api` then calls the staging Worker. The function
+The preview binding lives in the root `wrangler.toml`, not in the dashboard. `services` is a
+non-inheritable Pages key: once an environment sets it, that environment must name the binding
+itself. Top-level `[[services]]` and `[[env.production.services]]` both bind `VISION` to
+`piecebook-vision`. `[[env.preview.services]]` binds `VISION` to `piecebook-vision-staging`.
+A preview URL (`https://<hash>.piecebook.pages.dev/api`) therefore calls the staging Worker.
 `functions/api/[[path]].js` does not change: it always fetches `env.VISION`.
 
 ## 11. The old site: banner, then retirement
@@ -276,7 +279,7 @@ npm run dev
 
 | Symptom | Look at |
 |---|---|
-| `/api/health` says `api_not_bound` | Pages → Settings → Bindings → Service binding `VISION` → `piecebook-vision` |
+| `/api/health` says `api_not_bound` | Root `wrangler.toml`: production `VISION` → `piecebook-vision`, preview `VISION` → `piecebook-vision-staging` |
 | Your data screen says *Cloud sync is off* | Worker `/health` shows `access:"off"` or `sync:"off"` → step 3 or step 7 not deployed |
 | A photo check fails | `npm run worker:tail` and read the `check_model_output` line: `reason` + `finishReason` name the shape the model returned |
 | *AI check unavailable from this region* | Gemini 400 `FAILED_PRECONDITION`: the Worker ran in a colo Gemini does not serve. `/api/health` → `colo` should be a US code; if not, check `[placement]` in `worker/wrangler.toml` survived the deploy (Workers → piecebook-vision → Settings → Placement) |
