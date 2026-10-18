@@ -10,6 +10,7 @@ let root: Root | null = null
 let host: HTMLDivElement | null = null
 const scans: string[] = []
 let drawn: { w: number; h: number }[] = []
+let pan = 0
 
 const enCard = {
   index: 0,
@@ -106,6 +107,7 @@ function installCamera(mode: 'ok' | 'denied' | 'missing') {
 beforeEach(() => {
   scans.length = 0
   drawn = []
+  pan = 0
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   installPointer(false)
   installCamera('missing')
@@ -120,7 +122,16 @@ beforeEach(() => {
         drawn.push({ w: canvas.width, h: canvas.height })
       },
       getImageData(_x: number, _y: number, w: number, h: number) {
-        return { data: new Uint8ClampedArray(w * h * 4).fill(90), width: w, height: h }
+        const data = new Uint8ClampedArray(w * h * 4)
+        for (let y = 0; y < h; y += 1) {
+          for (let x = 0; x < w; x += 1) {
+            const i = (y * w + x) * 4
+            const v = ((x + pan) * 17 + y * 13) % 180 + 20
+            data[i] = data[i + 1] = data[i + 2] = v
+            data[i + 3] = 255
+          }
+        }
+        return { data, width: w, height: h }
       },
     }
   } as unknown as typeof HTMLCanvasElement.prototype.getContext
@@ -160,10 +171,40 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+function scanPayload(cards: unknown[]) {
+  return {
+    cards,
+    lotAskSgd: null,
+    lotAskAmount: null,
+    lotAskCurrency: null,
+    lotStreetSgd: 100,
+    lotGapSgd: null,
+    maxOfferSgd: 90,
+    bundles: [],
+    usage: { today: 4, cap: 60 },
+    targets: [],
+  }
+}
+
 async function settle() {
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
   })
+}
+
+async function wait(ms: number) {
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, ms))
+  })
+}
+
+async function waitUntil(pred: () => boolean, ms: number) {
+  const start = Date.now()
+  while (Date.now() - start < ms) {
+    if (pred()) return true
+    await wait(200)
+  }
+  return pred()
 }
 
 async function renderScan() {
@@ -310,6 +351,191 @@ describe('scan camera', () => {
       pick?.click()
     })
     expect(view.textContent).toContain('Max lot offer S$72')
+  })
+
+  it('hides labels when the case moves during the read, and disables upload while reading', async () => {
+    installPointer(true)
+    installCamera('ok')
+    let release: (() => void) | null = null
+    vi.stubGlobal('fetch', async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input)
+      const method = (init?.method || 'GET').toUpperCase()
+      if (url.endsWith('/scan') && method === 'GET') return json({ usage: { today: 1, cap: 60 } })
+      if (url.endsWith('/scan')) {
+        scans.push(url)
+        return new Promise((resolve) => {
+          release = () => resolve(json(scanPayload([enCard, jpCard])))
+        })
+      }
+      if (url.endsWith('/watchlist')) return json({ revision: 0, items: [] })
+      if (url.endsWith('/holdings')) return json({ revision: 0, copies: [], history: [] })
+      return json({ error: 'no' }, 404)
+    })
+    const view = await renderScan()
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-pause"]')?.click()
+    })
+    await wait(1600)
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-shutter"]')?.click()
+      await new Promise((resolve) => setTimeout(resolve, 40))
+    })
+    expect(view.textContent).toContain('reading case, about 30s')
+    expect(view.querySelector<HTMLButtonElement>('[data-testid="scan-upload"]')?.disabled).toBe(true)
+    pan = 80
+    await act(async () => {
+      release?.()
+      await new Promise((resolve) => setTimeout(resolve, 40))
+    })
+    expect(view.querySelector('[data-testid="scan-moved"]')?.textContent).toBe('moved, rescanning')
+    expect(view.querySelector('[data-testid="scan-label-0"]')).toBeNull()
+    expect(view.querySelector('[data-testid="scan-label-1"]')).toBeNull()
+  })
+
+  it('aborts the scan request when the live view unmounts', async () => {
+    installPointer(true)
+    installCamera('ok')
+    let signal: AbortSignal | undefined
+    vi.stubGlobal('fetch', (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input)
+      const method = (init?.method || 'GET').toUpperCase()
+      if (url.endsWith('/scan') && method === 'GET') return Promise.resolve(json({ usage: { today: 1, cap: 60 } }))
+      if (url.endsWith('/scan')) {
+        signal = init?.signal ?? undefined
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')))
+        })
+      }
+      if (url.endsWith('/watchlist')) return Promise.resolve(json({ revision: 0, items: [] }))
+      if (url.endsWith('/holdings')) return Promise.resolve(json({ revision: 0, copies: [], history: [] }))
+      return Promise.resolve(json({ error: 'no' }, 404))
+    })
+    const view = await renderScan()
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-pause"]')?.click()
+    })
+    await wait(1600)
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-shutter"]')?.click()
+      await new Promise((resolve) => setTimeout(resolve, 40))
+    })
+    expect(signal?.aborted).toBe(false)
+    await act(async () => {
+      root?.unmount()
+      root = null
+    })
+    expect(signal?.aborted).toBe(true)
+  })
+
+  it('does not treat an aborted read as a failed scan', async () => {
+    installPointer(true)
+    installCamera('ok')
+    let posts = 0
+    vi.stubGlobal('fetch', async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input)
+      const method = (init?.method || 'GET').toUpperCase()
+      if (url.endsWith('/scan') && method === 'GET') return json({ usage: { today: 1, cap: 60 } })
+      if (url.endsWith('/scan')) {
+        posts += 1
+        scans.push(url)
+        if (posts <= 2) throw new DOMException('aborted', 'AbortError')
+        return json(scanPayload([enCard]))
+      }
+      if (url.endsWith('/watchlist')) return json({ revision: 0, items: [] })
+      if (url.endsWith('/holdings')) return json({ revision: 0, copies: [], history: [] })
+      return json({ error: 'no' }, 404)
+    })
+    const view = await renderScan()
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-pause"]')?.click()
+    })
+    await wait(1600)
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-shutter"]')?.click()
+    })
+    await settle()
+    expect(view.textContent).not.toContain('could not be read')
+    expect(await waitUntil(() => view.querySelector<HTMLButtonElement>('[data-testid="scan-shutter"]')?.disabled === false, 2500)).toBe(true)
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-shutter"]')?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((resolve) => setTimeout(resolve, 80))
+    })
+    expect(view.textContent).not.toContain('could not be read')
+    expect(posts).toBe(2)
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-pause"]')?.click()
+    })
+    expect(await waitUntil(() => posts >= 3, 4000)).toBe(true)
+    expect(view.querySelector('[data-testid="scan-label-0"]')).not.toBeNull()
+  }, 12000)
+
+  it('retries a failed read once on the same view, then waits for movement', async () => {
+    installPointer(true)
+    installCamera('ok')
+    vi.stubGlobal('fetch', async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input)
+      const method = (init?.method || 'GET').toUpperCase()
+      if (url.endsWith('/scan') && method === 'GET') return json({ usage: { today: 1, cap: 60 } })
+      if (url.endsWith('/scan')) {
+        scans.push(url)
+        return json({ error: 'read_failed' }, 500)
+      }
+      if (url.endsWith('/watchlist')) return json({ revision: 0, items: [] })
+      if (url.endsWith('/holdings')) return json({ revision: 0, copies: [], history: [] })
+      return json({ error: 'no' }, 404)
+    })
+    await renderScan()
+    expect(await waitUntil(() => scans.length >= 2, 10000)).toBe(true)
+    expect(scans.length).toBe(2)
+    await wait(4500)
+    expect(scans.length).toBe(2)
+    pan = 80
+    expect(await waitUntil(() => scans.length >= 3, 8000)).toBe(true)
+  }, 25000)
+
+  it('pauses after three scans with no new cards until the case moves', async () => {
+    installPointer(true)
+    installCamera('ok')
+    vi.stubGlobal('fetch', async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input)
+      const method = (init?.method || 'GET').toUpperCase()
+      if (url.endsWith('/scan') && method === 'GET') return json({ usage: { today: 1, cap: 60 } })
+      if (url.endsWith('/scan')) {
+        scans.push(url)
+        return json(scanPayload([]))
+      }
+      if (url.endsWith('/watchlist')) return json({ revision: 0, items: [] })
+      if (url.endsWith('/holdings')) return json({ revision: 0, copies: [], history: [] })
+      return json({ error: 'no' }, 404)
+    })
+    const view = await renderScan()
+    expect(await waitUntil(() => scans.length >= 1, 8000)).toBe(true)
+    pan = 40
+    expect(await waitUntil(() => scans.length >= 2, 8000)).toBe(true)
+    pan = 90
+    expect(await waitUntil(() => scans.length >= 3, 8000)).toBe(true)
+    expect(await waitUntil(() => (view.textContent || '').includes('Paused to save scans, move or tap to resume'), 2000)).toBe(true)
+    const n = scans.length
+    await wait(4500)
+    expect(scans.length).toBe(n)
+    expect(view.querySelector('[data-testid="scan-pause"]')?.textContent).toBe('Resume')
+    pan = 160
+    await wait(700)
+    expect(view.textContent).not.toContain('Paused to save scans, move or tap to resume')
+  }, 30000)
+
+  it('stays paused when the case moves during a manual pause', async () => {
+    installPointer(true)
+    installCamera('ok')
+    const view = await renderScan()
+    await act(async () => {
+      view.querySelector<HTMLButtonElement>('[data-testid="scan-pause"]')?.click()
+    })
+    pan = 80
+    await wait(2500)
+    expect(scans).toHaveLength(0)
+    expect(view.querySelector('[data-testid="scan-pause"]')?.textContent).toBe('Resume')
+    expect(view.textContent).not.toContain('Paused to save scans')
   })
 
   it('falls back to the file picker when camera permission is refused', async () => {

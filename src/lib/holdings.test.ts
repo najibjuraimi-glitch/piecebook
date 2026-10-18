@@ -207,4 +207,44 @@ describe('holdings', () => {
     const bad = createHolding(emptyHoldings(), { revision: 0, card: 'Ace', code: 'OP13-002', grade: 'Raw', language: 'FR' })
     expect(bad).toMatchObject({ ok: false, error: 'bad_field', detail: 'language' })
   })
+
+  it('keeps a stored JP language when a re-import or a patch leaves it out', () => {
+    const imported = importHoldings(fixtureCsv, emptyHoldings(), false, 0)
+    expect(imported.ok).toBe(true)
+    if (!imported.ok) return
+    const doc = {
+      ...imported.doc,
+      copies: imported.doc.copies.map((copy) => (copy.rowId === 'OPB-0001' ? { ...copy, language: 'JP' as const } : copy)),
+    }
+    const again = importHoldings(fixtureCsv, doc, true, doc.revision)
+    expect(again.ok).toBe(true)
+    if (!again.ok) return
+    expect(again.doc.copies.find((copy) => copy.rowId === 'OPB-0001')?.language).toBe('JP')
+    expect(again.doc.copies.find((copy) => copy.rowId === 'OPB-0002')?.language).toBe('EN')
+    const forced = importHoldings(
+      'Row ID,Code,Grade/Raw,All-in SGD,Status,Language\nOPB-0001,OP05-100p2,PSA 10,400,Held,EN\n',
+      again.doc,
+      true,
+      again.doc.revision,
+    )
+    expect(forced.ok).toBe(true)
+    if (!forced.ok) return
+    expect(forced.doc.copies[0]?.language).toBe('EN')
+
+    const made = createHolding(emptyHoldings(), { revision: 0, card: 'Ace', code: 'OP13-002', grade: 'Raw', language: 'JP' })
+    expect(made.ok).toBe(true)
+    if (!made.ok) return
+    const notes = patchHolding(made.doc, made.copy.rowId, { revision: made.doc.revision, notes: 'desk' })
+    expect(notes.ok).toBe(true)
+    if (!notes.ok) return
+    expect(notes.copy.language).toBe('JP')
+    const blank = patchHolding(notes.doc, notes.copy.rowId, { revision: notes.doc.revision, language: '' })
+    expect(blank.ok).toBe(true)
+    if (!blank.ok) return
+    expect(blank.copy.language).toBe('JP')
+    const absent = patchHolding(blank.doc, blank.copy.rowId, { revision: blank.doc.revision, language: null })
+    expect(absent.ok).toBe(true)
+    if (!absent.ok) return
+    expect(absent.copy.language).toBe('JP')
+  })
 })

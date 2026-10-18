@@ -334,6 +334,13 @@ function isTotal(value: string): boolean {
   return value.trim().toUpperCase() === 'TOTAL'
 }
 
+/** A Language cell that says EN or JP. Blank or missing stays unset so a re-import can keep the stored row. */
+function sheetLanguage(value: string): 'EN' | 'JP' | undefined {
+  const text = value.trim().toUpperCase()
+  if (text === 'JP' || text === 'EN') return text
+  return undefined
+}
+
 export function parseBoughtMatrix(matrix: string[][]): { copies: BoughtCopy[]; missing: string[]; skipped: number } {
   if (matrix.length === 0) return { copies: [], missing: [...REQUIRED_HEADERS], skipped: 0 }
   const { index, missing } = headerIndex(matrix[0].map((h) => String(h ?? '')))
@@ -386,6 +393,7 @@ export function parseBoughtMatrix(matrix: string[][]): { copies: BoughtCopy[]; m
       code,
       gradeText,
       grade: legalGrade(gradeText),
+      language: sheetLanguage(cell(row, index, 'Language')),
       seller: cell(row, index, 'Where/Seller'),
       paidSgd: parseMoney(cell(row, index, 'Paid SGD')),
       gstSgd: parseMoney(cell(row, index, 'GST SGD')),

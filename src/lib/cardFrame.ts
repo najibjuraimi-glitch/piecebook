@@ -529,10 +529,31 @@ export function stepLiveView(prev: LiveViewState, frame: FrameAssessment, now: n
 export const SCENE_STEADY_MS = 1000
 /** Do not send another automatic scan until this long after the last one. */
 export const SCAN_INTERVAL_MS = 4000
+/** Downscaled greyscale long edge used to see a pan across a case. */
+export const SCENE_LONG_EDGE = 128
+/** A shift of this share of the long edge is a pan, not sensor noise. */
+export const SCENE_MOVE_FRAC = 0.06
+/** Unaligned mean absolute difference above this is a different picture. */
+export const SCENE_MOVE_MAD = 12
+
+export interface GreyFrame {
+  width: number
+  height: number
+  data: Uint8Array
+}
+
+export interface FrameMotion {
+  /** Mean absolute grey difference before aligning, 0–255. */
+  mad: number
+  dx: number
+  dy: number
+  /** Shift length as a share of the long edge. */
+  shiftFrac: number
+}
 
 export interface SceneHold {
-  /** The view the current steady spell is measured against. */
-  anchor: Quad | null
+  /** The greyscale view this steady spell is measured against. */
+  anchor: GreyFrame | null
   steadySince: number | null
   misses: number
   /** This spell already sent a scan. */
@@ -552,57 +573,152 @@ export function scanIntervalOpen(lastScanAt: number | null, now: number): boolea
   return lastScanAt == null || now - lastScanAt >= SCAN_INTERVAL_MS
 }
 
-/**
- * Steadiness for a whole case, using the same corner drift as the card viewfinder.
- * A small shift stays in the spell. A large shift, or two frames that leave the
- * steady band, ends it so the next still second can scan again.
- */
-export function stepSceneHold(prev: SceneHold, quad: Quad, now: number): { state: SceneHold; steady: boolean; moved: boolean; ready: boolean } {
-  if (!prev.anchor) {
-    return { state: { anchor: quad, steadySince: null, misses: 0, scanned: false }, steady: false, moved: false, ready: false }
+/** Downscale to greyscale. A case is compared as this picture, not as four brightness centroids. */
+export function greyDownscale(img: PixelImage, longEdge = SCENE_LONG_EDGE): GreyFrame {
+  const long = Math.max(img.width, img.height, 1)
+  const scale = longEdge / long
+  const width = Math.max(8, Math.round(img.width * scale))
+  const height = Math.max(8, Math.round(img.height * scale))
+  const data = new Uint8Array(width * height)
+  const xScale = img.width / width
+  const yScale = img.height / height
+  for (let y = 0; y < height; y += 1) {
+    const y0 = Math.min(img.height - 1, Math.floor(y * yScale))
+    for (let x = 0; x < width; x += 1) {
+      const x0 = Math.min(img.width - 1, Math.floor(x * xScale))
+      const i = (y0 * img.width + x0) * 4
+      data[y * width + x] = Math.round(0.2126 * img.data[i] + 0.7152 * img.data[i + 1] + 0.0722 * img.data[i + 2])
+    }
   }
-  const drift = quadDrift(prev.anchor, quad)
-  if (drift <= QUAD_STABLE_PX) {
+  return { width, height, data }
+}
+
+export function meanAbsDiff(anchor: GreyFrame, next: GreyFrame): number {
+  const width = Math.min(anchor.width, next.width)
+  const height = Math.min(anchor.height, next.height)
+  let sum = 0
+  let n = 0
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      sum += Math.abs(anchor.data[y * anchor.width + x] - next.data[y * next.width + x])
+      n += 1
+    }
+  }
+  return n ? sum / n : 0
+}
+
+function blockSad(anchor: GreyFrame, next: GreyFrame, dx: number, dy: number, x0: number, y0: number, x1: number, y1: number): number | null {
+  let sad = 0
+  let n = 0
+  for (let y = y0; y < y1; y += 2) {
+    for (let x = x0; x < x1; x += 2) {
+      const bx = x + dx
+      const by = y + dy
+      if (bx < 0 || by < 0 || bx >= next.width || by >= next.height) continue
+      sad += Math.abs(anchor.data[y * anchor.width + x] - next.data[by * next.width + bx])
+      n += 1
+    }
+  }
+  return n ? sad / n : null
+}
+
+/** Best whole-pixel shift of the anchor block inside the next frame, searched out to a quarter of the long edge. */
+export function blockShift(anchor: GreyFrame, next: GreyFrame): { dx: number; dy: number } {
+  const width = Math.min(anchor.width, next.width)
+  const height = Math.min(anchor.height, next.height)
+  const radius = Math.max(4, Math.round(Math.max(width, height) * 0.25))
+  const x0 = radius
+  const y0 = radius
+  const x1 = width - radius
+  const y1 = height - radius
+  if (x1 <= x0 || y1 <= y0) return { dx: 0, dy: 0 }
+  const zero = blockSad(anchor, next, 0, 0, x0, y0, x1, y1)
+  if (zero == null) return { dx: 0, dy: 0 }
+  // A tied or barely better alignment is sensor noise, not a pan. Keep zero.
+  const clearer = (sad: number, current: number) => sad + 0.25 < current
+  let best = { dx: 0, dy: 0, sad: zero }
+  for (let dy = -radius; dy <= radius; dy += 2) {
+    for (let dx = -radius; dx <= radius; dx += 2) {
+      const sad = blockSad(anchor, next, dx, dy, x0, y0, x1, y1)
+      if (sad != null && clearer(sad, best.sad)) best = { dx, dy, sad }
+    }
+  }
+  let refined = best
+  for (let dy = best.dy - 2; dy <= best.dy + 2; dy += 1) {
+    for (let dx = best.dx - 2; dx <= best.dx + 2; dx += 1) {
+      if (Math.abs(dx) > radius || Math.abs(dy) > radius) continue
+      const sad = blockSad(anchor, next, dx, dy, x0, y0, x1, y1)
+      if (sad != null && clearer(sad, refined.sad)) refined = { dx, dy, sad }
+    }
+  }
+  // Keep a slide only when lining the frames up removes a real mismatch.
+  // A tie, or a one-level improvement, is the search fitting sensor noise.
+  if (zero - refined.sad < 6 && refined.sad > zero / 3) return { dx: 0, dy: 0 }
+  return { dx: refined.dx, dy: refined.dy }
+}
+
+/** Mean absolute difference, plus a block search for how far the picture slid. */
+export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
+  const mad = meanAbsDiff(anchor, next)
+  const shift = blockShift(anchor, next)
+  const shiftFrac = Math.hypot(shift.dx, shift.dy) / Math.max(anchor.width, anchor.height, 1)
+  return { mad, dx: shift.dx, dy: shift.dy, shiftFrac }
+}
+
+/** A pan of about 6% or a picture that no longer matches. Sensor noise stays under both. */
+export function sceneMoved(motion: FrameMotion): boolean {
+  return motion.shiftFrac >= SCENE_MOVE_FRAC || motion.mad >= SCENE_MOVE_MAD
+}
+
+/**
+ * Steadiness for a whole case. The anchor is the greyscale frame, so a pan
+ * across a grid of slabs counts even when each quadrant stays the same brightness.
+ * One mild flicker is forgiven. A real shift ends the spell.
+ */
+export function stepSceneHold(prev: SceneHold, frame: GreyFrame, now: number): { state: SceneHold; steady: boolean; moved: boolean; ready: boolean } {
+  if (!prev.anchor) {
+    return { state: { anchor: frame, steadySince: null, misses: 0, scanned: false }, steady: false, moved: false, ready: false }
+  }
+  const motion = compareFrames(prev.anchor, frame)
+  if (!sceneMoved(motion)) {
     const steadySince = prev.steadySince ?? now
     const state = { anchor: prev.anchor, steadySince, misses: 0, scanned: prev.scanned }
     return { state, steady: true, moved: false, ready: !state.scanned && now - steadySince >= SCENE_STEADY_MS }
   }
-  if (drift > QUAD_STABLE_PX * 3 || prev.misses + 1 >= 2) {
-    return { state: { anchor: quad, steadySince: null, misses: 0, scanned: false }, steady: false, moved: true, ready: false }
+  const hard = motion.shiftFrac >= SCENE_MOVE_FRAC
+  if (!hard && prev.misses < 1) {
+    return { state: { ...prev, misses: prev.misses + 1 }, steady: false, moved: false, ready: false }
   }
-  return { state: { ...prev, misses: prev.misses + 1 }, steady: false, moved: false, ready: false }
+  return { state: { anchor: frame, steadySince: null, misses: 0, scanned: false }, steady: false, moved: true, ready: false }
+}
+
+/** Print id when it was read, otherwise the code text. Blank when neither was. */
+export function scanCardKey(card: { printId?: string | null; codeText?: string | null }): string {
+  const printId = (card.printId || '').trim()
+  if (printId) return printId
+  return (card.codeText || '').trim()
 }
 
 /**
- * Four luminance centroids, one per quadrant, in the same corner order as a card quad.
- * A still camera keeps them put. A pan moves them, and `quadDrift` reads that motion.
+ * How many scans in a row added no new card. Three pauses the camera.
+ * An empty key is not a new card. A key already seen is not a new card.
  */
-export function sceneQuad(img: PixelImage): Quad {
-  const midX = img.width / 2
-  const midY = img.height / 2
-  const acc = [
-    { x: 0, y: 0, w: 0 },
-    { x: 0, y: 0, w: 0 },
-    { x: 0, y: 0, w: 0 },
-    { x: 0, y: 0, w: 0 },
-  ]
-  const step = Math.max(1, Math.floor(Math.min(img.width, img.height) / 80))
-  for (let y = 0; y < img.height; y += step) {
-    for (let x = 0; x < img.width; x += step) {
-      const i = (y * img.width + x) * 4
-      const weight = 0.2126 * img.data[i] + 0.7152 * img.data[i + 1] + 0.0722 * img.data[i + 2]
-      if (weight < 1) continue
-      const qi = (x < midX ? 0 : 1) + (y < midY ? 0 : 2)
-      acc[qi].x += x * weight
-      acc[qi].y += y * weight
-      acc[qi].w += weight
-    }
+export function nextDryStreak(
+  seen: ReadonlySet<string>,
+  streak: number,
+  cards: { printId?: string | null; codeText?: string | null }[],
+): { seen: Set<string>; streak: number; pause: boolean } {
+  const nextSeen = new Set(seen)
+  let fresh = false
+  for (const card of cards) {
+    const key = scanCardKey(card)
+    if (!key || nextSeen.has(key)) continue
+    nextSeen.add(key)
+    fresh = true
   }
-  const at = (qi: number, cx: number, cy: number) => {
-    const bin = acc[qi]
-    return bin.w > 0 ? { x: bin.x / bin.w, y: bin.y / bin.w } : { x: cx, y: cy }
-  }
-  return [at(0, midX * 0.5, midY * 0.5), at(1, midX * 1.5, midY * 0.5), at(3, midX * 1.5, midY * 1.5), at(2, midX * 0.5, midY * 1.5)]
+  if (fresh) return { seen: nextSeen, streak: 0, pause: false }
+  const next = streak + 1
+  return { seen: nextSeen, streak: next, pause: next >= 3 }
 }
 
 /** Of two shots of the same side, the one with less glare on the card; ties keep the first. */

@@ -100,6 +100,7 @@ describe('scan sights', () => {
     expect(boxFrom2d([100, 200, 500, 600])).toEqual({ x: 0.2, y: 0.1, w: 0.4, h: 0.4 })
     expect(boxFrom2d([0.1, 0.2, 0.5, 0.6])).toEqual({ x: 0.2, y: 0.1, w: 0.4, h: 0.4 })
     expect(boxFrom2d([0, 0, 1, 1])).toEqual({ x: 0, y: 0, w: 1, h: 1 })
+    expect(boxFrom2d([123.4565, 0, 1000, 1000])).toEqual({ x: 0, y: 0.123457, w: 1, h: 0.876544 })
     expect(boxFrom2d([0, 0, 1000, 1100])).toBeNull()
     expect(boxFrom2d([0, 0, 0, 400])).toBeNull()
     const sights = normaliseScanSights({

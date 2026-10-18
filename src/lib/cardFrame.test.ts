@@ -21,17 +21,21 @@ import {
   flattenCard,
   glareReport,
   homographyFromQuads,
-  QUAD_STABLE_PX,
   SCAN_INTERVAL_MS,
+  SCENE_MOVE_FRAC,
+  SCENE_MOVE_MAD,
   SCENE_STEADY_MS,
+  compareFrames,
+  greyDownscale,
   initialLiveView,
   initialSceneHold,
   insideQuad,
   invertMat3,
   markSceneScanned,
+  nextDryStreak,
   pickCleanerFrame,
   scanIntervalOpen,
-  sceneQuad,
+  sceneMoved,
   sharpness,
   shrinkQuad,
   stepLiveView,
@@ -610,63 +614,107 @@ describe('live view: hints settle and auto-capture waits', () => {
   })
 })
 
-function solid(width: number, height: number, rgb: [number, number, number]): PixelImage {
-  const data = new Uint8ClampedArray(width * height * 4)
-  for (let i = 0; i < data.length; i += 4) {
-    data[i] = rgb[0]
-    data[i + 1] = rgb[1]
-    data[i + 2] = rgb[2]
-    data[i + 3] = 255
+function patterned(width = 32, height = 24) {
+  const data = new Uint8Array(width * height)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) data[y * width + x] = (x * 13 + y * 29) % 251
   }
   return { width, height, data }
 }
 
+function shiftGrey(frame: { width: number; height: number; data: Uint8Array }, dx: number) {
+  const data = new Uint8Array(frame.data.length)
+  for (let y = 0; y < frame.height; y += 1) {
+    for (let x = 0; x < frame.width; x += 1) {
+      const sx = x - dx
+      data[y * frame.width + x] = sx >= 0 && sx < frame.width ? frame.data[y * frame.width + sx] : 0
+    }
+  }
+  return { width: frame.width, height: frame.height, data }
+}
+
+function brighten(frame: { width: number; height: number; data: Uint8Array }, delta: number) {
+  const data = new Uint8Array(frame.data.length)
+  for (let i = 0; i < data.length; i += 1) data[i] = Math.max(0, Math.min(255, frame.data[i] + delta))
+  return { width: frame.width, height: frame.height, data }
+}
+
+function translateImage(img: PixelImage, frac: number): PixelImage {
+  const dx = Math.round(img.width * frac)
+  const data = new Uint8ClampedArray(img.data.length)
+  for (let y = 0; y < img.height; y += 1) {
+    for (let x = 0; x < img.width; x += 1) {
+      const sx = x - dx
+      const di = (y * img.width + x) * 4
+      if (sx < 0 || sx >= img.width) {
+        data[di] = data[di + 1] = data[di + 2] = 128
+        data[di + 3] = 255
+        continue
+      }
+      const si = (y * img.width + sx) * 4
+      data[di] = img.data[si]
+      data[di + 1] = img.data[si + 1]
+      data[di + 2] = img.data[si + 2]
+      data[di + 3] = 255
+    }
+  }
+  return { width: img.width, height: img.height, data }
+}
+
+function sensorNoise(img: PixelImage): PixelImage {
+  const data = new Uint8ClampedArray(img.data)
+  for (let i = 0; i < data.length; i += 4) {
+    const delta = (i / 4) % 2 === 0 ? 2 : -2
+    data[i] = Math.max(0, Math.min(255, data[i] + delta))
+    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + delta))
+    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + delta))
+  }
+  return { width: img.width, height: img.height, data }
+}
+
 describe('case view: one steady second, then not the same scene again', () => {
-  const quad = (dx = 0) =>
-    [
-      { x: 20 + dx, y: 10 },
-      { x: 80 + dx, y: 12 },
-      { x: 78 + dx, y: 70 },
-      { x: 22 + dx, y: 68 },
-    ] as Quad
+  const base = patterned()
 
   it('is ready after a second of the same view and does not scan that view again', () => {
-    let state = initialSceneHold()
-    let step = stepSceneHold(state, quad(), 0)
+    let step = stepSceneHold(initialSceneHold(), base, 0)
     expect(step.ready).toBe(false)
-    step = stepSceneHold(step.state, quad(2), 100)
+    step = stepSceneHold(step.state, brighten(base, 2), 100)
     expect(step.steady).toBe(true)
     expect(step.ready).toBe(false)
     expect(step.state.steadySince).toBe(100)
-    step = stepSceneHold(step.state, quad(1), 100 + SCENE_STEADY_MS - 1)
+    step = stepSceneHold(step.state, brighten(base, -2), 100 + SCENE_STEADY_MS - 1)
     expect(step.ready).toBe(false)
-    step = stepSceneHold(step.state, quad(1), 100 + SCENE_STEADY_MS)
+    step = stepSceneHold(step.state, base, 100 + SCENE_STEADY_MS)
     expect(step.ready).toBe(true)
-    step = stepSceneHold(markSceneScanned(step.state), quad(1), 5000)
+    step = stepSceneHold(markSceneScanned(step.state), base, 5000)
     expect(step.ready).toBe(false)
     expect(step.moved).toBe(false)
   })
 
-  it('ends the spell when the phone moves past the card steadiness band', () => {
-    let step = stepSceneHold(initialSceneHold(), quad(), 0)
-    step = stepSceneHold(step.state, quad(1), 200)
-    const moved = stepSceneHold(markSceneScanned(step.state), quad(QUAD_STABLE_PX * 3 + 5), 800)
+  it('ends the spell when the picture shifts', () => {
+    let step = stepSceneHold(initialSceneHold(), base, 0)
+    step = stepSceneHold(step.state, brighten(base, 1), 200)
+    const moved = stepSceneHold(markSceneScanned(step.state), shiftGrey(base, 8), 800)
     expect(moved.moved).toBe(true)
     expect(moved.state.scanned).toBe(false)
     expect(moved.state.steadySince).toBeNull()
-    const held = stepSceneHold(moved.state, quad(QUAD_STABLE_PX * 3 + 5), 900)
+    const held = stepSceneHold(moved.state, shiftGrey(base, 8), 900)
     expect(held.ready).toBe(false)
-    const again = stepSceneHold(held.state, quad(QUAD_STABLE_PX * 3 + 5), 900 + SCENE_STEADY_MS)
+    const again = stepSceneHold(held.state, shiftGrey(base, 8), 900 + SCENE_STEADY_MS)
     expect(again.ready).toBe(true)
   })
 
-  it('forgives one frame that leaves the band and resets on the next', () => {
-    let step = stepSceneHold(initialSceneHold(), quad(), 0)
-    step = stepSceneHold(step.state, quad(), 100)
-    const wobble = stepSceneHold(step.state, quad(QUAD_STABLE_PX + 2), 200)
+  it('forgives one flicker that is not a pan and resets on the next', () => {
+    let step = stepSceneHold(initialSceneHold(), base, 0)
+    step = stepSceneHold(step.state, base, 100)
+    const flicker = brighten(base, 20)
+    const motion = compareFrames(base, flicker)
+    expect(motion.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(motion.mad).toBeGreaterThanOrEqual(SCENE_MOVE_MAD)
+    const wobble = stepSceneHold(step.state, flicker, 200)
     expect(wobble.moved).toBe(false)
     expect(wobble.state.steadySince).toBe(100)
-    const lost = stepSceneHold(wobble.state, quad(QUAD_STABLE_PX + 2), 300)
+    const lost = stepSceneHold(wobble.state, flicker, 300)
     expect(lost.moved).toBe(true)
   })
 
@@ -676,25 +724,41 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(scanIntervalOpen(1000, 1000 + SCAN_INTERVAL_MS)).toBe(true)
   })
 
-  it('reads a still frame as the same quad and a shifted frame as motion', () => {
-    const still = solid(40, 40, [180, 180, 180])
-    expect(sceneQuad(still)).toEqual(sceneQuad(still))
-    const spot = (x0: number, y0: number) => {
-      const img = solid(200, 200, [0, 0, 0])
-      for (let y = y0; y < y0 + 16; y++) {
-        for (let x = x0; x < x0 + 16; x++) {
-          const i = (y * 200 + x) * 4
-          img.data[i] = img.data[i + 1] = img.data[i + 2] = 255
-        }
-      }
-      return img
+  it('counts a 10% and a 20% pan of the case fixture as moved, and sensor noise as still', () => {
+    const full = loadJpegFixture('full.jpg')
+    const anchor = greyDownscale(full)
+    const ten = compareFrames(anchor, greyDownscale(translateImage(full, 0.1)))
+    const twenty = compareFrames(anchor, greyDownscale(translateImage(full, 0.2)))
+    const still = compareFrames(anchor, greyDownscale(sensorNoise(full)))
+    expect(Math.abs(ten.shiftFrac - 0.1)).toBeLessThan(0.03)
+    expect(sceneMoved(ten)).toBe(true)
+    expect(Math.abs(twenty.shiftFrac - 0.2)).toBeLessThan(0.03)
+    expect(sceneMoved(twenty)).toBe(true)
+    expect(still.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(still.mad).toBeLessThan(SCENE_MOVE_MAD)
+    expect(sceneMoved(still)).toBe(false)
+  })
+
+  it('pauses after three scans that add no new card', () => {
+    let seen = new Set<string>()
+    let streak = 0
+    const step = (cards: { printId?: string | null; codeText?: string | null }[]) => {
+      const next = nextDryStreak(seen, streak, cards)
+      seen = next.seen
+      streak = next.streak
+      return next
     }
-    const drift = Math.max(
-      ...sceneQuad(spot(4, 4)).map((point, i) => {
-        const other = sceneQuad(spot(80, 80))[i]
-        return Math.hypot(point.x - other.x, point.y - other.y)
-      }),
-    )
-    expect(drift).toBeGreaterThan(QUAD_STABLE_PX * 3)
+    expect(step([{ printId: 'OP09-004p2', codeText: 'OP09-004' }]).pause).toBe(false)
+    expect(streak).toBe(0)
+    expect(step([{ printId: 'OP09-004p2' }]).pause).toBe(false)
+    expect(step([{ codeText: 'OP09-004p2' }]).streak).toBe(2)
+    expect(step([{ printId: '', codeText: '  ' }]).pause).toBe(true)
+    expect(streak).toBe(3)
+    const resumed = nextDryStreak(seen, 0, [{ printId: 'EB04-003' }])
+    expect(resumed.pause).toBe(false)
+    expect(resumed.streak).toBe(0)
+    const again = nextDryStreak(resumed.seen, resumed.streak, [{ codeText: 'EB04-003' }])
+    expect(again.streak).toBe(1)
+    expect(again.pause).toBe(false)
   })
 })

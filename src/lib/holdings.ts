@@ -291,10 +291,7 @@ function applyFields(base: Holding, body: Record<string, unknown>, keys: string[
       continue
     }
     if (key === 'language') {
-      if (value == null || value === '') {
-        next.language = 'EN'
-        continue
-      }
+      if (value == null || value === '') continue
       if (typeof value !== 'string') return fail(400, 'bad_field', 'language')
       const text = value.trim().toUpperCase()
       if (text !== 'EN' && text !== 'JP') return fail(400, 'bad_field', 'language')
@@ -491,7 +488,13 @@ export function importHoldings(
   const parsed = parseBoughtMatrix(parseCsv(csv))
   if (parsed.missing.length) return fail(400, 'missing_headers', parsed.missing.join(', '))
   // Row IDs in the file are stored as written (OPB-0001 stays OPB-0001). Import does not assign new ones.
-  const copies = parsed.copies.map(holdingFromBought)
+  // A row that does not say EN or JP keeps the language already stored for that Row ID.
+  const priorLanguage = new Map(doc.copies.map((copy) => [copy.rowId, copy.language]))
+  const copies = parsed.copies.map((bought) => {
+    const holding = holdingFromBought(bought)
+    if (bought.language !== 'EN' && bought.language !== 'JP' && priorLanguage.get(bought.rowId) === 'JP') holding.language = 'JP'
+    return holding
+  })
   if (copies.length > MAX_HOLDINGS) return fail(400, 'too_many_rows')
   const seen = new Set<string>()
   for (const copy of copies) {

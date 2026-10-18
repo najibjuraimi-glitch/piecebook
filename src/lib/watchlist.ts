@@ -402,6 +402,7 @@ function applyItem(base: WatchItem, body: Record<string, unknown>, today: string
       if (isFail(grade)) return grade
       next.grade = grade
     } else if (key === 'language') {
+      if (value == null || value === '') continue
       const language = readLanguage(value)
       if (isFail(language)) return language
       next.language = language

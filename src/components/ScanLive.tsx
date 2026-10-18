@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISION_URL } from '../config/vision'
-import { QUAD_STABLE_PX, initialSceneHold, markSceneScanned, quadDrift, scanIntervalOpen, sceneQuad, stepSceneHold, type SceneHold } from '../lib/cardFrame'
-import type { PixelImage, Quad } from '../lib/centering'
+import { compareFrames, greyDownscale, initialSceneHold, markSceneScanned, nextDryStreak, scanIntervalOpen, sceneMoved, stepSceneHold, type GreyFrame, type SceneHold } from '../lib/cardFrame'
+import type { PixelImage } from '../lib/centering'
 import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
 import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
 
@@ -89,10 +89,12 @@ async function captureStill(video: HTMLVideoElement, stream: MediaStream): Promi
 /**
  * Rear camera for a case. A steady second sends one full-resolution frame.
  * The same still view is not scanned again, and automatic scans wait four seconds apart.
+ * Three scans with no new card pause until the phone moves or you tap.
  */
 export function ScanLive({
   jpRows,
   onScan,
+  onAbort,
   onClose,
   onFreeze,
   onUpload,
@@ -100,6 +102,7 @@ export function ScanLive({
 }: {
   jpRows: BookPrice[]
   onScan: (file: File) => Promise<LiveScanResult>
+  onAbort: () => void
   onClose: () => void
   onFreeze: (shot: LiveShot) => void
   onUpload: () => void
@@ -113,8 +116,12 @@ export function ScanLive({
   const lastScanAt = useRef<number | null>(null)
   const busyRef = useRef(false)
   const failuresRef = useRef(0)
-  const signatureRef = useRef<Quad | null>(null)
+  const seenCards = useRef(new Set<string>())
+  const dryStreak = useRef(0)
+  const autoPausedRef = useRef(false)
   const usageFromScan = useRef(false)
+  const onAbortRef = useRef(onAbort)
+  onAbortRef.current = onAbort
   const sendRef = useRef<(manual: boolean) => Promise<void>>(async () => {})
   const unavailableRef = useRef(onUnavailable)
   unavailableRef.current = onUnavailable
@@ -124,7 +131,9 @@ export function ScanLive({
   const [blocked, setBlocked] = useState(false)
   const [dim, setDim] = useState(false)
   const [reading, setReading] = useState(false)
+  const [readPct, setReadPct] = useState(0)
   const [readError, setReadError] = useState<string | null>(null)
+  const [autoPaused, setAutoPaused] = useState(false)
   const [shot, setShot] = useState<LiveShot | null>(null)
   const [labelsCurrent, setLabelsCurrent] = useState(false)
   const [shutterReady, setShutterReady] = useState(false)
@@ -142,6 +151,20 @@ export function ScanLive({
       document.body.style.overflow = prev
     }
   }, [])
+
+  useEffect(() => () => onAbortRef.current(), [])
+
+  useEffect(() => {
+    if (!reading) {
+      setReadPct(0)
+      return
+    }
+    const started = Date.now()
+    const timer = window.setInterval(() => {
+      setReadPct(Math.min(1, (Date.now() - started) / 30000))
+    }, 200)
+    return () => window.clearInterval(timer)
+  }, [reading])
 
   useEffect(() => {
     const el = boxRef.current
@@ -205,12 +228,18 @@ export function ScanLive({
     }
   }, [])
 
-  const frameQuad = useCallback((): Quad | null => {
+  const frameGrey = useCallback((): GreyFrame | null => {
     const video = videoRef.current
     if (!video) return null
     const canvas = (analysisCanvas.current ??= document.createElement('canvas'))
     const pixels = analysisFrame(video, canvas)
-    return pixels ? sceneQuad(pixels) : null
+    return pixels ? greyDownscale(pixels) : null
+  }, [])
+
+  const clearAutoPause = useCallback(() => {
+    autoPausedRef.current = false
+    dryStreak.current = 0
+    setAutoPaused(false)
   }, [])
 
   const armShutter = useCallback(() => {
@@ -222,14 +251,13 @@ export function ScanLive({
     async (manual: boolean) => {
       if (busyRef.current) return
       if (manual && !shutterReady) return
-      if (!manual && !scanIntervalOpen(lastScanAt.current, Date.now())) return
+      if (!manual && (autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
       const video = videoRef.current
       const stream = streamRef.current
       if (!video || !stream) return
       busyRef.current = true
       if (!manual) holdRef.current = markSceneScanned(holdRef.current)
-      const signature = frameQuad()
-      signatureRef.current = signature
+      const signature = frameGrey()
       setReading(true)
       if (manual) setShutterReady(false)
       try {
@@ -240,6 +268,10 @@ export function ScanLive({
         }
         const file = new File([blob], 'scan-camera.jpg', { type: 'image/jpeg', lastModified: Date.now() })
         const result = await onScan(file)
+        if (!result.ok && result.code === 'aborted') {
+          if (!manual) holdRef.current = { ...holdRef.current, scanned: false }
+          return
+        }
         lastScanAt.current = Date.now()
         if (!result.ok) {
           failuresRef.current += 1
@@ -250,8 +282,8 @@ export function ScanLive({
           return
         }
         failuresRef.current = 0
-        const nowQuad = frameQuad()
-        const movedSince = Boolean(signature && nowQuad && quadDrift(signature, nowQuad) > QUAD_STABLE_PX * 3)
+        const nowFrame = frameGrey()
+        const movedSince = Boolean(signature && nowFrame && sceneMoved(compareFrames(signature, nowFrame)))
         setReadError(null)
         setShot({ scan: result.scan, file, targets: result.targets })
         if (result.usage) {
@@ -260,13 +292,23 @@ export function ScanLive({
         }
         setLabelsCurrent(!movedSince)
         setDim(false)
+        const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards)
+        seenCards.current = outcome.seen
+        dryStreak.current = outcome.streak
+        if (outcome.pause) {
+          autoPausedRef.current = true
+          setAutoPaused(true)
+        } else if (outcome.streak === 0) {
+          autoPausedRef.current = false
+          setAutoPaused(false)
+        }
       } finally {
         busyRef.current = false
         setReading(false)
         if (manual) armShutter()
       }
     },
-    [armShutter, frameQuad, onScan, shutterReady],
+    [armShutter, frameGrey, onScan, shutterReady],
   )
   sendRef.current = send
 
@@ -295,13 +337,18 @@ export function ScanLive({
       if (video) {
         const pixels = analysisFrame(video, canvas)
         if (pixels) {
-          const step = stepSceneHold(holdRef.current, sceneQuad(pixels), Date.now())
+          const step = stepSceneHold(holdRef.current, greyDownscale(pixels), Date.now())
           holdRef.current = step.state
           if (step.moved) {
             failuresRef.current = 0
             setDim(true)
+            if (autoPausedRef.current) {
+              autoPausedRef.current = false
+              dryStreak.current = 0
+              setAutoPaused(false)
+            }
           } else if (step.steady) setDim(false)
-          if (step.ready) void sendRef.current(false)
+          if (step.ready && !autoPausedRef.current) void sendRef.current(false)
         }
       }
       timer = window.setTimeout(tick, 200)
@@ -362,7 +409,19 @@ export function ScanLive({
           )
         })}
         {phase === 'starting' && <p className="absolute inset-x-0 top-6 text-center text-[17px] font-medium text-white">Starting the camera…</p>}
-        {reading && <p className="absolute inset-x-0 top-6 text-center text-[17px] font-semibold text-white">Reading the case…</p>}
+        {reading && (
+          <div className="absolute inset-x-6 top-6" data-testid="scan-reading">
+            <p className="text-center text-[17px] font-semibold text-white">reading case, about 30s</p>
+            <div className="mx-auto mt-2 h-2 max-w-xs overflow-hidden rounded-full bg-white/30" role="progressbar" aria-valuemin={0} aria-valuemax={30} aria-valuenow={Math.round(readPct * 30)}>
+              <div className="h-full bg-white" style={{ width: `${readPct * 100}%` }} />
+            </div>
+          </div>
+        )}
+        {autoPaused && (
+          <button type="button" data-testid="scan-hold" onClick={clearAutoPause} className="absolute inset-x-4 top-16 rounded-xl bg-white px-3 py-3 text-center text-[16px] font-semibold text-black">
+            Paused to save scans, move or tap to resume
+          </button>
+        )}
         {shot && !labelsCurrent && <p className="absolute inset-x-4 top-16 text-center text-[16px] font-semibold text-white" data-testid="scan-moved">moved, rescanning</p>}
         {readError && (
           <p className="absolute inset-x-4 top-16 rounded-xl bg-black/80 px-3 py-2 text-center text-[16px] font-medium" role="alert">
@@ -387,8 +446,19 @@ export function ScanLive({
         )}
       </div>
       <div className="flex items-center justify-between gap-2 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-        <button type="button" data-testid="scan-pause" onClick={() => setPaused((value) => !value)} className="min-h-14 flex-1 rounded-xl bg-white text-[17px] font-semibold text-black">
-          {paused ? 'Resume' : 'Pause'}
+        <button
+          type="button"
+          data-testid="scan-pause"
+          onClick={() => {
+            if (autoPaused && !paused) {
+              clearAutoPause()
+              return
+            }
+            setPaused((value) => !value)
+          }}
+          className="min-h-14 flex-1 rounded-xl bg-white text-[17px] font-semibold text-black"
+        >
+          {paused || autoPaused ? 'Resume' : 'Pause'}
         </button>
         <button
           type="button"
@@ -411,7 +481,7 @@ export function ScanLive({
         >
           Freeze
         </button>
-        <button type="button" onClick={onUpload} className="min-h-14 rounded-xl px-2 text-[15px] font-semibold text-white">
+        <button type="button" data-testid="scan-upload" onClick={onUpload} disabled={reading} className="min-h-14 rounded-xl px-2 text-[15px] font-semibold text-white disabled:opacity-40">
           Upload
         </button>
       </div>

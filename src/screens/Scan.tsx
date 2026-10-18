@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { cameraSupported } from '../components/CameraCapture'
 import { ScanLive, type LiveScanResult } from '../components/ScanLive'
@@ -61,6 +61,12 @@ export function ScanScreen() {
   const [cameraNote, setCameraNote] = useState<string | null>(null)
   const [jpRows, setJpRows] = useState<BookPrice[]>([])
   const fileRef = useRef<HTMLInputElement>(null)
+  const scanAbort = useRef<AbortController | null>(null)
+  const abortScan = useCallback(() => {
+    scanAbort.current?.abort()
+  }, [])
+
+  useEffect(() => abortScan, [abortScan])
   const photo = preview || imageUrl.trim() || null
   const crops = useBrowserCrops(photo, scan?.cards ?? [])
   const rows = useMemo(() => prints(), [])
@@ -78,6 +84,8 @@ export function ScanScreen() {
   }, [])
 
   const requestScan = async (shot: File | null): Promise<LiveScanResult> => {
+    const ac = new AbortController()
+    scanAbort.current = ac
     const body: Record<string, unknown> = {
       caption,
       lotAskSgd: lotAsk.trim() ? Number(lotAsk) : null,
@@ -87,13 +95,16 @@ export function ScanScreen() {
     else if (file) body.image = await fileToDataUrl(file)
     else if (imageUrl.trim()) body.imageUrl = imageUrl.trim()
     else return { ok: false, error: 'Add a photo or an image link.' }
+    if (ac.signal.aborted) return { ok: false, error: 'Scan stopped.', code: 'aborted' }
     try {
       const res = await fetch(`${VISION_URL}/scan`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: ac.signal,
       })
+      if (ac.signal.aborted) return { ok: false, error: 'Scan stopped.', code: 'aborted' }
       const data = await res.json().catch(() => null)
       if (!res.ok || !data?.cards) {
         const code = typeof data?.error === 'string' ? data.error : undefined
@@ -105,7 +116,8 @@ export function ScanScreen() {
         usage: data.usage && typeof data.usage.cap === 'number' ? { today: Number(data.usage.today) || 0, cap: Number(data.usage.cap) } : null,
         targets: Array.isArray(data.targets) ? data.targets : [],
       }
-    } catch {
+    } catch (err) {
+      if (ac.signal.aborted || (err instanceof DOMException && err.name === 'AbortError')) return { ok: false, error: 'Scan stopped.', code: 'aborted' }
       return { ok: false, error: 'That photo could not be read.' }
     }
   }
@@ -262,6 +274,7 @@ export function ScanScreen() {
         <ScanLive
           jpRows={jpRows}
           onScan={requestScan}
+          onAbort={abortScan}
           onClose={() => setLive(false)}
           onUpload={useUpload}
           onUnavailable={(message) => {
