@@ -797,7 +797,7 @@ export function stepSceneHold(
   }
   const motion = compareFrames(prev.anchor, frame)
   if (!sceneMoved(motion)) {
-    const steadySince = prev.steadySince ?? now
+    const steadySince = prev.steadySince != null && prev.steadySince <= now ? prev.steadySince : now
     const state = { anchor: prev.anchor, steadySince, misses: 0, scanned: prev.scanned }
     return { state, steady: true, moved: false, ready: !state.scanned && now - steadySince >= steadyMs, motion }
   }

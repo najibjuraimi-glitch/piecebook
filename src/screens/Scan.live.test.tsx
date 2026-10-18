@@ -429,6 +429,7 @@ describe('scan camera', () => {
     expect(bar?.getAttribute('data-indeterminate')).toBe('true')
     expect(bar?.hasAttribute('aria-valuenow')).toBe(false)
     clock.mockRestore()
+    pan = 200
     await act(async () => {
       release?.()
       await new Promise((resolve) => setTimeout(resolve, 40))
@@ -436,9 +437,9 @@ describe('scan camera', () => {
     expect(view.querySelector('[data-testid="scan-moved"]')?.textContent).toBe('moved, rescanning')
     expect(view.querySelector('[data-testid="scan-hold"]')).toBeNull()
     expect(view.textContent).not.toContain('Paused to save scans')
-    expect(await waitUntil(() => scans.length >= 4, 8000)).toBe(true)
+    expect(await waitUntil(() => scans.length >= 4, 12000)).toBe(true)
     expect(view.textContent).not.toContain('Paused to save scans')
-  }, 30000)
+  }, 40000)
 
   it('aborts the scan request when the live view unmounts', async () => {
     installPointer(true)

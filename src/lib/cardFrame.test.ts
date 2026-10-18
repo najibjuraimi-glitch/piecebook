@@ -847,6 +847,9 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(step.ready).toBe(false)
     step = stepSceneHold(step.state, base, 100 + MOVED_HOLD_MS, MOVED_HOLD_MS)
     expect(step.ready).toBe(true)
+    const jumped = stepSceneHold(step.state, base, 50, MOVED_HOLD_MS)
+    expect(jumped.state.steadySince).toBe(50)
+    expect(jumped.ready).toBe(false)
   })
 
   it('pauses after three scans that add no new card', () => {
