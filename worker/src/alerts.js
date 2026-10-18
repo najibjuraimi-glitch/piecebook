@@ -9,7 +9,7 @@
  * its all-in. watchlist is a target whose English price is at or under the
  * target. The same price does not fire again. A Japanese price is never used.
  */
-import { valueCopies } from "../../src/lib/boughtBook.ts";
+import { singaporeToday, valueCopies } from "../../src/lib/boughtBook.ts";
 import { currentAlerts, dismissAlertIds, forgetAlertKey, nextFiredStamp, normaliseAlerts } from "../../src/lib/alertsBook.ts";
 import { boughtCopyFromHolding, emptyHoldings } from "../../src/lib/holdings.ts";
 import { emptyWatch, valueWatchItems } from "../../src/lib/watchlist.ts";
@@ -65,7 +65,7 @@ export async function handleAlerts(req, env, identity, cors, deps = {}) {
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts[0] !== "alerts") return json({ error: "not_found" }, 404, cors);
   const now = deps.now ? deps.now() : Date.now();
-  const today = new Date(now).toISOString().slice(0, 10);
+  const today = singaporeToday(now);
   const log = deps.log || (() => {});
   const email = bookEmail(identity, env);
   if (!email) return json({ error: "no_identity" }, 403, cors);

@@ -20,7 +20,7 @@ Every row includes `priceSgd`, `url`, `source`, `asOf`, and `stale`. When neithe
 
 `hit` is true only when there is a target and the price is at or under it and the price is not stale. A null target is not a hit. A price dated more than 7 days ago is marked `stale`, still shown, and is not a hit. No price is not a hit and is not marked stale.
 
-`GET /watchlist?format=targets` returns `{ id, print, parallel, language, grade, targetSgd, externalId, marketSgd, marketAsOf, marketSource, marketUrl, priceSgd, source, asOf, stale }` for each row. `priceSgd`, `source`, `asOf`, and `stale` are the price the row would show. Auction uses that list to scan. `parallel` is the seed’s variant label, or null on a base print. A capital P in a print id (`EB03-053P2`) is the same print as `EB03-053p2`. A Limitless link for a parallel is omitted; it is never the base card’s page.
+`GET /watchlist?format=targets` returns `{ id, print, parallel, language, grade, targetSgd, externalId, marketSgd, marketAsOf, marketSource, marketUrl, priceSgd, source, asOf, url, stale, hit }` for each row. `priceSgd`, `source`, `asOf`, `url`, `stale`, and `hit` are the price the row would show. Auction uses that list to scan. `parallel` is the seed’s variant label, or null on a base print. A capital P in a print id (`EB03-053P2`) is the same print as `EB03-053p2`. A Limitless link for a parallel is omitted; it is never the base card’s page.
 
 ## Phone
 

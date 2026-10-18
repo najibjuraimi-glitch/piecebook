@@ -13,6 +13,7 @@
  *   DELETE /holdings/:rowId
  *   POST   /holdings/:rowId/sold
  */
+import { singaporeToday } from "../../src/lib/boughtBook.ts";
 import { writerAllowed } from "./access.js";
 import { forgetAlertKey, normaliseAlerts } from "../../src/lib/alertsBook.ts";
 import { acceptSnapshot, createHolding, deleteHolding, emptyHoldings, importHoldings, markSold, patchHolding } from "../../src/lib/holdings.ts";
@@ -92,7 +93,7 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts[0] !== "holdings") return json({ error: "not_found" }, 404, cors);
   const now = deps.now ? deps.now() : Date.now();
-  const today = new Date(now).toISOString().slice(0, 10);
+  const today = singaporeToday(now);
   const log = deps.log || (() => {});
   const email = bookEmail(identity, env);
   if (!email) return json({ error: "no_identity" }, 403, cors);

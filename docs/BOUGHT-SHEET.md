@@ -6,7 +6,7 @@ Rows live in the Worker’s existing `USER_DATA` KV, behind the same Cloudflare 
 
 `/collection` redirects to `/portfolio`. Card lists (a set, a character, an artist, search) mark a print **In your portfolio** only when a held or listed copy’s `exactPrint` is that print id. A copy with no `exactPrint` marks every print of the card number inside its code **You own a version**. A bare `OP13-028` does not mark the base print as the one in the portfolio. The old owned checklist in `piecebook.v1` is left where it is and is not read for these marks.
 
-`data/portfolio-history.csv` is only the sample day’s totals. The real daily snapshot is stored next to the rows: one totals row per UTC day, a same-day write replaces that day, older days stay. Opening Portfolio records today. Line items are not written into the repo.
+`data/portfolio-history.csv` is only the sample day’s totals. The real daily snapshot is stored next to the rows: one totals row per Asia/Singapore day, a same-day write replaces that day, older days stay. Opening Portfolio records today. Line items are not written into the repo.
 
 ## What a row stores
 
@@ -76,7 +76,7 @@ curl -s "${H[@]}" -X POST "$PIECEBOOK_API/holdings/OPB-0001/sold" -H 'Content-Ty
 curl -s "${H[@]}" -X POST "$PIECEBOOK_API/holdings/import" -H 'Content-Type: application/json' \
   -d '{"revision":0,"csv":"Row ID,Code,Grade/Raw,All-in SGD,Status,Card,Market value SGD,Market as of,Source\nOPB-0001,ST01-007,Raw,2,Held,Nami,9,2026-10-17,Cards\n"}'
 
-# Daily totals. asOf must be today UTC. Same day replaces that day.
+# Daily totals. asOf must be today in Asia/Singapore. Same day replaces that day.
 curl -s "${H[@]}" -X POST "$PIECEBOOK_API/holdings/snapshot" -H 'Content-Type: application/json' \
   -d '{"asOf":"2026-10-17","heldCopies":1,"listedCopies":0,"soldCopies":0,"costSgd":2,"marketSgd":0.9,"unpricedHeld":0,"unrealizedSgd":-1.1,"realizedSgd":null,"overallSgd":-1.1,"capitalSgd":2,"roi":-0.55}'
 

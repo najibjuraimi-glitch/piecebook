@@ -750,7 +750,9 @@ describe('/watchlist and /alerts', () => {
         priceSgd: null,
         source: null,
         asOf: null,
+        url: null,
         stale: false,
+        hit: false,
       },
     ])
     const dup = await send('/watchlist', { revision: 1, code: 'EB03-053p2', grade: 'PSA 10', targetSgd: 10 })
@@ -803,7 +805,18 @@ describe('/watchlist and /alerts', () => {
     const book = await (await call(req('/watchlist', { jwt: svc }), e)).json()
     expect(book.writes.at(-1)).toEqual({ at: '2026-10-16T09:00:00.000Z', caller: 'abc123.access', op: 'price', rowId: 'WL-0001' })
     const targets = await (await call(req('/watchlist?format=targets', { jwt: svc }), e)).json()
-    expect(targets.targets[0]).toMatchObject({ marketSgd: 40, marketAsOf: '2026-10-16', marketSource: 'Cards', marketUrl: 'https://www.pricecharting.com/a' })
+    expect(targets.targets[0]).toMatchObject({
+      marketSgd: 40,
+      marketAsOf: '2026-10-16',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+      priceSgd: 40,
+      source: 'Cards',
+      asOf: '2026-10-16',
+      url: 'https://www.pricecharting.com/a',
+      stale: false,
+      hit: true,
+    })
     const aged = await send('POST', '/watchlist/WL-0001/price', {
       revision: 2,
       marketSgd: 40,
@@ -853,6 +866,61 @@ describe('/watchlist and /alerts', () => {
     })
     expect(tomorrow.status).toBe(400)
     expect(await tomorrow.json()).toMatchObject({ error: 'bad_date', detail: 'marketAsOf' })
+  })
+
+  it('uses the Singapore day for alerts, holdings, and the watchlist between midnight and 8am', async () => {
+    const e = env()
+    const evening = Date.parse('2026-10-16T18:00:00Z')
+    const eveningS = Math.floor(evening / 1000)
+    const jwt = await signer.sign({ ...serviceClaims(), iat: eveningS - 10, exp: eveningS + 3600 })
+    const send = (path: string, body?: unknown) =>
+      worker.fetch(
+        req(path, {
+          method: body == null ? 'GET' : 'POST',
+          jwt,
+          headers: body == null ? {} : { 'Content-Type': 'application/json' },
+          body: body == null ? undefined : JSON.stringify(body),
+        }),
+        e,
+        {} as never,
+        { ...deps, now: () => evening },
+      )
+    expect((await send('/watchlist', { revision: 0, code: 'EB03-053p2', grade: 'PSA 10', targetSgd: 80 })).status).toBe(201)
+    expect((await send('/watchlist/WL-0001/price', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '2026-10-09',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+    })).status).toBe(200)
+    const book = await (await send('/watchlist')).json()
+    expect(book.items[0]).toMatchObject({ stale: true, hit: false, asOf: '2026-10-09' })
+    const alerts = await (await send('/alerts')).json()
+    expect(alerts.watchlist).toEqual([])
+    const targets = await (await send('/watchlist?format=targets')).json()
+    expect(targets.targets[0]).toMatchObject({
+      priceSgd: 40,
+      source: 'Cards',
+      asOf: '2026-10-09',
+      url: 'https://www.pricecharting.com/a',
+      stale: true,
+      hit: false,
+    })
+    const snapshot = {
+      heldCopies: 0,
+      listedCopies: 0,
+      soldCopies: 0,
+      costSgd: 0,
+      marketSgd: 0,
+      unpricedHeld: 0,
+      unrealizedSgd: 0,
+      realizedSgd: null,
+      overallSgd: 0,
+      capitalSgd: 0,
+      roi: 0,
+    }
+    expect((await send('/holdings/snapshot', { ...snapshot, asOf: '2026-10-16' })).status).toBe(400)
+    expect((await send('/holdings/snapshot', { ...snapshot, asOf: '2026-10-17' })).status).toBe(200)
   })
 
   it('enforces WRITE_CLIENT_IDS only when it is set', async () => {
