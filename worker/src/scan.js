@@ -5,6 +5,7 @@
  * Street prices are stored English quotes. Japanese cards are not given an English price.
  */
 import { singaporeToday } from "../../src/lib/boughtBook.ts";
+import jpeg from "jpeg-js";
 import { matchScan, normaliseCondition } from "../../src/lib/scanMatch.ts";
 import { bookEmail, keyFor } from "./holdings.js";
 import { seedPrints, storedQuote } from "./storedPrice.js";
@@ -13,7 +14,8 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_CARDS = 40;
 
 export const SCAN_PROMPT = `You are looking at one photo of several One Piece TCG cards in a dealer case, binder page, showcase or listing.
-Find every card. Read the slab label first when a card is in a grading slab. Read the card number from the label or the card face only when you can actually see it.
+Find every card. Read the slab label first when a card is in a grading slab. Read the card number from the label or the card face only when you can actually see it. Put that text in code even when it is only a set code such as EB04.
+Bounding boxes are fractions of the photo from 0 to 1, not pixels.
 Do not transcribe effect text. Do not guess a language from a set name. A label that says JP is Japanese even if the set name contains EN.
 Do not guess a grade. Copy the grade and cert number from the label, or leave them null.
 For each card return its place in the grid (row and column, left to right, top to bottom, starting at 0), a bounding box as fractions of the photo (x, y, w, h from 0 to 1), the card number, the print (base, aa, sp, manga, gold, silver, or 2nd anni), language EN or JP only when you read that word, a confidence from 0 to 1, any price sticker amount and its currency (SGD if the sticker shows no currency), and a short condition estimate from this crop.
@@ -70,21 +72,46 @@ function text(value, max) {
   return typeof value === "string" && value.trim() ? value.trim().slice(0, max) : null
 }
 
-function fraction(value) {
-  const n = Number(value)
-  if (!Number.isFinite(n)) return null
-  return Math.min(1, Math.max(0, n))
+/**
+ * A box is fractions of the photo, 0 to 1. Values above 1 are pixels and are
+ * divided by the image size. They are not clamped, which turned every pixel
+ * box into {x:1,y:0,w:1,h:1}.
+ */
+export function normaliseBox(box, width, height) {
+  if (!box) return null
+  let x = Number(box.x)
+  let y = Number(box.y)
+  let w = Number(box.w)
+  let h = Number(box.h)
+  if (![x, y, w, h].every((n) => Number.isFinite(n)) || w <= 0 || h <= 0 || x < 0 || y < 0) return null
+  if (x > 1 || y > 1 || w > 1 || h > 1) {
+    if (!width || !height) return null
+    x /= width
+    y /= height
+    w /= width
+    h /= height
+  }
+  if (x > 1 || y > 1 || w > 1 || h > 1 || x + w > 1.02 || y + h > 1.02) return null
+  return { x, y, w, h }
+}
+
+function imageSize(data) {
+  try {
+    const bytes = Uint8Array.from(atob(data), (char) => char.charCodeAt(0))
+    const decoded = jpeg.decode(bytes, { useTArray: true, formatAsRGBA: false, maxResolutionInMP: 24 })
+    if (!decoded?.width || !decoded?.height) return { width: 0, height: 0 }
+    return { width: decoded.width, height: decoded.height }
+  } catch {
+    return { width: 0, height: 0 }
+  }
 }
 
 /** Model cards into the shape the matcher prices. Drops nothing the model returned except empty rows past the cap. */
-export function normaliseScanSights(raw) {
+export function normaliseScanSights(raw, image = { width: 0, height: 0 }) {
   const cards = Array.isArray(raw?.cards) ? raw.cards.slice(0, MAX_CARDS) : []
   return cards.map((card) => {
-    const x = fraction(card?.box?.x)
-    const y = fraction(card?.box?.y)
-    const w = fraction(card?.box?.w)
-    const h = fraction(card?.box?.h)
     const amount = Number(card?.sticker_amount)
+    const codeText = text(card?.code, 80)
     const grader = text(card?.grader, 20)
     const grade = text(card?.grade, 20)
     const cert = text(card?.cert, 24)
@@ -99,14 +126,15 @@ export function normaliseScanSights(raw) {
     return {
       row: Number.isFinite(Number(card?.row)) ? Number(card.row) : 0,
       col: Number.isFinite(Number(card?.col)) ? Number(card.col) : 0,
-      box: x != null && y != null && w != null && h != null ? { x, y, w, h } : null,
+      box: normaliseBox(card?.box, image.width, image.height),
+      codeText,
       code: text(card?.code, 24),
       name: text(card?.name, 60),
       language: text(card?.language, 12),
       labelText: text(card?.label_text, 160),
       parallel: text(card?.parallel, 40),
       confidence: Number.isFinite(Number(card?.confidence)) ? Math.min(1, Math.max(0, Number(card.confidence))) : 0,
-      sticker: Number.isFinite(amount) && amount >= 0 ? { amount, currency: (text(card?.sticker_currency, 8) || "SGD").toUpperCase() } : null,
+      sticker: Number.isFinite(amount) && amount > 0 ? { amount, currency: (text(card?.sticker_currency, 8) || "SGD").toUpperCase() } : null,
       slab,
       condition: normaliseCondition({
         judge: card?.condition_judge,
@@ -173,6 +201,14 @@ async function charge(env, state) {
   return { used: next, cap: state.cap }
 }
 
+function safeDetail(text) {
+  return String(text || "")
+    .replace(/AIza[0-9A-Za-z_-]+/g, "[redacted]")
+    .replace(/key=[^&\s]+/gi, "key=[redacted]")
+    .replace(/sk-[A-Za-z0-9_-]+/g, "[redacted]")
+    .slice(0, 300)
+}
+
 function json(body, status, cors) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors } })
 }
@@ -200,7 +236,7 @@ export async function handleScan(req, env, identity, cors, deps = {}) {
   if (!image?.data) return json({ error: "image_required" }, 400, cors)
   if (image.data.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: "too_large" }, 413, cors)
 
-  const day = new Date().toISOString().slice(0, 10)
+  const day = singaporeToday(Date.now())
   const room = await capState(env, day)
   if (room.limited) return json({ error: "daily_cap_reached", cap: room.cap, used: room.used }, 429, cors)
 
@@ -224,13 +260,17 @@ export async function handleScan(req, env, identity, cors, deps = {}) {
   } catch {
     return json({ error: "model_error" }, 502, cors)
   }
-  if (!response.ok) return json({ error: "model_error", status: response.status }, 502, cors)
+  if (!response.ok) {
+    let detail = ""
+    try { detail = await response.text() } catch { detail = "" }
+    return json({ error: "model_error", status: response.status, detail: safeDetail(detail) }, 502, cors)
+  }
   let payload
   try { payload = await response.json() } catch { return json({ error: "unparseable_model_output" }, 502, cors) }
   const textPart = payload?.candidates?.[0]?.content?.parts?.filter((part) => part && !part.thought && typeof part.text === "string").map((part) => part.text).join("") || ""
   let parsed
   try { parsed = JSON.parse(textPart) } catch { return json({ error: "unparseable_model_output" }, 502, cors) }
-  const sights = normaliseScanSights(parsed)
+  const sights = normaliseScanSights(parsed, imageSize(image.data))
   const usage = await charge(env, room)
   const summary = matchScan({
     sights,

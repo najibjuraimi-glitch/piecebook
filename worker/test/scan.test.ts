@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { singaporeToday } from '../../src/lib/boughtBook.ts'
 import worker from '../src/index.js'
-import { normaliseScanSights } from '../src/scan.js'
+import { normaliseBox, normaliseScanSights } from '../src/scan.js'
 
 class MemoryKV {
   store = new Map<string, string>()
@@ -13,7 +14,7 @@ class MemoryKV {
 }
 
 const PIXEL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA='
-const DAY = new Date().toISOString().slice(0, 10)
+const DAY = singaporeToday(Date.now())
 
 const cards = {
   cards: [
@@ -80,9 +81,15 @@ function harness(opts: { imageType?: string; imageStatus?: number } = {}) {
 }
 
 describe('scan sights', () => {
-  it('keeps the box and drops a sticker that is not a number', () => {
-    const sights = normaliseScanSights({ cards: [{ row: 1, col: 2, confidence: 2, sticker_amount: -1, box: { x: 0, y: 0, w: 1, h: 1 } }] })
-    expect(sights[0]).toMatchObject({ row: 1, col: 2, confidence: 1, sticker: null, box: { x: 0, y: 0, w: 1, h: 1 } })
+  it('keeps a fraction box and drops a zero sticker', () => {
+    const sights = normaliseScanSights({ cards: [{ row: 1, col: 2, confidence: 2, sticker_amount: 0, code: 'EB04', box: { x: 0.1, y: 0.2, w: 0.3, h: 0.4 } }] })
+    expect(sights[0]).toMatchObject({ row: 1, col: 2, confidence: 1, sticker: null, codeText: 'EB04', box: { x: 0.1, y: 0.2, w: 0.3, h: 0.4 } })
+  })
+
+  it('divides pixel boxes by the image size instead of clamping them', () => {
+    const box = normaliseBox({ x: 200, y: 400, w: 300, h: 500 }, 1000, 2000)
+    expect(box).toEqual({ x: 0.2, y: 0.2, w: 0.3, h: 0.25 })
+    expect(normaliseBox({ x: 1564, y: 0, w: 1564, h: 2048 }, 0, 0)).toBeNull()
   })
 })
 

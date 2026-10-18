@@ -28,6 +28,7 @@ function sight(over: Partial<ScanSight> = {}): ScanSight {
     row: 0,
     col: 0,
     box: { x: 0, y: 0, w: 0.2, h: 0.3 },
+    codeText: 'OP09-004p2',
     code: 'OP09-004p2',
     name: 'Nami',
     language: 'EN',
@@ -55,6 +56,13 @@ describe('caption', () => {
       { kind: 'bundle', amount: 1288, currency: 'SGD', count: 4 },
       { kind: 'ask', amount: 150, currency: 'SGD', count: 1 },
       { kind: 'unsold', amount: null, currency: 'SGD', count: 1 },
+    ])
+  })
+
+  it('reads several prices on a line, keeps a sequential bundle, and treats X as not for sale', () => {
+    const marks = parseCaption('390 260 130 140 130 / 1288 (Sequential x4) 1000 / 430 430 X X 3488 / 1300 380  400 800 900')
+    expect(marks.map((mark) => (mark.kind === 'unsold' ? 'X' : mark.kind === 'bundle' ? `b${mark.amount}x${mark.count}` : mark.amount))).toEqual([
+      390, 260, 130, 140, 130, 'b1288x4', 1000, 430, 430, 'X', 'X', 3488, 1300, 380, 400, 800, 900,
     ])
   })
 })
@@ -120,6 +128,69 @@ describe('under street and lot math', () => {
     expect(scan.lotGapSgd).toBe(30)
     expect(scan.maxOfferSgd).toBe(252)
     expect(scan.cards.map((card) => card.liked)).toEqual(['Nami', 'Luffy'])
+  })
+
+  it('uses a confident EN read when the label has no language word, and never prices a BGS 10 as a PSA 10', () => {
+    const label = '2025 ONE PIECE CARRYING ON HIS WILL SHANKS SILVER'
+    const en = matchScan({
+      sights: [sight({ labelText: label, language: 'EN', confidence: 0.91, code: 'OP09-004p2', parallel: 'manga' })],
+      prints,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(en.cards[0].language).toBe('EN')
+    expect(en.cards[0].priced).toBe(true)
+    const bgs = matchScan({
+      sights: [
+        sight({
+          slab: { grader: 'BGS', grade: '10 Pristine', cert: '88', year: '2025', setName: null, blackLabel: true },
+          labelText: label,
+          language: 'EN',
+        }),
+      ],
+      prints,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(bgs.cards[0]).toMatchObject({ priced: false, drag: 'no stored price for this print/grade', certUrl: 'https://www.beckett.com/grading/card-lookup?item_id=88' })
+  })
+
+  it('names a missing print and a print with no stored price', () => {
+    const scan = matchScan({
+      sights: [
+        sight({ code: 'EB04', codeText: 'EB04', parallel: null, name: null }),
+        sight({ col: 1, code: 'OP09-004p2', parallel: 'manga', name: 'Nami' }),
+      ],
+      prints,
+      quoteFor: () => null,
+      today: '2026-10-18',
+    })
+    expect(scan.cards[0]).toMatchObject({ codeText: 'EB04', printId: null, candidates: [], drag: 'print not in seed' })
+    expect(scan.cards[1]).toMatchObject({ printId: 'OP09-004p2', drag: 'no stored price for this print/grade' })
+  })
+
+  it('matches EB04 special cards and keeps a bare EB04 code as text', () => {
+    const eb04: PrintRow[] = [
+      { cardNumber: 'EB04-003', baseNumber: 'EB04-003', variant: '', rarity: 'R', language: 'EN' },
+      { cardNumber: 'EB04-003p1', baseNumber: 'EB04-003', variant: 'Special Card', rarity: 'SP', language: 'EN' },
+      { cardNumber: 'EB04-007', baseNumber: 'EB04-007', variant: '', rarity: 'SR', language: 'EN' },
+      { cardNumber: 'EB04-007p2', baseNumber: 'EB04-007', variant: 'Special Card', rarity: 'SP', language: 'EN' },
+      { cardNumber: 'EB04-039', baseNumber: 'EB04-039', variant: '', rarity: 'R', language: 'EN' },
+      { cardNumber: 'EB04-039p1', baseNumber: 'EB04-039', variant: 'Special Card', rarity: 'SP', language: 'EN' },
+      { cardNumber: 'EB04-054', baseNumber: 'EB04-054', variant: '', rarity: 'R', language: 'EN' },
+      { cardNumber: 'EB04-054p1', baseNumber: 'EB04-054', variant: 'Special Card', rarity: 'SP', language: 'EN' },
+    ]
+    expect(resolveScanPrint('EB04-003', 'sp', eb04).printId).toBe('EB04-003p1')
+    expect(resolveScanPrint('EB-04-007', 'SP', eb04).printId).toBe('EB04-007p2')
+    expect(resolveScanPrint('EB04 039', 'sp', eb04).printId).toBe('EB04-039p1')
+    expect(resolveScanPrint('EB04-054p1', null, eb04).printId).toBe('EB04-054p1')
+    const bare = matchScan({
+      sights: [sight({ code: 'EB04', codeText: 'EB04', parallel: 'sp', language: 'EN', labelText: 'EB04', confidence: 0.9 })],
+      prints: eb04,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(bare.cards[0]).toMatchObject({ codeText: 'EB04', printId: null, candidates: [], drag: 'print not in seed' })
   })
 
   it('leaves a slab unpriced when the label grade was not read, and links a PSA cert', () => {

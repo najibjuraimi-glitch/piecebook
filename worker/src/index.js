@@ -19,6 +19,7 @@ import { measurePhoto } from "../../src/lib/centering.ts";
 import { parsePhotoCentering, photoCentering, summariseCentering, unmeasured, withFullArtFront } from "../../src/lib/centeringSummary.ts";
 import { identifyIsBorderless } from "../../src/lib/frontBorder.ts";
 import { CONFIDENCES, SEVERITIES, buildScores } from "../../src/lib/gradeScore.ts";
+import { singaporeToday } from "../../src/lib/boughtBook.ts";
 
 // The prompts ask for labels, never for printed text. Transcribing a card's
 // effect text reproduces copyrighted wording that is indexed all over the web,
@@ -453,10 +454,10 @@ export default {
     const size = (imgs.front.data.length + (imgs.back?.data.length || 0)) * 0.75;
     if (size > MAX_IMAGE_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
 
-    // Daily cap (UTC day). KV is eventually consistent; good enough as a spend guard.
+    // Daily cap (Asia/Singapore day). KV is eventually consistent; good enough as a spend guard.
     // The counter moves only after a successful answer, and a repeated checkId
     // (the phone retrying one card) does not add a second charge.
-    const day = new Date().toISOString().slice(0, 10);
+    const day = singaporeToday(Date.now());
     const key = `count:${day}`;
     const cap = parseInt(env.DAILY_CAP || "60", 10);
     const used = parseInt((await env.VISION_CAP.get(key)) || "0", 10);

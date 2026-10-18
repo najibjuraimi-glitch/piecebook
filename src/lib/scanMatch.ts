@@ -46,6 +46,8 @@ export interface ScanSight {
   row: number
   col: number
   box: ScanBox | null
+  /** The card-code text the model read, before it is matched to a print id. */
+  codeText: string | null
   code: string | null
   name: string | null
   /** Language the model read. Ignored when the slab label has its own language word. */
@@ -100,6 +102,8 @@ export interface ScanRow {
   box: ScanBox | null
   imageUrl: string | null
   name: string | null
+  /** Raw code text from the model, even when it is not a print id. */
+  codeText: string | null
   language: 'EN' | 'JP' | 'CN' | 'KR' | 'FR' | null
   languageUnsure: boolean
   printId: string | null
@@ -158,20 +162,34 @@ export function languageFromLabel(label: string | null | undefined): 'EN' | 'JP'
 
 export function parseCaption(text: string): CaptionMark[] {
   const marks: CaptionMark[] = []
-  for (const rawLine of text.split(/\n+/)) {
-    const line = rawLine.trim()
-    if (!line) continue
-    if (/^x$/i.test(line)) {
-      marks.push({ kind: 'unsold', amount: null, currency: 'SGD', count: 1 })
-      continue
+  const rows = text.split(/[/|\n]+/)
+  for (const row of rows) {
+    const tokens = row.trim().split(/\s+/).filter(Boolean)
+    for (let i = 0; i < tokens.length; i += 1) {
+      const token = tokens[i]
+      if (/^x$/i.test(token)) {
+        marks.push({ kind: 'unsold', amount: null, currency: 'SGD', count: 1 })
+        continue
+      }
+      const num = token.match(/^(?:(SGD|S\$|USD|US\$|\$))?(\d+(?:\.\d+)?)$/i)
+      if (!num) continue
+      let count = 1
+      const next = tokens[i + 1] || ''
+      const after = tokens[i + 2] || ''
+      if (/^\(sequential$/i.test(next) && /^x\d+\)$/i.test(after)) {
+        count = Number(after.match(/\d+/)?.[0] || 1)
+        i += 2
+      } else if (/^\(sequential\s*x\s*\d+\)$/i.test(next)) {
+        count = Number(next.match(/\d+/)?.[0] || 1)
+        i += 1
+      }
+      const amount = Number(num[2])
+      if (!Number.isFinite(amount) || amount <= 0 || !Number.isInteger(count) || count < 1) {
+        marks.push({ kind: 'ask', amount: null, currency: 'SGD', count: 1 })
+        continue
+      }
+      marks.push({ kind: count > 1 ? 'bundle' : 'ask', amount, currency: currencyOf(num[1]), count })
     }
-    const match = line.match(/^(?:(SGD|S\$|USD|US\$|\$)\s*)?(\d+(?:\.\d+)?)\s*(?:\(\s*sequential\s*x\s*(\d+)\s*\)|x\s*(\d+))?$/i)
-    if (!match) continue
-    const currency = currencyOf(match[1])
-    const amount = Number(match[2])
-    const count = Number(match[3] || match[4] || 1)
-    if (!Number.isFinite(amount) || amount < 0 || !Number.isInteger(count) || count < 1) continue
-    marks.push({ kind: count > 1 ? 'bundle' : 'ask', amount, currency, count })
   }
   return marks
 }
@@ -185,15 +203,21 @@ function currencyOf(token: string | undefined): string {
 
 function confirmedLanguage(sight: ScanSight): 'EN' | 'JP' | 'CN' | 'KR' | 'FR' | null {
   const fromLabel = languageFromLabel(sight.labelText)
-  if (sight.labelText?.trim()) return fromLabel
+  if (fromLabel === 'JP' || fromLabel === 'CN' || fromLabel === 'KR' || fromLabel === 'FR') return fromLabel
+  if (fromLabel === 'EN') return 'EN'
   const model = (sight.language || '').trim().toUpperCase()
-  return LANG.has(model) ? (model as 'EN') : null
+  if (!sight.labelText?.trim()) return LANG.has(model) ? (model as 'EN') : null
+  if (model === 'EN' && sight.confidence >= LOW_CONFIDENCE) return 'EN'
+  return null
 }
 
+/** PSA 9 and PSA 10 only. A BGS 10, including Pristine, is not a PSA 10. */
 function gradeOf(slab: ScanSlab | null): LegalGrade | null {
   if (!slab) return 'raw'
+  const grader = (slab.grader || '').trim().toUpperCase()
   const grade = (slab.grade || '').trim().toUpperCase()
-  if (!grade) return null
+  if (!grader || !grade) return null
+  if (grader !== 'PSA') return null
   if (/\b10\b/.test(grade)) return 'psa10'
   if (/\b9(?:\.0)?\b/.test(grade) && !grade.includes('9.5')) return 'psa9'
   return null
@@ -219,12 +243,20 @@ function wordMatches(row: PrintRow, word: string): boolean {
   return variant.includes(w)
 }
 
+/** `EB-04-003` and `EB04 003` are the same print id as `EB04-003`. */
+export function loosenCode(raw: string): string {
+  let text = raw.trim().toUpperCase().replace(/\s+/g, ' ')
+  text = text.replace(/^([A-Z]{1,4})-(\d{2})[-\s](\d{3})/, '$1$2-$3')
+  text = text.replace(/^([A-Z]{1,4}\d{2})\s+(\d{3})/, '$1-$2')
+  return text
+}
+
 export function resolveScanPrint(code: string | null, parallel: string | null, rows: PrintRow[]): { printId: string | null; ambiguous: boolean; candidates: string[] } {
-  const split = splitPrintCode(code || '')
+  const split = splitPrintCode(loosenCode(code || ''))
   const family = split ? familyOf(rows, split.id) : []
   const candidates = family.map((row) => row.cardNumber)
   const word = (parallel || split?.rest || '').trim().toLowerCase()
-  const exact = exactPrintId(code)
+  const exact = exactPrintId(loosenCode(code || ''))
   if (exact && !word) {
     const hit = rows.find((row) => row.cardNumber.toUpperCase() === exact.toUpperCase())
     if (!hit) return { printId: null, ambiguous: false, candidates }
@@ -232,7 +264,10 @@ export function resolveScanPrint(code: string | null, parallel: string | null, r
     if (bareBase && family.length > 1) return { printId: null, ambiguous: true, candidates }
     return { printId: hit.cardNumber, ambiguous: false, candidates }
   }
-  if (!word || !family.length) return { printId: exact && rows.some((row) => row.cardNumber.toUpperCase() === exact.toUpperCase()) ? exact : null, ambiguous: false, candidates }
+  if (!word || !family.length) {
+    const hit = exact && rows.some((row) => row.cardNumber.toUpperCase() === exact.toUpperCase()) ? exact : null
+    return { printId: hit, ambiguous: false, candidates }
+  }
   const named = family.filter((row) => wordMatches(row, word))
   if (named.length === 1) return { printId: named[0].cardNumber, ambiguous: false, candidates }
   return { printId: null, ambiguous: true, candidates: (named.length ? named : family).map((row) => row.cardNumber) }
@@ -272,6 +307,7 @@ function certUrl(slab: ScanSlab | null): string | null {
   if (!slab?.cert) return null
   const grader = (slab.grader || '').toUpperCase()
   if (!grader || grader === 'PSA') return `https://www.psacard.com/cert/${encodeURIComponent(slab.cert)}`
+  if (grader === 'BGS' || grader === 'BECKETT') return `https://www.beckett.com/grading/card-lookup?item_id=${encodeURIComponent(slab.cert)}`
   return null
 }
 
@@ -362,8 +398,9 @@ function priceSight(
   const bundle = mark?.kind === 'bundle' && mark.amount != null && mark.bundleIndex != null
     ? { amount: mark.amount, currency: mark.currency, count: mark.count, index: mark.bundleIndex }
     : null
-  const canPrice = language === 'EN' && !lowConfidence && !resolved.ambiguous && resolved.printId != null && forSale && gradeOf(sight.slab) != null
-  const quote = canPrice ? input.quoteFor(resolved.printId!, gradeOf(sight.slab)!) : null
+  const grade = gradeOf(sight.slab)
+  const canPrice = language === 'EN' && !lowConfidence && !resolved.ambiguous && resolved.printId != null && forSale && grade != null
+  const quote = canPrice ? input.quoteFor(resolved.printId!, grade) : null
   const street = canPrice ? streetFor(quote, input.today) : emptyStreet()
   const fresh = street.status === 'fresh' && street.sgd != null
   const compare = fresh && sticker?.currency === 'SGD'
@@ -372,7 +409,18 @@ function priceSight(
   const underStreet = gapPct != null && gapPct > UNDER_STREET_PCT
   const watch = resolved.printId ? input.targets?.find((target) => target.printId.toUpperCase() === resolved.printId!.toUpperCase()) : undefined
   const targetHit = Boolean(watch && sticker?.currency === 'SGD' && sticker.amount <= watch.targetSgd)
-  const drag = dragReason({ language, lowConfidence, ambiguous: resolved.ambiguous, forSale, printId: resolved.printId, street, slab: sight.slab })
+  const drag = dragReason({
+    language,
+    lowConfidence,
+    ambiguous: resolved.ambiguous,
+    forSale,
+    printId: resolved.printId,
+    codeText: sight.codeText ?? sight.code,
+    known: resolved.candidates.length > 0 || resolved.printId != null,
+    street,
+    slab: sight.slab,
+    grade,
+  })
   return {
     index,
     row: sight.row,
@@ -380,6 +428,7 @@ function priceSight(
     box: sight.box,
     imageUrl: input.imageUrl ?? null,
     name: sight.name,
+    codeText: sight.codeText ?? sight.code,
     language,
     languageUnsure: language == null,
     printId: resolved.printId,
@@ -413,15 +462,22 @@ function dragReason(input: {
   ambiguous: boolean
   forSale: boolean
   printId: string | null
+  codeText: string | null
+  known: boolean
   street: ScanStreet
   slab: ScanSlab | null
+  grade: LegalGrade | null
 }): string | null {
   if (!input.forSale) return 'Not for sale'
   if (input.language == null) return 'Language not read'
   if (input.language !== 'EN') return `${input.language} is not priced as English`
   if (input.lowConfidence) return 'Low confidence'
-  if (input.ambiguous || !input.printId) return 'Print not exact'
-  if (input.slab && !input.slab.grade) return 'Slab grade not read'
+  if (input.ambiguous) return 'Print not exact'
+  if (!input.printId) return 'print not in seed'
+  if (input.slab && input.grade == null) {
+    return input.slab.grade ? 'no stored price for this print/grade' : 'Slab grade not read'
+  }
+  if (input.street.status === 'none') return 'no stored price for this print/grade'
   if (input.street.status !== 'fresh') return 'No price yet'
   return null
 }
@@ -433,6 +489,7 @@ export function choosePrint(card: ScanRow, printId: string, quoteFor: QuoteFor, 
     col: card.col,
     box: card.box,
     code: printId,
+    codeText: printId,
     name: card.name,
     language: card.language,
     labelText: null,

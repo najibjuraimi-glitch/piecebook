@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { singaporeToday } from '../../src/lib/boughtBook.ts'
 import { encode as encodeJpeg } from 'jpeg-js'
 import { makeSyntheticCard } from '../../src/lib/centering.ts'
 import worker, { DEFECT_FLAGS, PROMPTS, answerText, classifyModelError, extractModelResult, firstJsonObject, normaliseResult, stripFences } from '../src/index.js'
@@ -251,7 +252,7 @@ class MemoryKV {
 }
 
 const PIXEL = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA='
-const DAY = new Date().toISOString().slice(0, 10)
+const DAY = singaporeToday(Date.now())
 
 function harness(answers: unknown[], opts: { status?: number; body?: unknown; colo?: string } = {}) {
   const kv = new MemoryKV()
