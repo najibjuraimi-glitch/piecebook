@@ -557,6 +557,10 @@ export const DIM_FRAME_MEAN = 40
  * unread checks use the raw residual, so a swap needs a tap.
  */
 export const NEAR_BLACK_MEAN = 17
+/** Darkness is the brightest half of the frame, not the whole-frame mean. */
+export const BRIGHT_HALF_MIN = 18
+/** A bright spell this long clears the too-dark state. Entering it is immediate. */
+export const DARK_CLEAR_MS = 1000
 /**
  * A paused scan resumes when the local-mean residual reaches this.
  * Shadows and sensor noise stay under it. A pale sleeve or a white table clears it.
@@ -586,6 +590,8 @@ export interface FrameMotion {
   contentDy?: number
   /** Mean grey of the darker frame. A low value means the raw shift is not trusted. */
   frameMean?: number
+  /** Brightest of the four halves of the darker frame. */
+  brightHalf?: number
   dx: number
   dy: number
   /** Shift length. X is a share of the width and y a share of the height, then combined. */
@@ -832,6 +838,30 @@ function greyMean(frame: GreyFrame): number {
   return data.length ? sum / data.length : 0
 }
 
+function regionMean(frame: GreyFrame, x0: number, x1: number, y0: number, y1: number): number {
+  let sum = 0
+  let n = 0
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = x0; x < x1; x += 1) {
+      sum += frame.data[y * frame.width + x]
+      n += 1
+    }
+  }
+  return n ? sum / n : 0
+}
+
+/** The brightest of the left, right, top and bottom halves. A shadow on one side does not darken the other. */
+export function brightestHalfMean(frame: GreyFrame): number {
+  const midX = Math.max(1, Math.floor(frame.width / 2))
+  const midY = Math.max(1, Math.floor(frame.height / 2))
+  return Math.max(
+    regionMean(frame, 0, midX, 0, frame.height),
+    regionMean(frame, midX, frame.width, 0, frame.height),
+    regionMean(frame, 0, frame.width, 0, midY),
+    regionMean(frame, 0, frame.width, midY, frame.height),
+  )
+}
+
 /** How many times the local-mean comparison has actually run. A lit frame does not add one. */
 let contentMotionComputes = 0
 export function contentMotionComputeCount(): number {
@@ -860,6 +890,7 @@ export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
     dy: raw.dy,
     shiftFrac: raw.shiftFrac,
     frameMean: Math.min(greyMean(anchor), greyMean(next)),
+    brightHalf: Math.min(brightestHalfMean(anchor), brightestHalfMean(next)),
     get contentResidual() {
       return ensure().residual
     },
@@ -884,25 +915,54 @@ function nearBlack(motion: FrameMotion): boolean {
 }
 
 /** A frame this dark cannot be tracked. Auto-scan stops and a tap is placed unshifted. */
-export function tooDarkToTrack(mean: number): boolean {
-  return mean < NEAR_BLACK_MEAN
+export function tooDarkToTrack(brightHalf: number): boolean {
+  return brightHalf < BRIGHT_HALF_MIN
 }
 
 export function frameTooDark(frame: GreyFrame): boolean {
-  return tooDarkToTrack(greyMean(frame))
+  return tooDarkToTrack(brightestHalfMean(frame))
+}
+
+/**
+ * Darkness turns on immediately. It turns off only after the brightest half
+ * has stayed above the bar for a second, so a passing shadow does not flicker the cue.
+ */
+export function stepDarkState(
+  dark: boolean,
+  brightSince: number | null,
+  brightEnough: boolean,
+  now: number,
+  clearMs = DARK_CLEAR_MS,
+): { dark: boolean; brightSince: number | null } {
+  if (!brightEnough) return { dark: true, brightSince: null }
+  if (!dark) return { dark: false, brightSince: null }
+  const since = brightSince != null && brightSince <= now ? brightSince : now
+  if (now - since >= clearMs) return { dark: false, brightSince: null }
+  return { dark: true, brightSince: since }
 }
 
 /** Shift used to place or drop a read. Dim light trusts the local-mean shift, until it is too dark to track. */
+function trackLevel(motion: FrameMotion): number {
+  return motion.brightHalf ?? motion.frameMean ?? 255
+}
+
 function placedShift(motion: FrameMotion): number {
-  if (tooDarkToTrack(motion.frameMean ?? 255)) return 0
+  if (tooDarkToTrack(trackLevel(motion))) return 0
   if (dimFrame(motion)) return motion.contentShiftFrac ?? motion.shiftFrac
   return motion.shiftFrac
 }
 
 function placedDelta(motion: FrameMotion): { dx: number; dy: number } {
-  if (tooDarkToTrack(motion.frameMean ?? 255)) return { dx: 0, dy: 0 }
+  if (tooDarkToTrack(trackLevel(motion))) return { dx: 0, dy: 0 }
   if (dimFrame(motion) && motion.contentDx != null && motion.contentDy != null) return { dx: motion.contentDx, dy: motion.contentDy }
   return { dx: motion.dx, dy: motion.dy }
+}
+
+/** A dim but still trackable read whose local-mean pictures disagree is a row change, not noise. */
+function dimContentSwap(motion: FrameMotion): boolean {
+  const mean = motion.frameMean ?? 255
+  if (tooDarkToTrack(trackLevel(motion)) || mean >= DIM_FRAME_MEAN) return false
+  return (motion.contentResidual ?? 0) >= PAUSE_RESUME_RESIDUAL
 }
 
 /** The raw residual. Local-mean residuals are not compared with the raw bars. */
@@ -925,7 +985,7 @@ function gateResidual(motion: FrameMotion): number {
 export function sceneMoved(motion: FrameMotion): boolean {
   if (motion.shiftFrac >= SCENE_MOVE_FRAC || motion.residual >= SCENE_MOVE_MAD) return true
   const mean = motion.frameMean ?? 255
-  if (mean >= DIM_FRAME_MEAN || tooDarkToTrack(mean)) return false
+  if (mean >= DIM_FRAME_MEAN || tooDarkToTrack(trackLevel(motion))) return false
   return (motion.contentShiftFrac ?? 0) >= SCENE_MOVE_FRAC
 }
 
@@ -975,9 +1035,9 @@ export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
   const shift = placedShift(motion)
   const residual = placedResidual(motion)
   const substantial = shift >= SCENE_RESET_FRAC || residual >= SCENE_MOVE_MAD
-  if (shift < SCENE_MOVE_FRAC) return substantial ? 'discard' : 'show'
-  if (residual >= BOX_MOTION_RESIDUAL || substantial) return 'discard'
-  return 'show'
+  const discard = shift < SCENE_MOVE_FRAC ? substantial : residual >= BOX_MOTION_RESIDUAL || substantial
+  if (!discard && dimContentSwap(motion)) return 'discard'
+  return discard ? 'discard' : 'show'
 }
 
 /**

@@ -63,6 +63,9 @@ import {
   unreadSlabsAreNew,
   shrinkQuad,
   stepLiveView,
+  brightestHalfMean,
+  frameTooDark,
+  stepDarkState,
   stepSceneHold,
   tooDarkToTrack,
   warpImage,
@@ -786,10 +789,11 @@ function casePortrait(): PixelImage {
       const phase = col * 5 + row
       const on = Math.floor((x + phase * 3) / period) % 2 === Math.floor((y + phase) / (8 + col * 2)) % 2
       const tone = on ? 30 + row * 25 + col * 15 : 210 - row * 10
+      const scale = 0.88
       const i = (y * width + x) * 4
-      data[i] = tone
-      data[i + 1] = Math.min(255, tone + 20)
-      data[i + 2] = Math.max(0, 180 - tone)
+      data[i] = Math.round(tone * scale)
+      data[i + 1] = Math.round(Math.min(255, tone + 20) * scale)
+      data[i + 2] = Math.round(Math.max(0, 180 - tone) * scale)
       data[i + 3] = 255
     }
   }
@@ -1415,45 +1419,50 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(pan30.contentShiftFrac ?? 0).toBeGreaterThan(0.25)
     expect(wrongLabels(pan30, 0.3)).toBe(0)
     const pan45 = dimPan(0.12, 0.45)
-    expect(tooDarkToTrack(pan45.frameMean ?? 255)).toBe(true)
+    expect(tooDarkToTrack(pan45.brightHalf ?? 255)).toBe(true)
     const missed = simulateCaseWatch({
       durationMs: 30_000,
       readMs: 8_000,
       position: (t) => Math.min(0.45, (t / 8_000) * 0.45),
       residual: () => pan45.residual,
       contentResidual: () => pan45.contentResidual ?? 0,
-      frameMean: pan45.frameMean,
+      frameMean: pan45.brightHalf,
     })
     expect(missed.scans).toBe(0)
   })
 
-  it('holds dim10 and dim12 for one scan, and pauses wobble8 after four', () => {
-    const watch = (exposure: number, position: (t: number) => number, durationMs: number) =>
-      simulateCaseWatch({
-        durationMs,
+  it('keeps real dim10 and dim12 dark, and pauses a mean of about 20 after four wobble scans', () => {
+    const portrait = casePortrait()
+    for (const exposure of [0.1, 0.12]) {
+      const frame = greyDownscale(expose(portrait, exposure))
+      expect(frameTooDark(frame)).toBe(true)
+      const session = simulateCaseWatch({
+        durationMs: 20_000,
         readMs: 2_000,
-        position,
-        frameMean: exposure * 180,
+        position: () => 0,
         residual: () => 4,
         contentResidual: () => 10,
+        frameMean: brightestHalfMean(frame),
       })
-    const hold = () => 0
-    const wobble = (t: number) => 0.08 * Math.sin((2 * Math.PI * t) / 8_000)
-    for (const exposure of [0.1, 0.12]) {
-      const steady = watch(exposure, hold, 20_000)
-      expect(steady.scans).toBe(1)
-      expect(steady.paused).toBe(false)
-      const sway = watch(exposure, wobble, 120_000)
-      expect(sway.scans).toBe(4)
-      expect(sway.paused).toBe(true)
-      expect(sway.resumeCount).toBe(0)
+      expect(session.scans).toBe(0)
     }
+    const sway = simulateCaseWatch({
+      durationMs: 120_000,
+      readMs: 2_000,
+      position: (t) => 0.08 * Math.sin((2 * Math.PI * t) / 8_000),
+      frameMean: 20,
+      residual: () => 4,
+      contentResidual: () => 8,
+    })
+    expect(sway.scans).toBe(4)
+    expect(sway.paused).toBe(true)
+    expect(sway.resumeCount).toBe(0)
     const img = casePortrait()
     const dim08 = compareFrames(
       greyDownscale(noisy(expose(img, 0.08), 7, 11)),
       greyDownscale(noisy(expose(translateImage(img, 0.3), 0.08), 7, 12)),
     )
-    expect(tooDarkToTrack(dim08.frameMean ?? 255)).toBe(true)
+    expect(frameTooDark(greyDownscale(expose(img, 0.08)))).toBe(true)
     expect(labelOffset(dim08, 100, 100)).toEqual({ x: 0, y: 0 })
     const missed = simulateCaseWatch({
       durationMs: 30_000,
@@ -1461,9 +1470,64 @@ describe('case view: one steady second, then not the same scene again', () => {
       position: (t) => Math.min(0.3, (t / 8_000) * 0.3),
       residual: () => dim08.residual,
       contentResidual: () => dim08.contentResidual ?? 0,
-      frameMean: dim08.frameMean,
+      frameMean: dim08.brightHalf,
     })
     expect(missed.scans).toBe(0)
+  })
+
+  it('does not call a dim15 shadow dark, and waits a second to clear the cue', () => {
+    const img = casePortrait()
+    const shadeHalf = (source: PixelImage) => {
+      const out = copy(source)
+      for (let y = 0; y < out.height; y += 1) {
+        for (let x = 0; x < out.width / 2; x += 1) {
+          const i = (y * out.width + x) * 4
+          out.data[i] = Math.round(out.data[i] * 0.5)
+          out.data[i + 1] = Math.round(out.data[i + 1] * 0.5)
+          out.data[i + 2] = Math.round(out.data[i + 2] * 0.5)
+        }
+      }
+      return out
+    }
+    for (const exposure of [0.15, 0.14]) {
+      const lit = greyDownscale(expose(img, exposure))
+      const shadowed = greyDownscale(shadeHalf(expose(img, exposure)))
+      expect(frameTooDark(lit)).toBe(false)
+      expect(frameTooDark(shadowed)).toBe(false)
+    }
+    for (const exposure of [0.13, 0.12, 0.1, 0.08]) {
+      const lit = greyDownscale(expose(img, exposure))
+      const shadowed = greyDownscale(shadeHalf(expose(img, exposure)))
+      expect(frameTooDark(lit)).toBe(true)
+      expect(frameTooDark(shadowed)).toBe(true)
+    }
+    const lit = greyDownscale(expose(img, 0.15))
+    const shadowed = greyDownscale(shadeHalf(expose(img, 0.15)))
+    let seed = 50
+    const rand = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed / 4294967296
+    }
+    let dark = false
+    let brightSince: number | null = null
+    let on = false
+    for (let t = 0; t <= 120_000; t += 200) {
+      if (rand() < 0.08) on = !on
+      const next = stepDarkState(dark, brightSince, !frameTooDark(on ? shadowed : lit), t)
+      dark = next.dark
+      brightSince = next.brightSince
+    }
+    expect(dark).toBe(false)
+    let state = stepDarkState(false, null, false, 0)
+    expect(state.dark).toBe(true)
+    state = stepDarkState(state.dark, state.brightSince, true, 800)
+    expect(state.dark).toBe(true)
+    state = stepDarkState(state.dark, state.brightSince, true, 800 + 1000)
+    expect(state.dark).toBe(false)
+    const tracked = { mad: 0, residual: 4, dx: 0, dy: 0, shiftFrac: 0, frameMean: 20, brightHalf: 22, contentResidual: 8.8, contentShiftFrac: 0, contentDx: 0, contentDy: 0 }
+    expect(placeRead(tracked)).toBe('show')
+    expect(placeRead({ ...tracked, contentResidual: 6.6 })).toBe('show')
+    expect(placeRead({ ...tracked, contentResidual: PAUSE_RESUME_RESIDUAL })).toBe('discard')
   })
 
   it('does not resume on a dim shadow or near-black noise, and a dark swap needs a tap', () => {
