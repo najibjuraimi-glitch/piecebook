@@ -735,11 +735,88 @@ describe('/watchlist and /alerts', () => {
     expect(item).toMatchObject({ code: 'EB03-053p2', targetSgd: null, externalId: 'CH-001', hit: false, priceLabel: 'No price yet' })
     const targets = await (await call(req('/watchlist?format=targets', { jwt }), e)).json()
     expect(targets.targets).toEqual([
-      { id: 'WL-0001', print: 'EB03-053p2', parallel: 'Special Card', language: 'EN', grade: 'PSA 10', targetSgd: null, externalId: 'CH-001' },
+      {
+        id: 'WL-0001',
+        print: 'EB03-053p2',
+        parallel: 'Special Card',
+        language: 'EN',
+        grade: 'PSA 10',
+        targetSgd: null,
+        externalId: 'CH-001',
+        marketSgd: null,
+        marketAsOf: null,
+        marketSource: null,
+        marketUrl: null,
+      },
     ])
     const dup = await send('/watchlist', { revision: 1, code: 'EB03-053p2', grade: 'PSA 10', targetSgd: 10 })
     expect(dup.status).toBe(409)
     expect(await dup.json()).toMatchObject({ error: 'duplicate_print' })
+  })
+
+  it('sets a hand price in one call and fires only while that price is fresh', async () => {
+    const kv = new MemoryKV()
+    const e = env({ USER_DATA: kv })
+    const svc = await signer.sign(serviceClaims())
+    const send = (method: string, path: string, body?: unknown) =>
+      call(
+        req(path, {
+          method,
+          jwt: svc,
+          headers: { 'Content-Type': 'application/json' },
+          body: body == null ? undefined : JSON.stringify(body),
+        }),
+        e,
+      )
+    expect((await send('POST', '/watchlist', { revision: 0, code: 'EB03-053p2', grade: 'PSA 10', targetSgd: 80, externalId: 'CH-001' })).status).toBe(201)
+    expect((await (await call(req('/alerts', { jwt: svc }), e)).json()).watchlist).toEqual([])
+    const priced = await send('POST', '/watchlist/WL-0001/price', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '2026-10-16',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+    })
+    expect(priced.status).toBe(200)
+    expect(await priced.json()).toMatchObject({
+      revision: 2,
+      item: { priceSgd: 40, source: 'Cards', asOf: '2026-10-16', url: 'https://www.pricecharting.com/a', hit: true, stale: false, priceLabel: null },
+    })
+    const alerts = await (await call(req('/alerts', { jwt: svc }), e)).json()
+    expect(alerts.watchlist[0]).toMatchObject({
+      type: 'watchlist',
+      id: 'WL-0001',
+      externalId: 'CH-001',
+      priceSgd: 40,
+      source: 'Cards',
+      marketSgd: 40,
+      marketAsOf: '2026-10-16',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+      stale: false,
+    })
+    expect(JSON.stringify(alerts)).not.toContain('Japanese')
+    const book = await (await call(req('/watchlist', { jwt: svc }), e)).json()
+    expect(book.writes.at(-1)).toEqual({ at: '2026-10-16T09:00:00.000Z', caller: 'abc123.access', op: 'price', rowId: 'WL-0001' })
+    const targets = await (await call(req('/watchlist?format=targets', { jwt: svc }), e)).json()
+    expect(targets.targets[0]).toMatchObject({ marketSgd: 40, marketAsOf: '2026-10-16', marketSource: 'Cards', marketUrl: 'https://www.pricecharting.com/a' })
+    const aged = await send('POST', '/watchlist/WL-0001/price', {
+      revision: 2,
+      marketSgd: 40,
+      marketAsOf: '2026-10-08',
+      marketSource: 'Cards',
+      marketUrl: null,
+    })
+    expect((await aged.json()).item).toMatchObject({ stale: true, hit: false, priceSgd: 40 })
+    expect((await (await call(req('/alerts', { jwt: svc }), e)).json()).watchlist).toEqual([])
+    const clash = await send('POST', '/watchlist/WL-0001/price', {
+      revision: 2,
+      marketSgd: 1,
+      marketAsOf: '2026-10-16',
+      marketSource: 'Cards',
+      marketUrl: null,
+    })
+    expect(clash.status).toBe(409)
   })
 
   it('enforces WRITE_CLIENT_IDS only when it is set', async () => {

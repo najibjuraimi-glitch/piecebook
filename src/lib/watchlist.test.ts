@@ -12,6 +12,7 @@ import {
   emptyWatch,
   freshWatchHits,
   patchWatchItem,
+  setWatchPrice,
   valueWatchItem,
   valueWatchItems,
 } from './watchlist'
@@ -219,5 +220,72 @@ describe('watchlist book', () => {
     expect(sameChase).toMatchObject({ ok: false, error: 'duplicate_external_id' })
     const capital = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004P3', grade: 'Raw', targetSgd: 1 }, TODAY, prints)
     expect(capital).toMatchObject({ ok: true, item: { code: 'OP09-004p3' } })
+  })
+
+  it('uses a fresh English quote, then a manual price, and does not fire a stale manual price', () => {
+    const english = { ...legalQuote('OP09-004', 'raw')!, asOf: '2026-10-12' }
+    const base = { id: 'WL-0001', code: 'OP09-004', grade: 'Raw' as const, targetSgd: 50, notes: '', added: TODAY, marketSgd: 40, marketAsOf: '2026-10-16', marketSource: 'Cards', marketUrl: 'https://www.pricecharting.com/a' }
+    const fresh = valueWatchItem(base, () => english, TODAY)
+    expect(fresh.source).toBe(english.source)
+    expect(fresh.priceSgd).toBe(english.sgd)
+    expect(fresh.priceSgd).not.toBe(40)
+    expect(fresh.hit).toBe(true)
+
+    const staleEnglish = valueWatchItem(base, () => ({ ...english, asOf: '2026-09-05' }), TODAY)
+    expect(staleEnglish).toMatchObject({ priceSgd: 40, source: 'Cards', asOf: '2026-10-16', url: 'https://www.pricecharting.com/a', stale: false, hit: true, priceLabel: null })
+
+    const noEnglish = valueWatchItem({ ...base, code: 'EB03-053p2', grade: 'PSA 10', targetSgd: 40 }, () => null, TODAY)
+    expect(noEnglish.hit).toBe(true)
+    expect(freshWatchHits([noEnglish], {})[0]).toMatchObject({ source: 'Cards', marketSgd: 40, marketSource: 'Cards', marketUrl: 'https://www.pricecharting.com/a' })
+
+    const old = valueWatchItem({ ...base, marketAsOf: '2026-10-08' }, () => null, TODAY)
+    expect(old.stale).toBe(true)
+    expect(old.hit).toBe(false)
+    expect(old.priceSgd).toBe(40)
+    expect(freshWatchHits([old], {})).toEqual([])
+
+    const undated = valueWatchItem({ ...base, marketAsOf: null }, () => null, TODAY)
+    expect(undated.stale).toBe(true)
+    expect(undated.hit).toBe(false)
+    expect(undated.priceLabel).toBeNull()
+
+    const none = valueWatchItem({ ...base, marketSgd: null }, () => null, TODAY)
+    expect(none.priceLabel).toBe('No price yet')
+    expect(none.hit).toBe(false)
+  })
+
+  it('sets the four manual fields in one revision-checked call', () => {
+    const made = createWatchItem(emptyWatch(), { revision: 0, code: 'EB03-053p2', grade: 'PSA 10', targetSgd: 80 }, TODAY)
+    if (!made.ok) throw new Error('create')
+    const missing = setWatchPrice(made.doc, 'WL-0001', { revision: 1, marketSgd: 40 }, TODAY)
+    expect(missing).toMatchObject({ ok: false, error: 'bad_field', detail: 'marketAsOf' })
+    const priced = setWatchPrice(made.doc, 'WL-0001', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '2026-10-16',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+    }, TODAY)
+    expect(priced).toMatchObject({
+      ok: true,
+      doc: { revision: 2 },
+      item: { marketSgd: 40, marketAsOf: '2026-10-16', marketSource: 'Cards', marketUrl: 'https://www.pricecharting.com/a' },
+    })
+    const badDate = setWatchPrice(made.doc, 'WL-0001', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '17 Oct 2026',
+      marketSource: 'Cards',
+      marketUrl: null,
+    }, TODAY)
+    expect(badDate).toMatchObject({ ok: false, error: 'bad_date', detail: 'marketAsOf' })
+    const stale = setWatchPrice(made.doc, 'WL-0001', {
+      revision: 0,
+      marketSgd: 1,
+      marketAsOf: '2026-10-16',
+      marketSource: 'Cards',
+      marketUrl: null,
+    }, TODAY)
+    expect(stale).toMatchObject({ ok: false, error: 'revision_conflict', revision: 1 })
   })
 })
