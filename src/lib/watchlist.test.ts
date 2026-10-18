@@ -252,6 +252,43 @@ describe('watchlist book', () => {
     const none = valueWatchItem({ ...base, marketSgd: null }, () => null, TODAY)
     expect(none.priceLabel).toBe('No price yet')
     expect(none.hit).toBe(false)
+
+    const unreadable = valueWatchItem(
+      { ...base, marketSgd: null, marketAsOf: null },
+      () => ({ ...english, asOf: '2026-02-30' }),
+      TODAY,
+    )
+    expect(unreadable.stale).toBe(true)
+    expect(unreadable.hit).toBe(false)
+    expect(unreadable.priceSgd).toBe(english.sgd)
+  })
+
+  it('clears the manual price when the print or grade changes', () => {
+    const made = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004', grade: 'Raw', targetSgd: 80 }, TODAY)
+    if (!made.ok) throw new Error('create')
+    const priced = setWatchPrice(made.doc, 'WL-0001', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '2026-10-16',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+    }, TODAY)
+    if (!priced.ok) throw new Error('price')
+    const grade = patchWatchItem(priced.doc, 'WL-0001', { revision: 2, grade: 'PSA 10', marketSgd: 90, marketSource: 'Cards' }, TODAY)
+    expect(grade).toMatchObject({
+      ok: true,
+      item: { grade: 'PSA 10', code: 'OP09-004', marketSgd: null, marketAsOf: null, marketSource: null, marketUrl: null },
+    })
+    const print = patchWatchItem(priced.doc, 'WL-0001', { revision: 2, code: 'ST01-007' }, TODAY)
+    expect(print).toMatchObject({
+      ok: true,
+      item: { code: 'ST01-007', grade: 'Raw', marketSgd: null, marketAsOf: null, marketSource: null, marketUrl: null },
+    })
+    const same = patchWatchItem(priced.doc, 'WL-0001', { revision: 2, notes: 'kept', code: 'OP09-004P3'.replace('P3', '') }, TODAY)
+    expect(same).toMatchObject({
+      ok: true,
+      item: { code: 'OP09-004', notes: 'kept', marketSgd: 40, marketSource: 'Cards', marketUrl: 'https://www.pricecharting.com/a' },
+    })
   })
 
   it('sets the four manual fields in one revision-checked call', () => {
@@ -279,6 +316,46 @@ describe('watchlist book', () => {
       marketUrl: null,
     }, TODAY)
     expect(badDate).toMatchObject({ ok: false, error: 'bad_date', detail: 'marketAsOf' })
+    const impossible = setWatchPrice(made.doc, 'WL-0001', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '2026-13-45',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+    }, TODAY)
+    expect(impossible).toMatchObject({ ok: false, error: 'bad_date', detail: 'marketAsOf' })
+    const feb30 = setWatchPrice(made.doc, 'WL-0001', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '2026-02-30',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+    }, TODAY)
+    expect(feb30).toMatchObject({ ok: false, error: 'bad_date', detail: 'marketAsOf' })
+    const future = setWatchPrice(made.doc, 'WL-0001', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '2026-10-17',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+    }, TODAY)
+    expect(future).toMatchObject({ ok: false, error: 'bad_date', detail: 'marketAsOf' })
+    const httpLink = setWatchPrice(made.doc, 'WL-0001', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '2026-10-16',
+      marketSource: 'Cards',
+      marketUrl: 'http://www.pricecharting.com/a',
+    }, TODAY)
+    expect(httpLink).toMatchObject({ ok: false, error: 'bad_url' })
+    const noSource = setWatchPrice(made.doc, 'WL-0001', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '2026-10-16',
+      marketSource: null,
+      marketUrl: 'https://www.pricecharting.com/a',
+    }, TODAY)
+    expect(noSource).toMatchObject({ ok: false, error: 'bad_field', detail: 'marketSource' })
     const stale = setWatchPrice(made.doc, 'WL-0001', {
       revision: 0,
       marketSgd: 1,

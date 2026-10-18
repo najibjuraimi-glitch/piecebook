@@ -8,7 +8,7 @@ Rows live in the Worker’s `USER_DATA` KV, behind the same Cloudflare Access lo
 
 ## What a row stores
 
-`id` (`WL-xxxx`), print code, target grade (`Raw`, `PSA 9`, or `PSA 10`), target price SGD (or null), notes, the date it was added, an optional `externalId` (`CH-001` … `CH-006`), an optional PriceCharting link, and an optional manual market (`marketSgd`, `marketAsOf` as `yyyy-mm-dd`, `marketSource`, `marketUrl`). Cards types the manual figure. Piecebook does not fetch PriceCharting. Piecebook assigns the next `WL-xxxx` when the id is omitted, and does not assign an id again after it is removed. An id the caller sends is kept. `CH-001` is an `externalId`, not the row id. The same print and grade cannot be stored twice. `Near Mint` and `Ungraded` are not grades here. Removing a row clears that id's alert dismissal and does not change the alerts revision.
+`id` (`WL-xxxx`), print code, target grade (`Raw`, `PSA 9`, or `PSA 10`), target price SGD (or null), notes, the date it was added, an optional `externalId` (`CH-001` … `CH-006`), an optional PriceCharting link, and an optional manual market (`marketSgd`, `marketAsOf` as a real `yyyy-mm-dd` on or before today in Asia/Singapore, `marketSource`, `marketUrl`). Cards types the manual figure. Piecebook does not fetch PriceCharting. Piecebook assigns the next `WL-xxxx` when the id is omitted, and does not assign an id again after it is removed. An id the caller sends is kept. `CH-001` is an `externalId`, not the row id. The same print and grade cannot be stored twice. `Near Mint` and `Ungraded` are not grades here. Removing a row clears that id's alert dismissal and does not change the alerts revision.
 
 The code has to be one seed print id, such as `EB03-053p2` or `OP09-004`. `OP09-004 SP` is rejected with `ambiguous_print` and the list of print ids that word could mean. Send `OP09-004p3`, not the words.
 
@@ -16,11 +16,11 @@ The code has to be one seed print id, such as `EB03-053p2` or `OP09-004`. `OP09-
 
 The current price is a fresh English stored price for that exact print and grade, then the manual market figure labeled with its source and date, then **No price yet**. Raw is the seed’s ungraded Limitless price. PSA 10 or PSA 9 is used only when the stored printing is English. A variant word is not priced as the base print. A stale English quote does not block the manual figure. When the manual figure is the only price, or the English quote is stale and a manual figure is saved, the manual figure is the price.
 
-Every row includes `priceSgd`, `url`, `source`, `asOf`, and `stale`. When neither price exists, `priceSgd` is null and `priceLabel` is **No price yet**. A Japanese OP Box Index median is never a watchlist price and never a hit. A manual figure with no date is stale.
+Every row includes `priceSgd`, `url`, `source`, `asOf`, and `stale`. When neither price exists, `priceSgd` is null and `priceLabel` is **No price yet**. A Japanese OP Box Index median is never a watchlist price and never a hit. A manual figure with no date, or a date that is not a real day, is stale and does not fire. A date after today in Asia/Singapore is rejected. When `marketSgd` is set, `marketSource` and an `https` `marketUrl` are required. `http` is not a link. Changing the print or the grade clears the four manual fields.
 
 `hit` is true only when there is a target and the price is at or under it and the price is not stale. A null target is not a hit. A price dated more than 7 days ago is marked `stale`, still shown, and is not a hit. No price is not a hit and is not marked stale.
 
-`GET /watchlist?format=targets` returns `{ id, print, parallel, language, grade, targetSgd, externalId, marketSgd, marketAsOf, marketSource, marketUrl }` for each row. Auction uses that list to scan. `parallel` is the seed’s variant label, or null on a base print. A capital P in a print id (`EB03-053P2`) is the same print as `EB03-053p2`. A Limitless link for a parallel is omitted; it is never the base card’s page.
+`GET /watchlist?format=targets` returns `{ id, print, parallel, language, grade, targetSgd, externalId, marketSgd, marketAsOf, marketSource, marketUrl, priceSgd, source, asOf, stale }` for each row. `priceSgd`, `source`, `asOf`, and `stale` are the price the row would show. Auction uses that list to scan. `parallel` is the seed’s variant label, or null on a base print. A capital P in a print id (`EB03-053P2`) is the same print as `EB03-053p2`. A Limitless link for a parallel is omitted; it is never the base card’s page.
 
 ## Phone
 

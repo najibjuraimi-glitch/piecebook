@@ -8,6 +8,7 @@
  */
 import { NO_PRICE_YET } from './cardPrices'
 import {
+  calendarDate,
   httpsUrl,
   isEnglishStoredQuote,
   isStale,
@@ -332,10 +333,19 @@ function readMarketSgd(value: unknown): number | null | WatchFailure {
   return round2(value)
 }
 
-function readMarketAsOf(value: unknown): string | null | WatchFailure {
+function readMarketAsOf(value: unknown, today: string): string | null | WatchFailure {
   if (value == null || value === '') return null
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return fail(400, 'bad_date', 'marketAsOf')
-  return value.trim()
+  if (typeof value !== 'string') return fail(400, 'bad_date', 'marketAsOf')
+  const day = calendarDate(value.trim())
+  if (!day || day > today) return fail(400, 'bad_date', 'marketAsOf')
+  return day
+}
+
+function manualReady(item: WatchItem): WatchFailure | null {
+  if (item.marketSgd == null) return null
+  if (!item.marketSource) return fail(400, 'bad_field', 'marketSource')
+  if (!item.marketUrl) return fail(400, 'bad_url', 'marketUrl')
+  return null
 }
 
 function readMarketSource(value: unknown): string | null | WatchFailure {
@@ -396,7 +406,7 @@ function applyItem(base: WatchItem, body: Record<string, unknown>, today: string
       if (isFail(marketSgd)) return marketSgd
       next.marketSgd = marketSgd
     } else if (key === 'marketAsOf') {
-      const marketAsOf = readMarketAsOf(value)
+      const marketAsOf = readMarketAsOf(value, today)
       if (isFail(marketAsOf)) return marketAsOf
       next.marketAsOf = marketAsOf
     } else if (key === 'marketSource') {
@@ -456,6 +466,8 @@ export function createWatchItem(
     WRITE_KEYS,
   )
   if (isFail(applied)) return applied
+  const manual = manualReady(applied)
+  if (manual) return manual
   if (!applied.code) return fail(400, 'bad_field', 'code')
   if (!Object.prototype.hasOwnProperty.call(raw, 'grade')) return fail(400, 'bad_field', 'grade')
   if (prints.length) {
@@ -494,6 +506,12 @@ export function patchWatchItem(
     if (!named.ok) return fail(400, named.error, named.detail, undefined, named.candidates)
     applied = { ...applied, code: named.print.cardNumber }
   }
+  const prev = doc.items[idx]
+  if (applied.code.toUpperCase() !== prev.code.toUpperCase() || applied.grade !== prev.grade) {
+    applied = { ...applied, marketSgd: null, marketAsOf: null, marketSource: null, marketUrl: null }
+  }
+  const manual = manualReady(applied)
+  if (manual) return manual
   if (doc.items.some((item, i) => i !== idx && item.code.toUpperCase() === applied.code.toUpperCase() && item.grade === applied.grade)) {
     return fail(409, 'duplicate_print', `${applied.code} ${applied.grade}`)
   }

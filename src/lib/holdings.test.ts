@@ -24,6 +24,8 @@ describe('holdings', () => {
     expect(imported.imported).toBe(9)
     expect(imported.skipped).toBe(2)
     expect(imported.doc.revision).toBe(1)
+    expect(imported.doc.copies.find((c) => c.rowId === 'OPB-0001')?.priceChartingUrl).toBe('https://www.pricecharting.com/game/one-piece/nami')
+    expect(imported.doc.copies.every((c) => c.priceChartingUrl == null || c.priceChartingUrl.startsWith('https://'))).toBe(true)
     const book = bookFromHoldings(imported.doc.copies, TODAY, imported.doc.revision)
     expect(book.summary).toEqual(fixtureBook(TODAY).summary)
     const enel = book.copies.find((c) => c.rowId === 'OPB-0003')!
@@ -145,6 +147,12 @@ describe('holdings', () => {
       priceChartingUrl: 'javascript:alert(1)',
     })
     expect(bad).toMatchObject({ ok: false, error: 'bad_url' })
+    const http = createHolding(emptyHoldings(), {
+      revision: 0,
+      card: 'Nami',
+      priceChartingUrl: 'http://www.pricecharting.com/game/one-piece/nami',
+    })
+    expect(http).toMatchObject({ ok: false, error: 'bad_url' })
     const first = createHolding(emptyHoldings(), { revision: 0, rowId: 'OPB-0007', card: 'Nami', code: 'ST01-007' })
     expect(first.ok).toBe(true)
     if (!first.ok) return

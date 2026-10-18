@@ -747,6 +747,10 @@ describe('/watchlist and /alerts', () => {
         marketAsOf: null,
         marketSource: null,
         marketUrl: null,
+        priceSgd: null,
+        source: null,
+        asOf: null,
+        stale: false,
       },
     ])
     const dup = await send('/watchlist', { revision: 1, code: 'EB03-053p2', grade: 'PSA 10', targetSgd: 10 })
@@ -805,7 +809,7 @@ describe('/watchlist and /alerts', () => {
       marketSgd: 40,
       marketAsOf: '2026-10-08',
       marketSource: 'Cards',
-      marketUrl: null,
+      marketUrl: 'https://www.pricecharting.com/a',
     })
     expect((await aged.json()).item).toMatchObject({ stale: true, hit: false, priceSgd: 40 })
     expect((await (await call(req('/alerts', { jwt: svc }), e)).json()).watchlist).toEqual([])
@@ -814,9 +818,41 @@ describe('/watchlist and /alerts', () => {
       marketSgd: 1,
       marketAsOf: '2026-10-16',
       marketSource: 'Cards',
-      marketUrl: null,
+      marketUrl: 'https://www.pricecharting.com/a',
     })
     expect(clash.status).toBe(409)
+  })
+
+  it('takes today from Asia/Singapore when a manual date is checked', async () => {
+    const e = env()
+    const evening = Date.parse('2026-10-16T18:00:00Z')
+    const eveningS = Math.floor(evening / 1000)
+    const jwt = await signer.sign({ ...serviceClaims(), iat: eveningS - 10, exp: eveningS + 3600 })
+    const send = (path: string, body: unknown) =>
+      worker.fetch(
+        req(path, { method: 'POST', jwt, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+        e,
+        {} as never,
+        { ...deps, now: () => evening },
+      )
+    expect((await send('/watchlist', { revision: 0, code: 'EB03-053p2', grade: 'PSA 10', targetSgd: 80 })).status).toBe(201)
+    const todayThere = await send('/watchlist/WL-0001/price', {
+      revision: 1,
+      marketSgd: 40,
+      marketAsOf: '2026-10-17',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+    })
+    expect(todayThere.status).toBe(200)
+    const tomorrow = await send('/watchlist/WL-0001/price', {
+      revision: 2,
+      marketSgd: 40,
+      marketAsOf: '2026-10-18',
+      marketSource: 'Cards',
+      marketUrl: 'https://www.pricecharting.com/a',
+    })
+    expect(tomorrow.status).toBe(400)
+    expect(await tomorrow.json()).toMatchObject({ error: 'bad_date', detail: 'marketAsOf' })
   })
 
   it('enforces WRITE_CLIENT_IDS only when it is set', async () => {

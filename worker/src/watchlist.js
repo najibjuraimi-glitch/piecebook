@@ -13,6 +13,7 @@
  * Otherwise a manual market figure Cards typed is the price. A missing one
  * is "No price yet". Japanese prices are not used. PriceCharting is not fetched.
  */
+import { singaporeToday } from "../../src/lib/boughtBook.ts";
 import { parallelLabel, resolveHoldingPrint } from "../../src/lib/printResolve.ts";
 import { createWatchItem, deleteWatchItem, emptyWatch, patchWatchItem, setWatchPrice, valueWatchItems } from "../../src/lib/watchlist.ts";
 import { writerAllowed } from "./access.js";
@@ -69,7 +70,7 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts[0] !== "watchlist") return json({ error: "not_found" }, 404, cors);
   const now = deps.now ? deps.now() : Date.now();
-  const today = new Date(now).toISOString().slice(0, 10);
+  const today = singaporeToday(now);
   const log = deps.log || (() => {});
   const email = bookEmail(identity, env);
   if (!email) return json({ error: "no_identity" }, 403, cors);
@@ -82,8 +83,10 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
     const doc = await readDoc(kv, email);
     const prints = seedPrints();
     if (url.searchParams.get("format") === "targets") {
+      const valuedById = new Map(valueWatchItems(doc.items, quoteFor, today).map((item) => [item.id, item]));
       const targets = doc.items.map((item) => {
         const print = resolveHoldingPrint(item.code, prints);
+        const valued = valuedById.get(item.id);
         return {
           print: print ? print.cardNumber : item.code,
           parallel: print ? parallelLabel(print) : null,
@@ -96,6 +99,10 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
           marketAsOf: item.marketAsOf ?? null,
           marketSource: item.marketSource ?? null,
           marketUrl: item.marketUrl ?? null,
+          priceSgd: valued.priceSgd,
+          source: valued.source,
+          asOf: valued.asOf,
+          stale: valued.stale,
         };
       });
       return json({ source: "piecebook", revision: doc.revision, targets }, 200, cors);

@@ -171,7 +171,7 @@ export function HoldingFormScreen({ mode }: { mode: 'add' | 'edit' | 'sold' }) {
     const res = mode === 'add' ? await postHolding('/holdings', body) : await patchHolding(rowId, body)
     setSaving(false)
     if (!res.ok) {
-      if (res.error === 'bad_url') setError('The PriceCharting link needs to start with http.')
+      if (res.error === 'bad_url') setError('The PriceCharting link needs to start with https.')
       else if (res.error === 'revision_conflict') setError('This copy changed. Go back and try again.')
       else setError('Could not save.')
       return
