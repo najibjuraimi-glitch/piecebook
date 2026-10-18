@@ -4,7 +4,7 @@ import { isBelongSection, isSetsSection } from './TopBar'
 const TABS = [
   { to: '/', label: 'Sets', icon: SetsIcon, match: isSetsSection },
   { to: '/decks', label: 'Decks', icon: DecksIcon, match: (p: string) => p.startsWith('/decks') },
-  { to: '/portfolio', label: 'Portfolio', icon: PortfolioIcon, match: (p: string) => p.startsWith('/portfolio') || p.startsWith('/watchlist') || p.startsWith('/bid') },
+  { to: '/portfolio', label: 'Portfolio', icon: PortfolioIcon, match: (p: string) => p.startsWith('/portfolio') || p.startsWith('/watchlist') || p.startsWith('/bid') || p.startsWith('/scan') },
   { to: '/belong', label: 'World', icon: BelongIcon, match: isBelongSection },
 ]
 

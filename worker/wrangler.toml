@@ -58,6 +58,16 @@ fallthrough = true
 binding = "USER_DATA"
 id = "fbb335c717da4e0e98ffd433cb702ca2"
 
+# Atomic photo cap. The next production deploy creates this object.
+# Until that deploy, the Worker counts in VISION_CAP.
+[[durable_objects.bindings]]
+name = "VISION_COUNTER"
+class_name = "VisionCap"
+
+[[migrations]]
+tag = "v1-vision-cap"
+new_sqlite_classes = ["VisionCap"]
+
 # --- Local dev: `npm run worker:dev` from the repo root (KV simulated on disk) ---
 # worker/.dev.vars (git-ignored) holds ACCESS_DEV_IDENTITY=<email> so /sync works
 # on localhost without Access, plus GEMINI_API_KEY for /check. Vite proxies /api here.
@@ -82,3 +92,13 @@ id = "a993b4a3c7c04b9885889353ffdf71e0"
 [[env.staging.kv_namespaces]]
 binding = "VISION_CAP"
 id = "c67ef759e4874946b0015b68c895525e"
+
+# Atomic photo cap. Staging only, so a production deploy does not create this object.
+# The Worker still counts in VISION_CAP when this binding is absent.
+[[env.staging.durable_objects.bindings]]
+name = "VISION_COUNTER"
+class_name = "VisionCap"
+
+[[env.staging.migrations]]
+tag = "v1-vision-cap"
+new_sqlite_classes = ["VisionCap"]

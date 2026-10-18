@@ -1,5 +1,6 @@
 import type { Card } from '../data/seed'
 import { usdToSgd } from './fx'
+import { quoteManual } from './manualQuotes'
 
 /** Shown wherever a grade has no sourced figure. Never replace this with a guess. */
 export const NO_PRICE_YET = 'No price yet'
@@ -90,6 +91,19 @@ export function advicePrices(card: Card): AdvicePrice[] {
     if (grade === 'psa9' || grade === 'psa10') {
       const graded = gradedFromSeed(card, grade)
       if (graded) return { grade, label, ...graded }
+      const manual = quoteManual(card.cardNumber, grade)
+      if (manual) {
+        return {
+          grade,
+          label,
+          usd: manual.usd,
+          sgd: manual.sgd,
+          source: manual.source,
+          url: manual.url,
+          asOf: manual.asOf,
+          detail: manual.detail,
+        }
+      }
     }
     return { grade, label, ...EMPTY }
   })

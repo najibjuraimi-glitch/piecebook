@@ -342,6 +342,9 @@ export function PortfolioScreen() {
         subline={book.source === 'fixture' ? 'Sample book' : 'Your book'}
         aside={
           <span className="flex gap-3">
+            <Link to="/scan" className="text-meta font-medium text-ink underline decoration-line underline-offset-2">
+              Scan
+            </Link>
             <Link to="/bid" className="text-meta font-medium text-ink underline decoration-line underline-offset-2">
               All-in
             </Link>

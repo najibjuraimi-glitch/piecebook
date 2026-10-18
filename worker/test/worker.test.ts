@@ -728,7 +728,7 @@ describe('/watchlist and /alerts', () => {
     expect(variant.status).toBe(400)
     const variantBody = await variant.json()
     expect(variantBody).toMatchObject({ error: 'ambiguous_print' })
-    expect(variantBody.candidates).toEqual(['OP09-004p3'])
+    expect(variantBody.candidates).toEqual(['OP09-004p3', 'OP09-004p4'])
     const made = await send('/watchlist', { revision: 0, code: 'EB03-053p2', grade: 'PSA 10', targetSgd: null, externalId: 'CH-001' })
     expect(made.status).toBe(201)
     const item = (await made.json()).item

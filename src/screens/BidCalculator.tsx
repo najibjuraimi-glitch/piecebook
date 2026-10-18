@@ -15,7 +15,7 @@ import {
   type GstMode,
   type PremiumPresetId,
 } from '../lib/allIn'
-import { parseMoney } from '../lib/boughtBook'
+import { parseMoney, round2 } from '../lib/boughtBook'
 import { formatDate, formatSgd, formatUsd, todayIso } from '../lib/format'
 import { getWatchlist } from '../lib/watchlistClient'
 import type { ValuedWatchItem } from '../lib/watchlist'
@@ -60,20 +60,25 @@ export function BidCalculator() {
   const ids = useId()
   const [params] = useSearchParams()
   const itemId = params.get('item')?.trim() || ''
-  const [mode, setMode] = useState<Mode>(itemId ? 'max' : 'all-in')
-  const [preset, setPreset] = useState<PremiumPresetId | 'custom'>('ebay')
+  const lotTarget = params.get('target')?.trim() || ''
+  const presetFromUrl = params.get('preset')
+  const openingPreset: PremiumPresetId = presetFromUrl === 'fanatics' || presetFromUrl === 'goldin' || presetFromUrl === 'ebay' ? presetFromUrl : 'ebay'
+  const currencyFromUrl = (params.get('currency') || '').toUpperCase()
+  const lotCards = parseLot(params.get('lot'))
+  const [mode, setMode] = useState<Mode>(itemId || lotTarget ? 'max' : 'all-in')
+  const [preset, setPreset] = useState<PremiumPresetId | 'custom'>(openingPreset)
   const [customPercent, setCustomPercent] = useState('')
-  const [feePreset, setFeePreset] = useState<FeePresetId | 'custom'>('ebay')
+  const [feePreset, setFeePreset] = useState<FeePresetId | 'custom'>(openingPreset)
   const [feeTouched, setFeeTouched] = useState(false)
   const [customFee, setCustomFee] = useState('')
-  const [currency, setCurrency] = useState('USD')
+  const [currency, setCurrency] = useState(CURRENCIES.includes(currencyFromUrl) ? currencyFromUrl : 'USD')
   const [hammer, setHammer] = useState('')
   const [shipping, setShipping] = useState('')
   const [forwarder, setForwarder] = useState('')
   const [fx, setFx] = useState('')
   const [fxDate, setFxDate] = useState('')
   const [gstMode, setGstMode] = useState<GstMode>('auto')
-  const [target, setTarget] = useState('')
+  const [target, setTarget] = useState(lotTarget)
   const [linked, setLinked] = useState<ValuedWatchItem | null>(null)
   const [linkNote, setLinkNote] = useState<string | null>(itemId ? 'Loading the watch row…' : null)
 
@@ -454,10 +459,49 @@ export function BidCalculator() {
             <Line label={gstLabel(result)} value={formatSgd(result.gstSgd)} />
             <Line label="All-in" value={formatSgd(result.allInSgd)} />
           </ul>
+          {mode === 'max' && lotCards.length > 0 && (
+            <div className="mt-4">
+              <p className="text-meta text-muted">Share of this hammer</p>
+              <ul className="mt-2 space-y-2">
+                {hammerShares(result.hammer, lotCards).map((share, index) => (
+                  <Line key={`${share.id}-${index}`} label={share.id} value={formatForeign(share.share, result.currency)} />
+                ))}
+              </ul>
+              <p className="mt-2 text-meta text-muted">Cards with no fresh English price are not in this split.</p>
+            </div>
+          )}
         </section>
       )}
     </Screen>
   )
+}
+
+function parseLot(raw: string | null): { id: string; sgd: number }[] {
+  if (!raw) return []
+  const out: { id: string; sgd: number }[] = []
+  for (const part of raw.split(',')) {
+    const [id, amount] = part.split(':')
+    const sgd = Number(amount)
+    if (!id || !Number.isFinite(sgd) || sgd < 0) continue
+    out.push({ id, sgd })
+  }
+  return out
+}
+
+/** Split a hammer across cards. Largest-remainder rounding makes the shares add up to the hammer. */
+export function hammerShares(hammer: number, lot: { id: string; sgd: number }[]): { id: string; share: number }[] {
+  const sum = lot.reduce((total, row) => total + row.sgd, 0)
+  if (sum <= 0 || !lot.length) return []
+  const targetCents = Math.round(round2(hammer) * 100)
+  const exact = lot.map((row) => (targetCents * row.sgd) / sum)
+  const floors = exact.map((n) => Math.floor(n + 1e-9))
+  let leftover = targetCents - floors.reduce((total, n) => total + n, 0)
+  const order = exact
+    .map((n, index) => ({ index, frac: n - Math.floor(n + 1e-9) }))
+    .sort((a, b) => b.frac - a.frac || a.index - b.index)
+  const cents = floors.slice()
+  for (let i = 0; i < leftover; i += 1) cents[order[i].index] += 1
+  return lot.map((row, index) => ({ id: row.id, share: cents[index] / 100 }))
 }
 
 function gstLabel(result: AllInResult): string {

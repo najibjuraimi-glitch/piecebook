@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { BackBar, Screen } from '../components/Screen'
 import { SearchField } from '../components/SearchField'
 import { CardArt } from '../components/CardArt'
@@ -44,6 +44,7 @@ type CheckPhase = 'measuring' | 'sending' | 'reading'
 const EN_ONLY_NOTE = 'Piecebook currently only has English card data and prices.'
 
 export function PregradeScreen() {
+  const location = useLocation()
   const [params] = useSearchParams()
   const debugSave = params.get('debug') === '1'
   const [q, setQ] = useState('')
@@ -122,6 +123,15 @@ export function PregradeScreen() {
       setMeasuring(false)
     }
   }
+
+  const seededFront = useRef(false)
+  useEffect(() => {
+    const incoming = (location.state as { scanFront?: unknown } | null)?.scanFront
+    if (seededFront.current || typeof incoming !== 'string' || !incoming.startsWith('data:')) return
+    seededFront.current = true
+    const file = fileFromDataUrl(incoming)
+    if (file) void pickSide(file, 'front').catch(() => {})
+  }, [location.state])
 
   const candidates = useMemo(
     () => (check ? rankVisionCandidates(check.identify, ALL_CARDS, 5) : []),
@@ -491,6 +501,19 @@ export function CenteringBlock({ summary, hideVerdict = false }: { summary: Cent
       </p>
     </div>
   )
+}
+
+function fileFromDataUrl(dataUrl: string): File | null {
+  const match = /^data:([^;,]+)?(?:;base64)?,(.*)$/s.exec(dataUrl)
+  if (!match) return null
+  try {
+    const binary = atob(match[2])
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+    return new File([bytes], 'scan-front.jpg', { type: match[1] || 'image/jpeg' })
+  } catch {
+    return null
+  }
 }
 
 function PhotoPick({

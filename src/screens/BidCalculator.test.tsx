@@ -3,7 +3,7 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { BidCalculator } from './BidCalculator'
+import { BidCalculator, hammerShares } from './BidCalculator'
 
 let root: Root | null = null
 let host: HTMLDivElement | null = null
@@ -173,5 +173,32 @@ describe('All-in calculator', () => {
     })
     expect(host!.textContent).toContain('Type the shipping from the Fanatics checkout.')
     expect(host!.querySelector('section')).toBeNull()
+  })
+})
+
+describe('hammer shares', () => {
+  it('uses largest-remainder rounding so the shares add up to the hammer', () => {
+    const three = hammerShares(100, [
+      { id: 'a', sgd: 1 },
+      { id: 'b', sgd: 1 },
+      { id: 'c', sgd: 1 },
+    ])
+    expect(three.map((row) => row.share)).toEqual([33.34, 33.33, 33.33])
+    expect(three.reduce((sum, row) => sum + row.share, 0)).toBe(100)
+
+    const mixed = hammerShares(200, [
+      { id: 'a', sgd: 200 },
+      { id: 'b', sgd: 80 },
+      { id: 'c', sgd: 80 },
+    ])
+    expect(mixed.map((row) => row.share)).toEqual([111.11, 44.45, 44.44])
+    expect(Math.round(mixed.reduce((sum, row) => sum + row.share, 0) * 100) / 100).toBe(200)
+
+    const odd = hammerShares(252.01, [
+      { id: 'a', sgd: 1 },
+      { id: 'b', sgd: 1 },
+    ])
+    expect(odd.map((row) => row.share)).toEqual([126.01, 126])
+    expect(Math.round(odd.reduce((sum, row) => sum + row.share, 0) * 100) / 100).toBe(252.01)
   })
 })

@@ -203,7 +203,7 @@ describe('watchlist book', () => {
     }))
     const named = explainWatchCode('OP09-004 SP', prints)
     expect(named.ok).toBe(false)
-    if (!named.ok) expect(named.candidates).toEqual(['OP09-004p3'])
+    if (!named.ok) expect(named.candidates).toEqual(['OP09-004p3', 'OP09-004p4'])
     const rejected = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004 SP', grade: 'Raw', targetSgd: 5 }, TODAY, prints)
     expect(rejected).toMatchObject({ ok: false, error: 'ambiguous_print' })
     const made = createWatchItem(

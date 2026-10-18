@@ -6,6 +6,8 @@
  */
 import { parseCsv } from '../data/csv'
 import { type LegalGrade, type PriceQuote } from './boughtBook'
+import { characterForPrint } from './printCharacter'
+import { quoteManual } from './manualQuotes'
 import { exactPrintId, type PrintRow } from './printResolve'
 import { usdToSgd } from './fx'
 
@@ -77,6 +79,9 @@ export function printsFromSeedRows(rows: Iterable<SeedRow>): PrintRow[] {
       variant: row.variant || '',
       rarity: row.rarity || '',
       language: row.language || '',
+      name: row.name || '',
+      setCode: row.set_code || '',
+      character: characterForPrint(cardNumber, row.name || ''),
     })
   }
   return prints
@@ -97,9 +102,9 @@ export function quoteStored(rows: Map<string, SeedRow>, code: string, grade: Leg
   if (lang !== 'EN') return null
   if (grade === 'raw') return rawQuote(row)
   const quote = gradedQuote(row, grade)
-  if (!quote) return null
-  const prefix = grade === 'psa9' ? 'psa9' : 'psa10'
-  if ((row[`${prefix}_printing`] || '').toLowerCase() !== 'english') return null
-  if ((quote.detail || '').toLowerCase().includes('japanese')) return null
-  return quote
+  if (quote) {
+    const prefix = grade === 'psa9' ? 'psa9' : 'psa10'
+    if ((row[`${prefix}_printing`] || '').toLowerCase() === 'english' && !(quote.detail || '').toLowerCase().includes('japanese')) return quote
+  }
+  return quoteManual(id, grade)
 }

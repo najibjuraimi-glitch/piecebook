@@ -10,6 +10,8 @@ import { handlePrice } from "./price.js";
 import { handleHoldings } from "./holdings.js";
 import { handleWatchlist } from "./watchlist.js";
 import { handleAlerts } from "./alerts.js";
+import { handleScan, handleScanCrop } from "./scan.js";
+export { VisionCap } from "./cap.js";
 // Same words and limits as the app. wrangler bundles the TypeScript.
 // /check does not read pixels: it echoes centering the phone already measured.
 // /pregrade decodes a JPEG and measures it here, for agents that have no browser.
@@ -18,6 +20,7 @@ import { measurePhoto } from "../../src/lib/centering.ts";
 import { parsePhotoCentering, photoCentering, summariseCentering, unmeasured, withFullArtFront } from "../../src/lib/centeringSummary.ts";
 import { identifyIsBorderless } from "../../src/lib/frontBorder.ts";
 import { CONFIDENCES, SEVERITIES, buildScores } from "../../src/lib/gradeScore.ts";
+import { singaporeToday } from "../../src/lib/boughtBook.ts";
 
 // The prompts ask for labels, never for printed text. Transcribing a card's
 // effect text reproduces copyrighted wording that is indexed all over the web,
@@ -405,12 +408,14 @@ export default {
     const isHoldings = url.pathname === "/holdings" || url.pathname.startsWith("/holdings/");
     const isWatchlist = url.pathname === "/watchlist" || url.pathname.startsWith("/watchlist/");
     const isAlerts = url.pathname === "/alerts" || url.pathname.startsWith("/alerts/");
+    const isScan = url.pathname === "/scan" && req.method === "POST";
+    const isScanCrop = url.pathname === "/scan/crop" && req.method === "POST";
     if (url.pathname === "/whoami" && req.method === "GET") {
       const who = await verifyAccess(req, env, deps);
       if (!who.ok) return json({ error: who.error, detail: who.detail }, who.status, cors);
       return json({ identity: who.identity.email, kind: who.identity.kind, readOnly: Boolean(who.identity.readOnly) }, 200, cors);
     }
-    if (!isSync && !isCheck && !isPregrade && !isPrice && !isHoldings && !isWatchlist && !isAlerts) return json({ error: "not_found" }, 404, cors);
+    if (!isSync && !isCheck && !isPregrade && !isPrice && !isHoldings && !isWatchlist && !isAlerts && !isScan && !isScanCrop) return json({ error: "not_found" }, 404, cors);
 
     // Fail closed once Access is configured. Until then /check stays open for the
     // old public site and /sync says so rather than pretending to be signed in.
@@ -443,6 +448,8 @@ export default {
     // Two 8 MB images as base64 JSON are ~22 MB. Refuse bigger bodies before parsing them into memory.
     const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
     if (declared > MAX_BODY_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
+    if (isScanCrop) return handleScanCrop(req, env, cors, deps);
+    if (isScan) return handleScan(req, env, identity, cors, deps);
 
     let imgs;
     try { imgs = await readImages(req); } catch { return json({ error: "bad_request" }, 400, cors); }
@@ -450,10 +457,10 @@ export default {
     const size = (imgs.front.data.length + (imgs.back?.data.length || 0)) * 0.75;
     if (size > MAX_IMAGE_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
 
-    // Daily cap (UTC day). KV is eventually consistent; good enough as a spend guard.
+    // Daily cap (Asia/Singapore day). KV is eventually consistent; good enough as a spend guard.
     // The counter moves only after a successful answer, and a repeated checkId
     // (the phone retrying one card) does not add a second charge.
-    const day = new Date().toISOString().slice(0, 10);
+    const day = singaporeToday(Date.now());
     const key = `count:${day}`;
     const cap = parseInt(env.DAILY_CAP || "60", 10);
     const used = parseInt((await env.VISION_CAP.get(key)) || "0", 10);

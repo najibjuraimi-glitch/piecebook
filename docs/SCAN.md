@@ -1,0 +1,31 @@
+# Case scan
+
+Phone page: `/scan`. Portfolio links to it. `POST /api/scan` is the same call for a service token.
+
+Send one photo: a camera shot, an upload, or an `imageUrl`. The URL is fetched only as an image. The listing page is not opened, and the photo is not stored. **Save scan** keeps the reading on the phone, not the bytes.
+
+The vision Worker finds each card, reads a slab label before the card face, and returns a box, a grid position, a print guess, a language, a sticker, and a condition estimate. The estimate is not a grade and not a PSA prediction. **Close-up check** opens `/pregrade` for a front and back of one card.
+
+A card is priced only when the language was read as English, the print is one exact id, the confidence is at least 0.8, and the stored English quote is fresh. Anything else says **No price yet** and stays out of the lot sum. A Japanese card, including a label that says JP even when the set name says EN, is not given an English price. A sticker more than 10% under a fresh English street price is marked under street. A caption can place prices in grid order, including `1288 (Sequential x4)` and `X` for not for sale.
+
+**Max lot offer** opens `/bid` with the target set to 0.9 times the fresh English street total of the cards that clear. The rate, fees and GST are still typed there. The offer is not a bid.
+
+A caption may put several prices on one line. Slashes or new lines separate rows. `X` is not for sale. `0` is no price. `(Sequential xN)` stays attached to the price in front of it.
+
+A label with no language word falls back to a confident English read from the model. English rules text counts as English. Japanese card text counts as Japanese and is not priced as English. A JP word on the label stays Japanese. A BGS 10 is not priced as a PSA 10. Each unpriced card says why. A promo that is not in the seed says **Promo not in price data**. Japanese comps for a Japanese card are a follow-up, not this page.
+
+A slab number such as `#106` is joined to the set on the same label (`EB04` becomes `EB04-106`) and looked up. The echoed code is that full id. A year is not used as a number.
+
+Liked names (Luffy, Nami, Boa, Sanji manga) come from the print's character. OP14-118 "You'll Frighten Me..." is Boa. Sanji counts only on a manga print. When the print was not found, the flag falls back to the name that was read.
+
+OP09-004p4 is Shanks, 3rd Anniversary Silver, rarity SP. Raw has no stored price. PSA 10 is a manual PriceCharting figure of US$1,350.50 on 2026-10-18, at `shanks-silver-op09-004`. Three eBay sold comps are kept as evidence only: US$961 (2026-10-07), US$1,226.02 (2026-10-02), US$1,425 (2026-09-09). A PSA label `OP13 EN / SHANKS / 3RD ANNIVERSARY-SILVER / #004` resolves to that print. OP13-004 itself stays Sabo. `EN 2ND ANNIVERSARY SET` is OP-09, so Luffy `#061` is `OP09-061`. `PB STORAGE BOX SET-GOLD` is OP-08, so Bonney `#105` is `OP08-105`. If the set name does not map, the name and number are searched across the seed and returned as candidates. On PRB02, OP12, OP14 and OP15, a label that says ALTERNATE ART matches the manga print.
+
+A full code that is not an English print in the seed says **print not in seed**. A label that really says JP still says **JP is not priced as English**. A BGS Black Label is recorded and is not priced; pricing one is a follow-up.
+
+A fresh manual English watch price for the same print and grade counts ahead of the seed, including in the lot total and the max-lot offer. A stale seed figure is shown with its date and stays out of the lot total. Picking a print keeps that watch price. **Max lot offer** opens `/bid` with the target, the house, the ask currency, and each clearing card. The bid page splits the solved hammer across those cards. A USD lot ask is not subtracted from the S$ street.
+
+Boxes are `box_2d` values from 0 to 1000. A box past the photo, or one that disagrees with its row and column, is dropped. The scan returns those boxes and does not build a crop for every card. The phone crops the photo it already has, JPEG quality 0.8, long edge at most 1600px, and never enlarges it. The row shows that native long edge. Under 600px it says **too small for a close-up**. One card can be cropped on the server with `POST /scan/crop` (same 1600px cap, no daily photo cap). An empty 503 from that call is retried once. **Close-up check** opens `/pregrade` with that crop so the front photo is not blank. A scan that fails gives its cap slot back.
+
+A full code the seed does not have, including an EB04 number, stays the code that was read and says **print not in seed**. Card number 000 is not a print. A name guess does not replace that read code.
+
+Street prices in S$ use `usdToSgd` and `data/fx-usd-sgd.json`, the same ECB table as the book. The photo cap uses the Asia/Singapore day. On staging the counter is a Durable Object; without that binding it stays in KV. PRB-02 prints are already in `prb02-en-seed.csv`.

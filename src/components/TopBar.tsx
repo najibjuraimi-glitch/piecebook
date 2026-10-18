@@ -15,7 +15,7 @@ export const isBelongSection = (p: string) => p === '/belong' || p.startsWith('/
 const LINKS = [
   { to: '/', label: 'Sets', match: isSetsSection },
   { to: '/decks', label: 'Decks', match: (p: string) => p.startsWith('/decks') },
-  { to: '/portfolio', label: 'Portfolio', match: (p: string) => p.startsWith('/portfolio') || p.startsWith('/watchlist') || p.startsWith('/bid') },
+  { to: '/portfolio', label: 'Portfolio', match: (p: string) => p.startsWith('/portfolio') || p.startsWith('/watchlist') || p.startsWith('/bid') || p.startsWith('/scan') },
   { to: '/belong', label: 'World', match: isBelongSection },
 ]
 
