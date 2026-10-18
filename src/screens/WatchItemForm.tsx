@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { DangerGhostButton, PrimaryButton } from '../components/Buttons'
 import { PrintsPanel } from '../components/PrintsPanel'
 import { BackBar, Screen } from '../components/Screen'
@@ -185,6 +185,11 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
           <PrimaryButton type="submit" disabled={saving}>
             Save target
           </PrimaryButton>
+          {mode === 'edit' && (
+            <Link to={`/bid?item=${encodeURIComponent(id)}`} className="inline-flex min-h-11 items-center text-meta font-medium text-ink underline decoration-line underline-offset-2">
+              Max bid
+            </Link>
+          )}
           {mode === 'edit' && (
             <DangerGhostButton disabled={saving} onClick={() => void remove()}>
               Remove {id}
