@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISION_URL } from '../config/vision'
-import { compareFrames, emptySeen, forgetsSeenCards, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, scanIntervalOpen, sceneMoved, stepFrameHold, stepSceneHold, substantialSceneChange, unreadBoxMotion, type GreyFrame, type SceneHold } from '../lib/cardFrame'
+import { compareFrames, emptySeen, forgetsSeenCards, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, resetsMovedHold, resumesPausedScan, scanIntervalOpen, sceneMoved, stepFrameHold, stepSceneHold, unreadBoxMotion, unreadSlabsAreNew, type GreyFrame, type SceneHold } from '../lib/cardFrame'
 import type { PixelImage } from '../lib/centering'
 import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
 import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
@@ -364,8 +364,9 @@ export function ScanLive({
           const from = seenFrame.current
           const between = from && current ? compareFrames(from, current) : null
           if (forgetsSeenCards(between)) forgetSeen()
-          const boxMotion = unreadBoxMotion(between, from?.width ?? width, from?.height ?? height)
-          const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards, boxMotion)
+          const unreadAreNew = unreadSlabsAreNew(between)
+          const boxMotion = unreadAreNew ? null : unreadBoxMotion(between, from?.width ?? width, from?.height ?? height)
+          const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards, boxMotion, unreadAreNew)
           seenCards.current = outcome.seen
           if (current) seenFrame.current = current
           dryStreak.current = outcome.streak
@@ -419,7 +420,7 @@ export function ScanLive({
           holdRef.current = step.state
           if (autoPausedRef.current && pauseAnchor.current) {
             const fromPause = compareFrames(pauseAnchor.current, frame)
-            if (substantialSceneChange(fromPause)) {
+            if (resumesPausedScan(fromPause)) {
               forgetSeen()
               autoPausedRef.current = false
               pauseAnchor.current = null
@@ -435,7 +436,7 @@ export function ScanLive({
           } else if (step.steady) setDim(false)
           if (movedReads.current >= MOVED_HOLD_AFTER) {
             const hop = prevTickFrame.current ? compareFrames(prevTickFrame.current, frame) : null
-            const hopped = Boolean(hop && sceneMoved(hop))
+            const hopped = resetsMovedHold(hop)
             const settled = stepFrameHold(frameSteadySince.current, hopped, now, MOVED_HOLD_MS)
             frameSteadySince.current = settled.since
             if (!heldRef.current) {

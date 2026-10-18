@@ -543,6 +543,8 @@ export const SCENE_RESET_FRAC = 0.2
 export const SCENE_MOVE_MAD = 12
 /** Unread boxes are shifted into the new frame only when the aligned pictures still agree. */
 export const BOX_MOTION_RESIDUAL = 6
+/** A paused scan resumes on a picture change this large. A shadow stays under it. */
+export const PAUSE_RESUME_RESIDUAL = 28
 
 export interface GreyFrame {
   width: number
@@ -778,6 +780,20 @@ export function substantialSceneChange(motion: FrameMotion): boolean {
   return motion.shiftFrac >= SCENE_RESET_FRAC || motion.residual >= SCENE_MOVE_MAD
 }
 
+/**
+ * A paused scan resumes on a slide of about 6%, or when the picture still
+ * disagrees by 28 after aligning. A shadow, up to a residual of about 23, does not.
+ */
+export function resumesPausedScan(motion: FrameMotion | null): boolean {
+  if (!motion) return false
+  return motion.shiftFrac >= SCENE_MOVE_FRAC || motion.residual >= PAUSE_RESUME_RESIDUAL
+}
+
+/** The hold-still clock restarts on a real slide. A light blinking in place does not restart it. */
+export function resetsMovedHold(motion: FrameMotion | null): boolean {
+  return Boolean(motion && motion.shiftFrac >= SCENE_MOVE_FRAC)
+}
+
 /** One second against the anchor, or three after two moved reads. The three is frame-to-frame, not against the anchor. */
 export function steadyWaitMs(movedReads: number): number {
   return movedReads >= MOVED_HOLD_AFTER ? MOVED_HOLD_MS : SCENE_STEADY_MS
@@ -805,10 +821,14 @@ export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
   return 'show'
 }
 
-/** Fraction to add to each label. Null when the read is discarded. Zero when the shift is under 6%. */
+/**
+ * Fraction to add to each label. Null when the read is discarded.
+ * A shift under 6% is applied when the pictures still agree. When they do not, the labels stay put.
+ */
 export function labelOffset(motion: FrameMotion | null, width: number, height: number): { x: number; y: number } | null {
-  if (!motion || placeRead(motion) === 'discard') return placeRead(motion) === 'discard' ? null : { x: 0, y: 0 }
-  if (motion.shiftFrac < SCENE_MOVE_FRAC) return { x: 0, y: 0 }
+  if (!motion) return { x: 0, y: 0 }
+  if (placeRead(motion) === 'discard') return null
+  if (motion.shiftFrac < SCENE_MOVE_FRAC && motion.residual >= BOX_MOTION_RESIDUAL) return { x: 0, y: 0 }
   return { x: motion.dx / Math.max(width, 1), y: motion.dy / Math.max(height, 1) }
 }
 
@@ -826,6 +846,11 @@ export function rearmAfterDiscard(state: SceneHold): SceneHold {
 export function unreadBoxMotion(motion: FrameMotion | null, width: number, height: number): BoxMotion | null {
   if (!motion || motion.residual >= BOX_MOTION_RESIDUAL) return null
   return { dx: motion.dx, dy: motion.dy, width, height }
+}
+
+/** The picture changed in place. Unread slabs in the same boxes are new cards. Named keys stay. */
+export function unreadSlabsAreNew(motion: FrameMotion | null): boolean {
+  return Boolean(motion && motion.residual >= SCENE_MOVE_MAD)
 }
 
 /**
@@ -912,15 +937,17 @@ const BOX_MATCH_IOU = 0.5
  * How many scans in a row added no new card. Three pauses the camera.
  * An unread slab matches a box already seen when the overlap, after the
  * measured shift between the two frames, is at least half the union.
+ * When the picture changed in place, those unread slabs count as new and named keys stay.
  */
 export function nextDryStreak(
   seen: SeenCards,
   streak: number,
   cards: { printId?: string | null; codeText?: string | null; box?: CardBox | null }[],
   motion: BoxMotion | null = null,
+  unreadAreNew = false,
 ): { seen: SeenCards; streak: number; pause: boolean } {
   const keys = new Set(seen.keys)
-  const boxes = seen.boxes.map((box) => (motion ? shiftBox(box, motion.dx, motion.dy, motion.width, motion.height) : { ...box }))
+  const boxes = unreadAreNew ? [] : seen.boxes.map((box) => (motion ? shiftBox(box, motion.dx, motion.dy, motion.width, motion.height) : { ...box }))
   let fresh = false
   for (const card of cards) {
     const key = scanCardKey(card)
@@ -1044,10 +1071,10 @@ export function simulateDriftScans(driftPerSec: number, durationMs = 360_000, re
 
 /**
  * While paused, motion accumulates from the frame that caused the pause.
- * That anchor does not reset at 6%, so a real pan resumes and a slow drift does not.
- * After a resume, a still second starts one scan.
+ * That anchor does not reset. A slide of about 6%, or a residual of 28, resumes it.
+ * A shadow under that residual does not. After a resume, a still second starts one scan.
  */
-export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs = 0): { resumed: boolean; scans: number } {
+export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs = 0, residual = 0): { resumed: boolean; scans: number } {
   const dt = 200
   let t = 0
   let pos = 0
@@ -1057,8 +1084,8 @@ export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs
   const end = moveMs + holdMs
   while (t <= end) {
     if (!resumed) {
-      const motion: FrameMotion = { mad: 0, residual: 0, dx: pos * 100, dy: 0, shiftFrac: Math.abs(pos) }
-      if (substantialSceneChange(motion)) resumed = true
+      const motion: FrameMotion = { mad: 0, residual, dx: pos * 100, dy: 0, shiftFrac: Math.abs(pos) }
+      if (resumesPausedScan(motion)) resumed = true
     } else if (scans === 0) {
       if (steadySince == null || steadySince > t) steadySince = t
       if (t - steadySince >= SCENE_STEADY_MS) scans += 1
