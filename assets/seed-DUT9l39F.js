@@ -1621,6 +1621,7 @@ OP-09,Emperors in the New World,OP09-004,Shanks,SR,EN,https://limitlesstcg.nyc3.
 OP-09,Emperors in the New World,OP09-004p1,Shanks,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-004_p1_EN.webp,21.50,2026-09-05,Alternate Art,,,,,,,,,,
 OP-09,Emperors in the New World,OP09-004p2,Shanks,SR,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-004_p2_EN.webp,1795.00,2026-09-05,Manga Art,,,,,,1601,2026-09-14,opboxindex,https://opboxindex.com/cards/op09-004-shanks-004-manga.html,japanese
 OP-09,Emperors in the New World,OP09-004p3,Shanks,SP,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-004_p3_EN.webp,257.51,2026-09-05,Special Card,,,,,,,,,,
+OP-09,Emperors in the New World,OP09-004p4,Shanks,SP,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-004_p4_EN.webp,,,3rd Anniversary Silver,,,,,,,,,,
 OP-09,Emperors in the New World,OP09-005,Silvers Rayleigh,R,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-005_EN.webp,0.14,2026-09-05,,,,,,,,,,,
 OP-09,Emperors in the New World,OP09-006,Howling Gab,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-006_EN.webp,0.07,2026-09-05,,,,,,,,,,,
 OP-09,Emperors in the New World,OP09-007,Heat,C,EN,https://limitlesstcg.nyc3.cdn.digitaloceanspaces.com/one-piece/OP09/OP09-007_EN.webp,0.05,2026-09-05,,,,,,,,,,,
