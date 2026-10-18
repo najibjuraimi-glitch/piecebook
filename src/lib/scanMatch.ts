@@ -5,6 +5,7 @@
  * never given a Japanese one. A low-confidence or ambiguous print is not priced.
  */
 import { isStale, round2, type LegalGrade, type PriceQuote } from './boughtBook'
+import { manualPrintQuote } from './manualQuotes'
 import { exactPrintId, splitPrintCode, type PrintRow } from './printResolve'
 
 export const LOW_CONFIDENCE = 0.8
@@ -64,6 +65,8 @@ export interface ScanSight {
   sticker: ScanSticker | null
   slab: ScanSlab | null
   condition: ScanCondition
+  /** The user picked this print. The read name is not checked again. */
+  picked?: boolean
 }
 
 export interface ScanSource {
@@ -83,14 +86,18 @@ export interface ScanStreet {
   url: string | null
   stale: boolean
   label: 'No price yet' | null
+  /** `manual` when the figure was typed, not read from the seed. */
+  detail: string | null
   sources: ScanSource[]
   sourcesDisagree: boolean
+  /** Sold comps kept as evidence. They are not the street price. */
+  evidence: { usd: number; asOf: string; source: string }[]
 }
 
 export interface WatchTarget {
   id: string
   printId: string
-  targetSgd: number
+  targetSgd: number | null
   grade?: LegalGrade | null
   marketSgd?: number | null
   marketAsOf?: string | null
@@ -277,6 +284,20 @@ export function setToken(raw: string | null | undefined): string | null {
 }
 
 /**
+ * A PSA set name that is not itself a set code.
+ * `EN 2ND ANNIVERSARY SET` is OP-09. `PB STORAGE BOX SET-GOLD` is OP-08.
+ */
+export function setPrefix(raw: string | null | undefined): string | null {
+  const token = setToken(raw)
+  if (token) return token
+  if (!raw?.trim()) return null
+  const text = raw.toUpperCase()
+  if (/2\s*ND\s+ANNIVERSARY/.test(text)) return 'OP09'
+  if (/\bPB\b/.test(text) && /STORAGE\s+BOX/.test(text)) return 'OP08'
+  return null
+}
+
+/**
  * `#106` plus a separate set `EB04` is `EB04-106`.
  * A code that is already a print id is left as that id. A year is not a number.
  */
@@ -284,9 +305,9 @@ export function assembleCode(code: string | null | undefined, setCode: string | 
   const raw = (code || '').trim()
   const loosened = raw ? loosenCode(raw) : ''
   if (loosened && splitPrintCode(loosened)) return loosened
-  const set = setToken(setCode)
+  const set = setPrefix(setCode)
   const num = raw.match(/^#?\s*(\d{1,3})$/)
-  if (num && set) return `${set}-${num[1].padStart(3, '0')}`
+  if (num && set && Number(num[1]) > 0) return `${set}-${num[1].padStart(3, '0')}`
   return raw || null
 }
 
@@ -321,57 +342,126 @@ function mangaFromAltLabel(setRaw: string | null, code: string | null, label: st
   return parallel
 }
 
-function nameCandidates(name: string | null, setRaw: string | null, rows: PrintRow[]): string[] {
-  const want = (name || '').trim().toLowerCase()
-  const set = setToken(setRaw)
-  if (want.length < 2 || !set) return []
+function nameHits(want: string, have: string): boolean {
+  const left = want.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+  const right = have.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+  if (left.length < 2 || !right) return false
+  if (right === left) return true
+  const haveTokens = right.split(' ').filter((token) => token.length > 1)
+  const wantTokens = left.split(' ').filter((token) => token.length > 1)
+  if (!wantTokens.length || !haveTokens.length) return false
+  if (wantTokens.length === 1) return haveTokens.includes(wantTokens[0])
+  return wantTokens.every((token) => haveTokens.includes(token))
+}
+
+/** `#061` plus `Luffy` across every set, when the label set name did not resolve. */
+function nameNumberCandidates(name: string | null, code: string | null, rows: PrintRow[]): string[] {
+  const num = (code || '').trim().match(/^#?\s*(\d{1,3})$/)
+  const want = (name || '').trim()
+  if (!num || want.length < 2) return []
+  const suffix = `-${num[1].padStart(3, '0')}`
   return rows
     .filter((row) => {
-      const rowName = (row.name || '').trim().toLowerCase()
-      if (!rowName || rowName !== want) return false
-      const home = row.cardNumber.split('-')[0]
-      const listed = (row.setCode || '').replace(/-/g, '').toUpperCase()
-      return home === set || listed === set
+      const base = row.cardNumber.toUpperCase().replace(/P\d+$/, '')
+      if (!base.endsWith(suffix)) return false
+      return nameHits(want, row.name || '') || nameHits(want, row.character || '')
     })
     .map((row) => row.cardNumber)
 }
 
-function contradictsAa(parallel: string | null, label: string | null, printId: string | null, rows: PrintRow[]): boolean {
-  const text = (label || '').toUpperCase()
-  if (!/\b(PROMO|PCC)\b/.test(text) || text.includes('ALTERNATE ART')) return false
-  const word = (parallel || '').trim().toLowerCase()
-  if (['aa', 'alt', 'alternate', 'alternate art'].includes(word)) return true
-  const print = printId ? rows.find((row) => row.cardNumber.toUpperCase() === printId.toUpperCase()) : undefined
-  return (print?.variant || '').toLowerCase().includes('alternate')
+function nameCandidates(name: string | null, setRaw: string | null, rows: PrintRow[]): string[] {
+  const want = (name || '').trim()
+  if (want.length < 2) return []
+  const prefix = setToken(setRaw)
+  return rows
+    .filter((row) => {
+      if (!nameHits(want, row.name || '') && !nameHits(want, row.character || '')) return false
+      if (!prefix) return true
+      const home = row.cardNumber.split('-')[0].toUpperCase()
+      const listed = (row.setCode || '').replace(/-/g, '').toUpperCase()
+      return home === prefix || listed === prefix
+    })
+    .map((row) => row.cardNumber)
+}
+
+/** Promo and collection labels. A 2nd-anniversary set name is a real set, handled by setPrefix. */
+export function collectionLabel(text: string | null | undefined): boolean {
+  const t = (text || '').toUpperCase()
+  if (!t.trim()) return false
+  if (/2\s*ND\s+ANNIVERSARY/.test(t)) return false
+  return /PREMIUM\s+CARD\s+COLL/.test(t)
+    || /PREMIUM\s+COLLECTION/.test(t)
+    || /GIFT\s+COLLECTION/.test(t)
+    || /ANNIVERSARY\s+SET/.test(t)
+    || /\bPROMO\b/.test(t)
+    || /\bPCC\b/.test(t)
+    || /\bP-\d{1,4}\b/.test(t)
+}
+
+function collectionPrint(row: PrintRow): boolean {
+  const variant = row.variant.toLowerCase()
+  return variant.includes('premium') || variant.includes('gift collection') || variant.includes('promo')
+}
+
+function baseOrAa(row: PrintRow): boolean {
+  if (row.cardNumber.toUpperCase() === row.baseNumber.toUpperCase()) return true
+  return row.variant.toLowerCase().includes('alternate')
+}
+
+function namesAgree(read: string | null | undefined, print: PrintRow): boolean {
+  if (!read?.trim()) return true
+  return nameHits(read, print.name || '') || nameHits(read, print.character || '')
 }
 
 function promoUnread(code: string | null, label: string | null): boolean {
-  const blob = `${code || ''} ${label || ''}`.toUpperCase()
-  return /\bP-\d{1,4}\b/.test(blob) || /\bPROMO\b/.test(blob) || /\bPCC\b/.test(blob)
+  const blob = `${code || ''} ${label || ''}`
+  return /\bP-\d{1,4}\b/i.test(blob) || collectionLabel(blob)
 }
 
 /** Set plus number, the Shanks Silver alias, a manga label, or a name inside one set. */
 export function readScanCode(
-  sight: Pick<ScanSight, 'code' | 'codeText' | 'setCode' | 'name' | 'labelText' | 'parallel' | 'slab'>,
+  sight: Pick<ScanSight, 'code' | 'codeText' | 'setCode' | 'name' | 'labelText' | 'parallel' | 'slab' | 'picked'>,
   rows: PrintRow[],
-): { codeText: string | null; printId: string | null; ambiguous: boolean; candidates: string[] } {
+): { codeText: string | null; printId: string | null; ambiguous: boolean; candidates: string[]; nameMismatch: boolean } {
   const setRaw = sight.setCode || sight.slab?.setName || null
   const assembled = assembleCode(sight.code || sight.codeText, setRaw)
+  const codeText = assembled || sight.codeText || sight.code
   const alias = shanksSilverAlias([sight.code, sight.codeText, sight.setCode, sight.name, sight.labelText, sight.parallel, sight.slab?.setName])
   if (alias && rows.some((row) => row.cardNumber.toUpperCase() === alias.toUpperCase())) {
-    return { codeText: alias, printId: alias, ambiguous: false, candidates: [alias] }
+    return { codeText: alias, printId: alias, ambiguous: false, candidates: [alias], nameMismatch: false }
   }
   const parallel = mangaFromAltLabel(setRaw, assembled, sight.labelText ?? null, sight.parallel, rows)
-  let resolved = resolveScanPrint(assembled, parallel, rows)
-  if (contradictsAa(parallel, sight.labelText ?? null, resolved.printId, rows)) {
-    resolved = { printId: null, ambiguous: true, candidates: resolved.candidates }
+  let resolved = { ...resolveScanPrint(assembled, parallel, rows), nameMismatch: false }
+  const labelBlob = `${sight.labelText || ''} ${setRaw || ''}`
+  const mappedSet = Boolean(setRaw && !setToken(setRaw) && setPrefix(setRaw))
+  if (collectionLabel(labelBlob) && !mappedSet) {
+    const collection = resolved.candidates
+      .map((id) => rows.find((row) => row.cardNumber.toUpperCase() === id.toUpperCase()))
+      .filter((row): row is PrintRow => Boolean(row && collectionPrint(row)))
+    const current = resolved.printId ? rows.find((row) => row.cardNumber.toUpperCase() === resolved.printId!.toUpperCase()) : undefined
+    if (!current || (baseOrAa(current) && !collectionPrint(current))) {
+      resolved = collection.length === 1
+        ? { printId: collection[0].cardNumber, ambiguous: false, candidates: collection.map((row) => row.cardNumber), nameMismatch: false }
+        : { printId: null, ambiguous: collection.length > 1, candidates: collection.map((row) => row.cardNumber), nameMismatch: false }
+    }
+  }
+  if (!sight.picked && resolved.printId && sight.name?.trim()) {
+    const print = rows.find((row) => row.cardNumber.toUpperCase() === resolved.printId!.toUpperCase())
+    if (print && !namesAgree(sight.name, print)) {
+      const named = nameCandidates(sight.name, sight.slab ? setRaw : null, rows)
+      resolved = { printId: null, ambiguous: true, candidates: named.length ? named : resolved.candidates, nameMismatch: true }
+    }
   }
   const parsed = assembled ? splitPrintCode(loosenCode(assembled)) : null
-  if (!parsed) {
+  if (!parsed && !resolved.printId && !resolved.nameMismatch) {
     const named = nameCandidates(sight.name ?? null, setRaw, rows)
-    if (!resolved.printId && named.length) resolved = { printId: null, ambiguous: true, candidates: named }
+    if (named.length) resolved = { printId: null, ambiguous: true, candidates: named, nameMismatch: false }
   }
-  return { codeText: assembled || sight.codeText || sight.code, printId: resolved.printId, ambiguous: resolved.ambiguous, candidates: resolved.candidates }
+  if (!resolved.printId && resolved.candidates.length === 0 && !resolved.nameMismatch) {
+    const across = nameNumberCandidates(sight.name ?? null, sight.code || sight.codeText, rows)
+    if (across.length) resolved = { printId: null, ambiguous: true, candidates: across, nameMismatch: false }
+  }
+  return { codeText, printId: resolved.printId, ambiguous: resolved.ambiguous, candidates: resolved.candidates, nameMismatch: resolved.nameMismatch }
 }
 
 export function resolveScanPrint(code: string | null, parallel: string | null, rows: PrintRow[]): { printId: string | null; ambiguous: boolean; candidates: string[] } {
@@ -401,7 +491,7 @@ export function resolveScanPrint(code: string | null, parallel: string | null, r
 }
 
 function emptyStreet(): ScanStreet {
-  return { status: 'none', sgd: null, source: null, asOf: null, url: null, stale: false, label: 'No price yet', sources: [], sourcesDisagree: false }
+  return { status: 'none', sgd: null, source: null, asOf: null, url: null, stale: false, label: 'No price yet', detail: null, sources: [], sourcesDisagree: false, evidence: [] }
 }
 
 function streetFor(quote: PriceQuote | null, today: string, manual: { sgd: number; asOf: string; source: string; url: string | null } | null): ScanStreet {
@@ -419,8 +509,10 @@ function streetFor(quote: PriceQuote | null, today: string, manual: { sgd: numbe
       url: manual.url,
       stale: false,
       label: null,
+      detail: null,
       sources,
       sourcesDisagree: seed != null && seed.sgd !== manual.sgd,
+      evidence: [],
     }
   }
   if (!seed) return emptyStreet()
@@ -433,8 +525,10 @@ function streetFor(quote: PriceQuote | null, today: string, manual: { sgd: numbe
     url: quote?.url ?? null,
     stale,
     label: stale ? 'No price yet' : null,
+    detail: quote?.detail ?? null,
     sources: [seed],
     sourcesDisagree: false,
+    evidence: [],
   }
 }
 
@@ -453,15 +547,23 @@ function manualQuote(printId: string, grade: LegalGrade, targets: WatchTarget[] 
   return { sgd: hit.marketSgd, asOf: hit.marketAsOf, source: hit.marketSource, url: hit.marketUrl || null }
 }
 
-function likedOf(print: PrintRow | undefined): string | null {
-  const who = (print?.character || '').toLowerCase()
-  if (!who) return null
-  const variant = (print?.variant || '').toLowerCase()
+function likedFromText(text: string, manga: boolean): string | null {
+  const who = text.toLowerCase()
   if (who.includes('luffy')) return 'Luffy'
   if (who.includes('nami')) return 'Nami'
   if (who.includes('boa') || who.includes('hancock')) return 'Boa'
-  if (who.includes('sanji') && variant.includes('manga')) return 'Sanji manga'
+  if (who.includes('sanji') && manga) return 'Sanji manga'
   return null
+}
+
+/** The print's character when the card was identified. The read name only when it was not. */
+function likedOf(print: PrintRow | undefined, name: string | null, parallel: string | null): string | null {
+  if (print?.character) {
+    return likedFromText(print.character, (print.variant || '').toLowerCase().includes('manga'))
+  }
+  if (print) return null
+  const parallelText = (parallel || '').toLowerCase()
+  return likedFromText(`${name || ''} ${parallel || ''}`, parallelText.includes('manga'))
 }
 
 function certUrl(slab: ScanSlab | null): string | null {
@@ -571,7 +673,8 @@ function priceSight(
 ): ScanRow {
   const language = confirmedLanguage(sight)
   const resolved = readScanCode(sight, input.prints)
-  const lowConfidence = sight.confidence < LOW_CONFIDENCE
+  const confidence = resolved.nameMismatch ? Math.min(sight.confidence, LOW_CONFIDENCE - 0.01) : sight.confidence
+  const lowConfidence = confidence < LOW_CONFIDENCE
   const print = resolved.printId ? input.prints.find((row) => row.cardNumber.toUpperCase() === resolved.printId!.toUpperCase()) : undefined
   const forSale = mark?.kind !== 'unsold'
   const sticker = mark?.kind === 'ask' && mark.amount != null ? { amount: mark.amount, currency: mark.currency } : mark ? null : sight.sticker
@@ -589,9 +692,12 @@ function priceSight(
   const gapPct = compare && street.sgd! > 0 ? round2(((street.sgd! - sticker.amount) / street.sgd!) * 100) : null
   const underStreet = gapPct != null && gapPct > UNDER_STREET_PCT
   const watch = resolved.printId ? input.targets?.find((target) => target.printId.toUpperCase() === resolved.printId!.toUpperCase()) : undefined
-  const targetHit = Boolean(watch && sticker?.currency === 'SGD' && sticker.amount <= watch.targetSgd)
+  const targetHit = Boolean(watch && watch.targetSgd != null && sticker?.currency === 'SGD' && sticker.amount <= watch.targetSgd)
+  const evidence = street.detail === 'manual' && resolved.printId && grade ? manualPrintQuote(resolved.printId, grade)?.comps ?? [] : []
+  const streetWithEvidence = evidence.length ? { ...street, evidence } : street
   const drag = dragReason({
     language,
+    labelLang: languageFromLabel(sight.labelText),
     lowConfidence,
     ambiguous: resolved.ambiguous,
     forSale,
@@ -599,7 +705,7 @@ function priceSight(
     codeText: resolved.codeText,
     known: resolved.candidates.length > 0 || resolved.printId != null,
     promo: promoUnread(resolved.codeText, sight.labelText),
-    street,
+    street: streetWithEvidence,
     slab: sight.slab,
     grade,
   })
@@ -616,7 +722,7 @@ function priceSight(
     languageUnsure: language == null,
     printId: resolved.printId,
     parallel: sight.parallel,
-    confidence: sight.confidence,
+    confidence,
     lowConfidence,
     ambiguous: resolved.ambiguous,
     candidates: resolved.candidates,
@@ -624,13 +730,13 @@ function priceSight(
     forSale,
     sticker,
     bundle,
-    street,
+    street: streetWithEvidence,
     gapSgd,
     gapPct,
     underStreet,
     targetHit,
     watchId: watch?.id ?? null,
-    liked: likedOf(print),
+    liked: likedOf(print, sight.name, sight.parallel),
     slab: sight.slab,
     certUrl: certUrl(sight.slab),
     condition: sight.condition ?? emptyCondition(),
@@ -639,8 +745,15 @@ function priceSight(
   }
 }
 
+function fullPrintCode(code: string | null): boolean {
+  if (!code) return false
+  const split = splitPrintCode(loosenCode(code))
+  return Boolean(split && !split.rest)
+}
+
 function dragReason(input: {
   language: string | null
+  labelLang: 'EN' | 'JP' | 'CN' | 'KR' | 'FR' | null
   lowConfidence: boolean
   ambiguous: boolean
   forSale: boolean
@@ -653,6 +766,10 @@ function dragReason(input: {
   grade: LegalGrade | null
 }): string | null {
   if (!input.forSale) return 'Not for sale'
+  if (input.labelLang && input.labelLang !== 'EN') return `${input.labelLang} is not priced as English`
+  if (!input.printId && !input.ambiguous && fullPrintCode(input.codeText)) {
+    return input.promo ? 'Promo not in price data' : 'print not in seed'
+  }
   if (input.language == null) return 'Language not read'
   if (input.language !== 'EN') return `${input.language} is not priced as English`
   if (input.lowConfidence) return 'Low confidence'
@@ -686,6 +803,7 @@ export function choosePrint(card: ScanRow, printId: string, quoteFor: QuoteFor, 
     sticker: card.sticker,
     slab: card.slab,
     condition: card.condition,
+    picked: true,
   }
   const mark = card.bundle
     ? { kind: 'bundle' as const, amount: card.bundle.amount, currency: card.bundle.currency, count: card.bundle.count, bundleIndex: card.bundle.index }

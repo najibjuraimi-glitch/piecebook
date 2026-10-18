@@ -19,6 +19,7 @@ import {
 import { boughtCopyFromHolding, type Holding } from './holdings'
 
 import { todayIso } from './format'
+import { quoteManual } from './manualQuotes'
 
 export interface LoadedBook {
   source: BookSource
@@ -42,7 +43,7 @@ export function legalQuote(code: string, grade: LegalGrade | null): PriceQuote |
   if (!card || card.language.toUpperCase() !== 'EN') return null
   if (grade !== 'raw') {
     const printing = grade === 'psa10' ? card.psa10Printing : card.psa9Printing
-    if ((printing || '').toLowerCase() !== 'english') return null
+    if ((printing || '').toLowerCase() !== 'english' && !quoteManual(card.cardNumber, grade)) return null
   }
   const row = advicePrices(card).find((price) => price.grade === grade)
   if (!row || row.usd == null || row.sgd == null || !row.asOf || !row.source) return null

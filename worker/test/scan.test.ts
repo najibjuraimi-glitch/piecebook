@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { singaporeToday } from '../../src/lib/boughtBook.ts'
+import { storedQuote } from '../src/storedPrice.js'
 import worker from '../src/index.js'
 import { VisionCap } from '../src/cap.js'
-import { boxFrom2d, dropDisagreedBoxes, normaliseBox, normaliseScanSights } from '../src/scan.js'
+import { boxFrom2d, cropScale, dropDisagreedBoxes, normaliseBox, normaliseScanSights } from '../src/scan.js'
 
 class MemoryKV {
   store = new Map<string, string>()
@@ -24,7 +25,7 @@ const cards = {
       col: 0,
       box: { x: 0.05, y: 0.1, w: 0.2, h: 0.3 },
       code: 'OP09-004p2',
-      name: 'Nami',
+      name: 'Shanks',
       language: 'EN',
       parallel: 'manga',
       confidence: 0.94,
@@ -104,9 +105,21 @@ describe('scan sights', () => {
       ],
     })
     expect(sights[0]).toMatchObject({ code: '#106', setCode: 'EB04' })
+    const named = normaliseScanSights({ cards: [{ row: 0, col: 0, confidence: 1, code: '#061', set_name: 'EN 2ND ANNIVERSARY SET' }] })
+    expect(named[0].setCode).toBe('EN 2ND ANNIVERSARY SET')
+    expect(cropScale(100, 40)).toBe(6)
+    expect(cropScale(800, 400)).toBe(1)
+    expect(cropScale(2000, 1000)).toBe(0.8)
     const dropped = dropDisagreedBoxes(sights)
     expect(dropped[0].box).toBeNull()
     expect(dropped[1].box).toBeNull()
+  })
+})
+
+describe('stored manual price', () => {
+  it('returns the typed PSA 10 for Shanks Silver and no raw price', () => {
+    expect(storedQuote('OP09-004p4', 'psa10')).toMatchObject({ usd: 1350.5, source: 'PriceCharting', detail: 'manual' })
+    expect(storedQuote('OP09-004p4', 'raw')).toBeNull()
   })
 })
 
@@ -114,10 +127,13 @@ describe('vision cap', () => {
   it('counts two charges once each', async () => {
     const storage = new Map<string, number>()
     const cap = new VisionCap({ storage: { get: async (key: string) => storage.get(key), put: async (key: string, value: number) => { storage.set(key, value) } } })
-    const charge = () => cap.fetch(new Request('https://vision-cap/charge?day=2026-10-18&cap=60'))
-    const [first, second] = await Promise.all([charge(), charge()])
+    const hold = () => cap.fetch(new Request('https://vision-cap/reserve?day=2026-10-18&cap=60'))
+    const [first, second] = await Promise.all([hold(), hold()])
     const bodies = [await first.json(), await second.json()]
     expect(bodies.map((body: { used: number }) => body.used).sort()).toEqual([1, 2])
+    expect(bodies.every((body: { held: boolean }) => body.held)).toBe(true)
+    const released = await (await cap.fetch(new Request('https://vision-cap/release?day=2026-10-18&cap=60'))).json()
+    expect(released.used).toBe(1)
   })
 })
 

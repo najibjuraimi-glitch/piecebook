@@ -21,13 +21,15 @@ export class VisionCap {
     const key = `count:${day}`
     const used = Number((await this.storage.get(key)) || 0)
     if (url.pathname === "/reserve") {
-      return Response.json({ limited: used >= cap, used, cap })
-    }
-    if (url.pathname === "/charge") {
-      if (used >= cap) return Response.json({ limited: true, used, cap, charged: false })
+      if (used >= cap) return Response.json({ limited: true, used, cap, held: false })
       const next = used + 1
       await this.storage.put(key, next)
-      return Response.json({ limited: false, used: next, cap, charged: true })
+      return Response.json({ limited: false, used: next, cap, held: true })
+    }
+    if (url.pathname === "/release") {
+      const next = Math.max(0, used - 1)
+      await this.storage.put(key, next)
+      return Response.json({ used: next, cap })
     }
     return new Response("not_found", { status: 404 })
   }
@@ -49,21 +51,24 @@ export async function reserveCap(env, day) {
     const res = await stub.fetch(`https://vision-cap/reserve?day=${encodeURIComponent(day)}&cap=${cap}`)
     return res.json()
   }
-  const used = parseInt((await env.VISION_CAP.get(`count:${day}`)) || "0", 10)
-  return { limited: used >= cap, used, cap }
+  const key = `count:${day}`
+  const used = parseInt((await env.VISION_CAP.get(key)) || "0", 10)
+  if (used >= cap) return { limited: true, used, cap, held: false }
+  const next = used + 1
+  await env.VISION_CAP.put(key, String(next), { expirationTtl: 60 * 60 * 48 })
+  return { limited: false, used: next, cap, held: true }
 }
 
-export async function commitCap(env, day) {
+export async function releaseCap(env, day) {
   const cap = capNumber(env)
   const stub = counterStub(env)
   if (stub) {
-    const res = await stub.fetch(`https://vision-cap/charge?day=${encodeURIComponent(day)}&cap=${cap}`)
-    const body = await res.json()
-    return { used: body.used, cap: body.cap }
+    const res = await stub.fetch(`https://vision-cap/release?day=${encodeURIComponent(day)}&cap=${cap}`)
+    return res.json()
   }
   const key = `count:${day}`
   const used = parseInt((await env.VISION_CAP.get(key)) || "0", 10)
-  const next = used + 1
+  const next = Math.max(0, used - 1)
   await env.VISION_CAP.put(key, String(next), { expirationTtl: 60 * 60 * 48 })
   return { used: next, cap }
 }

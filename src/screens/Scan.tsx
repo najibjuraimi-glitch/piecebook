@@ -4,10 +4,10 @@ import { BackBar, Screen } from '../components/Screen'
 import { ALL_CARDS } from '../data/seed'
 import { VISION_URL } from '../config/vision'
 import { isStale } from '../lib/boughtBook'
-import { todayIso, formatSgd } from '../lib/format'
+import { todayIso, formatSgd, formatUsd } from '../lib/format'
 import { legalQuote } from '../lib/loadBought'
 import { characterForPrint } from '../lib/printCharacter'
-import { choosePrint, lotOfferPath, summariseRows, type ScanRow, type ScanSummary } from '../lib/scanMatch'
+import { choosePrint, lotOfferPath, summariseRows, type ScanRow, type ScanSummary, type WatchTarget } from '../lib/scanMatch'
 
 const field =
   'mt-1.5 block h-11 w-full rounded-xl border border-line bg-paper/60 px-3.5 text-body text-ink placeholder:text-muted/70 focus:border-ink focus:bg-surface focus:outline-none'
@@ -43,6 +43,7 @@ export function ScanScreen() {
   const [lotCurrency, setLotCurrency] = useState<'SGD' | 'USD'>('SGD')
   const [preset, setPreset] = useState<'ebay' | 'fanatics' | 'goldin'>('ebay')
   const [scan, setScan] = useState<ScanSummary | null>(null)
+  const [targets, setTargets] = useState<WatchTarget[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -79,6 +80,7 @@ export function ScanScreen() {
         return
       }
       setScan(data as ScanSummary)
+      setTargets(Array.isArray(data.targets) ? data.targets : [])
     } catch {
       setError('That photo could not be read.')
     }
@@ -87,7 +89,7 @@ export function ScanScreen() {
 
   const pick = (index: number, printId: string) => {
     if (!scan) return
-    const cards = scan.cards.map((card) => (card.index === index ? choosePrint(card, printId, quoteFor, todayIso(), rows) : card))
+    const cards = scan.cards.map((card) => (card.index === index ? choosePrint(card, printId, quoteFor, todayIso(), rows, targets) : card))
     setScan(summariseRows(cards, scan.lotAskAmount ?? scan.lotAskSgd, scan.lotAskCurrency === 'USD' ? 'USD' : 'SGD'))
   }
 
@@ -265,11 +267,17 @@ function CardLine({ card, onPick }: { card: ScanRow; onPick: (printId: string) =
         {card.forSale ? (card.sticker ? `${card.sticker.currency} ${card.sticker.amount}` : 'No sticker') : 'Not for sale'}
         {` · ${street}`}
         {card.street.source && card.priced ? ` · ${card.street.source}` : ''}
+        {card.street.detail === 'manual' && card.priced ? ' · manual' : ''}
         {card.street.asOf && card.priced ? ` · ${card.street.asOf}` : ''}
         {card.gapPct != null ? ` · ${card.gapPct}%` : ''}
         {card.underStreet ? ' · Under street' : ''}
         {card.targetHit ? ' · Under target' : ''}
       </p>
+      {(card.street.evidence ?? []).map((comp) => (
+        <p key={`${comp.source}-${comp.asOf}`} className="text-meta text-muted">
+          {comp.source} sold {formatUsd(comp.usd)} · {comp.asOf}
+        </p>
+      ))}
       {staleSources.map((source) => (
         <p key={`${source.source}-${source.asOf}`} className="text-meta text-muted">
           Stale {formatSgd(source.sgd)} · {source.source} · {source.asOf}

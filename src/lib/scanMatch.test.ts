@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { languageFromLabel, lotOfferPath, matchScan, parseCaption, resolveScanPrint, shanksSilverAlias, type QuoteFor, type ScanSight } from './scanMatch'
+import { assembleCode, languageFromLabel, lotOfferPath, matchScan, parseCaption, resolveScanPrint, shanksSilverAlias, type QuoteFor, type ScanSight } from './scanMatch'
 import { characterForPrint } from './printCharacter'
+import { legalQuote } from './loadBought'
+import { usdToSgd } from './fx'
+import { MANUAL_QUOTES } from './manualQuotes'
 import type { PrintRow } from './printResolve'
 
 const prints: PrintRow[] = [
@@ -108,7 +111,7 @@ describe('under street and lot math', () => {
       sights: [
         sight({ language: 'JP', labelText: 'One Piece JP', name: 'Nami' }),
         sight({ col: 1, confidence: 0.4, name: 'Luffy' }),
-        sight({ col: 2, code: 'OP09-004p3', parallel: 'sp', name: 'Sanji', sticker: { amount: 10, currency: 'SGD' } }),
+        sight({ col: 2, code: 'OP09-004p3', parallel: 'sp', name: 'Shanks', sticker: { amount: 10, currency: 'SGD' } }),
       ],
       prints,
       quoteFor,
@@ -201,7 +204,7 @@ describe('under street and lot math', () => {
     })
     expect(bare.cards[0]).toMatchObject({ codeText: 'EB04', printId: null, candidates: [], drag: 'print not in seed' })
     const numbered = matchScan({
-      sights: [sight({ code: '#003', codeText: '#003', setCode: 'EB04', parallel: 'sp', language: 'EN', labelText: 'EB04', name: 'Card', confidence: 0.92 })],
+      sights: [sight({ code: '#003', codeText: '#003', setCode: 'EB04', parallel: 'sp', language: 'EN', labelText: 'EB04', name: null, confidence: 0.92 })],
       prints: eb04,
       quoteFor,
       today: '2026-10-18',
@@ -262,7 +265,7 @@ describe('label code, character, and alias', () => {
       quoteFor,
       today: '2026-10-18',
     })
-    expect(scan.cards.map((card) => card.liked)).toEqual(['Boa', null, 'Sanji manga', null])
+    expect(scan.cards.map((card) => card.liked)).toEqual(['Boa', 'Nami', null, null])
   })
 
   it('resolves the OP13 Shanks silver label to OP09-004p4 and leaves Sabo alone', () => {
@@ -311,8 +314,8 @@ describe('label code, character, and alias', () => {
   it('uses English rules text, Japanese card text, a fresh manual price, and a promo with no price', () => {
     const languages = matchScan({
       sights: [
-        sight({ code: 'OP01-016', parallel: 'base', labelText: null, language: null, languageEvidence: 'card_text_english', name: 'Card' }),
-        sight({ col: 1, code: 'OP01-016', parallel: 'base', labelText: 'Romance Dawn', language: 'EN', languageEvidence: 'card_text_japanese', name: 'Card' }),
+        sight({ code: 'OP01-016', parallel: 'base', labelText: null, language: null, languageEvidence: 'card_text_english', name: 'Luffy' }),
+        sight({ col: 1, code: 'OP01-016', parallel: 'base', labelText: 'Romance Dawn', language: 'EN', languageEvidence: 'card_text_japanese', name: 'Luffy' }),
       ],
       prints,
       quoteFor,
@@ -322,7 +325,7 @@ describe('label code, character, and alias', () => {
     expect(languages.cards[1]).toMatchObject({ language: 'JP', priced: false, drag: 'JP is not priced as English' })
 
     const manual = matchScan({
-      sights: [sight({ code: 'OP09-004p3', parallel: 'sp' })],
+      sights: [sight({ code: 'OP09-004p3', parallel: 'sp', name: 'Shanks' })],
       prints,
       quoteFor,
       today: '2026-10-18',
@@ -352,7 +355,7 @@ describe('label code, character, and alias', () => {
       today: '2026-10-18',
     })
     expect(promo.cards[0]).toMatchObject({ priced: false, drag: 'Promo not in price data' })
-    expect(promo.cards[1]).toMatchObject({ priced: false, ambiguous: true, printId: null, drag: 'Print not exact' })
+    expect(promo.cards[1]).toMatchObject({ priced: false, printId: null, drag: 'Promo not in price data' })
   })
 
   it('does not subtract a USD lot ask from the SGD street, and passes the lot into the bid link', () => {
@@ -382,5 +385,198 @@ describe('label code, character, and alias', () => {
     expect(scan.cards[0].ambiguous).toBe(true)
     expect(scan.cards[0].candidates).toEqual(['OP09-004', 'OP09-004p1', 'OP09-004p2', 'OP09-004p3', 'OP09-004p4'])
     expect(scan.cards[0].priced).toBe(false)
+  })
+
+  it('flags Luffy from the read name when the print was not found', () => {
+    const scan = matchScan({
+      sights: [
+        sight({ code: null, codeText: null, name: 'Luffy', parallel: null, language: 'EN', labelText: 'EN' }),
+        sight({ col: 1, code: null, codeText: null, name: 'Sanji', parallel: 'manga', language: 'EN', labelText: 'EN' }),
+        sight({ col: 2, code: 'OP09-004', parallel: 'base', name: 'Luffy', language: 'EN', labelText: 'EN' }),
+      ],
+      prints,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(scan.cards.map((card) => card.liked)).toEqual(['Luffy', 'Sanji manga', 'Luffy'])
+  })
+
+  it('maps PSA set names onto OP09 and OP08, and searches name plus number', () => {
+    const rows: PrintRow[] = [
+      { cardNumber: 'OP09-061', baseNumber: 'OP09-061', variant: '', rarity: 'L', language: 'EN', name: 'Monkey.D.Luffy', character: 'Monkey.D.Luffy' },
+      { cardNumber: 'OP09-061p1', baseNumber: 'OP09-061', variant: 'Alternate Art', rarity: 'L', language: 'EN', name: 'Monkey.D.Luffy', character: 'Monkey.D.Luffy' },
+      { cardNumber: 'OP08-105', baseNumber: 'OP08-105', variant: '', rarity: 'SR', language: 'EN', name: 'Jewelry Bonney', character: 'Jewelry Bonney' },
+      { cardNumber: 'OP08-105p1', baseNumber: 'OP08-105', variant: 'Alternate Art', rarity: 'SR', language: 'EN', name: 'Jewelry Bonney', character: 'Jewelry Bonney' },
+    ]
+    const luffy = matchScan({
+      sights: [sight({ code: '#061', codeText: '#061', setCode: 'EN 2ND ANNIVERSARY SET', name: 'Luffy', parallel: null, language: 'EN', labelText: 'EN 2ND ANNIVERSARY SET' })],
+      prints: rows,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(luffy.cards[0].codeText).toBe('OP09-061')
+    expect(luffy.cards[0].candidates).toEqual(['OP09-061', 'OP09-061p1'])
+    expect(luffy.cards[0].liked).toBe('Luffy')
+    const bonney = matchScan({
+      sights: [sight({ code: '#105', codeText: '#105', setCode: 'PB STORAGE BOX SET-GOLD', name: 'Bonney', parallel: null, language: 'EN', labelText: 'PB STORAGE BOX SET-GOLD' })],
+      prints: rows,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(bonney.cards[0].codeText).toBe('OP08-105')
+    expect(bonney.cards[0].candidates).toEqual(['OP08-105', 'OP08-105p1'])
+    const fallback = matchScan({
+      sights: [sight({ code: '#061', codeText: '#061', setCode: null, name: 'Luffy', parallel: null, language: 'EN', labelText: 'EN' })],
+      prints: rows,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(fallback.cards[0].printId).toBeNull()
+    expect(fallback.cards[0].candidates).toEqual(['OP09-061', 'OP09-061p1'])
+  })
+
+  it('says print not in seed for a full code that is not Japanese', () => {
+    const missing = matchScan({
+      sights: [
+        sight({ code: 'EB04-106', codeText: 'EB04-106', parallel: null, name: 'Card', language: 'JP', languageEvidence: 'card_text_japanese', labelText: 'EB04' }),
+        sight({ col: 1, code: 'PRB02-078', codeText: 'PRB02-078', parallel: null, name: 'Card', language: 'JP', languageEvidence: 'card_text_japanese', labelText: 'PRB02' }),
+      ],
+      prints,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(missing.cards.map((card) => card.drag)).toEqual(['print not in seed', 'print not in seed'])
+    const japanese = matchScan({
+      sights: [sight({ code: 'EB04-106', parallel: null, name: 'Card', language: 'JP', languageEvidence: 'card_text_japanese', labelText: 'EB04 JP' })],
+      prints,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(japanese.cards[0].drag).toBe('JP is not priced as English')
+  })
+
+  it('prices the typed PSA 10 for Shanks Silver and keeps the sold comps as evidence', () => {
+    expect(MANUAL_QUOTES.map((row) => [row.printId, row.grade, row.usd, row.asOf, row.source, row.detail, row.url])).toEqual([
+      ['OP09-004p4', 'psa10', 1350.5, '2026-10-18', 'PriceCharting', 'manual', 'https://www.pricecharting.com/game/one-piece-carrying-on-his-will/shanks-silver-op09-004'],
+    ])
+    expect(MANUAL_QUOTES[0].comps).toEqual([
+      { usd: 961, asOf: '2026-10-07', source: 'eBay' },
+      { usd: 1226.02, asOf: '2026-10-02', source: 'eBay' },
+      { usd: 1425, asOf: '2026-09-09', source: 'eBay' },
+    ])
+    const quote = legalQuote('OP09-004p4', 'psa10')
+    expect(quote).toMatchObject({ usd: 1350.5, sgd: usdToSgd(1350.5), source: 'PriceCharting', asOf: '2026-10-18', detail: 'manual' })
+    expect(legalQuote('OP09-004p4', 'raw')).toBeNull()
+    expect(legalQuote('OP09-004p4', 'psa9')).toBeNull()
+    const scan = matchScan({
+      sights: [sight({
+        code: 'OP09-004p4',
+        parallel: 'silver',
+        name: 'Shanks',
+        language: 'EN',
+        labelText: 'EN',
+        slab: { grader: 'PSA', grade: '10', cert: '1', year: '2025', setName: null, blackLabel: false },
+      })],
+      prints,
+      quoteFor: legalQuote,
+      today: '2026-10-18',
+    })
+    expect(scan.cards[0]).toMatchObject({
+      printId: 'OP09-004p4',
+      priced: true,
+      street: { sgd: usdToSgd(1350.5), source: 'PriceCharting', detail: 'manual', asOf: '2026-10-18' },
+    })
+    expect(scan.cards[0].street.evidence.map((comp) => comp.usd)).toEqual([961, 1226.02, 1425])
+  })
+
+  it('does not price a card whose read name is a different person', () => {
+    const rows: PrintRow[] = [
+      { cardNumber: 'OP09-001', baseNumber: 'OP09-001', variant: '', rarity: 'L', language: 'EN', name: 'Shanks', character: 'Shanks' },
+      { cardNumber: 'OP01-001', baseNumber: 'OP01-001', variant: '', rarity: 'L', language: 'EN', name: 'Portgas.D.Ace', character: 'Portgas.D.Ace' },
+      { cardNumber: 'OP10-061', baseNumber: 'OP10-061', variant: '', rarity: 'UC', language: 'EN', name: 'Special Long-Range Attack!! Bagworm', character: 'Special Long-Range Attack!! Bagworm' },
+      { cardNumber: 'OP02-004', baseNumber: 'OP02-004', variant: '', rarity: 'L', language: 'EN', name: 'Sengoku', character: 'Sengoku' },
+      { cardNumber: 'OP17-001p1', baseNumber: 'OP17-001', variant: 'Alternate Art', rarity: 'L', language: 'EN', name: 'Edward.Newgate', character: 'Edward.Newgate' },
+      { cardNumber: 'OP09-013', baseNumber: 'OP09-013', variant: '', rarity: 'R', language: 'EN', name: 'Yasopp', character: 'Yasopp' },
+    ]
+    const scan = matchScan({
+      sights: [
+        sight({ code: 'OP09-001', parallel: 'base', name: 'Ace', slab: null, confidence: 0.99, language: 'EN', labelText: null, languageEvidence: 'card_text_english' }),
+        sight({ col: 1, code: 'OP10-061', parallel: null, name: 'Sengoku', slab: null, confidence: 0.95, language: 'EN', labelText: null, languageEvidence: 'card_text_english' }),
+        sight({ col: 2, code: 'OP17-001p1', parallel: 'aa', name: 'Yasopp', slab: null, confidence: 0.97, language: 'EN', labelText: null, languageEvidence: 'card_text_english' }),
+      ],
+      prints: rows,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(scan.cards[0]).toMatchObject({ printId: null, ambiguous: true, lowConfidence: true, priced: false })
+    expect(scan.cards[0].candidates).toContain('OP01-001')
+    expect(scan.cards[0].candidates).not.toContain('OP09-001')
+    expect(scan.cards[1].candidates).toContain('OP02-004')
+    expect(scan.cards[1].printId).toBeNull()
+    expect(scan.cards[2].candidates).toContain('OP09-013')
+    expect(scan.cards[2].printId).toBeNull()
+  })
+
+  it('does not resolve PCC leaders to the starter base prints', () => {
+    const rows: PrintRow[] = [
+      { cardNumber: 'ST02-001', baseNumber: 'ST02-001', variant: '', rarity: 'L', language: 'EN', name: 'Eustass"Captain"Kid', character: 'Eustass"Captain"Kid' },
+      { cardNumber: 'ST03-001', baseNumber: 'ST03-001', variant: '', rarity: 'L', language: 'EN', name: 'Crocodile', character: 'Crocodile' },
+      { cardNumber: 'ST04-001', baseNumber: 'ST04-001', variant: '', rarity: 'L', language: 'EN', name: 'Kaido', character: 'Kaido' },
+    ]
+    const scan = matchScan({
+      sights: [
+        sight({ code: 'ST02-001', parallel: 'base', name: 'Kid', labelText: 'PREMIUM CARD COLLECTION', language: 'EN' }),
+        sight({ col: 1, code: 'ST03-001', parallel: 'base', name: 'Crocodile', labelText: 'PREMIUM COLLECTION', language: 'EN' }),
+        sight({ col: 2, code: 'ST04-001', parallel: 'aa', name: 'Kaido', labelText: 'GIFT COLLECTION', language: 'EN' }),
+      ],
+      prints: rows,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(scan.cards.map((card) => card.printId)).toEqual([null, null, null])
+    expect(scan.cards.map((card) => card.drag)).toEqual(['Promo not in price data', 'Promo not in price data', 'Promo not in price data'])
+  })
+
+  it('rejects card number 000 and still finds a name when the set is Film Red', () => {
+    expect(assembleCode('#000', 'EB04')).toBe('#000')
+    expect(assembleCode('000', 'OP09')).toBe('000')
+    const film = matchScan({
+      sights: [sight({ code: null, codeText: null, setCode: 'FILM RED', name: 'Shanks', parallel: null, language: 'EN', labelText: 'FILM RED' })],
+      prints,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(film.cards[0].printId).toBeNull()
+    expect(film.cards[0].candidates).toContain('OP09-004')
+    expect(film.cards[0].ambiguous).toBe(true)
+  })
+
+  it('prices a watch-row manual figure and includes it in the max lot offer', () => {
+    const row: PrintRow = { cardNumber: 'OP12-020p1', baseNumber: 'OP12-020', variant: 'Alternate Art', rarity: 'L', language: 'EN', name: 'Roronoa Zoro', character: 'Roronoa Zoro' }
+    const scan = matchScan({
+      sights: [sight({ code: 'OP12-020p1', parallel: 'aa', name: 'Zoro', language: 'EN', labelText: 'EN', sticker: { amount: 40, currency: 'SGD' } })],
+      prints: [row],
+      quoteFor: () => ({ usd: 57.27, sgd: 57.27, source: 'Limitless', url: null, asOf: '2026-09-05', detail: 'ungraded TCGplayer market' }),
+      today: '2026-10-18',
+      targets: [{
+        id: 'WL-0016',
+        printId: 'OP12-020p1',
+        targetSgd: 80,
+        grade: 'raw',
+        marketSgd: 67.28,
+        marketAsOf: '2026-10-18',
+        marketSource: 'PriceCharting',
+        marketUrl: 'https://www.pricecharting.com/game/one-piece/roronoa-zoro',
+      }],
+    })
+    expect(scan.cards[0]).toMatchObject({
+      printId: 'OP12-020p1',
+      priced: true,
+      watchId: 'WL-0016',
+      street: { sgd: 67.28, source: 'PriceCharting', status: 'fresh' },
+    })
+    expect(scan.lotStreetSgd).toBe(67.28)
+    expect(scan.maxOfferSgd).toBe(60.55)
+    expect(lotOfferPath(scan)).toContain('OP12-020p1%3A67.28')
   })
 })

@@ -76,6 +76,21 @@ describe('advicePrices', () => {
     expect(other[2].url).toBeNull()
   })
 
+  it('uses the typed PSA 10 for Shanks Silver and no other grade', () => {
+    const card = getCard('OP09-004p4')!
+    const [raw, psa9, psa10] = advicePrices(card)
+    expect(raw.usd).toBeNull()
+    expect(psa9.usd).toBeNull()
+    expect(psa10).toMatchObject({
+      usd: 1350.5,
+      sgd: usdToSgd(1350.5),
+      source: 'PriceCharting',
+      url: 'https://www.pricecharting.com/game/one-piece-carrying-on-his-will/shanks-silver-op09-004',
+      asOf: '2026-10-18',
+      detail: 'manual',
+    })
+  })
+
   it('drops a graded number that does not name its printing', () => {
     const card = {
       ...getCard('OP05-100p2')!,

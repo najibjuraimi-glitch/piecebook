@@ -6,8 +6,8 @@
  */
 import { legalGrade, singaporeToday } from "../../src/lib/boughtBook.ts";
 import jpeg from "jpeg-js";
-import { matchScan, normaliseCondition, setToken } from "../../src/lib/scanMatch.ts";
-import { commitCap, reserveCap } from "./cap.js";
+import { matchScan, normaliseCondition } from "../../src/lib/scanMatch.ts";
+import { releaseCap, reserveCap } from "./cap.js";
 import { bookEmail, keyFor } from "./holdings.js";
 import { seedPrints, storedQuote } from "./storedPrice.js";
 
@@ -21,7 +21,7 @@ Each box_2d is [ymin, xmin, ymax, xmax] on a 0 to 1000 scale. 0 is the top or le
 Do not transcribe effect text. Do not guess a language from a set name. A label that says JP is Japanese even if the set name contains EN.
 language_evidence is label when the slab says EN or JP, card_text_english when the rules text is English, or card_text_japanese when the card text is Japanese.
 Do not guess a grade. Copy the grade and cert number from the label, or leave them null.
-For each card return its place in the grid (row and column, left to right, top to bottom, starting at 0), the box, the set, the number, the print (base, aa, sp, manga, gold, silver, or 2nd anni), language EN or JP only when you read that word, a confidence from 0 to 1, any price sticker amount and its currency (SGD if the sticker shows no currency), and a short condition estimate from this crop.
+For each card return its place in the grid (row and column, left to right, top to bottom, starting at 0), the box, the set, the number, the print (base, aa, sp, manga, gold, silver, or 2nd anni), language from the label word or from language_evidence, a confidence from 0 to 1, any price sticker amount and its currency (SGD if the sticker shows no currency), and a short condition estimate from this crop.
 Condition is an estimate, never a grade and never a PSA prediction. If the crop is too small or too blurry to judge, say so.
 Return ONLY JSON matching the schema.`;
 
@@ -147,14 +147,13 @@ export function dropDisagreedBoxes(sights) {
   return sights.map((sight, index) => (bad.has(index) ? { ...sight, box: null } : sight))
 }
 
-function imageSize(data) {
+function decodeJpeg(data) {
   try {
-    const bytes = Uint8Array.from(atob(data), (char) => char.charCodeAt(0))
-    const decoded = jpeg.decode(bytes, { useTArray: true, formatAsRGBA: false, maxResolutionInMP: 24 })
-    if (!decoded?.width || !decoded?.height) return { width: 0, height: 0 }
-    return { width: decoded.width, height: decoded.height }
+    const decoded = jpeg.decode(bytesFromBase64(data), { useTArray: true, formatAsRGBA: true, maxResolutionInMP: 24 })
+    if (!decoded?.width || !decoded?.height || !decoded.data) return null
+    return decoded
   } catch {
-    return { width: 0, height: 0 }
+    return null
   }
 }
 
@@ -182,7 +181,7 @@ export function normaliseScanSights(raw, image = { width: 0, height: 0 }) {
       box: Array.isArray(card?.box_2d) ? boxFrom2d(card.box_2d) : normaliseBox(card?.box, image.width, image.height),
       codeText,
       code: text(card?.code, 24),
-      setCode: text(card?.set, 24) || setToken(text(card?.set_name, 80)),
+      setCode: [text(card?.set, 80), text(card?.set_name, 80)].filter(Boolean).join(' ') || null,
       name: text(card?.name, 60),
       language: text(card?.language, 12),
       languageEvidence: evidence === "label" || evidence === "card_text_english" || evidence === "card_text_japanese" ? evidence : null,
@@ -236,11 +235,11 @@ async function watchTargets(env, identity) {
     const doc = typeof raw === "string" ? JSON.parse(raw) : raw
     if (!doc || !Array.isArray(doc.items)) return []
     return doc.items
-      .filter((item) => item && typeof item.code === "string" && typeof item.targetSgd === "number")
+      .filter((item) => item && typeof item.code === "string" && (typeof item.targetSgd === "number" || typeof item.marketSgd === "number"))
       .map((item) => ({
         id: String(item.id || ""),
         printId: item.code,
-        targetSgd: item.targetSgd,
+        targetSgd: typeof item.targetSgd === "number" ? item.targetSgd : null,
         grade: legalGrade(String(item.grade || "")),
         marketSgd: typeof item.marketSgd === "number" ? item.marketSgd : null,
         marketAsOf: typeof item.marketAsOf === "string" ? item.marketAsOf : null,
@@ -264,7 +263,17 @@ function json(body, status, cors) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors } })
 }
 
-const CROP_EDGE = 120
+const CROP_MIN = 600
+const CROP_MAX = 1600
+
+/** Scale so the long edge is at least 600px and at most 1600px. */
+export function cropScale(width, height) {
+  const long = Math.max(width, height)
+  if (long <= 0) return 1
+  if (long < CROP_MIN) return CROP_MIN / long
+  if (long > CROP_MAX) return CROP_MAX / long
+  return 1
+}
 
 function bytesFromBase64(data) {
   const binary = atob(data)
@@ -279,12 +288,12 @@ function base64FromBytes(bytes) {
   return btoa(binary)
 }
 
-/** A small JPEG of one card. Null when the photo will not decode or the box is empty. */
+/** A JPEG of one card, at least 600px on the long edge. Null when the photo will not decode. */
 export function cropJpeg(data, box) {
   if (!data || !box) return null
+  const decoded = decodeJpeg(data)
+  if (!decoded) return null
   try {
-    const decoded = jpeg.decode(bytesFromBase64(data), { useTArray: true, formatAsRGBA: true, maxResolutionInMP: 24 })
-    if (!decoded?.width || !decoded?.height || !decoded.data) return null
     return cropDecoded(decoded, box)
   } catch {
     return null
@@ -296,7 +305,7 @@ function cropDecoded(decoded, box) {
   const y0 = Math.max(0, Math.min(decoded.height - 1, Math.floor(box.y * decoded.height)))
   const w = Math.max(1, Math.min(decoded.width - x0, Math.round(box.w * decoded.width)))
   const h = Math.max(1, Math.min(decoded.height - y0, Math.round(box.h * decoded.height)))
-  const scale = Math.min(1, CROP_EDGE / Math.max(w, h))
+  const scale = cropScale(w, h)
   const tw = Math.max(1, Math.round(w * scale))
   const th = Math.max(1, Math.round(h * scale))
   const out = new Uint8Array(tw * th * 4)
@@ -312,18 +321,11 @@ function cropDecoded(decoded, box) {
       out[to + 3] = 255
     }
   }
-  const encoded = jpeg.encode({ data: out, width: tw, height: th }, 40)
+  const encoded = jpeg.encode({ data: out, width: tw, height: th }, 80)
   return `data:image/jpeg;base64,${base64FromBytes(encoded.data)}`
 }
 
-function withCrops(sights, data) {
-  if (!data) return sights.map((sight) => ({ ...sight, crop: null }))
-  let decoded = null
-  try {
-    decoded = jpeg.decode(bytesFromBase64(data), { useTArray: true, formatAsRGBA: true, maxResolutionInMP: 24 })
-  } catch {
-    decoded = null
-  }
+function withCrops(sights, decoded) {
   if (!decoded?.width) return sights.map((sight) => ({ ...sight, crop: null }))
   return sights.map((sight) => {
     if (!sight.box) return { ...sight, crop: null }
@@ -362,6 +364,7 @@ export async function handleScan(req, env, identity, cors, deps = {}) {
   const day = singaporeToday(Date.now())
   const room = await reserveCap(env, day)
   if (room.limited) return json({ error: "daily_cap_reached", cap: room.cap, used: room.used }, 429, cors)
+  const giveBack = () => (room.held ? releaseCap(env, day) : Promise.resolve())
 
   const modelFetch = deps.modelFetch || fetch
   let response
@@ -381,26 +384,29 @@ export async function handleScan(req, env, identity, cors, deps = {}) {
       }),
     })
   } catch {
+    await giveBack()
     return json({ error: "model_error" }, 502, cors)
   }
   if (!response.ok) {
     let detail = ""
     try { detail = await response.text() } catch { detail = "" }
+    await giveBack()
     return json({ error: "model_error", status: response.status, detail: safeDetail(detail) }, 502, cors)
   }
   let payload
-  try { payload = await response.json() } catch { return json({ error: "unparseable_model_output" }, 502, cors) }
+  try { payload = await response.json() } catch { await giveBack(); return json({ error: "unparseable_model_output" }, 502, cors) }
   const textPart = payload?.candidates?.[0]?.content?.parts?.filter((part) => part && !part.thought && typeof part.text === "string").map((part) => part.text).join("") || ""
   let parsed
-  try { parsed = JSON.parse(textPart) } catch { return json({ error: "unparseable_model_output" }, 502, cors) }
-  const sights = withCrops(dropDisagreedBoxes(normaliseScanSights(parsed, imageSize(image.data))), image.data)
-  const usage = await commitCap(env, day)
+  try { parsed = JSON.parse(textPart) } catch { await giveBack(); return json({ error: "unparseable_model_output" }, 502, cors) }
+  const decoded = decodeJpeg(image.data)
+  const sights = withCrops(dropDisagreedBoxes(normaliseScanSights(parsed, { width: decoded?.width || 0, height: decoded?.height || 0 })), decoded)
+  const targets = await watchTargets(env, identity)
   const summary = matchScan({
     sights,
     prints: seedPrints(),
     quoteFor: (id, grade) => storedQuote(id, grade),
     today: singaporeToday(Date.now()),
-    targets: await watchTargets(env, identity),
+    targets,
     caption,
     lotAskSgd: lotAsk,
     lotAskCurrency,
@@ -408,10 +414,11 @@ export async function handleScan(req, env, identity, cors, deps = {}) {
   })
   return json({
     ...summary,
+    targets,
     imageStored: false,
     ai_guess: true,
     model: env.GEMINI_MODEL,
-    usage: { today: usage.used, cap: usage.cap },
+    usage: { today: room.used, cap: room.cap },
     disclaimer: "AI estimate. A condition note is not a grade and is not a PSA prediction.",
   }, 200, cors)
 }

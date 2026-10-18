@@ -463,8 +463,8 @@ export function BidCalculator() {
             <div className="mt-4">
               <p className="text-meta text-muted">Share of this hammer</p>
               <ul className="mt-2 space-y-2">
-                {hammerShares(result.hammer, lotCards).map((share) => (
-                  <Line key={share.id} label={share.id} value={formatForeign(share.share, result.currency)} />
+                {hammerShares(result.hammer, lotCards).map((share, index) => (
+                  <Line key={`${share.id}-${index}`} label={share.id} value={formatForeign(share.share, result.currency)} />
                 ))}
               </ul>
               <p className="mt-2 text-meta text-muted">Cards with no fresh English price are not in this split.</p>

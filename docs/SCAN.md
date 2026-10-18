@@ -16,10 +16,12 @@ A label with no language word falls back to a confident English read from the mo
 
 A slab number such as `#106` is joined to the set on the same label (`EB04` becomes `EB04-106`) and looked up. The echoed code is that full id. A year is not used as a number.
 
-Liked names (Luffy, Nami, Boa, Sanji manga) come from the print's character. OP14-118 "You'll Frighten Me..." is Boa. Sanji counts only on a manga print.
+Liked names (Luffy, Nami, Boa, Sanji manga) come from the print's character. OP14-118 "You'll Frighten Me..." is Boa. Sanji counts only on a manga print. When the print was not found, the flag falls back to the name that was read.
 
-OP09-004p4 is Shanks, 3rd Anniversary Silver, rarity SP. There is no stored price. TCGplayer product 657443. PriceCharting slug `shanks-silver-op09-004`. A PSA label `OP13 EN / SHANKS / 3RD ANNIVERSARY-SILVER / #004` resolves to that print. OP13-004 itself stays Sabo. On PRB02, OP12, OP14 and OP15, a label that says ALTERNATE ART matches the manga print.
+OP09-004p4 is Shanks, 3rd Anniversary Silver, rarity SP. Raw has no stored price. PSA 10 is a manual PriceCharting figure of US$1,350.50 on 2026-10-18, at `shanks-silver-op09-004`. Three eBay sold comps are kept as evidence only: US$961 (2026-10-07), US$1,226.02 (2026-10-02), US$1,425 (2026-09-09). A PSA label `OP13 EN / SHANKS / 3RD ANNIVERSARY-SILVER / #004` resolves to that print. OP13-004 itself stays Sabo. `EN 2ND ANNIVERSARY SET` is OP-09, so Luffy `#061` is `OP09-061`. `PB STORAGE BOX SET-GOLD` is OP-08, so Bonney `#105` is `OP08-105`. If the set name does not map, the name and number are searched across the seed and returned as candidates. On PRB02, OP12, OP14 and OP15, a label that says ALTERNATE ART matches the manga print.
 
-A fresh manual English watch price for the same print and grade counts ahead of the seed. A stale seed figure is shown with its date and stays out of the lot total. **Max lot offer** opens `/bid` with the target, the house, the ask currency, and each clearing card. The bid page splits the solved hammer across those cards. A USD lot ask is not subtracted from the S$ street.
+A full code that is not an English print in the seed says **print not in seed**. A label that really says JP still says **JP is not priced as English**. A BGS Black Label is recorded and is not priced; pricing one is a follow-up.
+
+A fresh manual English watch price for the same print and grade counts ahead of the seed, including in the lot total and the max-lot offer. A stale seed figure is shown with its date and stays out of the lot total. Picking a print keeps that watch price. **Max lot offer** opens `/bid` with the target, the house, the ask currency, and each clearing card. The bid page splits the solved hammer across those cards. A USD lot ask is not subtracted from the S$ street.
 
 Boxes are `box_2d` values from 0 to 1000. A box past the photo, or one that disagrees with its row and column, is dropped. Each card can include a small crop. The photo cap uses the Asia/Singapore day. On staging the counter is a Durable Object; without that binding it stays in KV. PRB-02 prints are already in `prb02-en-seed.csv`.
