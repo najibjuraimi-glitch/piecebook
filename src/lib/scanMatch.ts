@@ -303,10 +303,16 @@ export function setPrefix(raw: string | null | undefined): string | null {
  * `#106` plus a separate set `EB04` is `EB04-106`.
  * A code that is already a print id is left as that id. A year is not a number.
  */
+function zeroPrintId(id: string): boolean {
+  return /-000(?:p\d+)?$/i.test(id)
+}
+
 export function assembleCode(code: string | null | undefined, setCode: string | null | undefined): string | null {
   const raw = (code || '').trim()
   const loosened = raw ? loosenCode(raw) : ''
-  if (loosened && splitPrintCode(loosened)) return loosened
+  const split = loosened ? splitPrintCode(loosened) : null
+  if (split && zeroPrintId(split.id)) return null
+  if (split) return loosened
   const set = setPrefix(setCode)
   const num = raw.match(/^#?\s*(\d{1,3})$/)
   if (num && set && Number(num[1]) > 0) return `${set}-${num[1].padStart(3, '0')}`
@@ -433,9 +439,11 @@ function recoverByName(
   sight: Pick<ScanSight, 'code' | 'codeText' | 'name' | 'labelText' | 'parallel'>,
   setRaw: string | null,
   rows: PrintRow[],
-): { printId: string | null; ambiguous: boolean; candidates: string[]; nameMismatch: boolean; codeText: string } | null {
+  readCode: string | null,
+): { printId: string | null; ambiguous: boolean; candidates: string[]; nameMismatch: boolean; codeText: string | null } | null {
   const num = labelNumber(sight)
   const fromSet = num ? assembleCode(`#${num}`, setRaw) : null
+  const echoed = readCode || sight.codeText || sight.code
   if (fromSet && splitPrintCode(loosenCode(fromSet))) {
     const retry = resolveScanPrint(fromSet, sight.parallel, rows)
     const named = retry.candidates.filter((id) => {
@@ -444,13 +452,11 @@ function recoverByName(
     })
     if (named.length === 1) return { printId: named[0], ambiguous: false, candidates: named, nameMismatch: false, codeText: fromSet }
     if (named.length > 1) return { printId: null, ambiguous: true, candidates: named, nameMismatch: false, codeText: fromSet }
+    if (!retry.candidates.length) return { printId: null, ambiguous: false, candidates: [], nameMismatch: false, codeText: fromSet }
   }
   const across = num ? nameNumberCandidates(sight.name, `#${num}`, rows) : []
-  if (across.length === 1) return { printId: across[0], ambiguous: false, candidates: across, nameMismatch: false, codeText: across[0].replace(/p\d+$/i, '') }
-  if (across.length > 1) {
-    const base = across[0].replace(/p\d+$/i, '')
-    return { printId: null, ambiguous: true, candidates: across, nameMismatch: false, codeText: across.every((id) => id.toUpperCase().startsWith(base.toUpperCase())) ? base : across[0] }
-  }
+  if (across.length === 1) return { printId: across[0], ambiguous: false, candidates: across, nameMismatch: false, codeText: echoed }
+  if (across.length > 1) return { printId: null, ambiguous: true, candidates: across, nameMismatch: false, codeText: echoed }
   return null
 }
 
@@ -461,14 +467,15 @@ function promoUnread(code: string | null, label: string | null, setName: string 
 
 const CANDIDATE_CAP = 8
 
-function limitCandidates(ids: string[], name: string | null | undefined, parallel: string | null | undefined, rows: PrintRow[]): string[] {
+function limitCandidates(ids: string[], name: string | null | undefined, parallel: string | null | undefined, rows: PrintRow[], keepReadCode = false): string[] {
   let list = ids
   if (name?.trim()) {
     const agreed = list.filter((id) => {
       const row = rows.find((item) => item.cardNumber.toUpperCase() === id.toUpperCase())
       return row && namesAgree(name, row)
     })
-    list = agreed.length ? agreed : nameCandidates(name, null, rows)
+    if (agreed.length) list = agreed
+    else if (!(keepReadCode && list.length === 0)) list = nameCandidates(name, null, rows)
   }
   const word = (parallel || '').trim().toLowerCase()
   const ranked = list
@@ -487,8 +494,9 @@ export function readScanCode(
   rows: PrintRow[],
 ): { codeText: string | null; printId: string | null; ambiguous: boolean; candidates: string[]; nameMismatch: boolean; collection: boolean } {
   const setRaw = sight.setCode || sight.slab?.setName || null
-  const assembled = assembleCode(sight.code || sight.codeText, setRaw)
-  let codeText = assembled || sight.codeText || sight.code
+  const rawCode = (sight.code || sight.codeText || '').trim() || null
+  const assembled = assembleCode(rawCode, setRaw)
+  let codeText = assembled || rawCode
   const alias = shanksSilverAlias([sight.code, sight.codeText, sight.setCode, sight.name, sight.labelText, sight.parallel, sight.slab?.setName])
   if (alias && rows.some((row) => row.cardNumber.toUpperCase() === alias.toUpperCase())) {
     return { codeText: alias, printId: alias, ambiguous: false, candidates: [alias], nameMismatch: false, collection: false }
@@ -514,9 +522,9 @@ export function readScanCode(
   if (!sight.picked && resolved.printId && sight.name?.trim()) {
     const print = rows.find((row) => row.cardNumber.toUpperCase() === resolved.printId!.toUpperCase())
     if (print && !namesAgree(sight.name, print)) {
-      const recovered = recoverByName(sight, setRaw, rows)
+      const recovered = recoverByName(sight, setRaw, rows, codeText)
       if (recovered) {
-        codeText = recovered.codeText
+        codeText = recovered.codeText || codeText
         resolved = recovered
       } else {
         resolved = {
@@ -529,15 +537,15 @@ export function readScanCode(
     }
   }
   const parsed = assembled ? splitPrintCode(loosenCode(assembled)) : null
-  if (!parsed && !resolved.printId && !resolved.nameMismatch) {
+  if (!parsed && !resolved.printId && !resolved.nameMismatch && !fullPrintCode(codeText)) {
     const named = nameCandidates(sight.name ?? null, setRaw, rows)
     if (named.length) resolved = { printId: null, ambiguous: true, candidates: named, nameMismatch: false }
   }
-  if (!resolved.printId && resolved.candidates.length === 0 && !resolved.nameMismatch) {
+  if (!resolved.printId && resolved.candidates.length === 0 && !resolved.nameMismatch && !fullPrintCode(codeText)) {
     const across = nameNumberCandidates(sight.name ?? null, sight.code || sight.codeText, rows)
     if (across.length) resolved = { printId: null, ambiguous: true, candidates: across, nameMismatch: false }
   }
-  const candidates = limitCandidates(resolved.candidates, sight.name, sight.parallel, rows)
+  const candidates = limitCandidates(resolved.candidates, sight.name, sight.parallel, rows, fullPrintCode(codeText))
   const printId = resolved.printId && candidates.some((id) => id.toUpperCase() === resolved.printId!.toUpperCase()) ? resolved.printId : null
   return { codeText, printId, ambiguous: resolved.ambiguous || (resolved.printId != null && printId == null && candidates.length > 0), candidates, nameMismatch: resolved.nameMismatch, collection: false }
 }

@@ -188,7 +188,7 @@ export function ScanScreen() {
           <ul className="space-y-3">
             {scan.cards.map((card) => (
               <li key={card.index} className={`rounded-2xl border px-3 py-3 ${card.underStreet || card.targetHit ? 'border-good bg-[#E7F6EE]' : 'border-line bg-surface'}`}>
-                <CardLine card={card} crop={crops[card.index] ?? null} onPick={(printId) => pick(card.index, printId)} onServerCrop={photo && !crops[card.index] ? () => serverCrop(photo, card.box, file) : undefined} />
+                <CardLine card={card} crop={crops[card.index]?.url ?? null} longEdge={crops[card.index]?.longEdge ?? null} onPick={(printId) => pick(card.index, printId)} onServerCrop={photo && !crops[card.index] ? () => serverCrop(photo, card.box, file) : undefined} />
               </li>
             ))}
           </ul>
@@ -239,7 +239,7 @@ function LotLine({ scan, preset }: { scan: ScanSummary; preset: 'ebay' | 'fanati
       <ul className="mt-2 space-y-1">
         {scan.cards.filter((card) => card.drag).map((card) => (
           <li key={card.index} className="text-meta text-muted">
-            {card.printId || card.name || 'Card'} · {card.drag}
+            {card.printId || card.codeText || card.name || 'Card'} · {card.drag}
           </li>
         ))}
       </ul>
@@ -247,8 +247,8 @@ function LotLine({ scan, preset }: { scan: ScanSummary; preset: 'ebay' | 'fanati
   )
 }
 
-function useBrowserCrops(src: string | null, cards: ScanRow[]): Record<number, string> {
-  const [crops, setCrops] = useState<Record<number, string>>({})
+function useBrowserCrops(src: string | null, cards: ScanRow[]): Record<number, { url: string; longEdge: number }> {
+  const [crops, setCrops] = useState<Record<number, { url: string; longEdge: number }>>({})
   const key = cards.map((card) => `${card.index}:${card.box ? `${card.box.x},${card.box.y},${card.box.w},${card.box.h}` : ''}`).join('|')
   useEffect(() => {
     if (!src || !cards.some((card) => card.box)) {
@@ -259,11 +259,11 @@ function useBrowserCrops(src: string | null, cards: ScanRow[]): Record<number, s
     const img = new Image()
     img.onload = () => {
       if (cancel) return
-      const next: Record<number, string> = {}
+      const next: Record<number, { url: string; longEdge: number }> = {}
       for (const card of cards) {
         if (!card.box) continue
-        const url = drawCrop(img, card.box)
-        if (url) next[card.index] = url
+        const drawn = drawCrop(img, card.box)
+        if (drawn) next[card.index] = drawn
       }
       setCrops(next)
     }
@@ -279,19 +279,20 @@ function useBrowserCrops(src: string | null, cards: ScanRow[]): Record<number, s
   return crops
 }
 
-function drawCrop(img: HTMLImageElement, box: ScanBox): string | null {
+/** Long edge of the crop, capped at 1600px. Never enlarges. `longEdge` is the native size before that cap. */
+function drawCrop(img: HTMLImageElement, box: ScanBox): { url: string; longEdge: number } | null {
   try {
     const sw = Math.max(1, Math.round(box.w * img.naturalWidth))
     const sh = Math.max(1, Math.round(box.h * img.naturalHeight))
     const long = Math.max(sw, sh)
-    const scale = long > 480 ? 480 / long : 1
+    const scale = long > 1600 ? 1600 / long : 1
     const canvas = document.createElement('canvas')
     canvas.width = Math.max(1, Math.round(sw * scale))
     canvas.height = Math.max(1, Math.round(sh * scale))
     const ctx = canvas.getContext('2d')
     if (!ctx) return null
     ctx.drawImage(img, Math.round(box.x * img.naturalWidth), Math.round(box.y * img.naturalHeight), sw, sh, 0, 0, canvas.width, canvas.height)
-    return canvas.toDataURL('image/jpeg', 0.8)
+    return { url: canvas.toDataURL('image/jpeg', 0.8), longEdge: long }
   } catch {
     return null
   }
@@ -303,17 +304,29 @@ async function serverCrop(src: string, box: ScanBox | null, file: File | null): 
   if (file) body.image = await fileToDataUrl(file)
   else if (src.startsWith('http')) body.imageUrl = src
   else return null
-  const res = await fetch(`${VISION_URL}/scan/crop`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  const data = await res.json().catch(() => null)
-  return typeof data?.crop === 'string' ? data.crop : null
+  const once = async () => {
+    const res = await fetch(`${VISION_URL}/scan/crop`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const text = await res.text()
+    if (res.status === 503 && !text.trim()) return 'retry' as const
+    try {
+      const data = JSON.parse(text) as { crop?: unknown }
+      return typeof data?.crop === 'string' ? data.crop : null
+    } catch {
+      return null
+    }
+  }
+  const first = await once()
+  if (first !== 'retry') return first
+  const second = await once()
+  return second === 'retry' ? null : second
 }
 
-function CardLine({ card, crop, onPick, onServerCrop }: { card: ScanRow; crop: string | null; onPick: (printId: string) => void; onServerCrop?: () => Promise<string | null> }) {
+function CardLine({ card, crop, longEdge, onPick, onServerCrop }: { card: ScanRow; crop: string | null; longEdge: number | null; onPick: (printId: string) => void; onServerCrop?: () => Promise<string | null> }) {
   const [asked, setAsked] = useState<string | null>(null)
   const shown = crop || asked
   const street = card.priced && card.street.sgd != null ? formatSgd(card.street.sgd) : 'No price yet'
@@ -322,6 +335,11 @@ function CardLine({ card, crop, onPick, onServerCrop }: { card: ScanRow; crop: s
   return (
     <div>
       {shown && <img src={shown} alt="" className="mb-2 h-16 w-auto rounded-lg" />}
+      {longEdge != null && (
+        <p className="mb-2 text-meta text-muted">
+          {longEdge}px{longEdge < 600 ? ' · too small for a close-up' : ''}
+        </p>
+      )}
       {!shown && onServerCrop && (
         <button
           type="button"
@@ -341,7 +359,7 @@ function CardLine({ card, crop, onPick, onServerCrop }: { card: ScanRow; crop: s
         {card.liked ? ` · ${card.liked}` : ''}
       </p>
       <p className="tabular mt-1 text-meta text-ink">
-        {card.printId || 'Print not exact'}
+        {card.printId || card.codeText || 'Print not exact'}
         {card.lowConfidence ? ' · Low confidence' : ''}
         {card.ambiguous ? ' · Ambiguous' : ''}
         {` · ${Math.round(card.confidence * 100)}%`}
@@ -404,7 +422,7 @@ function CardLine({ card, crop, onPick, onServerCrop }: { card: ScanRow; crop: s
             Max bid
           </Link>
         )}
-        <Link to="/pregrade" className="font-medium text-ink underline decoration-line underline-offset-2">
+        <Link to="/pregrade" state={shown ? { scanFront: shown } : undefined} className="font-medium text-ink underline decoration-line underline-offset-2">
           Close-up check
         </Link>
       </p>

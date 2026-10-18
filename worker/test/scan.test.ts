@@ -3,7 +3,9 @@ import { singaporeToday } from '../../src/lib/boughtBook.ts'
 import { storedQuote } from '../src/storedPrice.js'
 import worker from '../src/index.js'
 import { VisionCap } from '../src/cap.js'
+import { matchScan } from '../../src/lib/scanMatch.ts'
 import { boxFrom2d, cropScale, dropDisagreedBoxes, normaliseBox, normaliseScanSights } from '../src/scan.js'
+import { seedPrints } from '../src/storedPrice.js'
 
 class MemoryKV {
   store = new Map<string, string>()
@@ -108,11 +110,33 @@ describe('scan sights', () => {
     const named = normaliseScanSights({ cards: [{ row: 0, col: 0, confidence: 1, code: '#061', set_name: 'EN 2ND ANNIVERSARY SET' }] })
     expect(named[0].setCode).toBe('EN 2ND ANNIVERSARY SET')
     expect(cropScale(100, 40)).toBe(1)
-    expect(cropScale(800, 400)).toBe(0.75)
-    expect(cropScale(2000, 1000)).toBe(0.3)
+    expect(cropScale(800, 400)).toBe(1)
+    expect(cropScale(2000, 1000)).toBe(0.8)
     const dropped = dropDisagreedBoxes(sights)
     expect(dropped[0].box).toBeNull()
     expect(dropped[1].box).toBeNull()
+  })
+
+  it('keeps Ace OP13-002 distinct from Ace ST13-002', () => {
+    const raw = {
+      cards: [
+        { row: 0, col: 0, code: 'OP13-002', name: 'Ace', language: 'EN', confidence: 0.93 },
+        { row: 0, col: 1, code: 'ST13-002', name: 'Portgas.D.Ace', language: 'EN', confidence: 0.91 },
+      ],
+    }
+    const scan = matchScan({
+      sights: normaliseScanSights(raw),
+      prints: seedPrints(),
+      quoteFor: () => null,
+      today: '2026-10-18',
+    })
+    expect(scan.cards.map((card) => card.codeText)).toEqual(['OP13-002', 'ST13-002'])
+    expect(scan.cards[0].candidates.every((id) => id.toUpperCase().startsWith('OP13-002'))).toBe(true)
+    expect(scan.cards[1].candidates.every((id) => id.toUpperCase().startsWith('ST13-002'))).toBe(true)
+    expect(scan.cards[0].candidates.some((id) => id.toUpperCase().startsWith('ST13'))).toBe(false)
+    expect(scan.cards[1].candidates.some((id) => id.toUpperCase().startsWith('OP13'))).toBe(false)
+    expect(scan.cards[0].printId === null || scan.cards[0].printId.startsWith('OP13-002')).toBe(true)
+    expect(scan.cards[1].printId === null || scan.cards[1].printId.startsWith('ST13-002')).toBe(true)
   })
 })
 

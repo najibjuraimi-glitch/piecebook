@@ -195,4 +195,26 @@ describe('pregrade result readout', () => {
     expect(document.body.textContent).toContain('10 not ruled out')
     expect(document.body.textContent).not.toContain('print border could be read')
   })
+
+  it('fills the front photo from a scan crop', async () => {
+    const scanFront = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA='
+    host = document.createElement('div')
+    document.body.appendChild(host)
+    root = createRoot(host)
+    await act(async () => {
+      root?.render(
+        <MemoryRouter initialEntries={[{ pathname: '/pregrade', state: { scanFront } }]}>
+          <Routes>
+            <Route path="/pregrade" element={<PregradeScreen />} />
+          </Routes>
+        </MemoryRouter>,
+      )
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    const buttons = [...document.querySelectorAll('button')].map((button) => button.textContent)
+    expect(buttons).toContain('Replace photo')
+    expect(document.querySelector('canvas, img')).not.toBeNull()
+  })
 })

@@ -508,7 +508,7 @@ describe('label code, character, and alias', () => {
       quoteFor,
       today: '2026-10-18',
     })
-    expect(scan.cards[0]).toMatchObject({ printId: 'OP01-001', ambiguous: false, priced: false })
+    expect(scan.cards[0]).toMatchObject({ codeText: 'OP09-001', printId: 'OP01-001', ambiguous: false, priced: false })
     expect(scan.cards[0].candidates).toEqual(['OP01-001'])
     expect(scan.cards[1].candidates).toContain('OP02-004')
     expect(scan.cards[1].printId).toBeNull()
@@ -566,6 +566,38 @@ describe('label code, character, and alias', () => {
   it('rejects card number 000', () => {
     expect(assembleCode('#000', 'EB04')).toBe('#000')
     expect(assembleCode('000', 'OP09')).toBe('000')
+    expect(assembleCode('EB04-000', 'EB04')).toBeNull()
+    expect(assembleCode('EB-04-000', 'EB04')).toBeNull()
+    expect(assembleCode('OP09-000', null)).toBeNull()
+  })
+
+  it('keeps a read EB04 code that is not in the seed', () => {
+    const rows: PrintRow[] = [
+      { cardNumber: 'OP09-001', baseNumber: 'OP09-001', variant: '', rarity: 'L', language: 'EN', name: 'Shanks', character: 'Shanks' },
+      { cardNumber: 'OP13-002', baseNumber: 'OP13-002', variant: '', rarity: 'L', language: 'EN', name: 'Portgas.D.Ace', character: 'Portgas.D.Ace' },
+      { cardNumber: 'ST13-002', baseNumber: 'ST13-002', variant: '', rarity: 'L', language: 'EN', name: 'Portgas.D.Ace', character: 'Portgas.D.Ace' },
+    ]
+    const missing = matchScan({
+      sights: [sight({ code: 'EB04-106', codeText: 'EB04-106', name: 'Ace', parallel: null, language: 'EN', labelText: 'EB04' })],
+      prints: rows,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(missing.cards[0]).toMatchObject({ codeText: 'EB04-106', printId: null, ambiguous: false, candidates: [], drag: 'print not in seed' })
+    const fromLabel = matchScan({
+      sights: [sight({ code: 'OP09-001', codeText: 'OP09-001', setCode: 'EB04', name: 'Ace', parallel: null, language: 'EN', labelText: 'EB04 #106' })],
+      prints: rows,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(fromLabel.cards[0]).toMatchObject({ codeText: 'EB04-106', printId: null, ambiguous: false, candidates: [], drag: 'print not in seed' })
+    const zero = matchScan({
+      sights: [sight({ code: 'EB04-000', codeText: 'EB04-000', name: 'Ace', parallel: null, language: 'EN', labelText: 'EB04' })],
+      prints: rows,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(zero.cards[0]).toMatchObject({ codeText: 'EB04-000', printId: null, candidates: [], drag: 'print not in seed' })
   })
 
   it('leaves Film Red Chopper and a premium Kid out of the seed prices', () => {

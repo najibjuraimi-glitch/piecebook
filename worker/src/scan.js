@@ -283,9 +283,9 @@ function json(body, status, cors) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors } })
 }
 
-const CROP_MAX = 600
+const CROP_MAX = 1600
 
-/** Scale down so the long edge is at most 600px. Never upscale. */
+/** Scale down so the long edge is at most 1600px. Never upscale. */
 export function cropScale(width, height) {
   const long = Math.max(width, height)
   if (long <= CROP_MAX) return 1
@@ -305,7 +305,7 @@ function base64FromBytes(bytes) {
   return btoa(binary)
 }
 
-/** A JPEG of one card, at least 600px on the long edge. Null when the photo will not decode. */
+/** A JPEG of one card. The long edge is at most 1600px and is never enlarged. Null when the photo will not decode. */
 export function cropJpeg(data, box) {
   if (!data || !box) return null
   const decoded = decodeJpeg(data)
