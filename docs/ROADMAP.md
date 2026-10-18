@@ -1,19 +1,28 @@
 # Piecebook development map
 
-As of: 16 Oct 2026 SGT. Owner: Jib. Task table of record: `docs/growth-map.csv` (every row below has a matching row there). Objective and pillars: `docs/OBJECTIVE.md`. How work runs: `docs/HANDOFF.md`.
+As of: 18 Oct 2026 SGT. Owner: Jib. Task table of record: `docs/growth-map.csv` (the Phase 14–16 rows below still have a matching row there). Objective and pillars: `docs/OBJECTIVE.md`. How work runs: `docs/HANDOFF.md`.
 
 ## The short version, for Jib
 
 Piecebook is now private, synced to the cloud, and can read a card from a photo. Two of your agents use it every day: **Auction** (the eBay and Goldin desk) and **Cards** (the Singapore buying desk). Both sent in their wish lists. This map folds those lists into the plan, with duplicates merged and the order set by what gives the most value soonest and by what has to exist before the next thing can.
 
+Shipped since the 16 Oct map:
+
+- **Singapore day (#63, #64).** Alerts, holdings and the watchlist use the Asia/Singapore calendar day, on the Worker and on the phone. A phone outside Singapore does not send a snapshot date the Worker rejects. Stale and hit agree between midnight and 8am SGT.
+- **Prints panel (#65).** Every Portfolio holding and every Watchlist item has a collapsed list of the seed prints of that card number, with the pin, the English stored price (source and date, or "no price"), and any Japanese figure labeled JP and not used as the value.
+- **All-in and max bid (#67).** The phone page `/bid`. Hammer, premium, payment fee, shipping, forwarder, a typed rate with its date, and GST Auto above S$400. The reverse side solves the max hammer. It does not fetch a rate or a price, and it does not place a bid. Formula: `docs/ALL-IN.md`.
+
 What comes next, in order:
 
-1. **One street price for everything (Phase 14).** Both agents asked for the same thing in two different shapes: "what is this card worth today". One endpoint answers both, in US dollars and Singapore dollars, with the source link and the date. The first version uses TCGplayer market prices (the same daily feed the app already trusts). PriceCharting graded prices and eBay sold comps plug into the same endpoint once you decide to pay for a key. Street price goes first because the max-bid calculator, the hunting list and the ledger all need it.
-2. **Scores on the pre-grade page (still Phase 14).** A TAG-style score per card: centering from the measured ratios with the borders drawn on the photo, corners, edges and surface out of 10, and an overall range like 8 to 9.5 with a confidence level on each. Always labelled an AI estimate, never a grade, and a 10 is never confirmed.
-3. **Cheaper photo reads for the desks (still Phase 14).** A one-photo "what card is this" call that does not spend a full pre-grade, with its own daily cap. Plus a fix for a real bug Cards found: a 448 pixel photo was read as the wrong card and the app still suggested matches.
-4. **Buying math and a ledger (Phase 15).** A max-bid calculator that both desks and the phone share, a PSA cert lookup, and one purchase ledger that goes from "won" to "sold" with paid, GST, forwarding, all-in, shipping status and tracking. This replaces the spreadsheet.
-5. **Better photo reads (Phase 16).** A confidence level in the API answer, glare handling, and reading an eBay listing URL directly. Centering ratios already show on every pre-grade result and in the `/check` answer since the quick fix in PR #42.
-6. **Later.** A pre-order link on product pages needs your call first, because Piecebook never sells.
+1. **Case scan.** One photo of a dealer case or a binder page. The existing vision Worker finds every card and reads the price stickers. Each card shows its English street price, with source and date, stale flagged, or "no price" when unknown, next to the sticker. Cards under street are highlighted. Test it on raw eBay and Carousell dealer-case photos. Depends on price coverage (item 3).
+2. **Watch row language (Auction V2).** A language field on the watch row, so the EN tag on `/bid` is stored data and not a label the page assumes.
+3. **English price source, free.** The coverage the case scan and the indexes need. No paid key.
+4. **Set index and portfolio index.** Base 100 on a stated date. Ranges 1W, 1M, 3M and ALL. The book is a second line. A minimum-data rule says when there is not enough history to draw the line.
+5. **Character indexes.** Raw against PSA 10, and movers.
+6. **Grading tracker.** Photos from before the card is sent off, a status timeline, and the grading cost added into the landed cost.
+7. **PSA 9 crack calculator, and an English-only cert gate (Auction).**
+
+Phases 14–16 below stay written down. They are not this queue. The max-bid page in 15.1 has shipped. The street-price endpoint in 14.1 has not. Item 3 is a free English source for the case scan and the indexes. It is not the paid PriceCharting or eBay blocks in 14.1.
 
 The guardrails do not move:
 
@@ -32,13 +41,16 @@ Sizes: **S** is under a day of Code's time, **M** is one to three days, **L** is
 | Cards 2 | Cheap one-photo identify with its own cap | 14.3 |
 | Found by Cards | EB02-010 read as EB02-001 on a 448 px photo, matches still suggested | 14.4 |
 | Cards 3 | Watchlist as the hunting list, write back a seen listing | 14.5 |
-| Auction 2 | Max-bid calculator, one shared formula | 15.1 |
+| Auction 2 | Max-bid calculator, one shared formula | 15.1, shipped as `/bid` in PR #67 |
 | Auction 3 | PSA cert lookup, cached | 15.2 |
 | Auction 4, Cards 4 | Won-item tracker, portfolio parity with the sheet, validation | 15.3 and 15.4, one ledger |
 | Auction 5 | `/api/check` returns centering and confidence | Centering shipped in PR #42 (quick fix, 16 Oct); confidence is 16.1 |
 | Cards 5 | Glare: retake at an angle, or two photos | 16.2 · guided camera with glare retry in draft (keeps the cleaner shot; merging reads still open) |
 | Auction 5 | `/api/check` accepts an eBay item URL | 16.3 |
 | Auction nice to have | Pre-order or buy link on product pages | Later, decision for Jib |
+| Cards | Prints of one card number on a holding or a watch row | Shipped, PR #65 |
+| Auction | All-in and max hammer on the phone | Shipped, `/bid`, PR #67 |
+| Jib | Singapore day for stale, hit and the snapshot | Shipped, PR #63 (Worker) and PR #64 (phone) |
 
 Things not on this map because they would break a guardrail: a "likely grade" output, automatic bidding of any kind, or a price that has no source behind it.
 
@@ -85,12 +97,15 @@ Goal: the agents stop guessing what a card is worth and stop spending a full pre
 
 Goal: one formula and one book, shared by the phone and both desks, so the spreadsheet can retire.
 
-### 15.1 Max-bid calculator endpoint, one shared formula
+### 15.1 Max-bid calculator — shipped as `/bid` (PR #67, 18 Oct 2026)
 
-- **User value:** "Street is US$1,030. What is my max all-in and max bid on eBay, and on Goldin with the buyer's premium?" answered the same way everywhere.
-- **Shape:** `GET /api/maxbid?street=1030&venue=ebay|goldin&grade=raw|psa10`. Returns max all-in and max bid in USD and SGD, the cost lines it added (Buy&Ship Portland forwarding, 9% Singapore GST, FX at the dated rate, Goldin's buyer's premium of about 22% as read per listing, never assumed), and a `sit` flag when the best available ask is more than 10% under street. The typed Phase 11 worksheet was removed from the card page, so this formula would be new shared code, with its own tests, not a revival of that worksheet.
-- **Size:** M. **Depends on:** 14.1 for the street input, Phase 11.3 math. **Benefits:** Auction, Cards, Jib.
+- **Shipped:** the phone page `/bid`, shared by the book and both desks. Hammer and currency, buyer's premium (eBay 0%, Fanatics 20%, Goldin 22%, or custom), a payment fee that follows the house until it is overridden (eBay 0%, Fanatics card 2.9%, Goldin ~3%), seller shipping, a forwarder fee in S$, a rate to S$ typed with the day it was read, and GST Auto (9% only when the import is over S$400, with On and Off overrides). The reverse side solves the highest hammer, to the cent, that stays inside a target all-in. A watch row can open it; the target is the row's target, or 0.9 times a fresh manual English figure. Fanatics shipping fills in only inside the verified US$750–3,000 band. The formula and the tests live in `docs/ALL-IN.md` and `src/lib/allIn.ts`.
+- **Not built:** the `GET /api/maxbid` shape below. There is no street-price input yet, and no `sit` flag. The page does not fetch a rate.
 - **Guardrail:** it returns a number. It never places, schedules or suggests placing a bid.
+
+The old endpoint note, kept so the unpaid shape is not forgotten:
+
+- **Shape that was not built:** `GET /api/maxbid?street=1030&venue=ebay|goldin&grade=raw|psa10`. It would have returned max all-in and max bid in USD and SGD from a street figure, with Buy&Ship Portland forwarding, 9% Singapore GST, FX at the dated rate, and Goldin's premium as read per listing. A `sit` flag when the best available ask is more than 10% under street. Depends on 14.1, which is still open. Item 3 in the queue above is the free English source; it is not this endpoint.
 
 ### 15.2 PSA cert lookup, cached
 
@@ -146,18 +161,28 @@ Goal: the desks get more out of each photo without any promise about grades.
 
 ### Already on the map and unchanged
 
-Phase 12 (Goldin ingest and batch sweep) stays "map only, do not build". 16.3 and 15.1 are its first two bricks. Auto PSA pop pulls and cert auto-match stay in Later · Pre-grade; 15.2 does not unpark them, because a single cert lookup is not a population feed.
+Phase 12 (Goldin ingest and batch sweep) stays "map only, do not build". 16.3 is still a brick for it. The buying-math brick shipped as `/bid` (PR #67), not as Goldin ingest. Auto PSA pop pulls and cert auto-match stay parked; 15.2 does not unpark them, because a single cert lookup is not a population feed. Item 7 in the queue is a PSA 9 crack calculator and a gate that keeps a non-English cert out. It is not a population feed.
 
 ## Order and dependencies at a glance
 
 ```
-14.1 street price  ──►  15.1 max bid  ──►  15.3 ledger  ──►  15.4 validation
-14.2 scores (after PR #42)  ──►  16.1 confidence in the API
+Done: Singapore day (#63, #64). Prints panel (#65). /bid all-in and max hammer (#67).
+
+English price source (free) ──► case scan
+                           ──► set + portfolio index ──► character indexes, raw vs PSA 10, movers
+Watch row language (independent; makes the EN tag on /bid real)
+Grading tracker (photos, status, grading cost into landed cost)
+PSA 9 crack calculator + English-only cert gate
+
+Still written below, not this queue:
+14.1 street-price endpoint (paid sources are a later plug-in, not item 3)
+14.2 scores ──► 16.1 confidence in the API
 14.3 identify
-14.4 low-res guard ──►  16.2 glare
-                   ──►  16.3 eBay URL in
-14.5 hunting list  ──►  15.3 ledger (scoped write)
-15.2 cert lookup   (independent, needs a PSA token)
+14.4 low-res guard ──► 16.2 glare
+                   ──► 16.3 eBay URL in
+14.5 hunting list  ──► 15.3 ledger ──► 15.4 validation
+15.1 phone calculator is shipped; GET /api/maxbid is not
+15.2 cert lookup (needs a PSA token; the cert gate above is separate)
 16.1 confidence (S), then server-side centering (L); the centering echo is shipped (PR #42)
 ```
 
