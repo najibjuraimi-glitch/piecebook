@@ -22,6 +22,7 @@ import {
   glareReport,
   homographyFromQuads,
   SCAN_INTERVAL_MS,
+  BOX_MOTION_RESIDUAL,
   MOVED_HOLD_MS,
   SCENE_MOVE_FRAC,
   SCENE_MOVE_MAD,
@@ -40,8 +41,11 @@ import {
   scanIntervalOpen,
   sceneMoved,
   sharpness,
+  simulateDriftScans,
   steadyWaitMs,
+  stepFrameHold,
   substantialSceneChange,
+  unreadBoxMotion,
   shrinkQuad,
   stepLiveView,
   stepSceneHold,
@@ -796,8 +800,8 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(sceneMoved(still)).toBe(false)
   })
 
-  it('keeps a 0.5% to 1% tremble and a 10% exposure change on a real card photo', () => {
-    const full = loadJpegFixture('nami-op09-070-sp-front.jpg')
+  it('keeps a 0.5% to 1% tremble and a 10% exposure change on the slab grid', () => {
+    const full = loadJpegFixture('full.jpg')
     const anchor = greyDownscale(full)
     for (const frac of [0.0025, -0.0025, 0.005, -0.005, 0.01, -0.01]) {
       const motion = compareFrames(anchor, greyDownscale(translateSubpixel(full, frac, frac * 0.3)))
@@ -899,5 +903,33 @@ describe('case view: one steady second, then not the same scene again', () => {
     const width = 100
     const shifted = nextDryStreak(first.seen, 0, [{ box: slid }], { dx: 0.2 * width, dy: 0, width, height: 80 })
     expect(shifted.streak).toBe(1)
+    const trusted = { mad: 0, residual: BOX_MOTION_RESIDUAL - 1, dx: 20, dy: 0, shiftFrac: 0.2 }
+    const shaky = { ...trusted, residual: BOX_MOTION_RESIDUAL }
+    expect(unreadBoxMotion(trusted, width, 80)).toEqual({ dx: 20, dy: 0, width, height: 80 })
+    expect(unreadBoxMotion(shaky, width, 80)).toBeNull()
+    const refused = nextDryStreak(first.seen, 2, [{ box: slid }], unreadBoxMotion(shaky, width, 80))
+    expect(refused.streak).toBe(0)
+    expect(refused.pause).toBe(false)
+  })
+
+  it('stops a slow drift within three scans or with a pause', () => {
+    for (const drift of [0.003, 0.002]) {
+      const session = simulateDriftScans(drift, 360_000, 33_700)
+      expect(session.scans <= 3 || session.paused).toBe(true)
+    }
+  })
+
+  it('times the moving-read hold from one frame to the next', () => {
+    let hold = stepFrameHold(null, false, 0)
+    expect(hold.ready).toBe(false)
+    hold = stepFrameHold(hold.since, false, SCENE_STEADY_MS)
+    expect(hold.ready).toBe(false)
+    hold = stepFrameHold(hold.since, true, SCENE_STEADY_MS + 200)
+    expect(hold.since).toBeNull()
+    hold = stepFrameHold(hold.since, false, 2000)
+    hold = stepFrameHold(hold.since, false, 2000 + MOVED_HOLD_MS)
+    expect(hold.ready).toBe(true)
+    const driftPerTick = 0.003 * 0.2
+    expect(driftPerTick).toBeLessThan(SCENE_MOVE_FRAC)
   })
 })

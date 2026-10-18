@@ -541,6 +541,8 @@ export const SCENE_MOVE_FRAC = 0.06
 export const SCENE_RESET_FRAC = 0.2
 /** Residual difference, after aligning and removing exposure, above which the picture itself changed. */
 export const SCENE_MOVE_MAD = 12
+/** Unread boxes are shifted into the new frame only when the aligned pictures still agree. */
+export const BOX_MOTION_RESIDUAL = 6
 
 export interface GreyFrame {
   width: number
@@ -776,9 +778,37 @@ export function substantialSceneChange(motion: FrameMotion): boolean {
   return motion.shiftFrac >= SCENE_RESET_FRAC || motion.residual >= SCENE_MOVE_MAD
 }
 
-/** One second, or three after two moved reads in a row. */
+/** One second against the anchor, or three after two moved reads. The three is frame-to-frame, not against the anchor. */
 export function steadyWaitMs(movedReads: number): number {
   return movedReads >= MOVED_HOLD_AFTER ? MOVED_HOLD_MS : SCENE_STEADY_MS
+}
+
+/**
+ * Steadiness of the hold, measured from the previous frame to this one.
+ * A slow drift never trips it. A jerk clears the clock.
+ */
+export function stepFrameHold(since: number | null, frameMoved: boolean, now: number, holdMs = MOVED_HOLD_MS): { since: number | null; ready: boolean } {
+  if (frameMoved) return { since: null, ready: false }
+  const started = since != null && since <= now ? since : now
+  return { since: started, ready: now - started >= holdMs }
+}
+
+/** A returned read is dropped only when the scene itself changed. A moderate slide is kept. */
+export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
+  if (motion && substantialSceneChange(motion)) return 'discard'
+  return 'show'
+}
+
+/** Fraction to add to each label. Null when the read is discarded. */
+export function labelOffset(motion: FrameMotion | null, width: number, height: number): { x: number; y: number } | null {
+  if (placeRead(motion) === 'discard' || !motion) return placeRead(motion) === 'discard' ? null : { x: 0, y: 0 }
+  return { x: motion.dx / Math.max(width, 1), y: motion.dy / Math.max(height, 1) }
+}
+
+/** Shift for unread boxes. A residual of 6 or more is not trusted. */
+export function unreadBoxMotion(motion: FrameMotion | null, width: number, height: number): BoxMotion | null {
+  if (!motion || motion.residual >= BOX_MOTION_RESIDUAL) return null
+  return { dx: motion.dx, dy: motion.dy, width, height }
 }
 
 /**
@@ -896,6 +926,103 @@ export function nextDryStreak(
   if (fresh) return { seen: { keys, boxes }, streak: 0, pause: false }
   const next = streak + 1
   return { seen: { keys, boxes }, streak: next, pause: next >= 3 }
+}
+
+export interface DriftSession {
+  scans: number
+  moved: number
+  paused: boolean
+}
+
+/**
+ * A phone drifting while each read takes tens of seconds.
+ * Moderate slides are kept and count toward the pause. The hold after two
+ * moved reads is frame-to-frame, so the drift itself does not reset it.
+ */
+export function simulateDriftScans(driftPerSec: number, durationMs = 360_000, readMs = 33_700): DriftSession {
+  const dt = 200
+  let t = 0
+  let pos = 0
+  let anchor = 0
+  let steadySince: number | null = null
+  let scanned = false
+  let prev = 0
+  let frameSteady: number | null = null
+  let movedReads = 0
+  let seen = emptySeen()
+  let streak = 0
+  let paused = false
+  let lastScanAt: number | null = null
+  let readingUntil: number | null = null
+  let capturePos = 0
+  let scans = 0
+  let moved = 0
+  const card = { printId: 'OP09-004p2', box: { x: 0.2, y: 0.25, w: 0.3, h: 0.4 } }
+  const asMotion = (delta: number): FrameMotion => ({
+    mad: 0,
+    residual: 0,
+    dx: delta * 100,
+    dy: 0,
+    shiftFrac: Math.abs(delta),
+  })
+
+  while (t <= durationMs) {
+    if (readingUntil != null && t >= readingUntil) {
+      const motion = asMotion(pos - capturePos)
+      if (sceneMoved(motion)) {
+        moved += 1
+        movedReads += 1
+      } else {
+        movedReads = 0
+      }
+      if (placeRead(motion) === 'discard') {
+        if (substantialSceneChange(motion)) {
+          seen = emptySeen()
+          streak = 0
+        }
+      } else {
+        const outcome = nextDryStreak(seen, streak, [card], unreadBoxMotion(motion, 100, 100))
+        seen = outcome.seen
+        streak = outcome.streak
+        if (outcome.pause) paused = true
+      }
+      lastScanAt = t
+      readingUntil = null
+      anchor = pos
+      steadySince = null
+      scanned = false
+      frameSteady = null
+    }
+    if (readingUntil == null && !paused) {
+      const hop = Math.abs(pos - prev)
+      if (movedReads >= MOVED_HOLD_AFTER) {
+        const step = stepFrameHold(frameSteady, hop >= SCENE_MOVE_FRAC, t)
+        frameSteady = step.since
+        if (step.ready && scanIntervalOpen(lastScanAt, t)) {
+          scans += 1
+          readingUntil = t + readMs
+          capturePos = pos
+          frameSteady = null
+        }
+      } else if (Math.abs(pos - anchor) >= SCENE_MOVE_FRAC) {
+        anchor = pos
+        steadySince = null
+        scanned = false
+      } else {
+        if (steadySince == null || steadySince > t) steadySince = t
+        if (!scanned && t - steadySince >= SCENE_STEADY_MS && scanIntervalOpen(lastScanAt, t)) {
+          scans += 1
+          scanned = true
+          readingUntil = t + readMs
+          capturePos = pos
+        }
+      }
+    }
+    prev = pos
+    pos += driftPerSec * (dt / 1000)
+    t += dt
+  }
+  return { scans, moved, paused }
 }
 
 /** Of two shots of the same side, the one with less glare on the card; ties keep the first. */
