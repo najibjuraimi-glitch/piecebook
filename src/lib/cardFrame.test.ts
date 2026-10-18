@@ -33,6 +33,7 @@ import {
   compareFrames,
   contentMotionComputeCount,
   DIM_FRAME_MEAN,
+  NEAR_BLACK_MEAN,
   dryStreakAfterDiscard,
   emptySeen,
   greyDownscale,
@@ -65,6 +66,7 @@ import {
   stepSceneHold,
   warpImage,
   type FrameAssessment,
+  type FrameMotion,
   type HintCode,
 } from './cardFrame'
 
@@ -1326,7 +1328,7 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(blink.paused).toBe(true)
   })
 
-  it('floors near-black noise, keeps a pale sleeve and a white table over the gate, and sees a dim pan', () => {
+  it('keeps a pale sleeve and a white table over the gate, and sees a dim pan without the lit-frame cost', () => {
     const img = casePortrait()
     const anchor = greyDownscale(img)
     const before = contentMotionComputeCount()
@@ -1343,8 +1345,7 @@ describe('case view: one steady second, then not the same scene again', () => {
 
     const dark = expose(img, 0.05)
     const noise = compareFrames(greyDownscale(dark), greyDownscale(noisy(dark, 8)))
-    expect(noise.frameMean ?? 255).toBeLessThan(20)
-    expect(noise.contentResidual ?? 99).toBeLessThan(PAUSE_RESUME_RESIDUAL)
+    expect(noise.frameMean ?? 255).toBeLessThan(NEAR_BLACK_MEAN)
     expect(resumesPausedScan(noise)).toBe(false)
     expect(unreadSlabsAreNew(noise)).toBe(false)
 
@@ -1392,6 +1393,97 @@ describe('case view: one steady second, then not the same scene again', () => {
       step = stepSceneHold(step.state, greyDownscale(dimB), 400)
       expect(step.moved).toBe(true)
     }
+  })
+
+  it('places dim pans with the content shift so labels are not on the wrong card', () => {
+    const img = casePortrait()
+    const wrongLabels = (motion: FrameMotion, trueShift: number) => {
+      if (placeRead(motion) !== 'show') return 0
+      const offset = labelOffset(motion, 100, 100)
+      if (!offset) return 0
+      return Math.abs(offset.x - trueShift) > 1 / 6 ? 1 : 0
+    }
+    const dimPan = (exposure: number, frac: number) => {
+      const a = noisy(expose(img, exposure), 7, 11)
+      const b = noisy(expose(translateImage(img, frac), exposure), 7, 12)
+      return compareFrames(greyDownscale(a), greyDownscale(b))
+    }
+    const pan30 = dimPan(0.15, 0.3)
+    expect(pan30.frameMean ?? 255).toBeLessThan(DIM_FRAME_MEAN)
+    expect(pan30.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(pan30.contentShiftFrac ?? 0).toBeGreaterThan(0.25)
+    expect(wrongLabels(pan30, 0.3)).toBe(0)
+    const pan45 = dimPan(0.12, 0.45)
+    expect(pan45.frameMean ?? 255).toBeLessThan(DIM_FRAME_MEAN)
+    expect(pan45.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(wrongLabels(pan45, 0.45)).toBe(0)
+    expect(placeRead(pan45)).toBe('discard')
+  })
+
+  it('does not resume on a dim shadow or near-black noise, and a dark swap needs a tap', () => {
+    const img = casePortrait()
+    const dim = expose(img, 0.15)
+    const shadeHalf = (source: PixelImage) => {
+      const out = copy(source)
+      for (let y = 0; y < out.height; y += 1) {
+        for (let x = 0; x < out.width / 2; x += 1) {
+          const i = (y * out.width + x) * 4
+          out.data[i] = Math.round(out.data[i] * 0.5)
+          out.data[i + 1] = Math.round(out.data[i + 1] * 0.5)
+          out.data[i + 2] = Math.round(out.data[i + 2] * 0.5)
+        }
+      }
+      return out
+    }
+    const shadow = compareFrames(greyDownscale(dim), greyDownscale(shadeHalf(dim)))
+    expect(shadow.frameMean ?? 0).toBeGreaterThanOrEqual(NEAR_BLACK_MEAN)
+    expect(shadow.contentResidual ?? 99).toBeLessThan(PAUSE_RESUME_RESIDUAL)
+    expect(shadow.frameMean ?? 255).toBeLessThan(DIM_FRAME_MEAN)
+    expect(resumesPausedScan(shadow)).toBe(false)
+    expect(unreadSlabsAreNew(shadow)).toBe(false)
+
+    const dark = expose(img, 0.05)
+    const noise = compareFrames(greyDownscale(dark), greyDownscale(noisy(dark, 8, 3)))
+    expect(noise.frameMean ?? 255).toBeLessThan(NEAR_BLACK_MEAN)
+    expect(resumesPausedScan(noise)).toBe(false)
+    expect(unreadSlabsAreNew(noise)).toBe(false)
+    const swapped = expose(copy(img), 0.05)
+    const band = Math.floor(swapped.height / 4)
+    for (let y = 0; y < band; y += 1) {
+      for (let x = 0; x < swapped.width; x += 1) {
+        const si = ((y + band * 2) * swapped.width + x) * 4
+        const di = (y * swapped.width + x) * 4
+        swapped.data[di] = dark.data[si]
+        swapped.data[di + 1] = dark.data[si + 1]
+        swapped.data[di + 2] = dark.data[si + 2]
+      }
+    }
+    const row = compareFrames(greyDownscale(dark), greyDownscale(swapped))
+    expect(row.frameMean ?? 255).toBeLessThan(NEAR_BLACK_MEAN)
+    expect(resumesPausedScan(row)).toBe(false)
+    expect(unreadSlabsAreNew(row)).toBe(false)
+
+    const differed = shadow
+    let seed = 50
+    const rand = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed / 4294967296
+    }
+    let on = false
+    const shadeOn = new Map<number, boolean>()
+    for (let t = 0; t <= 300_000; t += 200) {
+      if (rand() < 0.08) on = !on
+      shadeOn.set(t, on)
+    }
+    const blink = simulateCaseWatch({
+      durationMs: 300_000,
+      readMs: 2_000,
+      position: () => 0,
+      residual: (from, to) => (shadeOn.get(from) === shadeOn.get(to) ? 0 : differed.residual),
+      contentResidual: (from, to) => (shadeOn.get(from) === shadeOn.get(to) ? 0 : differed.contentResidual ?? 0),
+    })
+    expect(blink.resumeCount).toBe(0)
+    expect(blink.scans).toBeLessThan(10)
   })
 
   it('times the moving-read hold from one frame to the next', () => {

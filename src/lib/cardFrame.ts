@@ -548,15 +548,15 @@ export const CONTENT_MEAN_RADIUS = 10
 /** Ratio images are put back on this grey level before the residual is measured. */
 export const CONTENT_LEVEL = 128
 /**
- * The local mean never divides by less than this. Near-black pixels would
- * otherwise turn sensor noise into a fake row change.
- */
-export const CONTENT_MEAN_FLOOR = 24
-/**
- * Below this grey level the raw block match misses a real pan. The local-mean
- * shift is consulted only then, so a normally lit tick does not pay for it.
+ * Below this grey level the raw block match misses a real pan. Label placement
+ * and the scene check use the local-mean shift only then.
  */
 export const DIM_FRAME_MEAN = 40
+/**
+ * Below this grey level the local-mean residual amplifies noise. Resume and
+ * unread checks use the raw residual, so a swap needs a tap.
+ */
+export const NEAR_BLACK_MEAN = 13
 /**
  * A paused scan resumes when the local-mean residual reaches this.
  * Shadows and sensor noise stay under it. A pale sleeve or a white table clears it.
@@ -581,6 +581,9 @@ export interface FrameMotion {
   contentResidual?: number
   /** Shift measured on the local-mean frames. A shadow or a dim frame can hide the raw shift. */
   contentShiftFrac?: number
+  /** Pixel shift of the local-mean frames, same space as dx and dy. */
+  contentDx?: number
+  contentDy?: number
   /** Mean grey of the darker frame. A low value means the raw shift is not trusted. */
   frameMean?: number
   dx: number
@@ -798,8 +801,7 @@ export function divideByLocalMean(frame: GreyFrame, radius = CONTENT_MEAN_RADIUS
       const x0 = Math.max(0, x - radius)
       const x1 = Math.min(width, x + radius + 1)
       const mean = (at(x1, y1) - at(x0, y1) - at(x1, y0) + at(x0, y0)) / ((x1 - x0) * (y1 - y0))
-      const divisor = Math.max(mean, CONTENT_MEAN_FLOOR)
-      const ratio = (data[y * width + x] / divisor) * CONTENT_LEVEL
+      const ratio = mean > 0 ? (data[y * width + x] / mean) * CONTENT_LEVEL : CONTENT_LEVEL
       out[y * width + x] = Math.max(0, Math.min(255, Math.round(ratio)))
     }
   }
@@ -864,7 +866,44 @@ export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
     get contentShiftFrac() {
       return ensure().shiftFrac
     },
+    get contentDx() {
+      return ensure().dx
+    },
+    get contentDy() {
+      return ensure().dy
+    },
   }
+}
+
+function dimFrame(motion: FrameMotion): boolean {
+  return (motion.frameMean ?? 255) < DIM_FRAME_MEAN
+}
+
+function nearBlack(motion: FrameMotion): boolean {
+  return (motion.frameMean ?? 255) < NEAR_BLACK_MEAN
+}
+
+/** Shift used to place or drop a read. Dim light trusts the local-mean shift. */
+function placedShift(motion: FrameMotion): number {
+  if (dimFrame(motion)) return motion.contentShiftFrac ?? motion.shiftFrac
+  return motion.shiftFrac
+}
+
+function placedDelta(motion: FrameMotion): { dx: number; dy: number } {
+  if (dimFrame(motion) && motion.contentDx != null && motion.contentDy != null) return { dx: motion.contentDx, dy: motion.contentDy }
+  return { dx: motion.dx, dy: motion.dy }
+}
+
+/** Agreement of the pictures. Dim light uses the local-mean residual, which still sees a pan the search missed. */
+function placedResidual(motion: FrameMotion): number {
+  if (dimFrame(motion)) return motion.contentResidual ?? motion.residual
+  return motion.residual
+}
+
+/** Residual for resume and unread checks. Near-black frames use the raw one. */
+function gateResidual(motion: FrameMotion): number {
+  if (nearBlack(motion)) return motion.residual
+  return motion.contentResidual ?? motion.residual
 }
 
 /**
@@ -886,14 +925,13 @@ export function substantialSceneChange(motion: FrameMotion): boolean {
 
 /**
  * A paused scan resumes on a slide of about 20% of the frame, or when the
- * local-mean residual reaches about 15. A shadow or sensor noise does not.
- * A pale sleeve or a white table does. A 15% pan does not. A row swap does.
+ * local-mean residual reaches about 15. A shadow does not. Near-black frames
+ * use the raw residual, so a swap there needs a tap. A 15% pan does not.
  */
 export function resumesPausedScan(motion: FrameMotion | null): boolean {
   if (!motion) return false
   const shift = motion.contentShiftFrac ?? motion.shiftFrac
-  const residual = motion.contentResidual ?? motion.residual
-  return shift >= SCENE_RESET_FRAC || residual >= PAUSE_RESUME_RESIDUAL
+  return shift >= SCENE_RESET_FRAC || gateResidual(motion) >= PAUSE_RESUME_RESIDUAL
 }
 
 /** The hold-still clock restarts on a real slide. A light blinking in place does not restart it. */
@@ -923,8 +961,11 @@ export function stepFrameHold(since: number | null, frameMoved: boolean, now: nu
  */
 export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
   if (!motion) return 'show'
-  if (motion.shiftFrac < SCENE_MOVE_FRAC) return substantialSceneChange(motion) ? 'discard' : 'show'
-  if (motion.residual >= BOX_MOTION_RESIDUAL || substantialSceneChange(motion)) return 'discard'
+  const shift = placedShift(motion)
+  const residual = placedResidual(motion)
+  const substantial = shift >= SCENE_RESET_FRAC || residual >= SCENE_MOVE_MAD
+  if (shift < SCENE_MOVE_FRAC) return substantial ? 'discard' : 'show'
+  if (residual >= BOX_MOTION_RESIDUAL || substantial) return 'discard'
   return 'show'
 }
 
@@ -935,13 +976,18 @@ export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
 export function labelOffset(motion: FrameMotion | null, width: number, height: number): { x: number; y: number } | null {
   if (!motion) return { x: 0, y: 0 }
   if (placeRead(motion) === 'discard') return null
-  if (motion.shiftFrac < SCENE_MOVE_FRAC && motion.residual >= BOX_MOTION_RESIDUAL) return { x: 0, y: 0 }
-  return { x: motion.dx / Math.max(width, 1), y: motion.dy / Math.max(height, 1) }
+  const shift = placedShift(motion)
+  if (shift < SCENE_MOVE_FRAC && placedResidual(motion) >= BOX_MOTION_RESIDUAL) return { x: 0, y: 0 }
+  const delta = placedDelta(motion)
+  return { x: delta.dx / Math.max(width, 1), y: delta.dy / Math.max(height, 1) }
 }
 
 /** A moving shadow (high residual, shift under 6%) does not wipe the cards already seen. */
 export function forgetsSeenCards(motion: FrameMotion | null): boolean {
-  return Boolean(motion && motion.shiftFrac >= SCENE_MOVE_FRAC && substantialSceneChange(motion))
+  if (!motion) return false
+  const shift = placedShift(motion)
+  const residual = placedResidual(motion)
+  return shift >= SCENE_MOVE_FRAC && (shift >= SCENE_RESET_FRAC || residual >= SCENE_MOVE_MAD)
 }
 
 /** A discarded read must be allowed to scan again. The same steady view is not stranded. */
@@ -954,7 +1000,7 @@ export function rearmAfterDiscard(state: SceneHold): SceneHold {
  * A real slide does not. Three of these pauses the camera.
  */
 export function dryStreakAfterDiscard(streak: number, motion: FrameMotion | null): { streak: number; pause: boolean } | null {
-  if (!motion || motion.shiftFrac >= SCENE_MOVE_FRAC || placeRead(motion) !== 'discard') return null
+  if (!motion || placedShift(motion) >= SCENE_MOVE_FRAC || placeRead(motion) !== 'discard') return null
   const next = streak + 1
   return { streak: next, pause: next >= 3 }
 }
@@ -972,8 +1018,7 @@ export function unreadBoxMotion(motion: FrameMotion | null, width: number, heigh
  */
 export function unreadSlabsAreNew(motion: FrameMotion | null): boolean {
   if (!motion) return false
-  const residual = motion.contentResidual ?? motion.residual
-  return residual >= PAUSE_RESUME_RESIDUAL
+  return gateResidual(motion) >= PAUSE_RESUME_RESIDUAL
 }
 
 /**
