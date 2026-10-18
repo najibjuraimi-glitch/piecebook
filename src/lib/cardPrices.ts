@@ -27,8 +27,9 @@ const GRADES: { grade: AdviceGrade; label: string }[] = [
   { grade: 'psa10', label: 'PSA 10' },
 ]
 
-function limitlessCardUrl(card: Card): string {
-  return `https://onepiece.limitlesstcg.com/cards/en/${encodeURIComponent(card.baseNumber)}`
+function limitlessCardUrl(card: Card): string | null {
+  if (card.cardNumber.toUpperCase() !== card.baseNumber.toUpperCase()) return null
+  return `https://onepiece.limitlesstcg.com/cards/en/${encodeURIComponent(card.cardNumber)}`
 }
 
 /**

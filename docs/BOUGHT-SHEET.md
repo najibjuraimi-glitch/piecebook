@@ -12,7 +12,7 @@ Date, card, code, grade/raw, where/seller, paid / GST / forwarding / all-in SGD,
 
 ## How a copy is valued
 
-1. An English stored price for that exact print and grade. Raw is the seed’s ungraded Limitless price. PSA 10 or PSA 9 is used only when the stored printing is English. The price uses the card number inside the sheet’s code (`OP09-004` inside `OP09-004 SP`). A grade is read from the words before a parenthesis, so `PSA 10 (cert 149322006)` is PSA 10. The row still shows the sheet’s code and grade.
+1. An English stored price only when `exactPrint` is set to a seed print id (`OP09-004`, `OP09-004p3`, `OP09-004P3`). The sheet code is not priced, and a variant word such as `OP13-028 SP` or `EB02-010 alt art` never falls back to the base print. Otherwise the row uses the manual figure, labeled with its saved source (a Bought CSV with neither `Source` nor `Market source` labels a present figure `Sheet (Cards)`). That manual quote’s link is the row’s PriceCharting URL. A grade is read from the words before a parenthesis, so `PSA 10 (cert 149322006)` is PSA 10. The row still shows the sheet’s code and grade.
 2. Otherwise the manual market value, labeled with the source that was saved (a Bought CSV with neither `Source` nor `Market source` labels a present figure `Sheet (Cards)`) and its date. `Market as of` (`yyyy-mm-dd`) is that date when the column is filled.
 3. Otherwise **No price yet**.
 
@@ -26,7 +26,7 @@ Overall ROI is unrealized P/L on priced holdings plus realized P/L, divided by t
 
 Holdings group only when Code and the Grade/Raw text both match. PSA 10 and raw of the same card are separate lines. Each line expands to its Row IDs.
 
-An under-all-in alert fires once per Row ID when the active price (English or manual) is under all-in. It fires again only when that price is strictly lower than the last alerted price. Dismissing stores that price in this browser (`piecebook.boughtAlerts.v1`). No price means no alert.
+An under-all-in alert fires once per Row ID when the active price (English or manual) is under all-in. It fires again only when that price is strictly lower than the last alerted price. On the sample book, dismissing stores that price in this browser (`piecebook.boughtAlerts.v1`). Signed in, the same memory is `u:<email>:alerts.v1`, so a dismiss holds on every device. `GET /alerts` returns those hits and the watchlist hits. No price means no alert.
 
 ## Phone
 
@@ -42,7 +42,7 @@ A service token may add and update holdings even while `SERVICE_TOKEN_WRITE` is 
 
 A service token carries no email. Its book is `u:<OWNER_EMAIL>:holdings.v1` (history beside it, `holdings-history.v1`). Jib’s phone, signed in as that address, reads and writes the same key. Another Access email is a different book.
 
-Every holdings write appends one line to that history record: `at` (UTC timestamp) and `caller`. The caller is the service token’s client id (the Access JWT `common_name`) or the signed-in Access email. The client secret is not stored. The record keeps the latest 2000 lines. `GET /holdings/history` returns `{ history, writes }`. `history` is the daily totals. `writes` is those lines, each with `op` (`create`, `patch`, `sold`, `import`, `snapshot`) and `rowId` when the write is one row.
+Every holdings write appends one line to that history record: `at` (UTC timestamp) and `caller`. The caller is the service token’s client id (the Access JWT `common_name`) or the signed-in Access email. The client secret is not stored. The record keeps the latest 2000 lines. `GET /holdings/history` returns `{ history, writes }`. `history` is the daily totals. `writes` is those lines, each with `op` (`create`, `patch`, `delete`, `sold`, `import`, `snapshot`) and `rowId` when the write is one row. Deleting a row clears that row’s under-all-in `firedAt` and its dismissal, and does not change the alerts revision.
 
 Every write sends the `revision` from the last GET. A stale revision is `409 revision_conflict`. Row IDs already in the book are not reused.
 
@@ -56,9 +56,13 @@ curl -s "${H[@]}" "$PIECEBOOK_API/holdings"
 curl -s "${H[@]}" -X POST "$PIECEBOOK_API/holdings" -H 'Content-Type: application/json' \
   -d '{"revision":0,"card":"Nami","code":"ST01-007","grade":"Raw","date":"2026-10-17","where":"Shop","paidSgd":2,"allInSgd":2,"marketValueSgd":null,"marketSource":"","marketAsOf":null,"status":"Held"}'
 
-# Update one row.
+# Update one row. exactPrint is a seed print id. A capital P is accepted. Omit it to keep the manual figure.
 curl -s "${H[@]}" -X PATCH "$PIECEBOOK_API/holdings/OPB-0001" -H 'Content-Type: application/json' \
-  -d '{"revision":1,"notes":"desk"}'
+  -d '{"revision":1,"notes":"desk","exactPrint":"OP09-004p3"}'
+
+# Remove one row. The revision is checked. Another person's book is a 404.
+curl -s "${H[@]}" -X DELETE "$PIECEBOOK_API/holdings/OPB-0001" -H 'Content-Type: application/json' \
+  -d '{"revision":2}'
 
 # Mark sold. Blank net and realized are filled in S$.
 curl -s "${H[@]}" -X POST "$PIECEBOOK_API/holdings/OPB-0001/sold" -H 'Content-Type: application/json' \
@@ -77,6 +81,6 @@ curl -s "${H[@]}" -X POST "$PIECEBOOK_API/holdings/snapshot" -H 'Content-Type: a
 curl -s "${H[@]}" "$PIECEBOOK_API/holdings/history"
 ```
 
-`GET /holdings` returns `{ source, revision, copies, history }`. A copy’s fields are `rowId`, `date`, `card`, `code`, `grade`, `where`, `paidSgd`, `gstSgd`, `forwardingSgd`, `allInSgd`, `marketValueSgd`, `marketSource`, `marketAsOf`, `notes`, `priceChartingUrl`, `status` (`Held` | `Listed` | `Sold`), `soldDate`, `soldPrice`, `currency`, `saleFx`, `channel`, `feesSgd`, `shippingOutSgd`, `netSgd`, `realizedSgd`.
+`GET /holdings` returns `{ source, revision, copies, history }`. A copy’s fields are `rowId`, `date`, `card`, `code`, `grade`, `where`, `paidSgd`, `gstSgd`, `forwardingSgd`, `allInSgd`, `marketValueSgd`, `marketSource`, `marketAsOf`, `notes`, `priceChartingUrl`, `exactPrint`, `status` (`Held` | `Listed` | `Sold`), `soldDate`, `soldPrice`, `currency`, `saleFx`, `channel`, `feesSgd`, `shippingOutSgd`, `netSgd`, `realizedSgd`.
 
 Status codes: `400` bad field or date, `401` no Access session, `404` unknown Row ID, `409` stale revision, duplicate Row ID, or a second import, `503` Access or `USER_DATA` is not configured. No new secret. Deploy the Worker as in `docs/CLOUDFLARE-SETUP.md`. The KV namespace is already bound.

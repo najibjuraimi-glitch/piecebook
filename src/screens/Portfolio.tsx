@@ -5,8 +5,9 @@ import { DataLink } from '../components/DataLink'
 import { EmptyState } from '../components/EmptyState'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { StatBlock } from '../components/StatBlock'
+import { dismissAlerts, getAlerts } from '../lib/alertsClient'
 import { alertsFor, readAlertMemory, rememberAlerts } from '../lib/boughtAlerts'
-import { printCode, snapshotView, type HoldingGroup, type ValuedCopy } from '../lib/boughtBook'
+import { printCode, snapshotView, type HoldingGroup, type UnderCostAlert, type ValuedCopy } from '../lib/boughtBook'
 import { NO_PRICE_YET } from '../lib/cardPrices'
 import { formatDate, formatSgd, formatSignedPercent, formatSignedSgd, formatUsd, todayIso } from '../lib/format'
 import { rateLine } from '../lib/fx'
@@ -225,6 +226,8 @@ export function PortfolioScreen() {
   const [importNote, setImportNote] = useState<string | null>(null)
   const [pendingCsv, setPendingCsv] = useState<string | null>(null)
   const [memory, setMemory] = useState(readAlertMemory)
+  const [serverAlerts, setServerAlerts] = useState<UnderCostAlert[]>([])
+  const [alertsRevision, setAlertsRevision] = useState<number | null>(null)
 
   useEffect(() => {
     const ac = new AbortController()
@@ -255,13 +258,38 @@ export function PortfolioScreen() {
     return () => ac.abort()
   }, [book.source, book.revision, book.summary, today])
 
+  useEffect(() => {
+    if (book.source !== 'piecebook') return
+    const ac = new AbortController()
+    getAlerts(ac.signal)
+      .then((res) => {
+        if (!res.ok || !res.data || !Array.isArray(res.data.underAllIn)) return
+        setServerAlerts(res.data.underAllIn)
+        setAlertsRevision(res.data.revision)
+      })
+      .catch(() => {})
+    return () => ac.abort()
+  }, [book.source, book.revision])
+
   const { summary } = book
-  const alerts = useMemo(() => alertsFor(book.copies, memory), [book.copies, memory])
+  const fixtureAlerts = useMemo(() => (book.source === 'fixture' ? alertsFor(book.copies, memory) : []), [book.source, book.copies, memory])
+  const alerts = book.source === 'fixture' ? fixtureAlerts : serverAlerts
   const ownedCount = summary.heldCopies + summary.listedCopies
   const latest = history.length ? history[history.length - 1] : null
   const editable = book.source === 'piecebook'
 
-  const dismiss = () => setMemory(rememberAlerts(memory, alerts))
+  const dismiss = () => {
+    if (book.source !== 'piecebook') {
+      setMemory(rememberAlerts(memory, alerts))
+      return
+    }
+    if (alertsRevision == null) return
+    void dismissAlerts({ revision: alertsRevision, underAllIn: alerts.map((alert) => alert.rowId), watchlist: [] }).then((res) => {
+      if (!res.ok || !res.data) return
+      setServerAlerts(res.data.underAllIn)
+      setAlertsRevision(res.data.revision)
+    })
+  }
 
   const runImport = async (csv: string, replace: boolean) => {
     if (book.revision == null) return
@@ -286,7 +314,15 @@ export function PortfolioScreen() {
 
   return (
     <Screen>
-      <ScreenTitle title="Portfolio" subline={book.source === 'fixture' ? 'Sample book' : 'Your book'} />
+      <ScreenTitle
+        title="Portfolio"
+        subline={book.source === 'fixture' ? 'Sample book' : 'Your book'}
+        aside={
+          <Link to="/watchlist" className="text-meta font-medium text-ink underline decoration-line underline-offset-2">
+            Watchlist
+          </Link>
+        }
+      />
 
       {book.source === 'fixture' && (
         <p className="mb-4 rounded-2xl border border-line bg-surface px-4 py-3 text-meta text-ink">

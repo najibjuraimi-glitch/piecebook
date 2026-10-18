@@ -2,10 +2,10 @@ import fixtureCsv from '../../data/bought-fixture.csv?raw'
 import historyCsv from '../../data/portfolio-history.csv?raw'
 import { parseCsv } from '../data/csv'
 import { getCard, type Card } from '../data/seed'
+import { exactPrintId } from './printResolve'
 import { advicePrices } from './cardPrices'
 import {
   parseBoughtMatrix,
-  printCode,
   readSnapshots,
   summariseBought,
   valueCopies,
@@ -37,7 +37,8 @@ export interface LoadedBook {
  */
 export function legalQuote(code: string, grade: LegalGrade | null): PriceQuote | null {
   if (!code || !grade) return null
-  const card = getCard(printCode(code))
+  const id = exactPrintId(code)
+  const card = id ? getCard(id) : undefined
   if (!card || card.language.toUpperCase() !== 'EN') return null
   if (grade !== 'raw') {
     const printing = grade === 'psa10' ? card.psa10Printing : card.psa9Printing

@@ -32,6 +32,7 @@ ACCESS_TEAM_DOMAIN = "https://piecebook.cloudflareaccess.com"
 ACCESS_AUD = "413881efdd7d08215540d0aa34ee8dae0cdc169deb17ce0e12fe0e66424febea"
 OWNER_EMAIL = "najibjuraimi@gmail.com"      # identity a service token reads as
 SERVICE_TOKEN_WRITE = "0"                   # "1" to let agents write
+# WRITE_CLIENT_IDS = ""                     # optional. Comma-separated service-token client ids allowed to write. Empty means no allowlist.
 
 [[kv_namespaces]]
 binding = "VISION_CAP"
@@ -50,8 +51,9 @@ fallthrough = true
 
 # --- Cloud sync store (step 4 in docs/CLOUDFLARE-SETUP.md) ---
 # Holdings use this same namespace: u:<email>:holdings.v1 and
-# u:<email>:holdings-history.v1. /sync only lists piecebook.* keys, so it
-# leaves the book alone.
+# u:<email>:holdings-history.v1. The target list is u:<email>:watchlist.v1
+# (history beside it) and alert dismissals are u:<email>:alerts.v1.
+# /sync only lists piecebook.* keys, so it leaves those books alone.
 [[kv_namespaces]]
 binding = "USER_DATA"
 id = "fbb335c717da4e0e98ffd433cb702ca2"
@@ -65,3 +67,18 @@ kv_namespaces = [
   { binding = "VISION_CAP", id = "local-vision-cap" },
   { binding = "USER_DATA", id = "local-user-data" },
 ]
+
+# Staging Worker for Pages previews. Already deployed as piecebook-vision-staging.
+# `npm run worker:deploy` does not pass --env staging, so it stays on production.
+# Redeploy staging with: `npx wrangler deploy --config worker/wrangler.toml --env staging`
+[env.staging]
+name = "piecebook-vision-staging"
+vars = { GEMINI_MODEL = "gemini-3.8-flash", DAILY_CAP = "60", ACCESS_TEAM_DOMAIN = "https://piecebook.cloudflareaccess.com", ACCESS_AUD = "413881efdd7d08215540d0aa34ee8dae0cdc169deb17ce0e12fe0e66424febea", OWNER_EMAIL = "najibjuraimi@gmail.com", SERVICE_TOKEN_WRITE = "0", ALLOWED_ORIGINS = "https://najibjuraimi-glitch.github.io,https://piecebook.pages.dev,https://*.piecebook.pages.dev" }
+
+[[env.staging.kv_namespaces]]
+binding = "USER_DATA"
+id = "a993b4a3c7c04b9885889353ffdf71e0"
+
+[[env.staging.kv_namespaces]]
+binding = "VISION_CAP"
+id = "c67ef759e4874946b0015b68c895525e"

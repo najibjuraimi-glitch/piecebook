@@ -10,9 +10,12 @@
  *   POST   /holdings/snapshot
  *   GET    /holdings/history
  *   PATCH  /holdings/:rowId
+ *   DELETE /holdings/:rowId
  *   POST   /holdings/:rowId/sold
  */
-import { acceptSnapshot, createHolding, emptyHoldings, importHoldings, markSold, patchHolding } from "../../src/lib/holdings.ts";
+import { writerAllowed } from "./access.js";
+import { forgetAlertKey, normaliseAlerts } from "../../src/lib/alertsBook.ts";
+import { acceptSnapshot, createHolding, deleteHolding, emptyHoldings, importHoldings, markSold, patchHolding } from "../../src/lib/holdings.ts";
 
 const STORE = "holdings.v1";
 const HISTORY = "holdings-history.v1";
@@ -32,13 +35,13 @@ function fail(result, cors) {
   return json(body, result.status, cors);
 }
 
-const keyFor = (email, name) => `u:${String(email).toLowerCase()}:${name}`;
+export const keyFor = (email, name) => `u:${String(email).toLowerCase()}:${name}`;
 
 /**
  * One book. A signed-in phone uses its Access email. A service token has no
  * email; it is pinned to OWNER_EMAIL, the same address the phone uses.
  */
-function bookEmail(identity, env) {
+export function bookEmail(identity, env) {
   if (identity.kind === "service") return String(env.OWNER_EMAIL || "").trim().toLowerCase();
   return String(identity.email || "").trim().toLowerCase();
 }
@@ -60,12 +63,12 @@ async function loadHistory(kv, email) {
 }
 
 /** Service token: client id (JWT common_name). Signed-in phone: Access email. Never the secret. */
-function callerOf(identity) {
+export function callerOf(identity) {
   if (identity && identity.kind === "service") return String(identity.name || "").trim();
   return String((identity && identity.email) || "").trim().toLowerCase();
 }
 
-function writeNote(identity, now, op, rowId) {
+export function writeNote(identity, now, op, rowId) {
   const note = { at: new Date(now).toISOString(), caller: callerOf(identity), op };
   if (rowId) note.rowId = rowId;
   return note;
@@ -93,6 +96,7 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
   const log = deps.log || (() => {});
   const email = bookEmail(identity, env);
   if (!email) return json({ error: "no_identity" }, 403, cors);
+  if (req.method !== "GET" && !writerAllowed(identity, env)) return json({ error: "writer_not_allowed" }, 403, cors);
 
   const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
   if (declared > MAX_BODY) return json({ error: "too_large" }, 413, cors);
@@ -170,6 +174,16 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
     } catch {
       return json({ error: "bad_row_id" }, 400, cors);
     }
+    if (req.method === "DELETE" && parts.length === 2) {
+      const doc = await readDoc(kv, email);
+      const result = deleteHolding(doc, rowId, body);
+      if (!result.ok) return fail(result, cors);
+      await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
+      await recordWrite(kv, email, identity, now, "delete", rowId);
+      await clearHoldingAlert(kv, email, rowId);
+      log({ evt: "holdings_write", op: "delete", rowId, caller: callerOf(identity), at: new Date(now).toISOString() });
+      return json({ source: "piecebook", revision: result.doc.revision }, 200, cors);
+    }
     if (req.method === "PATCH" && parts.length === 2) {
       const doc = await readDoc(kv, email);
       const result = patchHolding(doc, rowId, body);
@@ -191,4 +205,11 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
   }
 
   return json({ error: "method_not_allowed" }, 405, cors);
+}
+
+async function clearHoldingAlert(kv, email, rowId) {
+  const alerts = normaliseAlerts(await kv.get(keyFor(email, "alerts.v1"), "json"));
+  const result = forgetAlertKey(alerts, "underAllIn", rowId);
+  if (!result.changed) return;
+  await kv.put(keyFor(email, "alerts.v1"), JSON.stringify(result.doc));
 }

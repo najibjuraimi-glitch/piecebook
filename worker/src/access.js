@@ -16,6 +16,16 @@ const CLOCK_SKEW_S = 60;
 
 let jwksCache = { domain: null, fetchedAt: 0, keys: [] };
 
+/** When WRITE_CLIENT_IDS is set, only those service-token client ids may write. A signed-in phone is always allowed. Empty means no allowlist. */
+export function writerAllowed(identity, env) {
+  const raw = String((env && env.WRITE_CLIENT_IDS) || "").trim();
+  if (!raw) return true;
+  if (!identity) return false;
+  if (identity.kind === "user") return true;
+  const allowed = raw.split(",").map((s) => s.trim()).filter(Boolean);
+  return allowed.includes(String(identity.name || "").trim());
+}
+
 export function accessConfigured(env) {
   return Boolean(env.ACCESS_TEAM_DOMAIN && env.ACCESS_AUD);
 }

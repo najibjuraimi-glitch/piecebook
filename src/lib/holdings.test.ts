@@ -5,6 +5,7 @@ import { bookFromHoldings, fixtureBook } from './loadBought'
 import {
   acceptSnapshot,
   createHolding,
+  deleteHolding,
   emptyHoldings,
   importHoldings,
   markSold,
@@ -153,6 +154,13 @@ describe('holdings', () => {
     expect(patched.ok).toBe(true)
     if (patched.ok) expect(patched.copy.notes).toBe('kept')
     expect(patchHolding(first.doc, 'OPB-9999', { revision: 1, notes: 'x' })).toMatchObject({ error: 'not_found' })
+    const named = patchHolding(first.doc, 'OPB-0007', { revision: first.doc.revision, exactPrint: 'OP09-004P3' })
+    expect(named.ok).toBe(true)
+    if (named.ok) expect(named.copy.exactPrint).toBe('OP09-004p3')
+    const removed = deleteHolding(first.doc, 'OPB-0007', { revision: first.doc.revision })
+    expect(removed).toMatchObject({ ok: true, doc: { revision: first.doc.revision + 1, copies: [] } })
+    expect(deleteHolding(first.doc, 'OPB-0007', { revision: 0 })).toMatchObject({ ok: false, error: 'revision_conflict' })
+    expect(deleteHolding(first.doc, 'OPB-9999', { revision: first.doc.revision })).toMatchObject({ ok: false, error: 'not_found' })
   })
 
   it('keeps older snapshot days and replaces today', () => {

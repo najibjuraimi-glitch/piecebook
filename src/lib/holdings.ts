@@ -38,6 +38,7 @@ export interface Holding {
   marketAsOf: string | null
   notes: string
   priceChartingUrl: string | null
+  exactPrint: string | null
   status: StatusLabel
   soldDate: string | null
   soldPrice: number | null
@@ -99,6 +100,7 @@ export function holdingFromBought(copy: BoughtCopy): Holding {
     marketAsOf: copy.manualAsOf,
     notes: copy.notes,
     priceChartingUrl: copy.priceChartingUrl,
+    exactPrint: copy.exactPrint?.trim() || null,
     status: statusLabel(copy.status),
     soldDate: copy.soldDate,
     soldPrice: copy.soldPrice,
@@ -132,6 +134,7 @@ export function boughtCopyFromHolding(h: Holding): BoughtCopy {
     manualAsOf: h.marketAsOf,
     notes: h.notes,
     priceChartingUrl: h.priceChartingUrl,
+    exactPrint: h.exactPrint,
     status,
     statusText: h.status,
     soldDate: h.soldDate,
@@ -164,6 +167,7 @@ function blankHolding(rowId: string): Holding {
     marketAsOf: null,
     notes: '',
     priceChartingUrl: null,
+    exactPrint: null,
     status: 'Held',
     soldDate: null,
     soldPrice: null,
@@ -287,6 +291,15 @@ function applyFields(base: Holding, body: Record<string, unknown>, keys: string[
       next.status = status
       continue
     }
+    if (key === 'exactPrint') {
+      if (value == null || value === '') {
+        next.exactPrint = null
+        continue
+      }
+      if (typeof value !== 'string' || !/^[A-Za-z]{1,4}\d{0,3}-\d{3}(?:[pP]\d+)?$/.test(value.trim())) return fail(400, 'bad_field', key)
+      next.exactPrint = value.trim().toUpperCase().replace(/P(\d+)$/, 'p$1')
+      continue
+    }
     if (key === 'priceChartingUrl') {
       if (value == null || value === '') {
         next.priceChartingUrl = null
@@ -316,6 +329,7 @@ const WRITE_KEYS = [
   'marketAsOf',
   'notes',
   'priceChartingUrl',
+  'exactPrint',
   'status',
   'soldDate',
   'soldPrice',
@@ -422,6 +436,19 @@ export function patchHolding(
 }
 
 const SALE_KEYS = ['soldDate', 'soldPrice', 'currency', 'saleFx', 'channel', 'feesSgd', 'shippingOutSgd', 'netSgd', 'realizedSgd']
+
+export function deleteHolding(
+  doc: HoldingsDoc,
+  rowId: string,
+  body: unknown,
+): { ok: true; doc: HoldingsDoc } | HoldingFailure {
+  const raw = asRecord(body)
+  if (!raw) return fail(400, 'bad_request')
+  const rev = checkRevision(doc, raw)
+  if (rev) return rev
+  if (!doc.copies.some((copy) => copy.rowId === rowId)) return fail(404, 'not_found')
+  return { ok: true, doc: { revision: doc.revision + 1, copies: doc.copies.filter((copy) => copy.rowId !== rowId) } }
+}
 
 export function markSold(
   doc: HoldingsDoc,

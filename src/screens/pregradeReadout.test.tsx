@@ -171,6 +171,7 @@ describe('pregrade result readout', () => {
   it('shows a sourced Japanese PSA 10 and leaves PSA 9 empty', async () => {
     await renderRoute('/pregrade/OP05-100p2')
     expect(priceText('raw')).toContain('US $133.85')
+    expect(document.querySelector('[data-testid="price-raw"] a')).toBeNull()
     expect(priceText('raw')).toContain('ungraded TCGplayer market')
     expect(priceText('psa9')).toContain('No price yet')
     expect(priceText('psa9')).not.toMatch(/\$/)

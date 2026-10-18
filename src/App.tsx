@@ -8,6 +8,8 @@ import { CardDetailScreen } from './screens/CardDetail'
 import { CollectionScreen } from './screens/Collection'
 import { HoldingFormScreen } from './screens/HoldingForm'
 import { PortfolioScreen } from './screens/Portfolio'
+import { WatchlistScreen } from './screens/Watchlist'
+import { WatchItemForm } from './screens/WatchItemForm'
 import { NotFoundScreen } from './screens/NotFound'
 import { AboutPricesScreen } from './screens/AboutPrices'
 import { CharacterScreen } from './screens/Character'
@@ -53,6 +55,9 @@ export default function App() {
         <Route path="/portfolio/new" element={<HoldingFormScreen mode="add" />} />
         <Route path="/portfolio/:rowId/sold" element={<HoldingFormScreen mode="sold" />} />
         <Route path="/portfolio/:rowId" element={<HoldingFormScreen mode="edit" />} />
+        <Route path="/watchlist" element={<WatchlistScreen />} />
+        <Route path="/watchlist/new" element={<WatchItemForm mode="add" />} />
+        <Route path="/watchlist/:id" element={<WatchItemForm mode="edit" />} />
         <Route path="/about-prices" element={<AboutPricesScreen />} />
         <Route path="/data" element={<DataHealthScreen />} />
         <Route path="/characters/:name" element={<CharacterScreen />} />
