@@ -25,11 +25,14 @@ export const WATCH_ID_RE = /^WL-\d{4,}$/
 export const MAX_WATCH = 2000
 
 export type WatchGrade = 'Raw' | 'PSA 9' | 'PSA 10'
+export type RowLanguage = 'EN' | 'JP'
 
 export interface WatchItem {
   id: string
   code: string
   grade: WatchGrade
+  /** EN unless the row was saved as JP. Missing rows are EN. */
+  language?: RowLanguage
   targetSgd: number | null
   notes: string
   added: string
@@ -127,9 +130,22 @@ function canonicalGrade(grade: string): LegalGrade | null {
 
 export type QuoteFor = (code: string, grade: LegalGrade | null) => PriceQuote | null
 
+export function rowLanguage(value: unknown): RowLanguage {
+  return typeof value === 'string' && value.trim().toUpperCase() === 'JP' ? 'JP' : 'EN'
+}
+
+function readLanguage(value: unknown): RowLanguage | WatchFailure {
+  if (value == null || value === '') return 'EN'
+  if (typeof value !== 'string') return fail(400, 'bad_field', 'language')
+  const text = value.trim().toUpperCase()
+  if (text === 'EN' || text === 'JP') return text
+  return fail(400, 'bad_field', 'language')
+}
+
 function storedItem(item: WatchItem): WatchItem {
   return {
     ...item,
+    language: rowLanguage(item.language),
     externalId: item.externalId ?? null,
     priceChartingUrl: item.priceChartingUrl ?? null,
     marketSgd: item.marketSgd ?? null,
@@ -385,6 +401,10 @@ function applyItem(base: WatchItem, body: Record<string, unknown>, today: string
       const grade = readGrade(value)
       if (isFail(grade)) return grade
       next.grade = grade
+    } else if (key === 'language') {
+      const language = readLanguage(value)
+      if (isFail(language)) return language
+      next.language = language
     } else if (key === 'targetSgd') {
       const target = readTarget(value)
       if (isFail(target)) return target
@@ -426,7 +446,7 @@ function applyItem(base: WatchItem, body: Record<string, unknown>, today: string
   return next
 }
 
-const WRITE_KEYS = ['code', 'grade', 'targetSgd', 'notes', 'added', 'externalId', 'priceChartingUrl', 'marketSgd', 'marketAsOf', 'marketSource', 'marketUrl']
+const WRITE_KEYS = ['code', 'grade', 'language', 'targetSgd', 'notes', 'added', 'externalId', 'priceChartingUrl', 'marketSgd', 'marketAsOf', 'marketSource', 'marketUrl']
 const PRICE_KEYS = ['marketSgd', 'marketAsOf', 'marketSource', 'marketUrl'] as const
 
 export function createWatchItem(
@@ -451,6 +471,7 @@ export function createWatchItem(
       id,
       code: '',
       grade: 'Raw',
+      language: 'EN',
       targetSgd: null,
       notes: '',
       added: today,

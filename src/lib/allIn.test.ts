@@ -269,6 +269,7 @@ describe('watch bid target', () => {
       today,
     )
     expect(dated).toMatchObject({ from: 'market', targetSgd: 9.05, source: 'Cards', asOf: today, stale: false, marketSgd: 10.05, language: 'EN', prefill: true })
+    expect(watchBidTarget({ targetSgd: 10, marketSgd: null, marketSource: null, marketAsOf: null, language: 'JP' }, today)).toMatchObject({ language: 'JP' })
     const undated = watchBidTarget({ targetSgd: null, marketSgd: 100, marketSource: ' ', marketAsOf: null }, today)
     expect(undated).toMatchObject({ from: 'market', targetSgd: 90, source: 'Manual', asOf: null, stale: true, language: 'EN', prefill: false })
   })

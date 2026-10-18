@@ -26,6 +26,7 @@ export class VisionCap {
       await this.storage.put(key, next)
       return Response.json({ limited: false, used: next, cap, held: true })
     }
+    if (url.pathname === "/read") return Response.json({ used, cap })
     if (url.pathname === "/release") {
       const next = Math.max(0, used - 1)
       await this.storage.put(key, next)
@@ -42,6 +43,19 @@ function capNumber(env) {
 function counterStub(env) {
   if (!env.VISION_COUNTER) return null
   return env.VISION_COUNTER.get(env.VISION_COUNTER.idFromName("vision"))
+}
+
+/** The counter as it stands. Does not reserve a slot. */
+export async function readCap(env, day) {
+  const cap = capNumber(env)
+  const stub = counterStub(env)
+  if (stub) {
+    const res = await stub.fetch(`https://vision-cap/read?day=${encodeURIComponent(day)}&cap=${cap}`)
+    return res.json()
+  }
+  if (!env.VISION_CAP) return { used: 0, cap }
+  const used = parseInt((await env.VISION_CAP.get(`count:${day}`)) || "0", 10)
+  return { used, cap }
 }
 
 export async function reserveCap(env, day) {

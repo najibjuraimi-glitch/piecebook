@@ -65,6 +65,8 @@ export interface BoughtCopy {
   code: string
   gradeText: string
   grade: LegalGrade | null
+  /** EN unless the holding row was saved as JP. */
+  language?: 'EN' | 'JP'
   seller: string
   paidSgd: number | null
   gstSgd: number | null

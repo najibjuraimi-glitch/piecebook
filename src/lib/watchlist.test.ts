@@ -365,4 +365,13 @@ describe('watchlist book', () => {
     }, TODAY)
     expect(stale).toMatchObject({ ok: false, error: 'revision_conflict', revision: 1 })
   })
+
+  it('stores EN unless the row says JP', () => {
+    const en = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004', grade: 'Raw', targetSgd: 1 }, TODAY)
+    expect(en).toMatchObject({ ok: true, item: { language: 'EN' } })
+    const jp = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004', grade: 'Raw', targetSgd: 1, language: 'jp' }, TODAY)
+    expect(jp).toMatchObject({ ok: true, item: { language: 'JP' } })
+    const bad = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004', grade: 'Raw', targetSgd: 1, language: 'FR' }, TODAY)
+    expect(bad).toMatchObject({ ok: false, error: 'bad_field', detail: 'language' })
+  })
 })

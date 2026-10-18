@@ -116,7 +116,7 @@ export function WatchlistScreen() {
             <li key={item.id} className="px-4 py-3">
               <Link to={`/watchlist/${encodeURIComponent(item.id)}`} className="block">
                 <p className="text-[15px] font-medium text-ink">
-                  {item.code} · {item.grade}
+                  {item.code} · {item.grade} · {item.language === 'JP' ? 'JP' : 'EN'}
                 </p>
                 <p className="tabular mt-1 text-meta text-ink">{priceLine(item)}</p>
                 <p className="mt-1 text-meta text-muted">

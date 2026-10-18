@@ -27,7 +27,8 @@ describe('holdings', () => {
     expect(imported.doc.copies.find((c) => c.rowId === 'OPB-0001')?.priceChartingUrl).toBe('https://www.pricecharting.com/game/one-piece/nami')
     expect(imported.doc.copies.every((c) => c.priceChartingUrl == null || c.priceChartingUrl.startsWith('https://'))).toBe(true)
     const book = bookFromHoldings(imported.doc.copies, TODAY, imported.doc.revision)
-    expect(book.summary).toEqual(fixtureBook(TODAY).summary)
+    const dropLanguage = (value: unknown) => JSON.parse(JSON.stringify(value, (key, item) => (key === 'language' ? undefined : item)))
+    expect(dropLanguage(book.summary)).toEqual(dropLanguage(fixtureBook(TODAY).summary))
     const enel = book.copies.find((c) => c.rowId === 'OPB-0003')!
     expect(enel.quote?.source).toBe('Sheet (Cards)')
     expect(enel.quote?.detail ?? '').not.toMatch(/japanese/i)
@@ -196,5 +197,14 @@ describe('holdings', () => {
     expect(second.history).toHaveLength(1)
     expect(second.history[0].costSgd).toBe(3)
     expect(second.history[0].source).toBe('piecebook')
+  })
+
+  it('stores EN unless the copy says JP', () => {
+    const en = createHolding(emptyHoldings(), { revision: 0, card: 'Ace', code: 'OP13-002', grade: 'Raw' })
+    expect(en).toMatchObject({ ok: true, copy: { language: 'EN' } })
+    const jp = createHolding(emptyHoldings(), { revision: 0, card: 'Ace', code: 'OP13-002', grade: 'Raw', language: 'JP' })
+    expect(jp).toMatchObject({ ok: true, copy: { language: 'JP' } })
+    const bad = createHolding(emptyHoldings(), { revision: 0, card: 'Ace', code: 'OP13-002', grade: 'Raw', language: 'FR' })
+    expect(bad).toMatchObject({ ok: false, error: 'bad_field', detail: 'language' })
   })
 })

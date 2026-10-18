@@ -1,17 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { markSceneScanned, scanIntervalOpen, sceneQuad, stepSceneHold, initialSceneHold, type SceneHold } from '../lib/cardFrame'
-import type { PixelImage } from '../lib/centering'
-import { overlayForCard, type BookPrice, type LabelTone } from '../lib/scanLabel'
-import type { ScanBox, ScanSummary } from '../lib/scanMatch'
+import { VISION_URL } from '../config/vision'
+import { QUAD_STABLE_PX, initialSceneHold, markSceneScanned, quadDrift, scanIntervalOpen, sceneQuad, stepSceneHold, type SceneHold } from '../lib/cardFrame'
+import type { PixelImage, Quad } from '../lib/centering'
+import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
+import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
+
+const SHUTTER_WAIT_MS = 1500
+
+export interface LiveShot {
+  scan: ScanSummary
+  file: File
+  targets: WatchTarget[]
+}
 
 export interface LiveScanOk {
   ok: true
   scan: ScanSummary
   usage: { today: number; cap: number } | null
-  targets: { id: string; printId: string; targetSgd: number | null }[]
+  targets: WatchTarget[]
 }
 
-export type LiveScanResult = LiveScanOk | { ok: false; error: string }
+export type LiveScanResult = LiveScanOk | { ok: false; error: string; code?: string }
 
 const TONE: Record<LabelTone, string> = {
   green: 'border-[#0B6B3A] bg-[#C8F5D8] text-[#062814]',
@@ -92,7 +101,7 @@ export function ScanLive({
   jpRows: BookPrice[]
   onScan: (file: File) => Promise<LiveScanResult>
   onClose: () => void
-  onFreeze: (shot: { scan: ScanSummary; file: File }) => void
+  onFreeze: (shot: LiveShot) => void
   onUpload: () => void
   onUnavailable: (message: string) => void
 }) {
@@ -103,7 +112,9 @@ export function ScanLive({
   const holdRef = useRef<SceneHold>(initialSceneHold())
   const lastScanAt = useRef<number | null>(null)
   const busyRef = useRef(false)
-  const lastFile = useRef<File | null>(null)
+  const failuresRef = useRef(0)
+  const signatureRef = useRef<Quad | null>(null)
+  const usageFromScan = useRef(false)
   const sendRef = useRef<(manual: boolean) => Promise<void>>(async () => {})
   const unavailableRef = useRef(onUnavailable)
   unavailableRef.current = onUnavailable
@@ -114,7 +125,9 @@ export function ScanLive({
   const [dim, setDim] = useState(false)
   const [reading, setReading] = useState(false)
   const [readError, setReadError] = useState<string | null>(null)
-  const [scan, setScan] = useState<ScanSummary | null>(null)
+  const [shot, setShot] = useState<LiveShot | null>(null)
+  const [labelsCurrent, setLabelsCurrent] = useState(false)
+  const [shutterReady, setShutterReady] = useState(false)
   const [usage, setUsage] = useState<{ today: number; cap: number } | null>(null)
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [videoSize, setVideoSize] = useState({ w: 0, h: 0 })
@@ -144,6 +157,7 @@ export function ScanLive({
     let cancelled = false
     let videoEl: HTMLVideoElement | null = null
     let markLive: (() => void) | null = null
+    let shutterTimer = 0
     const open = async () => {
       const high = { audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } } }
       const plain = { audio: false, video: { facingMode: { ideal: 'environment' } } }
@@ -172,6 +186,7 @@ export function ScanLive({
         video.addEventListener('loadedmetadata', markLive)
         video.addEventListener('resize', markLive)
         void video.play().then(markLive).catch(() => undefined)
+        shutterTimer = window.setTimeout(() => setShutterReady(true), SHUTTER_WAIT_MS)
       } catch (err) {
         if (cancelled) return
         unavailableRef.current(cameraErrorText(err))
@@ -180,6 +195,7 @@ export function ScanLive({
     void open()
     return () => {
       cancelled = true
+      window.clearTimeout(shutterTimer)
       if (videoEl && markLive) {
         videoEl.removeEventListener('loadedmetadata', markLive)
         videoEl.removeEventListener('resize', markLive)
@@ -189,16 +205,33 @@ export function ScanLive({
     }
   }, [])
 
+  const frameQuad = useCallback((): Quad | null => {
+    const video = videoRef.current
+    if (!video) return null
+    const canvas = (analysisCanvas.current ??= document.createElement('canvas'))
+    const pixels = analysisFrame(video, canvas)
+    return pixels ? sceneQuad(pixels) : null
+  }, [])
+
+  const armShutter = useCallback(() => {
+    setShutterReady(false)
+    window.setTimeout(() => setShutterReady(true), SHUTTER_WAIT_MS)
+  }, [])
+
   const send = useCallback(
     async (manual: boolean) => {
       if (busyRef.current) return
+      if (manual && !shutterReady) return
       if (!manual && !scanIntervalOpen(lastScanAt.current, Date.now())) return
       const video = videoRef.current
       const stream = streamRef.current
       if (!video || !stream) return
       busyRef.current = true
       if (!manual) holdRef.current = markSceneScanned(holdRef.current)
+      const signature = frameQuad()
+      signatureRef.current = signature
       setReading(true)
+      if (manual) setShutterReady(false)
       try {
         const blob = await captureStill(video, stream)
         if (!blob) {
@@ -206,27 +239,50 @@ export function ScanLive({
           return
         }
         const file = new File([blob], 'scan-camera.jpg', { type: 'image/jpeg', lastModified: Date.now() })
-        lastFile.current = file
-        lastScanAt.current = Date.now()
         const result = await onScan(file)
+        lastScanAt.current = Date.now()
         if (!result.ok) {
-          if (!manual) holdRef.current = { ...holdRef.current, scanned: false }
+          failuresRef.current += 1
+          if (failuresRef.current >= 2) holdRef.current = markSceneScanned(holdRef.current)
+          else if (!manual) holdRef.current = { ...holdRef.current, scanned: false }
           setReadError(result.error)
-          if (result.error.includes('limit')) setBlocked(true)
+          if (result.code === 'daily_cap_reached') setBlocked(true)
           return
         }
+        failuresRef.current = 0
+        const nowQuad = frameQuad()
+        const movedSince = Boolean(signature && nowQuad && quadDrift(signature, nowQuad) > QUAD_STABLE_PX * 3)
         setReadError(null)
-        setScan(result.scan)
-        setUsage(result.usage)
+        setShot({ scan: result.scan, file, targets: result.targets })
+        if (result.usage) {
+          usageFromScan.current = true
+          setUsage(result.usage)
+        }
+        setLabelsCurrent(!movedSince)
         setDim(false)
       } finally {
         busyRef.current = false
         setReading(false)
+        if (manual) armShutter()
       }
     },
-    [onScan],
+    [armShutter, frameQuad, onScan, shutterReady],
   )
   sendRef.current = send
+
+  useEffect(() => {
+    let cancel = false
+    void fetch(`${VISION_URL}/scan`, { credentials: 'include' })
+      .then((res) => res.json())
+      .then((data: { usage?: { today?: number; cap?: number } }) => {
+        if (cancel || usageFromScan.current || typeof data?.usage?.cap !== 'number') return
+        setUsage({ today: Number(data.usage.today) || 0, cap: data.usage.cap })
+      })
+      .catch(() => undefined)
+    return () => {
+      cancel = true
+    }
+  }, [])
 
   useEffect(() => {
     if (phase !== 'live' || paused || blocked) return
@@ -241,8 +297,10 @@ export function ScanLive({
         if (pixels) {
           const step = stepSceneHold(holdRef.current, sceneQuad(pixels), Date.now())
           holdRef.current = step.state
-          if (step.moved) setDim(true)
-          else if (step.steady) setDim(false)
+          if (step.moved) {
+            failuresRef.current = 0
+            setDim(true)
+          } else if (step.steady) setDim(false)
           if (step.ready) void sendRef.current(false)
         }
       }
@@ -257,24 +315,33 @@ export function ScanLive({
 
   const place = contained(videoSize.w, videoSize.h, boxSize.w, boxSize.h)
   const capLeft = usage ? Math.max(0, usage.cap - usage.today) : null
-  const openCard = scan?.cards.find((card) => card.index === openIndex) ?? null
+  const lowCap = capLeft != null && capLeft <= 10
+  const scan = labelsCurrent ? shot?.scan ?? null : null
+  const spots = placeOverlayLabels(
+    (scan?.cards ?? []).filter((card) => card.box).map((card) => ({ index: card.index, x: card.box!.x * place.w, y: card.box!.y * place.h })),
+    { x: place.x, y: place.y, w: place.w, h: place.h },
+  )
+  const spotFor = new Map(spots.map((spot) => [spot.index, spot]))
+  const openCard = shot?.scan.cards.find((card) => card.index === openIndex) ?? null
   const openLabel = openCard ? overlayForCard(openCard, rowsRef.current) : null
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black text-white" role="dialog" aria-modal="true" aria-label="Live scan" data-testid="scan-live">
       <div className="flex items-center justify-between px-4 pb-2 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <p className="rounded-full bg-black/80 px-3 py-1 text-[17px] font-semibold text-white" data-testid="scan-cap">
+        <p className={`rounded-full px-3 py-1 text-[17px] font-semibold ${lowCap ? 'bg-amber-300 text-black' : 'bg-black/80 text-white'}`} data-testid="scan-cap" data-low={lowCap ? 'true' : 'false'}>
           {capLeft == null ? 'Live' : `${capLeft} left`}
         </p>
-        <button type="button" onClick={onClose} className="min-h-12 min-w-12 rounded-xl px-3 text-[17px] font-semibold" aria-label="Close camera">
+        <button type="button" onClick={onClose} disabled={reading} className="min-h-12 min-w-12 rounded-xl px-3 text-[17px] font-semibold disabled:opacity-40" aria-label="Close camera">
           Close
         </button>
       </div>
       <div ref={boxRef} className="relative min-h-0 flex-1 overflow-hidden">
         <video ref={videoRef} playsInline muted autoPlay className="absolute inset-0 h-full w-full object-contain" data-testid="scan-video" />
-        {scan?.cards.map((card) => {
+        {labelsCurrent && scan?.cards.map((card) => {
           if (!card.box) return null
           const chip = overlayForCard(card, jpRows)
+          const spot = spotFor.get(card.index)
+          if (!spot) return null
           return (
             <button
               key={card.index}
@@ -283,7 +350,7 @@ export function ScanLive({
               data-tone={chip.tone}
               onClick={() => setOpenIndex((current) => (current === card.index ? null : card.index))}
               className={`absolute max-w-[78%] rounded-xl border-2 px-3 py-2 text-left shadow-[0_2px_0_rgba(0,0,0,0.85)] transition-opacity duration-200 ${TONE[chip.tone]} ${dim ? 'opacity-20' : 'opacity-100'}`}
-              style={labelStyle(card.box, place)}
+              style={{ left: `${spot.left}px`, top: `${spot.top}px` }}
             >
               <span className="block text-[13px] font-bold tracking-wide">{chip.languageTag}</span>
               <span className="block text-[17px] font-semibold leading-5">
@@ -296,6 +363,7 @@ export function ScanLive({
         })}
         {phase === 'starting' && <p className="absolute inset-x-0 top-6 text-center text-[17px] font-medium text-white">Starting the camera…</p>}
         {reading && <p className="absolute inset-x-0 top-6 text-center text-[17px] font-semibold text-white">Reading the case…</p>}
+        {shot && !labelsCurrent && <p className="absolute inset-x-4 top-16 text-center text-[16px] font-semibold text-white" data-testid="scan-moved">moved, rescanning</p>}
         {readError && (
           <p className="absolute inset-x-4 top-16 rounded-xl bg-black/80 px-3 py-2 text-center text-[16px] font-medium" role="alert">
             {readError}
@@ -326,17 +394,18 @@ export function ScanLive({
           type="button"
           data-testid="scan-shutter"
           aria-label="Take photo"
+          disabled={reading || !shutterReady}
           onClick={() => void send(true)}
-          className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full border-4 border-white"
+          className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full border-4 border-white disabled:opacity-40"
         >
           <span className="block h-14 w-14 rounded-full bg-white" />
         </button>
         <button
           type="button"
           data-testid="scan-freeze"
-          disabled={!scan || !lastFile.current}
+          disabled={reading || !shot}
           onClick={() => {
-            if (scan && lastFile.current) onFreeze({ scan, file: lastFile.current })
+            if (shot) onFreeze(shot)
           }}
           className="min-h-14 flex-1 rounded-xl bg-white text-[17px] font-semibold text-black disabled:opacity-40"
         >
@@ -350,9 +419,3 @@ export function ScanLive({
   )
 }
 
-function labelStyle(box: ScanBox, place: { x: number; y: number; w: number; h: number }) {
-  return {
-    left: `${place.x + box.x * place.w}px`,
-    top: `${place.y + box.y * place.h}px`,
-  }
-}

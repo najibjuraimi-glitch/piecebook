@@ -48,6 +48,7 @@ function quoteFor(code, grade) {
 async function readDoc(kv, email) {
   const doc = await kv.get(keyFor(email, STORE), "json");
   if (!doc || typeof doc.revision !== "number" || !Array.isArray(doc.items)) return emptyWatch();
+  doc.items = doc.items.map((item) => ({ ...item, language: item?.language === "JP" ? "JP" : "EN" }));
   return doc;
 }
 
@@ -90,7 +91,7 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
         return {
           print: print ? print.cardNumber : item.code,
           parallel: print ? parallelLabel(print) : null,
-          language: print ? print.language || null : null,
+          language: item.language === "JP" ? "JP" : "EN",
           grade: item.grade,
           targetSgd: item.targetSgd ?? null,
           id: item.id,

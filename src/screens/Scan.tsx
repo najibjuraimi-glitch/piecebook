@@ -96,7 +96,8 @@ export function ScanScreen() {
       })
       const data = await res.json().catch(() => null)
       if (!res.ok || !data?.cards) {
-        return { ok: false, error: data?.error === 'daily_cap_reached' ? 'The daily photo limit is used up.' : 'That photo could not be read.' }
+        const code = typeof data?.error === 'string' ? data.error : undefined
+        return { ok: false, error: code === 'daily_cap_reached' ? 'The daily photo limit is used up.' : 'That photo could not be read.', code }
       }
       return {
         ok: true,
@@ -183,6 +184,7 @@ export function ScanScreen() {
               })
             }}
             className="sr-only"
+            aria-label="Photo"
           />
         </div>
         <div>
@@ -267,13 +269,16 @@ export function ScanScreen() {
             setCameraNote(message)
             fileRef.current?.click()
           }}
-          onFreeze={({ scan: frozen, file: shot }) => {
-            setFile(shot)
+          onFreeze={(frozen) => {
+            setFile(frozen.file)
             setPreview((current) => {
               if (current?.startsWith('blob:')) URL.revokeObjectURL(current)
-              return URL.createObjectURL(shot)
+              return URL.createObjectURL(frozen.file)
             })
-            setScan(frozen)
+            setScan(frozen.scan)
+            setTargets(frozen.targets)
+            setError(null)
+            setSaved(false)
             setLive(false)
           }}
         />

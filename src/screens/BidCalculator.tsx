@@ -103,6 +103,7 @@ export function BidCalculator() {
             marketSgd: found.marketSgd ?? null,
             marketSource: found.marketSource ?? null,
             marketAsOf: found.marketAsOf ?? null,
+            language: found.language,
           },
           todayIso(),
         )
@@ -189,6 +190,7 @@ export function BidCalculator() {
           marketSgd: linked.marketSgd ?? null,
           marketSource: linked.marketSource ?? null,
           marketAsOf: linked.marketAsOf ?? null,
+          language: linked.language,
         },
         todayIso(),
       )

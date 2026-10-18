@@ -6,7 +6,7 @@ import { BackBar, Screen } from '../components/Screen'
 import { parseMoney } from '../lib/boughtBook'
 import { todayIso } from '../lib/format'
 import { deleteWatchItem, getWatchlist, patchWatchItem, postWatchItem } from '../lib/watchlistClient'
-import type { WatchGrade } from '../lib/watchlist'
+import type { RowLanguage, WatchGrade } from '../lib/watchlist'
 import { priceLine } from './Watchlist'
 
 const field =
@@ -31,6 +31,7 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
   const [saving, setSaving] = useState(false)
   const [code, setCode] = useState('')
   const [grade, setGrade] = useState<WatchGrade>('Raw')
+  const [language, setLanguage] = useState<RowLanguage>('EN')
   const [target, setTarget] = useState('')
   const [notes, setNotes] = useState('')
   const [added, setAdded] = useState(todayIso())
@@ -56,6 +57,7 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
         if (found) {
           setCode(found.code)
           setGrade(found.grade)
+          setLanguage(found.language === 'JP' ? 'JP' : 'EN')
           setTarget(found.targetSgd == null ? '' : String(found.targetSgd))
           setNotes(found.notes)
           setAdded(found.added)
@@ -88,7 +90,7 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
     }
     setSaving(true)
     setError(null)
-    const body = { revision, code: code.trim(), grade, targetSgd, notes: notes.trim(), added: added || null }
+    const body = { revision, code: code.trim(), grade, language, targetSgd, notes: notes.trim(), added: added || null }
     const res = mode === 'add' ? await postWatchItem(body) : await patchWatchItem(id, body)
     setSaving(false)
     if (!res.ok) {
@@ -149,6 +151,23 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
                   className={`h-11 rounded-xl px-3 text-[14px] font-medium ${grade === g ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
                 >
                   {g}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className={label}>Language</p>
+            <div className="mt-1.5 flex gap-2" role="radiogroup" aria-label="Language">
+              {(['EN', 'JP'] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={language === value}
+                  onClick={() => setLanguage(value)}
+                  className={`h-11 rounded-xl px-3 text-[14px] font-medium ${language === value ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
+                >
+                  {value}
                 </button>
               ))}
             </div>

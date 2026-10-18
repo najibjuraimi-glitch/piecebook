@@ -10,7 +10,7 @@ import { handlePrice } from "./price.js";
 import { handleHoldings } from "./holdings.js";
 import { handleWatchlist } from "./watchlist.js";
 import { handleAlerts } from "./alerts.js";
-import { handleScan, handleScanCrop } from "./scan.js";
+import { handleScan, handleScanCrop, handleScanUsage } from "./scan.js";
 export { VisionCap } from "./cap.js";
 // Same words and limits as the app. wrangler bundles the TypeScript.
 // /check does not read pixels: it echoes centering the phone already measured.
@@ -409,13 +409,14 @@ export default {
     const isWatchlist = url.pathname === "/watchlist" || url.pathname.startsWith("/watchlist/");
     const isAlerts = url.pathname === "/alerts" || url.pathname.startsWith("/alerts/");
     const isScan = url.pathname === "/scan" && req.method === "POST";
+    const isScanUsage = url.pathname === "/scan" && req.method === "GET";
     const isScanCrop = url.pathname === "/scan/crop" && req.method === "POST";
     if (url.pathname === "/whoami" && req.method === "GET") {
       const who = await verifyAccess(req, env, deps);
       if (!who.ok) return json({ error: who.error, detail: who.detail }, who.status, cors);
       return json({ identity: who.identity.email, kind: who.identity.kind, readOnly: Boolean(who.identity.readOnly) }, 200, cors);
     }
-    if (!isSync && !isCheck && !isPregrade && !isPrice && !isHoldings && !isWatchlist && !isAlerts && !isScan && !isScanCrop) return json({ error: "not_found" }, 404, cors);
+    if (!isSync && !isCheck && !isPregrade && !isPrice && !isHoldings && !isWatchlist && !isAlerts && !isScan && !isScanUsage && !isScanCrop) return json({ error: "not_found" }, 404, cors);
 
     // Fail closed once Access is configured. Until then /check stays open for the
     // old public site and /sync says so rather than pretending to be signed in.
@@ -448,6 +449,7 @@ export default {
     // Two 8 MB images as base64 JSON are ~22 MB. Refuse bigger bodies before parsing them into memory.
     const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
     if (declared > MAX_BODY_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
+    if (isScanUsage) return handleScanUsage(env, cors);
     if (isScanCrop) return handleScanCrop(req, env, cors, deps);
     if (isScan) return handleScan(req, env, identity, cors, deps);
 

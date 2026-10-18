@@ -14,12 +14,18 @@ export const LABEL_UNDER = {
 export type LabelTone = 'green' | 'amber' | 'neutral' | 'muted'
 
 export interface OverlayLabel {
-  languageTag: 'EN' | 'JP' | '—'
+  languageTag: 'EN' | 'JP' | '?'
   code: string
   grade: string
   price: string
   sticker: string | null
   tone: LabelTone
+}
+
+export interface PlacedLabel {
+  index: number
+  left: number
+  top: number
 }
 
 export interface BookPrice {
@@ -36,9 +42,9 @@ export function preferLiveScan(camera: boolean, coarsePointer: boolean): boolean
 }
 
 export function gradeAsRead(slab: { grader?: string | null; grade?: string | null } | null | undefined): string {
-  if (!slab) return '—'
+  if (!slab) return 'Raw'
   const text = [slab.grader, slab.grade].map((part) => (part || '').trim()).filter(Boolean).join(' ')
-  return text || '—'
+  return text || 'Raw'
 }
 
 export function codeAsRead(codeText: string | null | undefined): string {
@@ -46,10 +52,10 @@ export function codeAsRead(codeText: string | null | undefined): string {
   return text || '—'
 }
 
-function languageTag(language: string | null | undefined): 'EN' | 'JP' | '—' {
+function languageTag(language: string | null | undefined): 'EN' | 'JP' | '?' {
   const tag = (language || '').trim().toUpperCase()
   if (tag === 'EN' || tag === 'JP') return tag
-  return '—'
+  return '?'
 }
 
 function gapPct(street: number, sticker: number): number {
@@ -80,6 +86,7 @@ export function overlayLabel(input: {
   sticker: { amount: number; currency: string } | null
   enStreetSgd: number | null
   jpCompSgd: number | null
+  stale?: boolean
 }): OverlayLabel {
   const language = languageTag(input.language)
   const code = codeAsRead(input.codeText)
@@ -105,6 +112,9 @@ export function overlayLabel(input: {
   const street = input.enStreetSgd
   if (language !== 'EN' || street == null || !(street > 0)) {
     return { languageTag: language, code, grade, price: 'No price yet', sticker, tone: 'neutral' }
+  }
+  if (input.stale) {
+    return { languageTag: language, code, grade, price: `${formatSgd(street)} · Stale`, sticker, tone: 'neutral' }
   }
   if (!comparable) {
     return { languageTag: language, code, grade, price: formatSgd(street), sticker, tone: 'neutral' }
@@ -165,7 +175,31 @@ export function overlayForCard(card: Pick<ScanRow, 'language' | 'codeText' | 'sl
     codeText: card.codeText,
     gradeText: grade,
     sticker: card.sticker,
-    enStreetSgd: card.language === 'EN' && card.street.status === 'fresh' ? card.street.sgd : null,
+    enStreetSgd: card.language === 'EN' && card.street.sgd != null && (card.street.status === 'fresh' || card.street.status === 'stale') ? card.street.sgd : null,
     jpCompSgd: card.language === 'JP' ? manualJpComp(rows, card.printId, grade) : null,
+    stale: card.language === 'EN' && card.street.status === 'stale',
   })
+}
+
+const CHIP_W = 156
+const CHIP_H = 84
+
+/** Keep each label inside the frame, and step a later label down when it would cover an earlier one. */
+export function placeOverlayLabels(
+  items: { index: number; x: number; y: number }[],
+  frame: { x: number; y: number; w: number; h: number },
+): PlacedLabel[] {
+  const placed: PlacedLabel[] = []
+  const maxLeft = Math.max(8, frame.x + frame.w - CHIP_W)
+  for (const item of [...items].sort((a, b) => a.y - b.y || a.x - b.x)) {
+    let left = Math.min(Math.max(8, frame.x + item.x), maxLeft)
+    let top = Math.max(8, frame.y + item.y)
+    for (let guard = 0; guard < 6; guard += 1) {
+      const hit = placed.some((other) => Math.abs(other.left - left) < CHIP_W - 8 && Math.abs(other.top - top) < CHIP_H - 8)
+      if (!hit) break
+      top += 36
+    }
+    placed.push({ index: item.index, left, top })
+  }
+  return placed
 }

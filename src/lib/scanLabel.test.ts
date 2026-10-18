@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { LABEL_UNDER, bookPrices, manualJpComp, overlayForCard, overlayLabel, preferLiveScan } from './scanLabel'
+import { LABEL_UNDER, bookPrices, manualJpComp, overlayForCard, overlayLabel, placeOverlayLabels, preferLiveScan } from './scanLabel'
 
 function label(over: Partial<Parameters<typeof overlayLabel>[0]> = {}) {
   return overlayLabel({
@@ -63,6 +63,13 @@ describe('overlay label colors', () => {
     expect(missing.price).toBe('no JP comp')
   })
 
+  it('marks an unread language with a question mark and a stale English street as stale', () => {
+    expect(label({ language: null }).languageTag).toBe('?')
+    const stale = label({ enStreetSgd: 40, sticker: { amount: 10, currency: 'SGD' }, stale: true })
+    expect(stale.price).toBe('S$40 · Stale')
+    expect(stale.tone).toBe('neutral')
+  })
+
   it('leaves a JP comp in a neutral color when the sticker was not read', () => {
     const row = label({ language: 'JP', enStreetSgd: 200, jpCompSgd: 80, sticker: null })
     expect(row.tone).toBe('neutral')
@@ -99,8 +106,30 @@ describe('manual JP comps', () => {
     expect(chip.languageTag).toBe('JP')
     expect(chip.code).toBe('OP13-002')
     expect(chip.grade).toBe('PSA 10')
+    expect(overlayForCard({
+      language: 'EN',
+      codeText: 'OP13-002',
+      printId: 'OP13-002',
+      slab: null,
+      sticker: null,
+      street: { status: 'none', sgd: null, source: null, asOf: null, url: null, stale: false, label: 'No price yet', detail: null, sources: [], sourcesDisagree: false, evidence: [] },
+    }, []).grade).toBe('Raw')
     expect(chip.price).toBe('S$40')
     expect(chip.tone).toBe('green')
+  })
+})
+
+describe('overlay placement', () => {
+  it('clamps a label that would sit off the left and steps a second label down', () => {
+    const placed = placeOverlayLabels(
+      [
+        { index: 0, x: -40, y: 20 },
+        { index: 1, x: -40, y: 20 },
+      ],
+      { x: 0, y: 0, w: 400, h: 600 },
+    )
+    expect(placed[0].left).toBe(8)
+    expect(placed[1].top).toBeGreaterThan(placed[0].top)
   })
 })
 
