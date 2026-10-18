@@ -927,9 +927,14 @@ function nearBlack(motion: FrameMotion): boolean {
   return (motion.frameMean ?? 255) < NEAR_BLACK_MEAN
 }
 
-/** A frame this dark cannot be tracked. Auto-scan stops and a tap is placed unshifted. */
+/** A frame this dark cannot be tracked. A tap is placed unshifted. */
 export function tooDarkToTrack(brightHalf: number): boolean {
   return brightHalf < BRIGHT_HALF_MIN
+}
+
+/** Automatic scans need a brightest half of 18 or more and the too-dark cue off. */
+export function autoScanAllowed(brightHalf: number, dark: boolean): boolean {
+  return !dark && !tooDarkToTrack(brightHalf)
 }
 
 export function frameTooDark(frame: GreyFrame): boolean {
@@ -1027,14 +1032,15 @@ export function substantialSceneChange(motion: FrameMotion): boolean {
  * A paused scan resumes on a slide of about 20% of the frame, or when the
  * local-mean residual reaches about 15. A shadow does not. Near-black frames
  * use the raw residual, so a swap there needs a tap. A 15% pan does not.
- * A dim wobble under 20% has to clear a higher residual, so sensor noise does not.
+ * A dim frame under a new view, including a shift the matcher missed, has to
+ * clear a higher residual so a wobble does not resume.
  */
 export function resumesPausedScan(motion: FrameMotion | null): boolean {
   if (!motion) return false
   const shift = motion.contentShiftFrac ?? motion.shiftFrac
   if (shift >= SCENE_RESET_FRAC) return true
   const residual = gateResidual(motion)
-  if (dimFrame(motion) && shift > 0 && shift < SCENE_RESET_FRAC && residual < DIM_SLIDE_RESIDUAL) return false
+  if (dimFrame(motion) && shift < SCENE_RESET_FRAC && residual < DIM_SLIDE_RESIDUAL) return false
   return residual >= PAUSE_RESUME_RESIDUAL
 }
 
@@ -1102,10 +1108,14 @@ export function rearmAfterDiscard(state: SceneHold): SceneHold {
 
 /**
  * A discarded read whose shift is under 6% counts toward the dry-streak pause.
- * A real slide does not. Three of these pauses the camera.
+ * A real slide does not. A read that comes back too dark counts unless the
+ * too-dark cue is already on. Three of these pauses the camera.
  */
-export function dryStreakAfterDiscard(streak: number, motion: FrameMotion | null): { streak: number; pause: boolean } | null {
-  if (!motion || cameBackDark(motion) || placedShift(motion) >= SCENE_MOVE_FRAC || placeRead(motion) !== 'discard') return null
+export function dryStreakAfterDiscard(streak: number, motion: FrameMotion | null, dark = false): { streak: number; pause: boolean } | null {
+  if (!motion || placeRead(motion) !== 'discard') return null
+  if (cameBackDark(motion)) {
+    if (dark) return null
+  } else if (placedShift(motion) >= SCENE_MOVE_FRAC) return null
   const next = streak + 1
   return { streak: next, pause: next >= 3 }
 }
@@ -1440,6 +1450,8 @@ export function simulateCaseWatch(input: {
   let shiftAtPause: number | null = null
   let pausedAt: number | null = null
   let resumedAt: number | null = null
+  let dark = false
+  let darkPending: number | null = null
 
   const resumeFrom = (fromT: number, fromPos: number, pos: number, sameTick: boolean) => {
     const motion = asMotion(fromT, fromPos, t, pos)
@@ -1461,6 +1473,11 @@ export function simulateCaseWatch(input: {
 
   while (t <= input.durationMs) {
     const pos = input.position(t)
+    if (input.frameMean != null) {
+      const next = stepDarkState(dark, darkPending, input.frameMean, t)
+      dark = next.dark
+      darkPending = next.pendingSince
+    }
     let ready = false
     if (anchorPos == null) {
       anchorPos = pos
@@ -1495,7 +1512,7 @@ export function simulateCaseWatch(input: {
           streak = 0
         }
         scanned = false
-        const dry = dryStreakAfterDiscard(streak, motion)
+        const dry = dryStreakAfterDiscard(streak, motion, dark)
         if (dry) {
           streak = dry.streak
           if (dry.pause) {
@@ -1527,7 +1544,7 @@ export function simulateCaseWatch(input: {
 
     if (paused) resumeFrom(pauseT, pausePos, pos, pauseT === t)
 
-    const trackable = input.frameMean == null || !tooDarkToTrack(input.frameMean)
+    const trackable = input.frameMean == null || autoScanAllowed(input.frameMean, dark)
     if (readingUntil == null && !paused && trackable) {
       const hop = asMotion(prevT, prevPos, t, pos)
       let start = false

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISION_URL } from '../config/vision'
-import { brightestHalfMean, compareFrames, dryStreakAfterDiscard, emptySeen, forgetsSeenCards, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, resetsMovedHold, resumesPausedScan, scanIntervalOpen, sceneMoved, stepDarkState, stepFrameHold, stepSceneHold, unreadBoxMotion, unreadSlabsAreNew, type GreyFrame, type SceneHold } from '../lib/cardFrame'
+import { autoScanAllowed, brightestHalfMean, compareFrames, dryStreakAfterDiscard, emptySeen, forgetsSeenCards, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, resetsMovedHold, resumesPausedScan, scanIntervalOpen, sceneMoved, stepDarkState, stepFrameHold, stepSceneHold, unreadBoxMotion, unreadSlabsAreNew, type GreyFrame, type SceneHold } from '../lib/cardFrame'
 import type { PixelImage } from '../lib/centering'
 import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
 import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
@@ -291,10 +291,12 @@ export function ScanLive({
         queuedTap.current = true
         return
       }
-      if (!manual && (tooDarkRef.current || autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
+      if (!manual && (autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
       const video = videoRef.current
       const stream = streamRef.current
       if (!video || !stream) return
+      const signature = frameGrey()
+      if (!manual && (!signature || !autoScanAllowed(brightestHalfMean(signature), tooDarkRef.current))) return
       busyRef.current = true
       if (heldRef.current) {
         if (manual) {
@@ -305,7 +307,6 @@ export function ScanLive({
         setHeld(false)
       }
       if (!manual) holdRef.current = markSceneScanned(holdRef.current)
-      const signature = frameGrey()
       setReading(true)
       if (manual) {
         shutterReadyRef.current = false
@@ -358,7 +359,7 @@ export function ScanLive({
           setLabelShift({ x: 0, y: 0 })
           if (forgetsSeenCards(motion)) forgetSeen()
           holdRef.current = rearmAfterDiscard(holdRef.current)
-          const dry = dryStreakAfterDiscard(dryStreak.current, motion)
+          const dry = dryStreakAfterDiscard(dryStreak.current, motion, tooDarkRef.current)
           if (dry) {
             dryStreak.current = dry.streak
             if (dry.pause) {
@@ -454,7 +455,8 @@ export function ScanLive({
             setDim(true)
             if (forgetsSeenCards(step.motion)) forgetSeen()
           } else if (step.steady) setDim(false)
-          if (!dark && movedReads.current >= MOVED_HOLD_AFTER) {
+          const mayAuto = autoScanAllowed(brightestHalfMean(frame), dark)
+          if (mayAuto && movedReads.current >= MOVED_HOLD_AFTER) {
             const hop = prevTickFrame.current ? compareFrames(prevTickFrame.current, frame) : null
             const hopped = resetsMovedHold(hop)
             const settled = stepFrameHold(frameSteadySince.current, hopped, now, MOVED_HOLD_MS)
@@ -464,7 +466,7 @@ export function ScanLive({
               setHeld(true)
             }
             if (settled.ready && !autoPausedRef.current) void sendRef.current(false)
-          } else if (!dark && step.ready && !autoPausedRef.current) {
+          } else if (mayAuto && step.ready && !autoPausedRef.current) {
             void sendRef.current(false)
           }
           prevTickFrame.current = frame

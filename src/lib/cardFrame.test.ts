@@ -64,6 +64,7 @@ import {
   unreadSlabsAreNew,
   shrinkQuad,
   stepLiveView,
+  autoScanAllowed,
   brightestHalfMean,
   cameBackDark,
   frameTooDark,
@@ -1489,7 +1490,8 @@ describe('case view: one steady second, then not the same scene again', () => {
           expect(cameBackDark(motion)).toBe(true)
           expect(placeRead(motion)).toBe('discard')
           expect(labelOffset(motion, frame.width, frame.height)).toBeNull()
-          expect(dryStreakAfterDiscard(2, motion)).toBeNull()
+          expect(dryStreakAfterDiscard(2, motion, dark)).toEqual(dark ? null : { streak: 3, pause: true })
+          expect(dryStreakAfterDiscard(2, motion, true)).toBeNull()
           if (placeRead(motion) === 'show') {
             const offset = labelOffset(motion, 100, 100)
             if (offset && Math.abs(offset.x - (pos - capturePos)) > card / 2) wrong += 1
@@ -1524,6 +1526,77 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(watch(33_700)).toBe(0)
     const tapped = compareFrames(back, frameAt(0.32))
     expect(labelOffset(tapped, 100, 100)).toEqual({ x: 0, y: 0 })
+  })
+
+  it('does not auto-scan the 17.5 to 18 band, so a 0.133 pan has no wrong label', () => {
+    const portrait = casePortrait()
+    const halfOf = (exposure: number) => brightestHalfMean(greyDownscale(expose(portrait, exposure)))
+    const band = halfOf(0.133)
+    const dim13 = halfOf(0.13)
+    expect(band).toBeGreaterThanOrEqual(17.5)
+    expect(band).toBeLessThan(18)
+    expect(autoScanAllowed(band, false)).toBe(false)
+    expect(autoScanAllowed(dim13, false)).toBe(false)
+    expect(autoScanAllowed(halfOf(0.14), false)).toBe(true)
+    expect(autoScanAllowed(halfOf(0.14), true)).toBe(false)
+    const watch = (exposure: number, readMs: number, pan: boolean) => {
+      const img = expose(portrait, exposure)
+      const cache = new Map<number, ReturnType<typeof greyDownscale>>()
+      const frameAt = (frac: number) => {
+        const key = Math.round(frac * 100) / 100
+        let frame = cache.get(key)
+        if (!frame) {
+          frame = greyDownscale(pan ? revealDark(img, key) : img)
+          cache.set(key, frame)
+        }
+        return frame
+      }
+      const dt = 200
+      const duration = pan ? 1_000 + readMs + dt : 60_000
+      let hold = initialSceneHold()
+      let dark = false
+      let pending: number | null = null
+      let scans = 0
+      let wrong = 0
+      let readingUntil: number | null = null
+      let capture = 0
+      let lastScanAt: number | null = null
+      let paused = false
+      const posAt = (time: number) => (pan && time > 1_000 ? Math.min(0.3, ((time - 1_000) / 2_000) * 0.3) : 0)
+      for (let t = 0; t <= duration; t += dt) {
+        const pos = posAt(t)
+        const frame = frameAt(pos)
+        const half = brightestHalfMean(frame)
+        const nextDark = stepDarkState(dark, pending, half, t)
+        dark = nextDark.dark
+        pending = nextDark.pendingSince
+        if (readingUntil != null && t >= readingUntil) {
+          const motion = compareFrames(frameAt(capture), frame)
+          if (placeRead(motion) === 'show') {
+            const offset = labelOffset(motion, 100, 100)
+            if (offset && Math.abs(offset.x - (pos - capture)) > (1 / 3) / 2) wrong += 1
+          } else hold = rearmAfterDiscard(hold)
+          readingUntil = null
+          lastScanAt = t
+        }
+        if (paused || readingUntil != null) continue
+        const step = stepSceneHold(hold, frame, t)
+        hold = step.state
+        if (step.ready && scanIntervalOpen(lastScanAt, t) && autoScanAllowed(half, dark)) {
+          scans += 1
+          hold = markSceneScanned(hold)
+          readingUntil = t + readMs
+          capture = pos
+        }
+      }
+      return { scans, wrong }
+    }
+    for (const exposure of [0.131, 0.133]) {
+      expect(watch(exposure, 8_000, true).wrong).toBe(0)
+      expect(watch(exposure, 33_700, true).wrong).toBe(0)
+    }
+    expect(watch(0.133, 2_000, false).scans).toBeLessThanOrEqual(3)
+    expect(watch(0.13, 2_000, false).scans).toBe(0)
   })
 
   it('does not flicker the dark cue on a dim14 band shadow or a slow drift', () => {
@@ -1645,6 +1718,9 @@ describe('case view: one steady second, then not the same scene again', () => {
     const row = compareFrames(greyDownscale(lit), greyDownscale(noisy(translateImage(swapped, 0.08), 7, 5)))
     expect(row.contentResidual ?? 0).toBeGreaterThanOrEqual(DIM_SLIDE_RESIDUAL)
     expect(resumesPausedScan(row)).toBe(true)
+    const missed = { mad: 8, residual: 4, dx: 0, dy: 0, shiftFrac: 0, frameMean: 20, contentResidual: 17, contentShiftFrac: 0 }
+    expect(resumesPausedScan(missed)).toBe(false)
+    expect(resumesPausedScan({ ...missed, contentResidual: DIM_SLIDE_RESIDUAL })).toBe(true)
     const panned = compareFrames(anchor, greyDownscale(noisy(translateImage(lit, 0.45), 7, 9)))
     expect(resumesPausedScan(panned)).toBe(true)
   })
