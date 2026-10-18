@@ -13,7 +13,7 @@
     "seed:check": "node scripts/seed-check.mjs",
     "wiki:refresh": "node scripts/wiki-refresh.mjs",
     "wiki:belong": "node scripts/wiki-belong-refresh.mjs",
-    "test": "vitest run && node --test scripts/graded-prices.test.mjs",
+    "test": "TZ=UTC vitest run && TZ=UTC node --test scripts/graded-prices.test.mjs",
     "worker:dev": "wrangler dev --config worker/wrangler.toml --env dev",
     "worker:deploy": "wrangler deploy --config worker/wrangler.toml",
     "worker:tail": "wrangler tail --config worker/wrangler.toml --format json",

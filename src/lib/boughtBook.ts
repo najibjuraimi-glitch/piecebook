@@ -5,6 +5,7 @@
  * figure is used. Nothing here writes to a spreadsheet.
  */
 
+import { singaporeDay } from './format'
 import { exactPrintId } from './printResolve'
 
 export const STALE_AFTER_DAYS = 7
@@ -280,9 +281,9 @@ export function httpsUrl(raw: string): string | null {
   return t
 }
 
-/** The calendar day in Asia/Singapore for a UTC timestamp. */
+/** The calendar day in Asia/Singapore for a UTC timestamp. Same day the phone sends. */
 export function singaporeToday(now: number): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now))
+  return singaporeDay(now)
 }
 
 /** The card number inside a sheet code. `OP09-004 SP` is `OP09-004`. A parallel id stays. Capital P is the same as p. */
