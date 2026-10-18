@@ -27,9 +27,11 @@ import {
   PAUSE_RESUME_RESIDUAL,
   SCENE_MOVE_FRAC,
   SCENE_MOVE_MAD,
+  SCENE_RESET_FRAC,
   SCENE_STEADY_MS,
   boxIoU,
   compareFrames,
+  dryStreakAfterDiscard,
   emptySeen,
   greyDownscale,
   initialLiveView,
@@ -47,6 +49,7 @@ import {
   pickCleanerFrame,
   scanIntervalOpen,
   sceneMoved,
+  simulateCaseWatch,
   sharpness,
   simulateDriftScans,
   simulatePausedMotion,
@@ -737,11 +740,10 @@ function caseGrid(): PixelImage {
   return img
 }
 
-/** Replace the left slab of the first row with a pattern that is not a slide of the grid. */
-function swapLeftOfRow1(img: PixelImage): PixelImage {
+function repaint(img: PixelImage, x0: number, y0: number, w: number, h: number): PixelImage {
   const out = copy(img)
-  for (let y = 0; y < 90; y += 1) {
-    for (let x = 0; x < 80; x += 1) {
+  for (let y = y0; y < y0 + h; y += 1) {
+    for (let x = x0; x < x0 + w; x += 1) {
       const on = ((x >> 2) + (y >> 2)) % 2 === 0
       const v = on ? 245 : 12
       const i = (y * img.width + x) * 4
@@ -752,6 +754,15 @@ function swapLeftOfRow1(img: PixelImage): PixelImage {
     }
   }
   return out
+}
+
+/** A single slab. Small enough that the residual stays under a row swap. */
+function swapLeftOfRow1(img: PixelImage): PixelImage {
+  return repaint(img, 8, 8, 40, 36)
+}
+
+function swapWholeRow1(img: PixelImage): PixelImage {
+  return repaint(img, 0, 0, img.width, 90)
 }
 
 function expose(img: PixelImage, factor: number): PixelImage {
@@ -959,21 +970,23 @@ describe('case view: one steady second, then not the same scene again', () => {
     }
   })
 
-  it('resumes a pause on a 6% slide or a residual of 28, and not on a shadow', () => {
+  it('resumes a pause on a fifth of the frame or a residual of 26, and not on a shadow', () => {
     const pan = simulatePausedMotion(0.3, 1_500, 30_000)
     expect(pan.resumed).toBe(true)
     expect(pan.scans).toBeGreaterThan(0)
-    const creep = simulatePausedMotion(0.0005, 60_000)
-    expect(creep.resumed).toBe(false)
-    expect(creep.scans).toBe(0)
-    const shadow = simulatePausedMotion(0, 60_000, 0, 23)
+    const drift = simulatePausedMotion(0.003, 60_000)
+    expect(drift.resumed).toBe(false)
+    expect(drift.scans).toBe(0)
+    const shadow = simulatePausedMotion(0, 60_000, 0, 23.6)
     expect(shadow.resumed).toBe(false)
     expect(shadow.scans).toBe(0)
     const changed = simulatePausedMotion(0, 1_000, 2_000, PAUSE_RESUME_RESIDUAL)
     expect(changed.resumed).toBe(true)
     expect(changed.scans).toBeGreaterThan(0)
-    const slide = { mad: 8, residual: 2, dx: 6, dy: 0, shiftFrac: SCENE_MOVE_FRAC }
-    const shade = { mad: 30, residual: 23, dx: 0, dy: 0, shiftFrac: 0 }
+    const sway = { mad: 8, residual: 2, dx: 8, dy: 0, shiftFrac: 0.08 }
+    const slide = { mad: 8, residual: 2, dx: 20, dy: 0, shiftFrac: SCENE_RESET_FRAC }
+    const shade = { mad: 30, residual: 23.6, dx: 0, dy: 0, shiftFrac: 0 }
+    expect(resumesPausedScan(sway)).toBe(false)
     expect(resumesPausedScan(slide)).toBe(true)
     expect(resumesPausedScan(shade)).toBe(false)
     expect(resumesPausedScan({ ...shade, residual: PAUSE_RESUME_RESIDUAL })).toBe(true)
@@ -984,25 +997,111 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(labelOffset(kept, 100, 80)).toEqual({ x: 0.08, y: 0 })
   })
 
-  it('counts unread slabs as new on swapL_row1 and keeps the cards already read', () => {
-    const grid = caseGrid()
-    const swapped = swapLeftOfRow1(grid)
-    const motion = compareFrames(greyDownscale(grid), greyDownscale(swapped))
-    expect(motion.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
-    expect(motion.residual).toBeGreaterThanOrEqual(SCENE_MOVE_MAD)
-    expect(unreadSlabsAreNew(motion)).toBe(true)
-    expect(forgetsSeenCards(motion)).toBe(false)
+  it('counts a residual-only discard toward the dry streak, and not a slide', () => {
+    const blink = { mad: 30, residual: 23.6, dx: 0, dy: 0, shiftFrac: 0 }
+    expect(placeRead(blink)).toBe('discard')
+    let streak = 0
+    let pause = false
+    for (let i = 0; i < 3; i += 1) {
+      const step = dryStreakAfterDiscard(streak, blink)
+      expect(step).not.toBeNull()
+      streak = step!.streak
+      pause = step!.pause
+    }
+    expect(streak).toBe(3)
+    expect(pause).toBe(true)
+    const slide = { mad: 10, residual: 2, dx: 8, dy: 0, shiftFrac: SCENE_MOVE_FRAC }
+    expect(dryStreakAfterDiscard(2, slide)).toBeNull()
+  })
+
+  it('keeps a wobble of 8% paused near four scans, and a blink near three', () => {
+    const wobble = simulateCaseWatch({
+      durationMs: 120_000,
+      readMs: 2_000,
+      position: (t) => 0.08 * Math.sin((2 * Math.PI * t) / 8_000),
+      residual: () => 0,
+    })
+    expect(wobble.scans).toBe(4)
+    expect(wobble.paused).toBe(true)
+    expect(wobble.resumedSameTick).toBe(false)
+    expect(wobble.resumeCount).toBe(0)
+
+    const phase = (t: number) => Math.floor(t / 3000) % 2
+    const blink = simulateCaseWatch({
+      durationMs: 300_000,
+      readMs: 2_000,
+      position: () => 0,
+      residual: (from, to) => (phase(from) === phase(to) ? 0 : 23.6),
+    })
+    expect(blink.scans).toBe(3)
+    expect(blink.paused).toBe(true)
+    expect(blink.resumeCount).toBe(0)
+    expect(blink.resumedSameTick).toBe(false)
+  })
+
+  it('does not resume a slow read on the tick it pauses, and a row swap still resumes', () => {
+    const watch = (rate: number) =>
+      simulateCaseWatch({
+        durationMs: 360_000,
+        readMs: 33_700,
+        position: (t) => rate * (t / 1000),
+        residual: () => 0,
+      })
+    for (const rate of [0.002, 0.003, 0.004]) {
+      const session = watch(rate)
+      expect(session.resumedSameTick).toBe(false)
+      expect(session.shiftAtPause).not.toBeNull()
+      expect(session.shiftAtPause!).toBeGreaterThanOrEqual(SCENE_MOVE_FRAC)
+      expect(session.shiftAtPause!).toBeLessThan(SCENE_RESET_FRAC)
+    }
+    const row = simulatePausedMotion(0, 1_000, 5_000, 31.6)
+    expect(row.resumed).toBe(true)
+    expect(simulatePausedMotion(0, 1_000, 5_000, 41.5).resumed).toBe(true)
+    const held = simulateCaseWatch({
+      durationMs: 45_000,
+      readMs: 2_000,
+      position: (t) => 0.01 * (t / 1000),
+      residual: (from, to) => (from < 36_000 && to >= 36_000 ? 35 : 0),
+    })
+    expect(held.resumedSameTick).toBe(false)
+    expect(held.pausedAt).not.toBeNull()
+    expect(held.pausedAt!).toBeLessThan(36_000)
+    expect(held.resumedAt).toBeGreaterThanOrEqual(36_000)
+    expect(held.pausedAt! + 20_000).toBeGreaterThan(held.resumedAt!)
+  })
+
+  it('keeps read keys when a row changes, and a shadow is not a new slab', () => {
+    for (const residual of [19, 23.6, 24]) {
+      const shadow = { mad: 20, residual, dx: 0, dy: 0, shiftFrac: 0 }
+      expect(unreadSlabsAreNew(shadow)).toBe(false)
+      expect(resumesPausedScan(shadow)).toBe(false)
+    }
+    const rowSwap = { mad: 40, residual: 31.6, dx: 0, dy: 0, shiftFrac: 0 }
+    expect(unreadSlabsAreNew(rowSwap)).toBe(true)
+    expect(unreadSlabsAreNew({ ...rowSwap, residual: 41.5 })).toBe(true)
+    expect(forgetsSeenCards(rowSwap)).toBe(false)
     const left = { x: 0, y: 0, w: 1 / 3, h: 0.5 }
     const named = { printId: 'OP09-004', codeText: 'OP09-004', box: { x: 2 / 3, y: 0, w: 1 / 3, h: 0.5 } }
     const first = nextDryStreak(emptySeen(), 0, [{ box: left }, named])
     expect(first.seen.keys.has('OP09-004')).toBe(true)
     const same = nextDryStreak(first.seen, 2, [{ box: left }, named])
     expect(same.pause).toBe(true)
-    const row = nextDryStreak(first.seen, 2, [{ box: left }, named], null, unreadSlabsAreNew(motion))
+    const row = nextDryStreak(first.seen, 2, [{ box: left }, named], null, unreadSlabsAreNew(rowSwap))
     expect(row.streak).toBe(0)
     expect(row.pause).toBe(false)
     expect(row.seen.keys.has('OP09-004')).toBe(true)
     expect(row.seen.boxes).toHaveLength(1)
+    const grid = caseGrid()
+    const anchor = greyDownscale(grid)
+    const oneSlab = compareFrames(anchor, greyDownscale(swapLeftOfRow1(grid)))
+    const wholeRow = compareFrames(anchor, greyDownscale(swapWholeRow1(grid)))
+    expect(oneSlab.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(wholeRow.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(oneSlab.residual).toBeLessThan(PAUSE_RESUME_RESIDUAL)
+    expect(unreadSlabsAreNew(oneSlab)).toBe(false)
+    expect(wholeRow.residual).toBeGreaterThanOrEqual(PAUSE_RESUME_RESIDUAL)
+    expect(unreadSlabsAreNew(wholeRow)).toBe(true)
+    expect(forgetsSeenCards(wholeRow)).toBe(false)
   })
 
   it('moves labels by a shift under 6% when the pictures still agree', () => {

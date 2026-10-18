@@ -543,8 +543,8 @@ export const SCENE_RESET_FRAC = 0.2
 export const SCENE_MOVE_MAD = 12
 /** Unread boxes are shifted into the new frame only when the aligned pictures still agree. */
 export const BOX_MOTION_RESIDUAL = 6
-/** A paused scan resumes on a picture change this large. A shadow stays under it. */
-export const PAUSE_RESUME_RESIDUAL = 28
+/** A paused scan resumes on a picture change this large. Shadows stay under it (max about 23.6). */
+export const PAUSE_RESUME_RESIDUAL = 26
 
 export interface GreyFrame {
   width: number
@@ -781,12 +781,13 @@ export function substantialSceneChange(motion: FrameMotion): boolean {
 }
 
 /**
- * A paused scan resumes on a slide of about 6%, or when the picture still
- * disagrees by 28 after aligning. A shadow, up to a residual of about 23, does not.
+ * A paused scan resumes on a slide of about 20% of the frame, or when the
+ * picture still disagrees by 26 after aligning. An 8% sway does not. A shadow,
+ * up to a residual of about 23.6, does not. A row swap (about 32 to 42) does.
  */
 export function resumesPausedScan(motion: FrameMotion | null): boolean {
   if (!motion) return false
-  return motion.shiftFrac >= SCENE_MOVE_FRAC || motion.residual >= PAUSE_RESUME_RESIDUAL
+  return motion.shiftFrac >= SCENE_RESET_FRAC || motion.residual >= PAUSE_RESUME_RESIDUAL
 }
 
 /** The hold-still clock restarts on a real slide. A light blinking in place does not restart it. */
@@ -842,15 +843,29 @@ export function rearmAfterDiscard(state: SceneHold): SceneHold {
   return { ...state, scanned: false }
 }
 
+/**
+ * A discarded read whose shift is under 6% counts toward the dry-streak pause.
+ * A real slide does not. Three of these pauses the camera.
+ */
+export function dryStreakAfterDiscard(streak: number, motion: FrameMotion | null): { streak: number; pause: boolean } | null {
+  if (!motion || motion.shiftFrac >= SCENE_MOVE_FRAC || placeRead(motion) !== 'discard') return null
+  const next = streak + 1
+  return { streak: next, pause: next >= 3 }
+}
+
 /** Shift for unread boxes. A residual of 6 or more is not trusted. */
 export function unreadBoxMotion(motion: FrameMotion | null, width: number, height: number): BoxMotion | null {
   if (!motion || motion.residual >= BOX_MOTION_RESIDUAL) return null
   return { dx: motion.dx, dy: motion.dy, width, height }
 }
 
-/** The picture changed in place. Unread slabs in the same boxes are new cards. Named keys stay. */
+/**
+ * The picture changed in place enough to be a different row of slabs.
+ * Shadows (about 19 to 24) do not. A swap of one to three slabs stays under this
+ * and needs a tap. Named keys stay either way.
+ */
 export function unreadSlabsAreNew(motion: FrameMotion | null): boolean {
-  return Boolean(motion && motion.residual >= SCENE_MOVE_MAD)
+  return Boolean(motion && motion.residual >= PAUSE_RESUME_RESIDUAL)
 }
 
 /**
@@ -1024,6 +1039,11 @@ export function simulateDriftScans(driftPerSec: number, durationMs = 360_000, re
           seen = emptySeen()
           streak = 0
         }
+        const dry = dryStreakAfterDiscard(streak, motion)
+        if (dry) {
+          streak = dry.streak
+          if (dry.pause) paused = true
+        }
       } else {
         const outcome = nextDryStreak(seen, streak, [card], unreadBoxMotion(motion, 100, 100))
         seen = outcome.seen
@@ -1071,7 +1091,7 @@ export function simulateDriftScans(driftPerSec: number, durationMs = 360_000, re
 
 /**
  * While paused, motion accumulates from the frame that caused the pause.
- * That anchor does not reset. A slide of about 6%, or a residual of 28, resumes it.
+ * That anchor does not reset. A slide of about 20%, or a residual of 26, resumes it.
  * A shadow under that residual does not. After a resume, a still second starts one scan.
  */
 export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs = 0, residual = 0): { resumed: boolean; scans: number } {
@@ -1094,6 +1114,177 @@ export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs
     t += dt
   }
   return { resumed, scans }
+}
+
+export interface CaseWatch {
+  scans: number
+  paused: boolean
+  resumedSameTick: boolean
+  resumeCount: number
+  /** Shift from the frame that was sent to the frame when a pause began. */
+  shiftAtPause: number | null
+  pausedAt: number | null
+  resumedAt: number | null
+}
+
+/**
+ * The live loop: steadiness, a read, then either a dry pause or another scan.
+ * The pause anchor is the frame when the reading returns, so the motion during
+ * that read cannot resume the pause on the same tick.
+ */
+export function simulateCaseWatch(input: {
+  durationMs: number
+  readMs: number
+  position: (t: number) => number
+  residual: (fromT: number, toT: number) => number
+}): CaseWatch {
+  const dt = 200
+  const asMotion = (fromT: number, fromPos: number, toT: number, toPos: number): FrameMotion => ({
+    mad: 0,
+    residual: input.residual(fromT, toT),
+    dx: (toPos - fromPos) * 100,
+    dy: 0,
+    shiftFrac: Math.abs(toPos - fromPos),
+  })
+
+  let t = 0
+  let anchorPos: number | null = null
+  let anchorT = 0
+  let steadySince: number | null = null
+  let misses = 0
+  let scanned = false
+  let paused = false
+  let pausePos = 0
+  let pauseT = 0
+  let movedReads = 0
+  let frameSteady: number | null = null
+  let prevPos = input.position(0)
+  let prevT = 0
+  let streak = 0
+  let named = false
+  let lastScanAt: number | null = null
+  let readingUntil: number | null = null
+  let capturePos = 0
+  let captureT = 0
+  let scans = 0
+  let resumedSameTick = false
+  let resumeCount = 0
+  let shiftAtPause: number | null = null
+  let pausedAt: number | null = null
+  let resumedAt: number | null = null
+
+  const resumeFrom = (fromT: number, fromPos: number, pos: number, sameTick: boolean) => {
+    const motion = asMotion(fromT, fromPos, t, pos)
+    if (!resumesPausedScan(motion)) return
+    if (sameTick) resumedSameTick = true
+    paused = false
+    if (resumedAt == null) resumedAt = t
+    resumeCount += 1
+    streak = 0
+    named = false
+    anchorPos = pos
+    anchorT = t
+    steadySince = t
+    misses = 0
+    scanned = false
+    movedReads = 0
+    frameSteady = null
+  }
+
+  while (t <= input.durationMs) {
+    const pos = input.position(t)
+    let ready = false
+    if (anchorPos == null) {
+      anchorPos = pos
+      anchorT = t
+    } else {
+      const hold = asMotion(anchorT, anchorPos, t, pos)
+      if (!sceneMoved(hold)) {
+        if (steadySince == null || steadySince > t) steadySince = t
+        misses = 0
+        ready = !scanned && t - steadySince >= SCENE_STEADY_MS
+      } else {
+        const hard = hold.shiftFrac >= SCENE_MOVE_FRAC
+        if (!hard && misses < 1) misses += 1
+        else {
+          anchorPos = pos
+          anchorT = t
+          steadySince = null
+          misses = 0
+          scanned = false
+        }
+      }
+    }
+
+    if (readingUntil != null && t >= readingUntil) {
+      const motion = asMotion(captureT, capturePos, t, pos)
+      if (sceneMoved(motion)) movedReads += 1
+      else movedReads = 0
+      if (movedReads >= MOVED_HOLD_AFTER) frameSteady = null
+      if (placeRead(motion) === 'discard') {
+        if (forgetsSeenCards(motion)) {
+          named = false
+          streak = 0
+        }
+        scanned = false
+        const dry = dryStreakAfterDiscard(streak, motion)
+        if (dry) {
+          streak = dry.streak
+          if (dry.pause) {
+            shiftAtPause = motion.shiftFrac
+            paused = true
+            if (pausedAt == null) pausedAt = t
+            pausePos = pos
+            pauseT = t
+            resumeFrom(pauseT, pausePos, pos, true)
+          }
+        }
+      } else if (!named) {
+        named = true
+        streak = 0
+      } else {
+        streak += 1
+        if (streak >= 3) {
+          shiftAtPause = motion.shiftFrac
+          paused = true
+          if (pausedAt == null) pausedAt = t
+          pausePos = pos
+          pauseT = t
+          resumeFrom(pauseT, pausePos, pos, true)
+        }
+      }
+      lastScanAt = t
+      readingUntil = null
+    }
+
+    if (paused) resumeFrom(pauseT, pausePos, pos, pauseT === t)
+
+    if (readingUntil == null && !paused) {
+      const hop = asMotion(prevT, prevPos, t, pos)
+      let start = false
+      if (movedReads >= MOVED_HOLD_AFTER) {
+        const step = stepFrameHold(frameSteady, resetsMovedHold(hop), t)
+        frameSteady = step.since
+        start = step.ready && scanIntervalOpen(lastScanAt, t)
+      } else {
+        start = ready && scanIntervalOpen(lastScanAt, t)
+      }
+      if (start) {
+        scans += 1
+        readingUntil = t + input.readMs
+        capturePos = pos
+        captureT = t
+        scanned = true
+        if (movedReads >= MOVED_HOLD_AFTER) frameSteady = null
+      }
+    }
+
+    prevPos = pos
+    prevT = t
+    t += dt
+  }
+
+  return { scans, paused, resumedSameTick, resumeCount, shiftAtPause, pausedAt, resumedAt }
 }
 
 /** Of two shots of the same side, the one with less glare on the card; ties keep the first. */
