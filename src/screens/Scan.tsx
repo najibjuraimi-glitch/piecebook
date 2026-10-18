@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom'
 import { BackBar, Screen } from '../components/Screen'
 import { ALL_CARDS } from '../data/seed'
 import { VISION_URL } from '../config/vision'
+import { isStale } from '../lib/boughtBook'
 import { todayIso, formatSgd } from '../lib/format'
 import { legalQuote } from '../lib/loadBought'
-import { choosePrint, summariseRows, type ScanRow, type ScanSummary } from '../lib/scanMatch'
+import { characterForPrint } from '../lib/printCharacter'
+import { choosePrint, lotOfferPath, summariseRows, type ScanRow, type ScanSummary } from '../lib/scanMatch'
 
 const field =
   'mt-1.5 block h-11 w-full rounded-xl border border-line bg-paper/60 px-3.5 text-body text-ink placeholder:text-muted/70 focus:border-ink focus:bg-surface focus:outline-none'
@@ -19,6 +21,9 @@ function prints() {
     variant: card.variant || '',
     rarity: card.rarity,
     language: card.language || 'EN',
+    name: card.name,
+    setCode: card.setCode,
+    character: characterForPrint(card.cardNumber, card.name),
   }))
 }
 
@@ -35,6 +40,8 @@ export function ScanScreen() {
   const [file, setFile] = useState<File | null>(null)
   const [caption, setCaption] = useState('')
   const [lotAsk, setLotAsk] = useState('')
+  const [lotCurrency, setLotCurrency] = useState<'SGD' | 'USD'>('SGD')
+  const [preset, setPreset] = useState<'ebay' | 'fanatics' | 'goldin'>('ebay')
   const [scan, setScan] = useState<ScanSummary | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -47,7 +54,11 @@ export function ScanScreen() {
     setError(null)
     setSaved(false)
     try {
-      const body: Record<string, unknown> = { caption, lotAskSgd: lotAsk.trim() ? Number(lotAsk) : null }
+      const body: Record<string, unknown> = {
+        caption,
+        lotAskSgd: lotAsk.trim() ? Number(lotAsk) : null,
+        lotAskCurrency: lotCurrency,
+      }
       if (file) body.image = await fileToDataUrl(file)
       else if (imageUrl.trim()) body.imageUrl = imageUrl.trim()
       else {
@@ -77,7 +88,7 @@ export function ScanScreen() {
   const pick = (index: number, printId: string) => {
     if (!scan) return
     const cards = scan.cards.map((card) => (card.index === index ? choosePrint(card, printId, quoteFor, todayIso(), rows) : card))
-    setScan(summariseRows(cards, scan.lotAskSgd))
+    setScan(summariseRows(cards, scan.lotAskAmount ?? scan.lotAskSgd, scan.lotAskCurrency === 'USD' ? 'USD' : 'SGD'))
   }
 
   const save = () => {
@@ -129,9 +140,23 @@ export function ScanScreen() {
         </div>
         <div>
           <label htmlFor="scan-lot" className={label}>
-            Lot asking price SGD
+            Lot asking price
           </label>
-          <input id="scan-lot" inputMode="decimal" value={lotAsk} onChange={(e) => setLotAsk(e.target.value)} className={`tabular ${field}`} />
+          <div className="mt-1.5 flex gap-2">
+            <select aria-label="Lot currency" value={lotCurrency} onChange={(e) => setLotCurrency(e.target.value === 'USD' ? 'USD' : 'SGD')} className={`${field} mt-0 w-24`}>
+              <option value="SGD">SGD</option>
+              <option value="USD">USD</option>
+            </select>
+            <input id="scan-lot" inputMode="decimal" value={lotAsk} onChange={(e) => setLotAsk(e.target.value)} className={`tabular ${field} mt-0`} />
+          </div>
+          <label htmlFor="scan-house" className={`${label} mt-3`}>
+            House for the max offer
+          </label>
+          <select id="scan-house" value={preset} onChange={(e) => setPreset(e.target.value === 'fanatics' || e.target.value === 'goldin' ? e.target.value : 'ebay')} className={field}>
+            <option value="ebay">eBay</option>
+            <option value="fanatics">Fanatics</option>
+            <option value="goldin">Goldin</option>
+          </select>
         </div>
         <button type="button" onClick={() => void run()} disabled={busy} className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-ink text-[15px] font-semibold text-paper disabled:opacity-50">
           {busy ? 'Reading…' : 'Read the photo'}
@@ -155,7 +180,7 @@ export function ScanScreen() {
               )}
             </div>
           )}
-          <LotLine scan={scan} />
+          <LotLine scan={scan} preset={preset} />
           <ul className="space-y-3">
             {scan.cards.map((card) => (
               <li key={card.index} className={`rounded-2xl border px-3 py-3 ${card.underStreet || card.targetHit ? 'border-good bg-[#E7F6EE]' : 'border-line bg-surface'}`}>
@@ -175,14 +200,22 @@ export function ScanScreen() {
   )
 }
 
-function LotLine({ scan }: { scan: ScanSummary }) {
+function askLabel(scan: ScanSummary): string | null {
+  const amount = scan.lotAskAmount ?? scan.lotAskSgd
+  if (amount == null) return null
+  if (scan.lotAskCurrency === 'USD') return `US$ ${amount.toFixed(2)}`
+  return formatSgd(amount)
+}
+
+function LotLine({ scan, preset }: { scan: ScanSummary; preset: 'ebay' | 'fanatics' | 'goldin' }) {
+  const ask = askLabel(scan)
   return (
     <div className="rounded-2xl border border-line bg-surface px-3 py-3">
       <p className="text-meta text-muted">Fresh English street</p>
       <p className="tabular text-[22px] font-semibold text-ink">{scan.lotStreetSgd == null ? 'No price yet' : formatSgd(scan.lotStreetSgd)}</p>
-      {scan.lotAskSgd != null && (
+      {ask != null && (
         <p className="tabular mt-1 text-meta text-ink">
-          Asking {formatSgd(scan.lotAskSgd)}
+          Asking {ask}
           {scan.lotGapSgd != null ? ` · gap ${formatSgd(scan.lotGapSgd)}` : ''}
         </p>
       )}
@@ -194,7 +227,7 @@ function LotLine({ scan }: { scan: ScanSummary }) {
       ))}
       {scan.maxOfferSgd != null && (
         <p className="mt-2">
-          <Link to={`/bid?target=${encodeURIComponent(String(scan.maxOfferSgd))}`} className="text-meta font-medium text-ink underline decoration-line underline-offset-2">
+          <Link to={lotOfferPath(scan, preset)} className="text-meta font-medium text-ink underline decoration-line underline-offset-2">
             Max lot offer {formatSgd(scan.maxOfferSgd)}
           </Link>
         </p>
@@ -212,8 +245,11 @@ function LotLine({ scan }: { scan: ScanSummary }) {
 
 function CardLine({ card, onPick }: { card: ScanRow; onPick: (printId: string) => void }) {
   const street = card.priced && card.street.sgd != null ? formatSgd(card.street.sgd) : 'No price yet'
+  const today = todayIso()
+  const staleSources = card.street.sources.filter((source) => isStale(source.asOf, today))
   return (
     <div>
+      {card.crop && <img src={card.crop} alt="" className="mb-2 h-16 w-auto rounded-lg" />}
       <p className="text-[15px] font-medium text-ink">
         {card.name || 'Card'}
         {card.language ? ` · ${card.language}` : ' · Language not read'}
@@ -234,8 +270,13 @@ function CardLine({ card, onPick }: { card: ScanRow; onPick: (printId: string) =
         {card.underStreet ? ' · Under street' : ''}
         {card.targetHit ? ' · Under target' : ''}
       </p>
+      {staleSources.map((source) => (
+        <p key={`${source.source}-${source.asOf}`} className="text-meta text-muted">
+          Stale {formatSgd(source.sgd)} · {source.source} · {source.asOf}
+        </p>
+      ))}
       {card.street.sourcesDisagree && <p className="text-meta text-ink">Sources disagree</p>}
-      {card.contributionSgd != null && <p className="tabular text-meta text-muted">Contributes {formatSgd(card.contributionSgd)} to the lot offer</p>}
+      {card.contributionSgd != null && <p className="tabular text-meta text-muted">Share of the lot target {formatSgd(card.contributionSgd)}</p>}
       {card.slab && (
         <p className="mt-1 text-meta text-muted">
           {[card.slab.grader, card.slab.grade, card.slab.cert, card.slab.year, card.slab.blackLabel ? 'Black label' : null].filter(Boolean).join(' · ')}

@@ -49,10 +49,15 @@ export interface ScanSight {
   /** The card-code text the model read, before it is matched to a print id. */
   codeText: string | null
   code: string | null
+  /** Set code from the label, such as EB04, kept apart from the number. */
+  setCode?: string | null
   name: string | null
   /** Language the model read. Ignored when the slab label has its own language word. */
   language: string | null
+  /** label, card_text_english, or card_text_japanese. */
+  languageEvidence?: string | null
   labelText: string | null
+  crop?: string | null
   /** base, aa, sp, manga, gold, silver, 2nd anni, or a print id. */
   parallel: string | null
   confidence: number
@@ -86,6 +91,11 @@ export interface WatchTarget {
   id: string
   printId: string
   targetSgd: number
+  grade?: LegalGrade | null
+  marketSgd?: number | null
+  marketAsOf?: string | null
+  marketSource?: string | null
+  marketUrl?: string | null
 }
 
 export interface CaptionMark {
@@ -101,6 +111,7 @@ export interface ScanRow {
   col: number
   box: ScanBox | null
   imageUrl: string | null
+  crop: string | null
   name: string | null
   /** Raw code text from the model, even when it is not a print id. */
   codeText: string | null
@@ -134,6 +145,9 @@ export interface ScanRow {
 export interface ScanSummary {
   cards: ScanRow[]
   lotAskSgd: number | null
+  /** The ask as typed, in lotAskCurrency. A USD ask is not subtracted from the S$ street. */
+  lotAskAmount: number | null
+  lotAskCurrency: 'SGD' | 'USD' | null
   /** Sum of fresh English street prices for cards that clear. */
   lotStreetSgd: number | null
   lotGapSgd: number | null
@@ -205,6 +219,9 @@ function confirmedLanguage(sight: ScanSight): 'EN' | 'JP' | 'CN' | 'KR' | 'FR' |
   const fromLabel = languageFromLabel(sight.labelText)
   if (fromLabel === 'JP' || fromLabel === 'CN' || fromLabel === 'KR' || fromLabel === 'FR') return fromLabel
   if (fromLabel === 'EN') return 'EN'
+  const evidence = (sight.languageEvidence || '').trim().toLowerCase()
+  if (evidence === 'card_text_japanese') return 'JP'
+  if (evidence === 'card_text_english') return 'EN'
   const model = (sight.language || '').trim().toUpperCase()
   if (!sight.labelText?.trim()) return LANG.has(model) ? (model as 'EN') : null
   if (model === 'EN' && sight.confidence >= LOW_CONFIDENCE) return 'EN'
@@ -251,23 +268,133 @@ export function loosenCode(raw: string): string {
   return text
 }
 
+/** `EB04`, `EB-04`, `OP13`. A four-digit year is not a set. */
+export function setToken(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null
+  const match = raw.toUpperCase().match(/\b([A-Z]{1,4})-?(\d{2})\b/)
+  if (!match) return null
+  return `${match[1]}${match[2]}`
+}
+
+/**
+ * `#106` plus a separate set `EB04` is `EB04-106`.
+ * A code that is already a print id is left as that id. A year is not a number.
+ */
+export function assembleCode(code: string | null | undefined, setCode: string | null | undefined): string | null {
+  const raw = (code || '').trim()
+  const loosened = raw ? loosenCode(raw) : ''
+  if (loosened && splitPrintCode(loosened)) return loosened
+  const set = setToken(setCode)
+  const num = raw.match(/^#?\s*(\d{1,3})$/)
+  if (num && set) return `${set}-${num[1].padStart(3, '0')}`
+  return raw || null
+}
+
+/** PSA label `OP13 EN / SHANKS / 3RD ANNIVERSARY-SILVER / #004` is OP09-004 Shanks Silver, not Sabo. */
+export const SHANKS_SILVER_ID = 'OP09-004p4'
+export const SHANKS_SILVER_TCGPLAYER = 657443
+export const SHANKS_SILVER_SLUG = 'shanks-silver-op09-004'
+
+export function shanksSilverAlias(parts: Array<string | null | undefined>): string | null {
+  const blob = parts.filter((part) => part && part.trim()).join(' ').toUpperCase().replace(/[_-]+/g, ' ')
+  if (!blob.includes('SHANKS') || !blob.includes('SILVER')) return null
+  if (!/#\s*0*04\b/.test(blob) && !/\b0*04\b/.test(blob)) return null
+  const anniversary = /3\s*RD\s+ANNIVERSARY/.test(blob)
+  const op13 = /\bOP\s*13\b/.test(blob)
+  if (!anniversary && !op13) return null
+  return SHANKS_SILVER_ID
+}
+
+const ALT_LABEL_IS_MANGA = new Set(['PRB02', 'OP12', 'OP14', 'OP15'])
+
+/** On these sets a slab that says ALTERNATE ART is the manga print, when the family has one. */
+function mangaFromAltLabel(setRaw: string | null, code: string | null, label: string | null, parallel: string | null, rows: PrintRow[]): string | null {
+  const text = (label || '').toUpperCase()
+  if (!text.includes('ALTERNATE ART')) return parallel
+  const fromCode = code ? setToken(code) : null
+  const set = setToken(setRaw) || fromCode
+  if (!set || !ALT_LABEL_IS_MANGA.has(set)) return parallel
+  const split = code ? splitPrintCode(loosenCode(code)) : null
+  if (!split) return parallel
+  const manga = familyOf(rows, split.id).filter((row) => row.variant.toLowerCase().includes('manga'))
+  if (manga.length === 1) return 'manga'
+  return parallel
+}
+
+function nameCandidates(name: string | null, setRaw: string | null, rows: PrintRow[]): string[] {
+  const want = (name || '').trim().toLowerCase()
+  const set = setToken(setRaw)
+  if (want.length < 2 || !set) return []
+  return rows
+    .filter((row) => {
+      const rowName = (row.name || '').trim().toLowerCase()
+      if (!rowName || rowName !== want) return false
+      const home = row.cardNumber.split('-')[0]
+      const listed = (row.setCode || '').replace(/-/g, '').toUpperCase()
+      return home === set || listed === set
+    })
+    .map((row) => row.cardNumber)
+}
+
+function contradictsAa(parallel: string | null, label: string | null, printId: string | null, rows: PrintRow[]): boolean {
+  const text = (label || '').toUpperCase()
+  if (!/\b(PROMO|PCC)\b/.test(text) || text.includes('ALTERNATE ART')) return false
+  const word = (parallel || '').trim().toLowerCase()
+  if (['aa', 'alt', 'alternate', 'alternate art'].includes(word)) return true
+  const print = printId ? rows.find((row) => row.cardNumber.toUpperCase() === printId.toUpperCase()) : undefined
+  return (print?.variant || '').toLowerCase().includes('alternate')
+}
+
+function promoUnread(code: string | null, label: string | null): boolean {
+  const blob = `${code || ''} ${label || ''}`.toUpperCase()
+  return /\bP-\d{1,4}\b/.test(blob) || /\bPROMO\b/.test(blob) || /\bPCC\b/.test(blob)
+}
+
+/** Set plus number, the Shanks Silver alias, a manga label, or a name inside one set. */
+export function readScanCode(
+  sight: Pick<ScanSight, 'code' | 'codeText' | 'setCode' | 'name' | 'labelText' | 'parallel' | 'slab'>,
+  rows: PrintRow[],
+): { codeText: string | null; printId: string | null; ambiguous: boolean; candidates: string[] } {
+  const setRaw = sight.setCode || sight.slab?.setName || null
+  const assembled = assembleCode(sight.code || sight.codeText, setRaw)
+  const alias = shanksSilverAlias([sight.code, sight.codeText, sight.setCode, sight.name, sight.labelText, sight.parallel, sight.slab?.setName])
+  if (alias && rows.some((row) => row.cardNumber.toUpperCase() === alias.toUpperCase())) {
+    return { codeText: alias, printId: alias, ambiguous: false, candidates: [alias] }
+  }
+  const parallel = mangaFromAltLabel(setRaw, assembled, sight.labelText ?? null, sight.parallel, rows)
+  let resolved = resolveScanPrint(assembled, parallel, rows)
+  if (contradictsAa(parallel, sight.labelText ?? null, resolved.printId, rows)) {
+    resolved = { printId: null, ambiguous: true, candidates: resolved.candidates }
+  }
+  const parsed = assembled ? splitPrintCode(loosenCode(assembled)) : null
+  if (!parsed) {
+    const named = nameCandidates(sight.name ?? null, setRaw, rows)
+    if (!resolved.printId && named.length) resolved = { printId: null, ambiguous: true, candidates: named }
+  }
+  return { codeText: assembled || sight.codeText || sight.code, printId: resolved.printId, ambiguous: resolved.ambiguous, candidates: resolved.candidates }
+}
+
 export function resolveScanPrint(code: string | null, parallel: string | null, rows: PrintRow[]): { printId: string | null; ambiguous: boolean; candidates: string[] } {
   const split = splitPrintCode(loosenCode(code || ''))
   const family = split ? familyOf(rows, split.id) : []
   const candidates = family.map((row) => row.cardNumber)
   const word = (parallel || split?.rest || '').trim().toLowerCase()
   const exact = exactPrintId(loosenCode(code || ''))
-  if (exact && !word) {
+  if (exact) {
     const hit = rows.find((row) => row.cardNumber.toUpperCase() === exact.toUpperCase())
-    if (!hit) return { printId: null, ambiguous: false, candidates }
-    const bareBase = hit.cardNumber.toUpperCase() === hit.baseNumber.toUpperCase()
-    if (bareBase && family.length > 1) return { printId: null, ambiguous: true, candidates }
-    return { printId: hit.cardNumber, ambiguous: false, candidates }
+    if (hit) {
+      const bareBase = hit.cardNumber.toUpperCase() === hit.baseNumber.toUpperCase()
+      if (!bareBase) {
+        if (!word || wordMatches(hit, word)) return { printId: hit.cardNumber, ambiguous: false, candidates }
+        return { printId: null, ambiguous: true, candidates }
+      }
+      if (!word) {
+        if (family.length > 1) return { printId: null, ambiguous: true, candidates }
+        return { printId: hit.cardNumber, ambiguous: false, candidates }
+      }
+    }
   }
-  if (!word || !family.length) {
-    const hit = exact && rows.some((row) => row.cardNumber.toUpperCase() === exact.toUpperCase()) ? exact : null
-    return { printId: hit, ambiguous: false, candidates }
-  }
+  if (!word || !family.length) return { printId: null, ambiguous: false, candidates }
   const named = family.filter((row) => wordMatches(row, word))
   if (named.length === 1) return { printId: named[0].cardNumber, ambiguous: false, candidates }
   return { printId: null, ambiguous: true, candidates: (named.length ? named : family).map((row) => row.cardNumber) }
@@ -277,29 +404,63 @@ function emptyStreet(): ScanStreet {
   return { status: 'none', sgd: null, source: null, asOf: null, url: null, stale: false, label: 'No price yet', sources: [], sourcesDisagree: false }
 }
 
-function streetFor(quote: PriceQuote | null, today: string): ScanStreet {
-  if (!quote || quote.sgd == null || !quote.source || !quote.asOf) return emptyStreet()
-  const stale = isStale(quote.asOf, today)
-  const source: ScanSource = { source: quote.source, asOf: quote.asOf, sgd: quote.sgd, usd: quote.usd, kind: 'market' }
+function streetFor(quote: PriceQuote | null, today: string, manual: { sgd: number; asOf: string; source: string; url: string | null } | null): ScanStreet {
+  const seed = quote && quote.sgd != null && quote.source && quote.asOf
+    ? { source: quote.source, asOf: quote.asOf, sgd: quote.sgd, usd: quote.usd, kind: 'market' as const }
+    : null
+  if (manual) {
+    const fresh: ScanSource = { source: manual.source, asOf: manual.asOf, sgd: manual.sgd, usd: null, kind: 'market' }
+    const sources = seed ? [fresh, seed] : [fresh]
+    return {
+      status: 'fresh',
+      sgd: manual.sgd,
+      source: manual.source,
+      asOf: manual.asOf,
+      url: manual.url,
+      stale: false,
+      label: null,
+      sources,
+      sourcesDisagree: seed != null && seed.sgd !== manual.sgd,
+    }
+  }
+  if (!seed) return emptyStreet()
+  const stale = isStale(seed.asOf, today)
   return {
     status: stale ? 'stale' : 'fresh',
-    sgd: quote.sgd,
-    source: quote.source,
-    asOf: quote.asOf,
-    url: quote.url,
+    sgd: seed.sgd,
+    source: seed.source,
+    asOf: seed.asOf,
+    url: quote?.url ?? null,
     stale,
     label: stale ? 'No price yet' : null,
-    sources: [source],
+    sources: [seed],
     sourcesDisagree: false,
   }
 }
 
-function likedOf(name: string | null, parallel: string | null, variant: string | null): string | null {
-  const text = `${name || ''} ${parallel || ''} ${variant || ''}`.toLowerCase()
-  if (text.includes('luffy')) return 'Luffy'
-  if (text.includes('nami')) return 'Nami'
-  if (text.includes('boa') || text.includes('hancock')) return 'Boa'
-  if (text.includes('sanji') && text.includes('manga')) return 'Sanji manga'
+/** A fresh manual English price for this print and grade. It counts ahead of a stale seed quote. */
+function manualQuote(printId: string, grade: LegalGrade, targets: WatchTarget[] | undefined, today: string): { sgd: number; asOf: string; source: string; url: string | null } | null {
+  const hit = targets?.find((target) => {
+    if (target.printId.toUpperCase() !== printId.toUpperCase()) return false
+    if (target.grade !== grade) return false
+    if (target.marketSgd == null || !Number.isFinite(target.marketSgd) || target.marketSgd < 0) return false
+    if (!target.marketAsOf || !target.marketSource) return false
+    if (!target.marketUrl?.startsWith('https://')) return false
+    if (isStale(target.marketAsOf, today)) return false
+    return true
+  })
+  if (!hit || hit.marketSgd == null || !hit.marketAsOf || !hit.marketSource) return null
+  return { sgd: hit.marketSgd, asOf: hit.marketAsOf, source: hit.marketSource, url: hit.marketUrl || null }
+}
+
+function likedOf(print: PrintRow | undefined): string | null {
+  const who = (print?.character || '').toLowerCase()
+  if (!who) return null
+  const variant = (print?.variant || '').toLowerCase()
+  if (who.includes('luffy')) return 'Luffy'
+  if (who.includes('nami')) return 'Nami'
+  if (who.includes('boa') || who.includes('hancock')) return 'Boa'
+  if (who.includes('sanji') && variant.includes('manga')) return 'Sanji manga'
   return null
 }
 
@@ -342,6 +503,7 @@ export function matchScan(input: {
   targets?: WatchTarget[]
   caption?: string
   lotAskSgd?: number | null
+  lotAskCurrency?: 'SGD' | 'USD' | null
   imageUrl?: string | null
 }): ScanSummary {
   const ordered = input.sights
@@ -353,21 +515,39 @@ export function matchScan(input: {
     priceSight(sight, index, assigned[order] ?? null, input),
   )
   const lotAsk = input.lotAskSgd != null && Number.isFinite(input.lotAskSgd) && input.lotAskSgd >= 0 ? round2(input.lotAskSgd) : null
-  return summariseRows(cards, lotAsk)
+  const currency = input.lotAskCurrency === 'USD' ? 'USD' : 'SGD'
+  return summariseRows(cards, lotAsk, currency)
 }
 
 /** Lot totals from rows already priced. Used again after the user picks a print. */
-export function summariseRows(cards: ScanRow[], lotAskSgd: number | null): ScanSummary {
+export function summariseRows(cards: ScanRow[], lotAsk: number | null, currency: 'SGD' | 'USD' = 'SGD'): ScanSummary {
   const clearing = cards.filter((card) => card.priced && card.forSale && card.street.status === 'fresh' && card.street.sgd != null)
   const lotStreet = clearing.length ? round2(clearing.reduce((sum, card) => sum + (card.street.sgd ?? 0), 0)) : null
+  const sgdAsk = currency === 'SGD' ? lotAsk : null
   return {
     cards,
-    lotAskSgd,
+    lotAskSgd: sgdAsk,
+    lotAskAmount: lotAsk,
+    lotAskCurrency: lotAsk == null ? null : currency,
     lotStreetSgd: lotStreet,
-    lotGapSgd: lotAskSgd != null && lotStreet != null ? round2(lotStreet - lotAskSgd) : null,
+    lotGapSgd: sgdAsk != null && lotStreet != null ? round2(lotStreet - sgdAsk) : null,
     maxOfferSgd: lotStreet != null ? round2(lotStreet * 0.9) : null,
     bundles: bundleSums(cards),
   }
+}
+
+/** Opens /bid with the lot target, the house, the ask currency, and each clearing card's street. */
+export function lotOfferPath(scan: ScanSummary, preset: 'ebay' | 'fanatics' | 'goldin' = 'ebay'): string {
+  const params = new URLSearchParams()
+  if (scan.maxOfferSgd != null) params.set('target', String(scan.maxOfferSgd))
+  params.set('preset', preset)
+  params.set('currency', scan.lotAskCurrency === 'USD' ? 'USD' : 'SGD')
+  const lot = scan.cards
+    .filter((card) => card.priced && card.forSale && card.printId && card.street.sgd != null)
+    .map((card) => `${card.printId}:${card.street.sgd}`)
+    .join(',')
+  if (lot) params.set('lot', lot)
+  return `/bid?${params.toString()}`
 }
 
 function assignCaption(count: number, marks: CaptionMark[]): (CaptionMark & { bundleIndex: number | null })[] {
@@ -390,7 +570,7 @@ function priceSight(
   input: { prints: PrintRow[]; quoteFor: QuoteFor; today: string; targets?: WatchTarget[]; imageUrl?: string | null },
 ): ScanRow {
   const language = confirmedLanguage(sight)
-  const resolved = resolveScanPrint(sight.code, sight.parallel, input.prints)
+  const resolved = readScanCode(sight, input.prints)
   const lowConfidence = sight.confidence < LOW_CONFIDENCE
   const print = resolved.printId ? input.prints.find((row) => row.cardNumber.toUpperCase() === resolved.printId!.toUpperCase()) : undefined
   const forSale = mark?.kind !== 'unsold'
@@ -401,7 +581,8 @@ function priceSight(
   const grade = gradeOf(sight.slab)
   const canPrice = language === 'EN' && !lowConfidence && !resolved.ambiguous && resolved.printId != null && forSale && grade != null
   const quote = canPrice ? input.quoteFor(resolved.printId!, grade) : null
-  const street = canPrice ? streetFor(quote, input.today) : emptyStreet()
+  const manual = canPrice && resolved.printId ? manualQuote(resolved.printId, grade, input.targets, input.today) : null
+  const street = canPrice ? streetFor(quote, input.today, manual) : emptyStreet()
   const fresh = street.status === 'fresh' && street.sgd != null
   const compare = fresh && sticker?.currency === 'SGD'
   const gapSgd = compare ? round2(street.sgd! - sticker.amount) : null
@@ -415,8 +596,9 @@ function priceSight(
     ambiguous: resolved.ambiguous,
     forSale,
     printId: resolved.printId,
-    codeText: sight.codeText ?? sight.code,
+    codeText: resolved.codeText,
     known: resolved.candidates.length > 0 || resolved.printId != null,
+    promo: promoUnread(resolved.codeText, sight.labelText),
     street,
     slab: sight.slab,
     grade,
@@ -427,8 +609,9 @@ function priceSight(
     col: sight.col,
     box: sight.box,
     imageUrl: input.imageUrl ?? null,
+    crop: sight.crop ?? null,
     name: sight.name,
-    codeText: sight.codeText ?? sight.code,
+    codeText: resolved.codeText,
     language,
     languageUnsure: language == null,
     printId: resolved.printId,
@@ -447,7 +630,7 @@ function priceSight(
     underStreet,
     targetHit,
     watchId: watch?.id ?? null,
-    liked: likedOf(sight.name, sight.parallel, print?.variant ?? null),
+    liked: likedOf(print),
     slab: sight.slab,
     certUrl: certUrl(sight.slab),
     condition: sight.condition ?? emptyCondition(),
@@ -464,6 +647,7 @@ function dragReason(input: {
   printId: string | null
   codeText: string | null
   known: boolean
+  promo: boolean
   street: ScanStreet
   slab: ScanSlab | null
   grade: LegalGrade | null
@@ -473,6 +657,7 @@ function dragReason(input: {
   if (input.language !== 'EN') return `${input.language} is not priced as English`
   if (input.lowConfidence) return 'Low confidence'
   if (input.ambiguous) return 'Print not exact'
+  if (!input.printId && input.promo) return 'Promo not in price data'
   if (!input.printId) return 'print not in seed'
   if (input.slab && input.grade == null) {
     return input.slab.grade ? 'no stored price for this print/grade' : 'Slab grade not read'
@@ -488,10 +673,13 @@ export function choosePrint(card: ScanRow, printId: string, quoteFor: QuoteFor, 
     row: card.row,
     col: card.col,
     box: card.box,
+    crop: card.crop,
     code: printId,
     codeText: printId,
+    setCode: null,
     name: card.name,
     language: card.language,
+    languageEvidence: null,
     labelText: null,
     parallel: null,
     confidence: 1,

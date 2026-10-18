@@ -15,7 +15,7 @@ import {
   type GstMode,
   type PremiumPresetId,
 } from '../lib/allIn'
-import { parseMoney } from '../lib/boughtBook'
+import { parseMoney, round2 } from '../lib/boughtBook'
 import { formatDate, formatSgd, formatUsd, todayIso } from '../lib/format'
 import { getWatchlist } from '../lib/watchlistClient'
 import type { ValuedWatchItem } from '../lib/watchlist'
@@ -61,13 +61,17 @@ export function BidCalculator() {
   const [params] = useSearchParams()
   const itemId = params.get('item')?.trim() || ''
   const lotTarget = params.get('target')?.trim() || ''
+  const presetFromUrl = params.get('preset')
+  const openingPreset: PremiumPresetId = presetFromUrl === 'fanatics' || presetFromUrl === 'goldin' || presetFromUrl === 'ebay' ? presetFromUrl : 'ebay'
+  const currencyFromUrl = (params.get('currency') || '').toUpperCase()
+  const lotCards = parseLot(params.get('lot'))
   const [mode, setMode] = useState<Mode>(itemId || lotTarget ? 'max' : 'all-in')
-  const [preset, setPreset] = useState<PremiumPresetId | 'custom'>('ebay')
+  const [preset, setPreset] = useState<PremiumPresetId | 'custom'>(openingPreset)
   const [customPercent, setCustomPercent] = useState('')
-  const [feePreset, setFeePreset] = useState<FeePresetId | 'custom'>('ebay')
+  const [feePreset, setFeePreset] = useState<FeePresetId | 'custom'>(openingPreset)
   const [feeTouched, setFeeTouched] = useState(false)
   const [customFee, setCustomFee] = useState('')
-  const [currency, setCurrency] = useState('USD')
+  const [currency, setCurrency] = useState(CURRENCIES.includes(currencyFromUrl) ? currencyFromUrl : 'USD')
   const [hammer, setHammer] = useState('')
   const [shipping, setShipping] = useState('')
   const [forwarder, setForwarder] = useState('')
@@ -455,10 +459,39 @@ export function BidCalculator() {
             <Line label={gstLabel(result)} value={formatSgd(result.gstSgd)} />
             <Line label="All-in" value={formatSgd(result.allInSgd)} />
           </ul>
+          {mode === 'max' && lotCards.length > 0 && (
+            <div className="mt-4">
+              <p className="text-meta text-muted">Share of this hammer</p>
+              <ul className="mt-2 space-y-2">
+                {hammerShares(result.hammer, lotCards).map((share) => (
+                  <Line key={share.id} label={share.id} value={formatForeign(share.share, result.currency)} />
+                ))}
+              </ul>
+              <p className="mt-2 text-meta text-muted">Cards with no fresh English price are not in this split.</p>
+            </div>
+          )}
         </section>
       )}
     </Screen>
   )
+}
+
+function parseLot(raw: string | null): { id: string; sgd: number }[] {
+  if (!raw) return []
+  const out: { id: string; sgd: number }[] = []
+  for (const part of raw.split(',')) {
+    const [id, amount] = part.split(':')
+    const sgd = Number(amount)
+    if (!id || !Number.isFinite(sgd) || sgd < 0) continue
+    out.push({ id, sgd })
+  }
+  return out
+}
+
+function hammerShares(hammer: number, lot: { id: string; sgd: number }[]): { id: string; share: number }[] {
+  const sum = lot.reduce((total, row) => total + row.sgd, 0)
+  if (sum <= 0) return []
+  return lot.map((row) => ({ id: row.id, share: round2((hammer * row.sgd) / sum) }))
 }
 
 function gstLabel(result: AllInResult): string {

@@ -6,6 +6,7 @@
  */
 import { parseCsv } from '../data/csv'
 import { type LegalGrade, type PriceQuote } from './boughtBook'
+import { characterForPrint } from './printCharacter'
 import { exactPrintId, type PrintRow } from './printResolve'
 import { usdToSgd } from './fx'
 
@@ -77,6 +78,9 @@ export function printsFromSeedRows(rows: Iterable<SeedRow>): PrintRow[] {
       variant: row.variant || '',
       rarity: row.rarity || '',
       language: row.language || '',
+      name: row.name || '',
+      setCode: row.set_code || '',
+      character: characterForPrint(cardNumber, row.name || ''),
     })
   }
   return prints

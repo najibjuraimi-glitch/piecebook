@@ -23,7 +23,10 @@ describe('print panel matching', () => {
     expect(panel.ambiguous).toBe(true)
     expect(panel.exactMissing).toBe(true)
     expect(panel.pinnedId).toBeNull()
-    expect(panel.prints.map((print) => print.cardNumber)).toEqual(['OP09-004', 'OP09-004p1', 'OP09-004p2', 'OP09-004p3'])
+    expect(panel.prints.map((print) => print.cardNumber)).toEqual(['OP09-004', 'OP09-004p1', 'OP09-004p2', 'OP09-004p3', 'OP09-004p4'])
+    const silver = panel.prints.find((print) => print.cardNumber === 'OP09-004p4')
+    expect(silver?.variant).toMatch(/silver/i)
+    expect(silver?.english).toBeNull()
     expect(panel.prints.every((print) => !print.pinned)).toBe(true)
     const manga = panel.prints.find((print) => print.cardNumber === 'OP09-004p2')!
     expect(manga.variant).toMatch(/manga/i)

@@ -12,6 +12,14 @@ A card is priced only when the language was read as English, the print is one ex
 
 A caption may put several prices on one line. Slashes or new lines separate rows. `X` is not for sale. `0` is no price. `(Sequential xN)` stays attached to the price in front of it.
 
-A label with no language word falls back to a confident English read from the model. A JP word on the label stays Japanese. A BGS 10 is not priced as a PSA 10. Each unpriced card says why. Japanese comps for a Japanese card are a follow-up, not this page.
+A label with no language word falls back to a confident English read from the model. English rules text counts as English. Japanese card text counts as Japanese and is not priced as English. A JP word on the label stays Japanese. A BGS 10 is not priced as a PSA 10. Each unpriced card says why. A promo that is not in the seed says **Promo not in price data**. Japanese comps for a Japanese card are a follow-up, not this page.
 
-OP13-004 on Limitless is Sabo. That page has no Silver print, so none was added. PRB-02 prints are already in `prb02-en-seed.csv`. The photo cap uses the Asia/Singapore day.
+A slab number such as `#106` is joined to the set on the same label (`EB04` becomes `EB04-106`) and looked up. The echoed code is that full id. A year is not used as a number.
+
+Liked names (Luffy, Nami, Boa, Sanji manga) come from the print's character. OP14-118 "You'll Frighten Me..." is Boa. Sanji counts only on a manga print.
+
+OP09-004p4 is Shanks, 3rd Anniversary Silver, rarity SP. There is no stored price. TCGplayer product 657443. PriceCharting slug `shanks-silver-op09-004`. A PSA label `OP13 EN / SHANKS / 3RD ANNIVERSARY-SILVER / #004` resolves to that print. OP13-004 itself stays Sabo. On PRB02, OP12, OP14 and OP15, a label that says ALTERNATE ART matches the manga print.
+
+A fresh manual English watch price for the same print and grade counts ahead of the seed. A stale seed figure is shown with its date and stays out of the lot total. **Max lot offer** opens `/bid` with the target, the house, the ask currency, and each clearing card. The bid page splits the solved hammer across those cards. A USD lot ask is not subtracted from the S$ street.
+
+Boxes are `box_2d` values from 0 to 1000. A box past the photo, or one that disagrees with its row and column, is dropped. Each card can include a small crop. The photo cap uses the Asia/Singapore day. On staging the counter is a Durable Object; without that binding it stays in KV. PRB-02 prints are already in `prb02-en-seed.csv`.

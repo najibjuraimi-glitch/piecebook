@@ -11,6 +11,7 @@ import { handleHoldings } from "./holdings.js";
 import { handleWatchlist } from "./watchlist.js";
 import { handleAlerts } from "./alerts.js";
 import { handleScan } from "./scan.js";
+export { VisionCap } from "./cap.js";
 // Same words and limits as the app. wrangler bundles the TypeScript.
 // /check does not read pixels: it echoes centering the phone already measured.
 // /pregrade decodes a JPEG and measures it here, for agents that have no browser.
@@ -443,10 +444,10 @@ export default {
     if (isAlerts) return handleAlerts(req, env, identity, cors, deps);
     if (isSync) return handleSync(req, env, identity, cors, deps);
     if (isPrice) return handlePrice(req, env, cors, deps);
-    if (isScan) return handleScan(req, env, identity, cors, deps);
     // Two 8 MB images as base64 JSON are ~22 MB. Refuse bigger bodies before parsing them into memory.
     const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
     if (declared > MAX_BODY_BYTES) return json({ error: "too_large", hint: "downscale to ~1600px long edge" }, 413, cors);
+    if (isScan) return handleScan(req, env, identity, cors, deps);
 
     let imgs;
     try { imgs = await readImages(req); } catch { return json({ error: "bad_request" }, 400, cors); }

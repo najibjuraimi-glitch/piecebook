@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { singaporeToday } from '../../src/lib/boughtBook.ts'
 import worker from '../src/index.js'
-import { normaliseBox, normaliseScanSights } from '../src/scan.js'
+import { VisionCap } from '../src/cap.js'
+import { boxFrom2d, dropDisagreedBoxes, normaliseBox, normaliseScanSights } from '../src/scan.js'
 
 class MemoryKV {
   store = new Map<string, string>()
@@ -90,6 +91,33 @@ describe('scan sights', () => {
     const box = normaliseBox({ x: 200, y: 400, w: 300, h: 500 }, 1000, 2000)
     expect(box).toEqual({ x: 0.2, y: 0.2, w: 0.3, h: 0.25 })
     expect(normaliseBox({ x: 1564, y: 0, w: 1564, h: 2048 }, 0, 0)).toBeNull()
+  })
+
+  it('reads box_2d on a 0 to 1000 scale and drops a box that disagrees with its column', () => {
+    expect(boxFrom2d([100, 200, 500, 600])).toEqual({ x: 0.2, y: 0.1, w: 0.4, h: 0.4 })
+    expect(boxFrom2d([0, 0, 1000, 1100])).toBeNull()
+    expect(boxFrom2d([0, 0, 0, 400])).toBeNull()
+    const sights = normaliseScanSights({
+      cards: [
+        { row: 0, col: 0, confidence: 1, box_2d: [0, 600, 400, 900], code: '#106', set: 'EB04' },
+        { row: 0, col: 1, confidence: 1, box_2d: [0, 100, 400, 400], code: 'OP09-004' },
+      ],
+    })
+    expect(sights[0]).toMatchObject({ code: '#106', setCode: 'EB04' })
+    const dropped = dropDisagreedBoxes(sights)
+    expect(dropped[0].box).toBeNull()
+    expect(dropped[1].box).toBeNull()
+  })
+})
+
+describe('vision cap', () => {
+  it('counts two charges once each', async () => {
+    const storage = new Map<string, number>()
+    const cap = new VisionCap({ storage: { get: async (key: string) => storage.get(key), put: async (key: string, value: number) => { storage.set(key, value) } } })
+    const charge = () => cap.fetch(new Request('https://vision-cap/charge?day=2026-10-18&cap=60'))
+    const [first, second] = await Promise.all([charge(), charge()])
+    const bodies = [await first.json(), await second.json()]
+    expect(bodies.map((body: { used: number }) => body.used).sort()).toEqual([1, 2])
   })
 })
 

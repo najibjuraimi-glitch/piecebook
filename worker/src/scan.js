@@ -4,9 +4,10 @@
  * An image URL is fetched only when the caller sends that URL. The listing page is not fetched.
  * Street prices are stored English quotes. Japanese cards are not given an English price.
  */
-import { singaporeToday } from "../../src/lib/boughtBook.ts";
+import { legalGrade, singaporeToday } from "../../src/lib/boughtBook.ts";
 import jpeg from "jpeg-js";
-import { matchScan, normaliseCondition } from "../../src/lib/scanMatch.ts";
+import { matchScan, normaliseCondition, setToken } from "../../src/lib/scanMatch.ts";
+import { commitCap, reserveCap } from "./cap.js";
 import { bookEmail, keyFor } from "./holdings.js";
 import { seedPrints, storedQuote } from "./storedPrice.js";
 
@@ -14,11 +15,13 @@ const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_CARDS = 40;
 
 export const SCAN_PROMPT = `You are looking at one photo of several One Piece TCG cards in a dealer case, binder page, showcase or listing.
-Find every card. Read the slab label first when a card is in a grading slab. Read the card number from the label or the card face only when you can actually see it. Put that text in code even when it is only a set code such as EB04.
-Bounding boxes are fractions of the photo from 0 to 1, not pixels.
+Find every card. Read the slab label first when a card is in a grading slab. Read the card number from the label or the card face only when you can actually see it.
+Put the set code (EB04, OP13, PRB02) in set. Put the label number (#106, #004) in code, even when that is all you can read. Do not put a year in code.
+Each box_2d is [ymin, xmin, ymax, xmax] on a 0 to 1000 scale. 0 is the top or left edge. 1000 is the bottom or right edge.
 Do not transcribe effect text. Do not guess a language from a set name. A label that says JP is Japanese even if the set name contains EN.
+language_evidence is label when the slab says EN or JP, card_text_english when the rules text is English, or card_text_japanese when the card text is Japanese.
 Do not guess a grade. Copy the grade and cert number from the label, or leave them null.
-For each card return its place in the grid (row and column, left to right, top to bottom, starting at 0), a bounding box as fractions of the photo (x, y, w, h from 0 to 1), the card number, the print (base, aa, sp, manga, gold, silver, or 2nd anni), language EN or JP only when you read that word, a confidence from 0 to 1, any price sticker amount and its currency (SGD if the sticker shows no currency), and a short condition estimate from this crop.
+For each card return its place in the grid (row and column, left to right, top to bottom, starting at 0), the box, the set, the number, the print (base, aa, sp, manga, gold, silver, or 2nd anni), language EN or JP only when you read that word, a confidence from 0 to 1, any price sticker amount and its currency (SGD if the sticker shows no currency), and a short condition estimate from this crop.
 Condition is an estimate, never a grade and never a PSA prediction. If the crop is too small or too blurry to judge, say so.
 Return ONLY JSON matching the schema.`;
 
@@ -38,10 +41,13 @@ export const SCAN_SCHEMA = {
         properties: {
           row: { type: "INTEGER" },
           col: { type: "INTEGER" },
+          box_2d: { type: "ARRAY", items: { type: "NUMBER" }, nullable: true },
           box: BOX,
           code: { type: "STRING", nullable: true },
+          set: { type: "STRING", nullable: true },
           name: { type: "STRING", nullable: true },
           language: { type: "STRING", nullable: true },
+          language_evidence: { type: "STRING", nullable: true },
           label_text: { type: "STRING", nullable: true },
           parallel: { type: "STRING", nullable: true },
           confidence: { type: "NUMBER" },
@@ -95,6 +101,52 @@ export function normaliseBox(box, width, height) {
   return { x, y, w, h }
 }
 
+/** Gemini box_2d is [ymin, xmin, ymax, xmax] on a 0–1000 scale. Never clamped. */
+export function boxFrom2d(raw) {
+  if (!Array.isArray(raw) || raw.length !== 4) return null
+  const [ymin, xmin, ymax, xmax] = raw.map(Number)
+  if (![ymin, xmin, ymax, xmax].every((n) => Number.isFinite(n))) return null
+  const x = xmin / 1000
+  const y = ymin / 1000
+  const w = (xmax - xmin) / 1000
+  const h = (ymax - ymin) / 1000
+  if (w <= 0 || h <= 0 || x < 0 || y < 0 || x > 1 || y > 1 || x + w > 1 || y + h > 1) return null
+  return { x, y, w, h }
+}
+
+/** A box whose centre is on the wrong side of a neighbour in the same row or column is dropped. */
+export function dropDisagreedBoxes(sights) {
+  const bad = new Set()
+  for (let i = 0; i < sights.length; i += 1) {
+    for (let j = i + 1; j < sights.length; j += 1) {
+      const a = sights[i]
+      const b = sights[j]
+      if (!a.box || !b.box) continue
+      const ax = a.box.x + a.box.w / 2
+      const ay = a.box.y + a.box.h / 2
+      const bx = b.box.x + b.box.w / 2
+      const by = b.box.y + b.box.h / 2
+      if (a.row === b.row && a.col !== b.col) {
+        const left = a.col < b.col ? ax : bx
+        const right = a.col < b.col ? bx : ax
+        if (left > right + 0.02) {
+          bad.add(i)
+          bad.add(j)
+        }
+      }
+      if (a.col === b.col && a.row !== b.row) {
+        const top = a.row < b.row ? ay : by
+        const bottom = a.row < b.row ? by : ay
+        if (top > bottom + 0.02) {
+          bad.add(i)
+          bad.add(j)
+        }
+      }
+    }
+  }
+  return sights.map((sight, index) => (bad.has(index) ? { ...sight, box: null } : sight))
+}
+
 function imageSize(data) {
   try {
     const bytes = Uint8Array.from(atob(data), (char) => char.charCodeAt(0))
@@ -123,14 +175,17 @@ export function normaliseScanSights(raw, image = { width: 0, height: 0 }) {
       setName: text(card?.set_name, 80),
       blackLabel: card?.black_label === true,
     } : null
+    const evidence = text(card?.language_evidence, 32)
     return {
       row: Number.isFinite(Number(card?.row)) ? Number(card.row) : 0,
       col: Number.isFinite(Number(card?.col)) ? Number(card.col) : 0,
-      box: normaliseBox(card?.box, image.width, image.height),
+      box: Array.isArray(card?.box_2d) ? boxFrom2d(card.box_2d) : normaliseBox(card?.box, image.width, image.height),
       codeText,
       code: text(card?.code, 24),
+      setCode: text(card?.set, 24) || setToken(text(card?.set_name, 80)),
       name: text(card?.name, 60),
       language: text(card?.language, 12),
+      languageEvidence: evidence === "label" || evidence === "card_text_english" || evidence === "card_text_japanese" ? evidence : null,
       labelText: text(card?.label_text, 160),
       parallel: text(card?.parallel, 40),
       confidence: Number.isFinite(Number(card?.confidence)) ? Math.min(1, Math.max(0, Number(card.confidence))) : 0,
@@ -182,23 +237,19 @@ async function watchTargets(env, identity) {
     if (!doc || !Array.isArray(doc.items)) return []
     return doc.items
       .filter((item) => item && typeof item.code === "string" && typeof item.targetSgd === "number")
-      .map((item) => ({ id: String(item.id || ""), printId: item.code, targetSgd: item.targetSgd }))
+      .map((item) => ({
+        id: String(item.id || ""),
+        printId: item.code,
+        targetSgd: item.targetSgd,
+        grade: legalGrade(String(item.grade || "")),
+        marketSgd: typeof item.marketSgd === "number" ? item.marketSgd : null,
+        marketAsOf: typeof item.marketAsOf === "string" ? item.marketAsOf : null,
+        marketSource: typeof item.marketSource === "string" ? item.marketSource : null,
+        marketUrl: typeof item.marketUrl === "string" ? item.marketUrl : null,
+      }))
   } catch {
     return []
   }
-}
-
-async function capState(env, day) {
-  const cap = parseInt(env.DAILY_CAP || "60", 10)
-  const key = `count:${day}`
-  const used = parseInt((await env.VISION_CAP.get(key)) || "0", 10)
-  return { cap, key, used, limited: used >= cap }
-}
-
-async function charge(env, state) {
-  const next = state.used + 1
-  await env.VISION_CAP.put(state.key, String(next), { expirationTtl: 60 * 60 * 48 })
-  return { used: next, cap: state.cap }
 }
 
 function safeDetail(text) {
@@ -213,6 +264,77 @@ function json(body, status, cors) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors } })
 }
 
+const CROP_EDGE = 120
+
+function bytesFromBase64(data) {
+  const binary = atob(data)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+function base64FromBytes(bytes) {
+  let binary = ""
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return btoa(binary)
+}
+
+/** A small JPEG of one card. Null when the photo will not decode or the box is empty. */
+export function cropJpeg(data, box) {
+  if (!data || !box) return null
+  try {
+    const decoded = jpeg.decode(bytesFromBase64(data), { useTArray: true, formatAsRGBA: true, maxResolutionInMP: 24 })
+    if (!decoded?.width || !decoded?.height || !decoded.data) return null
+    return cropDecoded(decoded, box)
+  } catch {
+    return null
+  }
+}
+
+function cropDecoded(decoded, box) {
+  const x0 = Math.max(0, Math.min(decoded.width - 1, Math.floor(box.x * decoded.width)))
+  const y0 = Math.max(0, Math.min(decoded.height - 1, Math.floor(box.y * decoded.height)))
+  const w = Math.max(1, Math.min(decoded.width - x0, Math.round(box.w * decoded.width)))
+  const h = Math.max(1, Math.min(decoded.height - y0, Math.round(box.h * decoded.height)))
+  const scale = Math.min(1, CROP_EDGE / Math.max(w, h))
+  const tw = Math.max(1, Math.round(w * scale))
+  const th = Math.max(1, Math.round(h * scale))
+  const out = new Uint8Array(tw * th * 4)
+  for (let y = 0; y < th; y += 1) {
+    const sy = y0 + Math.min(h - 1, Math.floor(y / scale))
+    for (let x = 0; x < tw; x += 1) {
+      const sx = x0 + Math.min(w - 1, Math.floor(x / scale))
+      const from = (sy * decoded.width + sx) * 4
+      const to = (y * tw + x) * 4
+      out[to] = decoded.data[from]
+      out[to + 1] = decoded.data[from + 1]
+      out[to + 2] = decoded.data[from + 2]
+      out[to + 3] = 255
+    }
+  }
+  const encoded = jpeg.encode({ data: out, width: tw, height: th }, 40)
+  return `data:image/jpeg;base64,${base64FromBytes(encoded.data)}`
+}
+
+function withCrops(sights, data) {
+  if (!data) return sights.map((sight) => ({ ...sight, crop: null }))
+  let decoded = null
+  try {
+    decoded = jpeg.decode(bytesFromBase64(data), { useTArray: true, formatAsRGBA: true, maxResolutionInMP: 24 })
+  } catch {
+    decoded = null
+  }
+  if (!decoded?.width) return sights.map((sight) => ({ ...sight, crop: null }))
+  return sights.map((sight) => {
+    if (!sight.box) return { ...sight, crop: null }
+    try {
+      return { ...sight, crop: cropDecoded(decoded, sight.box) }
+    } catch {
+      return { ...sight, crop: null }
+    }
+  })
+}
+
 /**
  * One scan. `deps.modelFetch` and `deps.imageFetch` stand in for the network in tests.
  * The photo is not written to KV.
@@ -223,6 +345,7 @@ export async function handleScan(req, env, identity, cors, deps = {}) {
   const caption = typeof body.caption === "string" ? body.caption.slice(0, 4000) : ""
   const lotAsk = body.lotAskSgd == null || body.lotAskSgd === "" ? null : Number(body.lotAskSgd)
   if (lotAsk != null && (!Number.isFinite(lotAsk) || lotAsk < 0)) return json({ error: "bad_lot_ask" }, 400, cors)
+  const lotAskCurrency = body.lotAskCurrency === "USD" ? "USD" : "SGD"
   let image = null
   let imageUrl = null
   if (typeof body.imageUrl === "string" && body.imageUrl.trim()) {
@@ -237,7 +360,7 @@ export async function handleScan(req, env, identity, cors, deps = {}) {
   if (image.data.length * 0.75 > MAX_IMAGE_BYTES) return json({ error: "too_large" }, 413, cors)
 
   const day = singaporeToday(Date.now())
-  const room = await capState(env, day)
+  const room = await reserveCap(env, day)
   if (room.limited) return json({ error: "daily_cap_reached", cap: room.cap, used: room.used }, 429, cors)
 
   const modelFetch = deps.modelFetch || fetch
@@ -270,8 +393,8 @@ export async function handleScan(req, env, identity, cors, deps = {}) {
   const textPart = payload?.candidates?.[0]?.content?.parts?.filter((part) => part && !part.thought && typeof part.text === "string").map((part) => part.text).join("") || ""
   let parsed
   try { parsed = JSON.parse(textPart) } catch { return json({ error: "unparseable_model_output" }, 502, cors) }
-  const sights = normaliseScanSights(parsed, imageSize(image.data))
-  const usage = await charge(env, room)
+  const sights = withCrops(dropDisagreedBoxes(normaliseScanSights(parsed, imageSize(image.data))), image.data)
+  const usage = await commitCap(env, day)
   const summary = matchScan({
     sights,
     prints: seedPrints(),
@@ -280,6 +403,7 @@ export async function handleScan(req, env, identity, cors, deps = {}) {
     targets: await watchTargets(env, identity),
     caption,
     lotAskSgd: lotAsk,
+    lotAskCurrency,
     imageUrl,
   })
   return json({

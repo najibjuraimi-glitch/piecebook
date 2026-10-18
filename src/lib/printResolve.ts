@@ -10,6 +10,11 @@ export interface PrintRow {
   variant: string
   rarity: string
   language: string
+  /** Printed title from the seed. An event title is not the person. */
+  name?: string
+  setCode?: string
+  /** Person on this print, when known. Liked flags read this, not the title. */
+  character?: string
 }
 
 export interface WatchPrintFailure {
