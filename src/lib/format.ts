@@ -74,16 +74,31 @@ export function formatShortDate(iso: string): string {
   return full.endsWith(` ${year}`) ? full.slice(0, -(year.length + 1)) : full
 }
 
-export function todayIso(): string {
-  return localDayIso(new Date())
+/** The calendar day in Asia/Singapore. Same helper the Worker uses for stale, hit, and snapshot dates. */
+export function singaporeDay(when: Date | number = new Date()): string {
+  const date = typeof when === 'number' ? new Date(when) : when
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Singapore',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
 }
 
-/** The local calendar day (YYYY-MM-DD) of a moment such as a star's timestamp; a bare ISO date passes through unchanged. */
+/** Today in Asia/Singapore, not the device's local day. A phone elsewhere still sends a snapshot date the Worker accepts. */
+export function todayIso(): string {
+  return singaporeDay(new Date())
+}
+
+/**
+ * The Asia/Singapore calendar day of a moment, including a star's timestamp.
+ * A bare ISO date passes through unchanged.
+ */
 export function localDayIso(when: string | Date): string {
   if (typeof when === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(when)) return when
   const d = when instanceof Date ? when : new Date(when)
   if (Number.isNaN(d.getTime())) return String(when).slice(0, 10)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return singaporeDay(d)
 }
 
 export function pluralCards(n: number): string {
