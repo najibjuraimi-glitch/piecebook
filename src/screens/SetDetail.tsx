@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ALL_TAB, getSet, rarityTabs, type CardSet } from '../data/seed'
 import { displayCode, displayName, getRosterSet, isUpcoming, releaseLine, rosterSealedProduct, type RosterSet } from '../data/roster'
@@ -7,7 +7,8 @@ import { todayIso } from '../lib/format'
 import { getSealedGuidance } from '../data/sealed'
 import { getSetIntro, hasIntroContent, type SetIntro as SetIntroData } from '../data/intros'
 import { DEFAULT_SORT, matchesSearch, parseSort, sortCards, type SortKey } from '../lib/query'
-import { useCollection } from '../store/collection'
+import { portfolioCountLine } from '../lib/portfolioMarks'
+import { useHoldingsBook } from '../store/holdingsBook'
 import { useWatchlist } from '../store/watchlist'
 import { useDecks } from '../store/decks'
 import { GhostButton } from '../components/Buttons'
@@ -137,7 +138,7 @@ function PendingSetDetail({ roster }: { roster: RosterSet }) {
 
 function SeededSetDetail({ set }: { set: CardSet }) {
   const [params, setParams] = useSearchParams()
-  const { isOwned, ownedQty } = useCollection()
+  const { mark } = useHoldingsBook()
   const watch = useWatchlist()
   // Search text lives in the URL as `?q=`, so "All 151 in OP-09" from global search
   // lands prefilled and the address stays truthful once the collector edits it.
@@ -162,10 +163,10 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   const visible = useMemo(() => {
     const bucket = tabs.find((t) => t.key === active)
     if (!bucket) return []
-    const sorted = sortCards(bucket.cards.filter((c) => matchesSearch(c, parsed.text) && matchesFacets(c, parsed, attrs, isOwned)), sort)
+    const sorted = sortCards(bucket.cards.filter((c) => matchesSearch(c, parsed.text) && matchesFacets(c, parsed, attrs, (n) => mark(n) != null)), sort)
     // On a deck page the leader leads, whatever the sort.
     return isDeck ? [...sorted.filter((c) => c.rarity === 'L'), ...sorted.filter((c) => c.rarity !== 'L')] : sorted
-  }, [tabs, active, parsed, attrs, isOwned, sort, isDeck])
+  }, [tabs, active, parsed, attrs, mark, sort, isDeck])
 
   const update = (patch: { rarity?: string; sort?: SortKey; q?: string }) => {
     const next = new URLSearchParams(params)
@@ -185,7 +186,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   }
 
   const language = set.cards[0]?.language ?? 'EN'
-  const ownedInSet = set.cards.filter((c) => isOwned(c.cardNumber)).length
+  const portfolioLine = portfolioCountLine(set.cards, mark)
   const sealed = getSealedGuidance(set.setCode, language)
   const sealedProduct = roster ? rosterSealedProduct(roster) : undefined
   const intro = introFor(roster, set.setCode, language)
@@ -195,7 +196,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
       <BackBar
         title={set.setCode}
         subline={set.setName}
-        meta={ownedInSet > 0 ? `You own ${ownedInSet} of ${set.cards.length}${isDeck ? ' different cards' : ''}` : undefined}
+        meta={portfolioLine ?? undefined}
         fallbackTo="/"
         action={<StarButton subject="set" name={set.setName} active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
       />
@@ -224,8 +225,8 @@ function SeededSetDetail({ set }: { set: CardSet }) {
             <li key={card.cardNumber}>
               <CardCell
                 card={card}
-                owned={isOwned(card.cardNumber)}
-                qty={ownedQty(card.cardNumber)}
+                inPortfolio={mark(card.cardNumber) === 'exact'}
+                ownsVersion={mark(card.cardNumber) === 'version'}
                 watching={watch.isWatchingCard(card.cardNumber)}
                 marketMove={history.loading ? undefined : gridMove(history.byCard.get(card.cardNumber) ?? []) ?? undefined}
               />
@@ -240,26 +241,19 @@ function SeededSetDetail({ set }: { set: CardSet }) {
 /**
  * A starter deck's own actions (6.5): open it in Decks with its leader and one of
  * each card (Bandai publishes the deck's total and rarities, not copies per card,
- * so the player sets the copies from the box), mark every card in it owned, and a
- * door to Learn to play for the newcomer who just bought it.
+ * so the player sets the copies from the box), and a door to Learn to play
+ * for the newcomer who just bought it.
  */
 function StarterDeckActions({ set, roster }: { set: CardSet; roster: RosterSet }) {
   const { createDeck, replaceCards } = useDecks()
-  const { markOwned, isOwned } = useCollection()
   const navigate = useNavigate()
-  const [marked, setMarked] = useState(false)
   const leader = set.cards.find((c) => c.rarity === 'L')
   const others = [...new Set(set.cards.filter((c) => c.rarity !== 'L').map((c) => c.baseNumber))]
-  const unowned = set.cards.filter((c) => !isOwned(c.cardNumber)).length
 
   const openInDecks = () => {
     const id = createDeck(`${roster.setCode} ${roster.setName}`)
     replaceCards(id, Object.fromEntries(others.map((n) => [n, 1])), leader ? leader.baseNumber : null)
     navigate(`/decks/${id}`)
-  }
-  const ownAll = () => {
-    for (const c of set.cards) if (!isOwned(c.cardNumber)) markOwned(c.cardNumber)
-    setMarked(true)
   }
 
   return (
@@ -267,9 +261,6 @@ function StarterDeckActions({ set, roster }: { set: CardSet; roster: RosterSet }
       <div className="flex flex-wrap gap-2">
         <GhostButton className="tablet:max-w-[260px]" onClick={openInDecks}>
           Open in Decks
-        </GhostButton>
-        <GhostButton className="tablet:max-w-[260px]" onClick={ownAll} disabled={unowned === 0}>
-          {unowned === 0 ? (marked ? 'Marked all owned' : 'All owned') : 'I have this deck'}
         </GhostButton>
       </div>
       <p className="mt-2 text-meta text-muted">

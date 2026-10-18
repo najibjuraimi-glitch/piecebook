@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { seededCardCount, type SearchResults as Results } from '../lib/search'
 import { comingLine, displayCode, isUpcoming, type RosterSet } from '../data/roster'
-import { useCollection } from '../store/collection'
+import { useHoldingsBook } from '../store/holdingsBook'
 import { useWatchlist } from '../store/watchlist'
 import { CardCell, CardGrid } from './CardCell'
 import { ChevronRight } from './SetTile'
@@ -24,7 +24,7 @@ function setMeta(set: RosterSet): string {
  * release order so the box › cards tree is still visible in a flat result.
  */
 export function SearchResults({ results }: { results: Results }) {
-  const { isOwned, ownedQty } = useCollection()
+  const { mark } = useHoldingsBook()
   const watch = useWatchlist()
 
   if (results.total === 0 && !results.exact && results.artists.length === 0 && results.sets.length === 0) {
@@ -131,8 +131,8 @@ export function SearchResults({ results }: { results: Results }) {
               <li key={card.cardNumber}>
                 <CardCell
                   card={card}
-                  owned={isOwned(card.cardNumber)}
-                  qty={ownedQty(card.cardNumber)}
+                  inPortfolio={mark(card.cardNumber) === 'exact'}
+                  ownsVersion={mark(card.cardNumber) === 'version'}
                   watching={watch.isWatchingCard(card.cardNumber)}
                 />
               </li>

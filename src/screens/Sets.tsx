@@ -12,6 +12,7 @@ import { ViewTabs } from '../components/ViewTabs'
 import { Timeline } from '../components/Timeline'
 import { resolveCardNumber, searchAll } from '../lib/search'
 import { useCollection } from '../store/collection'
+import { useHoldingsBook } from '../store/holdingsBook'
 import { claimFirstShowing, hasStarted } from '../store/started'
 
 /** The two views of Sets home (7.2): tiles by set, or every booster in English release order. The view lives in the URL only. */
@@ -40,8 +41,9 @@ export function SetsScreen() {
   const cheapestBox = cheapestReleasedBox()
   // Facets (2.3) read every set's attributes; they load on the first search and stay.
   const attrs = useSearchAttributes(searching)
-  const { isOwned, owned } = useCollection()
-  const results = useMemo(() => searchAll(query, { attrs, isOwned }), [query, attrs, isOwned])
+  const { owned } = useCollection()
+  const { mark } = useHoldingsBook()
+  const results = useMemo(() => searchAll(query, { attrs, isOwned: (n) => mark(n) != null }), [query, attrs, mark])
   const loading = searching && !attrs
   useStartHere(Object.keys(owned).length === 0)
 

@@ -1,6 +1,6 @@
 # Watchlist
 
-A target is a print, a grade, and a price in S$ Jib wants to pay. It is not the starred list on Collection (`piecebook.watchlist.v1`). Nothing is seeded. The chase rows CH-001..CH-006 are not in this repo, so the book starts empty. Cards adds a row when it has one. Piecebook does not invent a print, a grade, or a price.
+A target is a print, a grade, and a price in S$ Jib wants to pay. It is not the star on a card (`piecebook.watchlist.v1`). Nothing is seeded. The chase rows CH-001..CH-006 are not in this repo, so the book starts empty. Cards adds a row when it has one. Piecebook does not invent a print, a grade, or a price.
 
 Rows live in the Worker’s `USER_DATA` KV, behind the same Cloudflare Access login as holdings.
 

@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom'
 import { BackBar, Screen } from '../components/Screen'
 import { CardCell, CardGrid } from '../components/CardCell'
 import { StarButton } from '../components/StarButton'
-import { useCollection } from '../store/collection'
+import { portfolioCountLine } from '../lib/portfolioMarks'
+import { useHoldingsBook } from '../store/holdingsBook'
 import { useWatchlist } from '../store/watchlist'
 import { pluralPrints, printsNamed } from '../lib/search'
 import { WhoIs } from '../components/WhoIs'
@@ -13,8 +14,8 @@ import { NotFoundScreen } from './NotFound'
 
 /**
  * Every print that carries one card name, grouped by home set in release
- * order: a character's whole print history in one place, with the collector's
- * owned and watched marks on each. Reached from search and from the card's own
+ * order: a character's whole print history in one place, with the portfolio
+ * marker and watched marks on each. Reached from search and from the card's own
  * page. The star watches the name (7.4): Watching then shows the print that
  * moved most since the star, not a sum.
  */
@@ -22,13 +23,13 @@ export function CharacterScreen() {
   // useParams already decodes the segment ("Kid%20%26%20Killer" → "Kid & Killer").
   const { name = '' } = useParams()
   const groups = useMemo(() => printsNamed(name), [name])
-  const { isOwned, ownedQty } = useCollection()
+  const { mark } = useHoldingsBook()
   const watch = useWatchlist()
 
   if (!name || groups.length === 0) return <NotFoundScreen message="No card carries that name." />
 
   const prints = groups.reduce((n, g) => n + g.cards.length, 0)
-  const owned = groups.reduce((n, g) => n + g.cards.filter((c) => isOwned(c.cardNumber)).length, 0)
+  const portfolioLine = portfolioCountLine(groups.flatMap((g) => g.cards), mark)
   const wiki = getWiki(name)
 
   return (
@@ -44,7 +45,7 @@ export function CharacterScreen() {
         <WhoIs name={name} className="mt-2" />
         <p className="tabular mt-2 text-body text-muted">
           {prints} {prints === 1 ? 'print' : 'prints'} across {groups.length} {groups.length === 1 ? 'set' : 'sets'}
-          {owned > 0 && ` · you own ${owned}`}
+          {portfolioLine && ` · ${portfolioLine}`}
         </p>
         {wiki && <WikiAttribution entry={wiki} className="mt-1" />}
       </header>
@@ -63,8 +64,8 @@ export function CharacterScreen() {
                 <li key={card.cardNumber}>
                   <CardCell
                     card={card}
-                    owned={isOwned(card.cardNumber)}
-                    qty={ownedQty(card.cardNumber)}
+                    inPortfolio={mark(card.cardNumber) === 'exact'}
+                    ownsVersion={mark(card.cardNumber) === 'version'}
                     watching={watch.isWatchingCard(card.cardNumber)}
                   />
                 </li>
