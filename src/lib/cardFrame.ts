@@ -927,14 +927,18 @@ function nearBlack(motion: FrameMotion): boolean {
   return (motion.frameMean ?? 255) < NEAR_BLACK_MEAN
 }
 
-/** A frame this dark cannot be tracked. A tap is placed unshifted. */
+/** Below the enter threshold the frame cannot be tracked. A tap is placed unshifted. */
 export function tooDarkToTrack(brightHalf: number): boolean {
-  return brightHalf < BRIGHT_HALF_MIN
+  return brightHalf < DARK_ENTER_MAX
 }
 
-/** Automatic scans need a brightest half of 18 or more and the too-dark cue off. */
+/**
+ * Automatic scans run while the too-dark cue is off.
+ * A frame under 17.5 can still send the scan that comes due as that cue turns on.
+ * Grey 18 only clears the cue.
+ */
 export function autoScanAllowed(brightHalf: number, dark: boolean): boolean {
-  return !dark && !tooDarkToTrack(brightHalf)
+  return !dark && Number.isFinite(brightHalf)
 }
 
 export function frameTooDark(frame: GreyFrame): boolean {

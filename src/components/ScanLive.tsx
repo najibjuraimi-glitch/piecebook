@@ -291,12 +291,11 @@ export function ScanLive({
         queuedTap.current = true
         return
       }
-      if (!manual && (autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
+      if (!manual && (tooDarkRef.current || autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
       const video = videoRef.current
       const stream = streamRef.current
       if (!video || !stream) return
       const signature = frameGrey()
-      if (!manual && (!signature || !autoScanAllowed(brightestHalfMean(signature), tooDarkRef.current))) return
       busyRef.current = true
       if (heldRef.current) {
         if (manual) {
@@ -430,15 +429,10 @@ export function ScanLive({
         if (pixels) {
           const frame = greyDownscale(pixels)
           const now = Date.now()
-          const nextDark = stepDarkState(tooDarkRef.current, darkBrightSince.current, brightestHalfMean(frame), now)
-          darkBrightSince.current = nextDark.pendingSince
-          const dark = nextDark.dark
-          if (dark !== tooDarkRef.current) {
-            tooDarkRef.current = dark
-            setTooDark(dark)
-          }
+          const half = brightestHalfMean(frame)
           const step = stepSceneHold(holdRef.current, frame, now)
           holdRef.current = step.state
+          const wasDark = tooDarkRef.current
           if (autoPausedRef.current && pauseAnchor.current) {
             const fromPause = compareFrames(pauseAnchor.current, frame)
             if (resumesPausedScan(fromPause)) {
@@ -455,7 +449,7 @@ export function ScanLive({
             setDim(true)
             if (forgetsSeenCards(step.motion)) forgetSeen()
           } else if (step.steady) setDim(false)
-          const mayAuto = autoScanAllowed(brightestHalfMean(frame), dark)
+          const mayAuto = autoScanAllowed(half, wasDark)
           if (mayAuto && movedReads.current >= MOVED_HOLD_AFTER) {
             const hop = prevTickFrame.current ? compareFrames(prevTickFrame.current, frame) : null
             const hopped = resetsMovedHold(hop)
@@ -468,6 +462,15 @@ export function ScanLive({
             if (settled.ready && !autoPausedRef.current) void sendRef.current(false)
           } else if (mayAuto && step.ready && !autoPausedRef.current) {
             void sendRef.current(false)
+          }
+          const pending = darkBrightSince.current ?? step.state.steadySince
+          if (pending != null) {
+            const nextDark = stepDarkState(wasDark, pending, half, now)
+            darkBrightSince.current = nextDark.pendingSince
+            if (nextDark.dark !== wasDark) {
+              tooDarkRef.current = nextDark.dark
+              setTooDark(nextDark.dark)
+            }
           }
           prevTickFrame.current = frame
         }
