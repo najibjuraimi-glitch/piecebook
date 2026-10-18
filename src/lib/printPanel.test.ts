@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { isStale } from './boughtBook'
+import { todayIso } from './format'
 import { matchPrints } from './printPanel'
 
 describe('print panel matching', () => {
@@ -42,6 +44,26 @@ describe('print panel matching', () => {
     expect(manga.japanese.some((note) => note.grade === 'PSA 10')).toBe(true)
     expect(manga.rarity).toBe('SEC')
     expect(manga.imageUrl).toMatch(/^https:\/\//)
+  })
+
+  it('marks an old seed price stale and keeps the source url', () => {
+    const today = todayIso()
+    const panel = matchPrints({ code: 'OP10-119', grade: 'raw' })
+    const priced = panel.prints.filter((print) => print.english)
+    expect(priced.length).toBeGreaterThan(0)
+    for (const print of priced) {
+      expect(print.english!.stale).toBe(isStale(print.english!.asOf, today))
+    }
+    expect(priced.some((print) => print.english!.stale)).toBe(true)
+    const base = panel.prints.find((print) => print.cardNumber === 'OP10-119')!
+    expect(base.english?.url).toMatch(/^https:\/\/onepiece\.limitlesstcg\.com\/cards\/en\/OP10-119$/)
+    expect(base.english?.stale).toBe(true)
+    const manga = panel.prints.find((print) => print.cardNumber === 'OP10-119p2')!
+    expect(manga.english?.url).toBeNull()
+    const jp = manga.japanese.find((note) => note.grade === 'PSA 10')!
+    expect(jp.stale).toBe(isStale(jp.asOf, today))
+    expect(jp.stale).toBe(true)
+    expect(jp.url).toMatch(/^https:\/\/opboxindex\.com\//)
   })
 
   it('pins a watch row from its print id', () => {

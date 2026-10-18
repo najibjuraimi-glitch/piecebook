@@ -4,15 +4,20 @@
  * and is never the value. Nothing here fetches a price.
  */
 import { ALL_CARDS, compareCardNumbers, rarityLabel, type Card } from '../data/seed'
+import { httpsUrl, isStale, type LegalGrade } from './boughtBook'
 import { advicePrices } from './cardPrices'
+import { todayIso } from './format'
 import { exactPrintId, splitPrintCode } from './printResolve'
-import type { LegalGrade } from './boughtBook'
 
 export interface EnglishPrintPrice {
   sgd: number
   usd: number
   source: string
   asOf: string
+  /** Seed page for this figure. Null when the seed has no page for this print. */
+  url: string | null
+  /** True when asOf is more than 7 days before today in Asia/Singapore. */
+  stale: boolean
 }
 
 export interface JapanesePrintNote {
@@ -20,6 +25,8 @@ export interface JapanesePrintNote {
   usd: number
   source: string
   asOf: string
+  url: string | null
+  stale: boolean
 }
 
 export interface SeedPrintLine {
@@ -56,13 +63,24 @@ function isJapanese(detail: string | null): boolean {
   return (detail || '').toLowerCase().includes('japanese')
 }
 
-function pricesFor(card: Card, grade: LegalGrade | null): { english: EnglishPrintPrice | null; japanese: JapanesePrintNote[] } {
+function pricesFor(
+  card: Card,
+  grade: LegalGrade | null,
+  today: string,
+): { english: EnglishPrintPrice | null; japanese: JapanesePrintNote[] } {
   const rows = advicePrices(card)
   const japanese: JapanesePrintNote[] = []
   for (const row of rows) {
     if (row.usd == null || !row.source || !row.asOf) continue
     if (isJapanese(row.detail) || (card.language || '').toUpperCase() !== 'EN') {
-      japanese.push({ grade: row.label, usd: row.usd, source: row.source, asOf: row.asOf })
+      japanese.push({
+        grade: row.label,
+        usd: row.usd,
+        source: row.source,
+        asOf: row.asOf,
+        url: row.url ? httpsUrl(row.url) : null,
+        stale: isStale(row.asOf, today),
+      })
     }
   }
   const wanted = grade ?? 'raw'
@@ -75,7 +93,14 @@ function pricesFor(card: Card, grade: LegalGrade | null): { english: EnglishPrin
     row.asOf &&
     !isJapanese(row.detail) &&
     (card.language || 'EN').toUpperCase() === 'EN'
-      ? { sgd: row.sgd, usd: row.usd, source: row.source, asOf: row.asOf }
+      ? {
+          sgd: row.sgd,
+          usd: row.usd,
+          source: row.source,
+          asOf: row.asOf,
+          url: row.url ? httpsUrl(row.url) : null,
+          stale: isStale(row.asOf, today),
+        }
       : null
   return { english, japanese }
 }
@@ -91,6 +116,7 @@ export function matchPrints(input: {
   codeIsPin?: boolean
 }): PrintMatch {
   const split = splitPrintCode(input.code)
+  const today = todayIso()
   const base = baseOf(input.code)
   const cards = base
     ? ALL_CARDS.filter((card) => card.baseNumber.toUpperCase() === base.toUpperCase()).sort((a, b) =>
@@ -101,7 +127,7 @@ export function matchPrints(input: {
   const fromCode = input.codeIsPin ? exactPrintId(input.code) : null
   const pinnedId = fromExact ?? fromCode
   const prints: SeedPrintLine[] = cards.map((card) => {
-    const { english, japanese } = pricesFor(card, input.grade ?? null)
+    const { english, japanese } = pricesFor(card, input.grade ?? null, today)
     return {
       cardNumber: card.cardNumber,
       rarity: card.rarity,

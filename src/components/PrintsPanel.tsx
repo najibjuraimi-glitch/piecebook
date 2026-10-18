@@ -2,6 +2,17 @@ import { matchPrints } from '../lib/printPanel'
 import type { LegalGrade } from '../lib/boughtBook'
 import { formatDate, formatSgd, formatUsd } from '../lib/format'
 
+const STALE = ' · Stale, older than 7 days'
+
+function SourceName({ source, url }: { source: string; url: string | null }) {
+  if (!url) return source
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" className="text-ink underline decoration-line underline-offset-2">
+      {source}
+    </a>
+  )
+}
+
 interface Props {
   code: string
   grade?: LegalGrade | null
@@ -48,13 +59,25 @@ export function PrintsPanel({ code, grade = null, exactPrint = null, codeIsPin =
                 {print.variant ? ` · ${print.variant}` : ''}
               </p>
               <p className="tabular text-meta text-ink">
-                {print.english
-                  ? `${formatSgd(print.english.sgd)} · ${print.english.source} · ${formatDate(print.english.asOf)}`
-                  : 'no price'}
+                {print.english ? (
+                  <>
+                    {formatSgd(print.english.sgd)}
+                    {' · '}
+                    <SourceName source={print.english.source} url={print.english.url} />
+                    {` · ${formatDate(print.english.asOf)}`}
+                    {print.english.stale ? STALE : ''}
+                  </>
+                ) : (
+                  'no price'
+                )}
               </p>
               {print.japanese.map((note) => (
                 <p key={`${note.grade}-${note.asOf}`} className="tabular text-meta text-muted">
-                  JP · {note.grade} · {formatUsd(note.usd)} · {note.source} · {formatDate(note.asOf)}
+                  JP · {note.grade} · {formatUsd(note.usd)}
+                  {' · '}
+                  <SourceName source={note.source} url={note.url} />
+                  {` · ${formatDate(note.asOf)}`}
+                  {note.stale ? STALE : ''}
                 </p>
               ))}
             </div>

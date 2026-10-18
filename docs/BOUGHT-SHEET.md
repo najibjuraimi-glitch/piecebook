@@ -26,7 +26,7 @@ Sold rows use the saved sale fields. If realized P/L was left blank, it is net m
 
 Overall ROI is unrealized P/L on priced holdings plus realized P/L, divided by the all-in of those copies. Copies with no price are left out of P/L and ROI.
 
-Each holding has a collapsed **Prints** list: every seed print of that card number, with its id, rarity, art, and English stored price (or “no price”). The print named by `exactPrint` is marked Pinned. A row with no `exactPrint` says so. A Japanese figure, when the seed has one, is labeled JP and is not the value.
+Each holding has a collapsed **Prints** list: every seed print of that card number, with its id, rarity, art, and English stored price (or “no price”). The print named by `exactPrint` is marked Pinned. A row with no `exactPrint` says so. A price older than 7 days says **Stale, older than 7 days**. The source name links to the seed page when that print has one. A Japanese figure, when the seed has one, is labeled JP and is not the value.
 
 Holdings group only when Code and the Grade/Raw text both match. PSA 10 and raw of the same card are separate lines. Each line expands to its Row IDs.
 
