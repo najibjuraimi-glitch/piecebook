@@ -5,14 +5,17 @@
  *   GET    /watchlist
  *   POST   /watchlist
  *   PATCH  /watchlist/:id
+ *   POST   /watchlist/:id/price
  *   DELETE /watchlist/:id
  *
  * Each write appends the caller (service client id or Access email) and the
- * time. The client secret is not stored. Prices on a read are English stored
- * quotes; a missing one is "No price yet". Japanese prices are not used.
+ * time. The client secret is not stored. A fresh English stored quote wins.
+ * Otherwise a manual market figure Cards typed is the price. A missing one
+ * is "No price yet". Japanese prices are not used. PriceCharting is not fetched.
  */
+import { singaporeToday } from "../../src/lib/boughtBook.ts";
 import { parallelLabel, resolveHoldingPrint } from "../../src/lib/printResolve.ts";
-import { createWatchItem, deleteWatchItem, emptyWatch, patchWatchItem, valueWatchItems } from "../../src/lib/watchlist.ts";
+import { createWatchItem, deleteWatchItem, emptyWatch, patchWatchItem, setWatchPrice, valueWatchItems } from "../../src/lib/watchlist.ts";
 import { writerAllowed } from "./access.js";
 import { forgetWatchAlert } from "./alerts.js";
 import { bookEmail, callerOf, keyFor, writeNote } from "./holdings.js";
@@ -67,7 +70,7 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
   const parts = url.pathname.split("/").filter(Boolean);
   if (parts[0] !== "watchlist") return json({ error: "not_found" }, 404, cors);
   const now = deps.now ? deps.now() : Date.now();
-  const today = new Date(now).toISOString().slice(0, 10);
+  const today = singaporeToday(now);
   const log = deps.log || (() => {});
   const email = bookEmail(identity, env);
   if (!email) return json({ error: "no_identity" }, 403, cors);
@@ -80,8 +83,10 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
     const doc = await readDoc(kv, email);
     const prints = seedPrints();
     if (url.searchParams.get("format") === "targets") {
+      const valuedById = new Map(valueWatchItems(doc.items, quoteFor, today).map((item) => [item.id, item]));
       const targets = doc.items.map((item) => {
         const print = resolveHoldingPrint(item.code, prints);
+        const valued = valuedById.get(item.id);
         return {
           print: print ? print.cardNumber : item.code,
           parallel: print ? parallelLabel(print) : null,
@@ -90,6 +95,14 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
           targetSgd: item.targetSgd ?? null,
           id: item.id,
           externalId: item.externalId ?? null,
+          marketSgd: item.marketSgd ?? null,
+          marketAsOf: item.marketAsOf ?? null,
+          marketSource: item.marketSource ?? null,
+          marketUrl: item.marketUrl ?? null,
+          priceSgd: valued.priceSgd,
+          source: valued.source,
+          asOf: valued.asOf,
+          stale: valued.stale,
         };
       });
       return json({ source: "piecebook", revision: doc.revision, targets }, 200, cors);
@@ -119,6 +132,23 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
     log({ evt: "watchlist_write", op: "create", rowId: result.item.id, caller: callerOf(identity), at: new Date(now).toISOString() });
     const [item] = valueWatchItems([result.item], quoteFor, today);
     return json({ source: "piecebook", revision: result.doc.revision, item }, 201, cors);
+  }
+
+  if (req.method === "POST" && parts.length === 3 && parts[2] === "price") {
+    let id = parts[1];
+    try {
+      id = decodeURIComponent(parts[1]);
+    } catch {
+      return json({ error: "bad_id" }, 400, cors);
+    }
+    const doc = await readDoc(kv, email);
+    const result = setWatchPrice(doc, id, body, today);
+    if (!result.ok) return fail(result, cors);
+    await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
+    await recordWrite(kv, email, identity, now, "price", id);
+    log({ evt: "watchlist_write", op: "price", rowId: id, caller: callerOf(identity), at: new Date(now).toISOString() });
+    const [item] = valueWatchItems([result.item], quoteFor, today);
+    return json({ source: "piecebook", revision: result.doc.revision, item }, 200, cors);
   }
 
   if (parts.length === 2) {

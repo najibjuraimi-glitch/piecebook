@@ -7,6 +7,8 @@ import {
   dismissAlerts,
   freshUnderCostAlerts,
   headerIndex,
+  calendarDate,
+  httpsUrl,
   isStale,
   legalGrade,
   findDateInText,
@@ -100,6 +102,14 @@ describe('parseBoughtMatrix', () => {
     expect(parseSheetDate('17/10/2026')).toBe('2026-10-17')
     expect(parseSheetDate('45947')).toBe('2025-10-17')
     expect(parseSheetDate('soon')).toBeNull()
+    expect(calendarDate('2026-10-16')).toBe('2026-10-16')
+    expect(calendarDate('2026-13-45')).toBeNull()
+    expect(calendarDate('2026-02-30')).toBeNull()
+    expect(httpsUrl('https://www.pricecharting.com/a')).toBe('https://www.pricecharting.com/a')
+    expect(httpsUrl('http://www.pricecharting.com/a')).toBeNull()
+    expect(isStale('2026-02-30', '2026-10-16')).toBe(true)
+    expect(isStale('2026-13-45', '2026-10-16')).toBe(true)
+    expect(isStale('', '2026-10-16')).toBe(false)
     expect(findDateInText('Cards reading 1 Sep 2026')).toBe('2026-09-01')
     expect(findDateInText('as of 12 Oct 2026')).toBe('2026-10-12')
     expect(findDateInText('Sample copy')).toBeNull()

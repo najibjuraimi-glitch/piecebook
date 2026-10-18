@@ -2,10 +2,13 @@
  * Target list. One row is a print and a grade Jib wants, with a price in S$.
  * Nothing here is seeded. A chase id such as CH-001 is not an item and is not
  * invented. The caller sends WL-xxxx rows when they have them.
- * The price is an English stored quote. A Japanese figure is never a value.
+ * The price is a fresh English stored quote for that print, then a manual
+ * market figure Cards typed. Piecebook does not fetch PriceCharting. A
+ * Japanese figure is never a value.
  */
 import { NO_PRICE_YET } from './cardPrices'
 import {
+  calendarDate,
   httpsUrl,
   isEnglishStoredQuote,
   isStale,
@@ -34,6 +37,14 @@ export interface WatchItem {
   externalId?: string | null
   /** Click-through only. Never fetched, never used as a price. */
   priceChartingUrl?: string | null
+  /** Hand-entered SGD. Used when no fresh English quote exists for this print. */
+  marketSgd?: number | null
+  /** yyyy-mm-dd. A missing date makes the manual figure stale. */
+  marketAsOf?: string | null
+  /** Label shown with the manual figure, such as Cards. */
+  marketSource?: string | null
+  /** Click-through for the manual figure. Never fetched. */
+  marketUrl?: string | null
 }
 
 export interface WatchDoc {
@@ -69,6 +80,10 @@ export interface WatchHit {
   dismissed?: boolean
   firedAt?: string | null
   externalId?: string | null
+  marketSgd?: number | null
+  marketAsOf?: string | null
+  marketSource?: string | null
+  marketUrl?: string | null
 }
 
 export interface WatchFailure {
@@ -112,21 +127,56 @@ function canonicalGrade(grade: string): LegalGrade | null {
 
 export type QuoteFor = (code: string, grade: LegalGrade | null) => PriceQuote | null
 
+function storedItem(item: WatchItem): WatchItem {
+  return {
+    ...item,
+    externalId: item.externalId ?? null,
+    priceChartingUrl: item.priceChartingUrl ?? null,
+    marketSgd: item.marketSgd ?? null,
+    marketAsOf: item.marketAsOf ?? null,
+    marketSource: item.marketSource ?? null,
+    marketUrl: item.marketUrl ?? null,
+  }
+}
+
+/** A manual figure Cards typed. Undated counts as stale. Nothing here is fetched. */
+function manualMarket(item: WatchItem): PriceQuote | null {
+  const n = item.marketSgd
+  if (n == null || !Number.isFinite(n) || n < 0) return null
+  const asOf = item.marketAsOf && /^\d{4}-\d{2}-\d{2}$/.test(item.marketAsOf) ? item.marketAsOf : ''
+  return {
+    usd: null,
+    sgd: round2(n),
+    source: item.marketSource?.trim() || 'Manual',
+    url: item.marketUrl ?? null,
+    asOf,
+    detail: asOf ? null : 'Undated',
+  }
+}
+
+function chosenQuote(english: PriceQuote | null, manual: PriceQuote | null, today: string): PriceQuote | null {
+  const freshEnglish = english && english.asOf && !isStale(english.asOf, today) ? english : null
+  if (freshEnglish) return freshEnglish
+  if (manual) return manual
+  return english
+}
+
 export function valueWatchItem(item: WatchItem, quoteFor: QuoteFor, today: string): ValuedWatchItem {
   const grade = typeof item.grade === 'string' ? canonicalGrade(item.grade) : null
   const quoted = grade ? quoteFor(item.code, grade) : null
-  const quote = isEnglishStoredQuote(quoted) ? quoted : null
-  const stored = { ...item, externalId: item.externalId ?? null, priceChartingUrl: item.priceChartingUrl ?? null }
+  const english = isEnglishStoredQuote(quoted) ? quoted : null
+  const quote = chosenQuote(english, manualMarket(item), today)
+  const stored = storedItem(item)
   if (!quote) {
     return { ...stored, priceSgd: null, source: null, asOf: null, url: null, priceLabel: NO_PRICE_YET, hit: false, stale: false }
   }
-  const stale = isStale(quote.asOf, today)
+  const stale = quote.asOf ? isStale(quote.asOf, today) : true
   const hit = item.targetSgd != null && !stale && quote.sgd <= item.targetSgd
   return {
     ...stored,
     priceSgd: quote.sgd,
     source: quote.source,
-    asOf: quote.asOf,
+    asOf: quote.asOf || null,
     url: quote.url,
     priceLabel: null,
     hit,
@@ -164,6 +214,10 @@ export function watchAlertList(items: ValuedWatchItem[], memory: AlertMemory, in
       previousLowSgd: prev ?? null,
       dismissed,
       externalId: item.externalId ?? null,
+      marketSgd: item.marketSgd ?? null,
+      marketAsOf: item.marketAsOf ?? null,
+      marketSource: item.marketSource ?? null,
+      marketUrl: item.marketUrl ?? null,
     })
   }
   return hits
@@ -189,6 +243,10 @@ export function freshWatchHits(items: ValuedWatchItem[], memory: AlertMemory): W
         previousLowSgd: prev ?? null,
         dismissed: false,
         externalId: item.externalId ?? null,
+        marketSgd: item.marketSgd ?? null,
+        marketAsOf: item.marketAsOf ?? null,
+        marketSource: item.marketSource ?? null,
+        marketUrl: item.marketUrl ?? null,
       })
     }
   }
@@ -261,12 +319,41 @@ function readExternalId(value: unknown): string | null | WatchFailure {
   return id
 }
 
-function readLink(value: unknown): string | null | WatchFailure {
+function readLink(value: unknown, key: string): string | null | WatchFailure {
   if (value == null || value === '') return null
-  if (typeof value !== 'string') return fail(400, 'bad_field', 'priceChartingUrl')
+  if (typeof value !== 'string') return fail(400, 'bad_field', key)
   const url = httpsUrl(value)
   if (!url || url.length > 400) return fail(400, 'bad_url')
   return url
+}
+
+function readMarketSgd(value: unknown): number | null | WatchFailure {
+  if (value == null || value === '') return null
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return fail(400, 'bad_field', 'marketSgd')
+  return round2(value)
+}
+
+function readMarketAsOf(value: unknown, today: string): string | null | WatchFailure {
+  if (value == null || value === '') return null
+  if (typeof value !== 'string') return fail(400, 'bad_date', 'marketAsOf')
+  const day = calendarDate(value.trim())
+  if (!day || day > today) return fail(400, 'bad_date', 'marketAsOf')
+  return day
+}
+
+function manualReady(item: WatchItem): WatchFailure | null {
+  if (item.marketSgd == null) return null
+  if (!item.marketSource) return fail(400, 'bad_field', 'marketSource')
+  if (!item.marketUrl) return fail(400, 'bad_url', 'marketUrl')
+  return null
+}
+
+function readMarketSource(value: unknown): string | null | WatchFailure {
+  if (value == null || value === '') return null
+  if (typeof value !== 'string') return fail(400, 'bad_field', 'marketSource')
+  const source = value.trim()
+  if (!source || source.length > 80) return fail(400, 'bad_field', 'marketSource')
+  return source
 }
 
 function readNotes(value: unknown): string | WatchFailure {
@@ -311,9 +398,25 @@ function applyItem(base: WatchItem, body: Record<string, unknown>, today: string
       if (isFail(externalId)) return externalId
       next.externalId = externalId
     } else if (key === 'priceChartingUrl') {
-      const url = readLink(value)
+      const url = readLink(value, 'priceChartingUrl')
       if (isFail(url)) return url
       next.priceChartingUrl = url
+    } else if (key === 'marketSgd') {
+      const marketSgd = readMarketSgd(value)
+      if (isFail(marketSgd)) return marketSgd
+      next.marketSgd = marketSgd
+    } else if (key === 'marketAsOf') {
+      const marketAsOf = readMarketAsOf(value, today)
+      if (isFail(marketAsOf)) return marketAsOf
+      next.marketAsOf = marketAsOf
+    } else if (key === 'marketSource') {
+      const marketSource = readMarketSource(value)
+      if (isFail(marketSource)) return marketSource
+      next.marketSource = marketSource
+    } else if (key === 'marketUrl') {
+      const marketUrl = readLink(value, 'marketUrl')
+      if (isFail(marketUrl)) return marketUrl
+      next.marketUrl = marketUrl
     } else if (key === 'added') {
       const added = readAdded(value, today)
       if (isFail(added)) return added
@@ -323,7 +426,8 @@ function applyItem(base: WatchItem, body: Record<string, unknown>, today: string
   return next
 }
 
-const WRITE_KEYS = ['code', 'grade', 'targetSgd', 'notes', 'added', 'externalId', 'priceChartingUrl']
+const WRITE_KEYS = ['code', 'grade', 'targetSgd', 'notes', 'added', 'externalId', 'priceChartingUrl', 'marketSgd', 'marketAsOf', 'marketSource', 'marketUrl']
+const PRICE_KEYS = ['marketSgd', 'marketAsOf', 'marketSource', 'marketUrl'] as const
 
 export function createWatchItem(
   doc: WatchDoc,
@@ -343,12 +447,27 @@ export function createWatchItem(
   }
   if (doc.items.some((item) => item.id === id)) return fail(409, 'duplicate_id', id)
   const applied = applyItem(
-    { id, code: '', grade: 'Raw', targetSgd: null, notes: '', added: today, externalId: null, priceChartingUrl: null },
+    {
+      id,
+      code: '',
+      grade: 'Raw',
+      targetSgd: null,
+      notes: '',
+      added: today,
+      externalId: null,
+      priceChartingUrl: null,
+      marketSgd: null,
+      marketAsOf: null,
+      marketSource: null,
+      marketUrl: null,
+    },
     raw,
     today,
     WRITE_KEYS,
   )
   if (isFail(applied)) return applied
+  const manual = manualReady(applied)
+  if (manual) return manual
   if (!applied.code) return fail(400, 'bad_field', 'code')
   if (!Object.prototype.hasOwnProperty.call(raw, 'grade')) return fail(400, 'bad_field', 'grade')
   if (prints.length) {
@@ -387,6 +506,12 @@ export function patchWatchItem(
     if (!named.ok) return fail(400, named.error, named.detail, undefined, named.candidates)
     applied = { ...applied, code: named.print.cardNumber }
   }
+  const prev = doc.items[idx]
+  if (applied.code.toUpperCase() !== prev.code.toUpperCase() || applied.grade !== prev.grade) {
+    applied = { ...applied, marketSgd: null, marketAsOf: null, marketSource: null, marketUrl: null }
+  }
+  const manual = manualReady(applied)
+  if (manual) return manual
   if (doc.items.some((item, i) => i !== idx && item.code.toUpperCase() === applied.code.toUpperCase() && item.grade === applied.grade)) {
     return fail(409, 'duplicate_print', `${applied.code} ${applied.grade}`)
   }
@@ -396,6 +521,21 @@ export function patchWatchItem(
   const items = doc.items.slice()
   items[idx] = { ...applied, id }
   return { ok: true, doc: { revision: doc.revision + 1, next: highWater(doc), items }, item: items[idx] }
+}
+
+/** One call sets the four manual price fields. Same revision check as PATCH. */
+export function setWatchPrice(
+  doc: WatchDoc,
+  id: string,
+  body: unknown,
+  today: string,
+): { ok: true; doc: WatchDoc; item: WatchItem } | WatchFailure {
+  const raw = asRecord(body)
+  if (!raw) return fail(400, 'bad_request')
+  for (const key of PRICE_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(raw, key)) return fail(400, 'bad_field', key)
+  }
+  return patchWatchItem(doc, id, raw, today)
 }
 
 export function deleteWatchItem(doc: WatchDoc, id: string, body: unknown): { ok: true; doc: WatchDoc } | WatchFailure {

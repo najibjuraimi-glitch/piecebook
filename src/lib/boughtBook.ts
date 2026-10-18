@@ -184,11 +184,27 @@ export function daysBetween(earlierIso: string, laterIso: string): number | null
   return Math.round((b - a) / 86_400_000)
 }
 
-/** A stored price date is stale when it is more than 7 calendar days before today. The price stays visible. */
+/** yyyy-mm-dd that is a real calendar day. `2026-13-45` and `2026-02-30` are not. */
+export function calendarDate(raw: string): string | null {
+  const t = raw.trim()
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t)
+  if (!m) return null
+  const year = Number(m[1])
+  const month = Number(m[2])
+  const day = Number(m[3])
+  if (month < 1 || month > 12 || day < 1) return null
+  const date = new Date(Date.UTC(year, month - 1, day))
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null
+  return t
+}
+
+/** A stored price date is stale when it is more than 7 calendar days before today, or it is not a real day. The price stays visible. A blank date is not stale here; the caller marks a missing date. */
 export function isStale(asOf: string | null, today: string): boolean {
   if (!asOf) return false
+  if (!calendarDate(asOf)) return true
   const days = daysBetween(asOf, today)
-  return days != null && days > STALE_AFTER_DAYS
+  if (days == null) return true
+  return days > STALE_AFTER_DAYS
 }
 
 export function parseMoney(raw: string): number | null {
@@ -256,11 +272,17 @@ export function findDateInText(raw: string): string | null {
   return null
 }
 
+/** An https link. `http` is rejected. A blank or other scheme is not a link. */
 export function httpsUrl(raw: string): string | null {
   const t = raw.trim()
   if (!t || /\s/.test(t)) return null
-  if (!/^https?:\/\//i.test(t)) return null
+  if (!/^https:\/\//i.test(t)) return null
   return t
+}
+
+/** The calendar day in Asia/Singapore for a UTC timestamp. */
+export function singaporeToday(now: number): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Singapore', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(now))
 }
 
 /** The card number inside a sheet code. `OP09-004 SP` is `OP09-004`. A parallel id stays. Capital P is the same as p. */
