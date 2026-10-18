@@ -1,6 +1,7 @@
 import { Fragment, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { getSet } from '../data/seed'
+import { portfolioCountLine } from '../lib/portfolioMarks'
 import { useHoldingsBook } from '../store/holdingsBook'
 import { dateClauses, groupByYear, timelineRows, type TimelineRow } from '../lib/timeline'
 import { countdownPhrase } from '../lib/fandom'
@@ -98,9 +99,9 @@ function TodayRule() {
 }
 
 function Row({ row }: { row: TimelineRow }) {
-  const { inPortfolio } = useHoldingsBook()
+  const { mark } = useHoldingsBook()
   const catalog = row.set.cardSeedStatus === 'ready' ? getSet(row.set.setCode) : undefined
-  const inBook = catalog ? catalog.cards.filter((c) => inPortfolio(c.cardNumber)).length : 0
+  const portfolioLine = catalog ? portfolioCountLine(catalog.cards, mark) : null
   const clauses = dateClauses(row)
   if (row.upcoming) {
     const count = countdownPhrase(row.enReleased, todayIso(), { namedDay: !row.usDate })
@@ -117,9 +118,9 @@ function Row({ row }: { row: TimelineRow }) {
           {row.name}
         </span>
         {/* Only where the set has been started: the personal fact, quietly, at the edge. */}
-        {inBook > 0 && (
+        {portfolioLine && (
           <span className="tabular shrink-0 text-meta font-normal text-muted">
-            {inBook} in your portfolio
+            {portfolioLine}
           </span>
         )}
       </p>

@@ -29,7 +29,8 @@ export function CardDetailScreen() {
  * in the portfolio. The old Mark owned control is retired.
  */
 function CardDetail({ card }: { card: Card }) {
-  const { inPortfolio } = useHoldingsBook()
+  const { mark } = useHoldingsBook()
+  const portfolioKind = mark(card.cardNumber)
   const watch = useWatchlist()
   const history = usePriceHistory(card)
   const change = history.loading ? null : changeSince(history.points, 30)
@@ -161,10 +162,10 @@ function CardDetail({ card }: { card: Card }) {
             <span aria-hidden="true" className="shrink-0 text-muted">↗</span>
           </a>
 
-          {inPortfolio(card.cardNumber) && (
-            <p className="mt-6 text-body text-ink">
-              In your portfolio.{' '}
-              <Link to="/portfolio" className="font-medium underline decoration-line underline-offset-2 hover:decoration-ink">
+          {portfolioKind && (
+            <p className={`mt-6 text-body ${portfolioKind === 'exact' ? 'text-ink' : 'text-muted'}`}>
+              {portfolioKind === 'exact' ? 'In your portfolio.' : 'You own a version.'}{' '}
+              <Link to="/portfolio" className="font-medium text-ink underline decoration-line underline-offset-2 hover:decoration-ink">
                 Open Portfolio
               </Link>
             </p>

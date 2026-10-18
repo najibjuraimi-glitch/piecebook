@@ -9,8 +9,10 @@ import { StarIcon } from './StarButton'
 
 interface Props {
   card: Card
-  /** Held or listed copy whose code is this print. */
+  /** A holding's exactPrint is this print. */
   inPortfolio?: boolean
+  /** No exactPrint, but the code names this card. Softer than inPortfolio. */
+  ownsVersion?: boolean
   /** Small star on the art when the card is on the watchlist. */
   watching?: boolean
   /**
@@ -29,7 +31,7 @@ export function CardGrid({ children, className = '' }: { children: React.ReactNo
   )
 }
 
-export function CardCell({ card, inPortfolio = false, watching = false, marketMove }: Props) {
+export function CardCell({ card, inPortfolio = false, ownsVersion = false, watching = false, marketMove }: Props) {
   return (
     <Link
       to={`/cards/${encodeURIComponent(card.cardNumber)}`}
@@ -59,6 +61,7 @@ export function CardCell({ card, inPortfolio = false, watching = false, marketMo
           <p className="tabular text-[15px] font-medium leading-5 text-ink">{formatUsd(card.marketUsd)}</p>
         )}
         {inPortfolio && <p className="text-meta font-medium text-ink">In your portfolio</p>}
+        {!inPortfolio && ownsVersion && <p className="text-meta text-muted">You own a version</p>}
         {marketMove && (
           <p className="tabular text-meta text-ink">
             {formatSignedUsd(marketMove.delta)}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getSet } from '../data/seed'
 import { rosterSealedProduct, type RosterSet } from '../data/roster'
 import { formatDate, formatUsMarketUsd } from '../lib/format'
+import { portfolioCountLine } from '../lib/portfolioMarks'
 import { useHoldingsBook } from '../store/holdingsBook'
 import { ChevronRight } from './SetTile'
 
@@ -14,8 +15,8 @@ import { ChevronRight } from './SetTile'
 export function StarterDeckRow({ set }: { set: RosterSet }) {
   const catalog = set.cardSeedStatus === 'ready' ? getSet(set.setCode) : undefined
   const sealed = rosterSealedProduct(set)
-  const { inPortfolio } = useHoldingsBook()
-  const inBook = catalog ? catalog.cards.filter((c) => inPortfolio(c.cardNumber)).length : 0
+  const { mark } = useHoldingsBook()
+  const portfolioLine = catalog ? portfolioCountLine(catalog.cards, mark) : null
   const [failed, setFailed] = useState(false)
   const meta = [
     set.enReleased ? formatDate(set.enReleased) : null,
@@ -39,7 +40,7 @@ export function StarterDeckRow({ set }: { set: RosterSet }) {
           <span className="tabular text-muted">{set.setCode}</span> · {set.setName}
         </p>
         <p className="tabular text-meta text-muted">
-          {inBook > 0 && <span className="text-ink">{inBook} in your portfolio · </span>}
+          {portfolioLine && <span className="text-ink">{portfolioLine} · </span>}
           {meta.join(' · ')}
         </p>
       </div>

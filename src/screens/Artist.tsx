@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { BackBar, Screen } from '../components/Screen'
 import { CardCell, CardGrid } from '../components/CardCell'
 import { useAllAttributes } from '../data/attributes'
+import { portfolioCountLine } from '../lib/portfolioMarks'
 import { useHoldingsBook } from '../store/holdingsBook'
 import { useWatchlist } from '../store/watchlist'
 import { pluralPrints, printsByArtist } from '../lib/search'
@@ -20,7 +21,7 @@ export function ArtistScreen() {
   const { name = '' } = useParams()
   const attrs = useAllAttributes()
   const artist = useMemo(() => (attrs ? printsByArtist(name, attrs) : undefined), [name, attrs])
-  const { inPortfolio } = useHoldingsBook()
+  const { mark } = useHoldingsBook()
   const watch = useWatchlist()
 
   if (!name) return <NotFoundScreen message="No illustrator by that name in Limitless’s credits." />
@@ -42,7 +43,7 @@ export function ArtistScreen() {
 
   const { groups, aliases } = artist
   const prints = groups.reduce((n, g) => n + g.cards.length, 0)
-  const inBook = groups.reduce((n, g) => n + g.cards.filter((c) => inPortfolio(c.cardNumber)).length, 0)
+  const portfolioLine = portfolioCountLine(groups.flatMap((g) => g.cards), mark)
 
   return (
     <Screen>
@@ -53,7 +54,7 @@ export function ArtistScreen() {
         <h1 className="mt-1 text-display text-ink">{artist.name}</h1>
         <p className="tabular mt-1 text-body text-muted">
           {prints} credited {prints === 1 ? 'print' : 'prints'} across {groups.length} {groups.length === 1 ? 'set' : 'sets'}
-          {inBook > 0 && ` · ${inBook} in your portfolio`}
+          {portfolioLine && ` · ${portfolioLine}`}
         </p>
         {aliases.length > 0 && <p className="mt-1 text-meta text-muted">also credited as {aliases.join(', ')}</p>}
         <p className="mt-1 text-meta text-muted">Credits are Limitless’s, written as on the card; prints they have not credited are not listed.</p>
@@ -73,7 +74,8 @@ export function ArtistScreen() {
                 <li key={card.cardNumber}>
                   <CardCell
                     card={card}
-                    inPortfolio={inPortfolio(card.cardNumber)}
+                    inPortfolio={mark(card.cardNumber) === 'exact'}
+                    ownsVersion={mark(card.cardNumber) === 'version'}
                     watching={watch.isWatchingCard(card.cardNumber)}
                   />
                 </li>

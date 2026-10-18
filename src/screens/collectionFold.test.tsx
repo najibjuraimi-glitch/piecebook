@@ -83,6 +83,49 @@ describe('collection folded into portfolio', () => {
     const op09 = host!.textContent ?? ''
     expect(op09).toContain('OP09-001')
     expect(op09).not.toContain('In your portfolio')
+    expect(op09).not.toContain('You own a version')
     expect(localStorage.getItem('piecebook.v1')).toContain('OP09-001')
+  })
+
+  it('marks the manga print exactly and leaves the base unmarked', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({
+        revision: 1,
+        copies: [{ code: 'OP10-119', status: 'Held', exactPrint: 'OP10-119p2' }],
+        history: [],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } })),
+    )
+    await renderAt('/sets/OP-10')
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const text = (href: string) => host!.querySelector(`a[href="${href}"]`)?.textContent ?? ''
+    expect(text('/cards/OP10-119p2')).toContain('In your portfolio')
+    expect(text('/cards/OP10-119')).not.toContain('In your portfolio')
+    expect(text('/cards/OP10-119')).not.toContain('You own a version')
+    expect(text('/cards/OP10-119p1')).not.toContain('In your portfolio')
+  })
+
+  it('marks every print of a bare code as a version', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({
+        revision: 1,
+        copies: [{ code: 'OP13-028', status: 'Held', exactPrint: null }],
+        history: [],
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } })),
+    )
+    await renderAt('/sets/OP-13')
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    const text = (href: string) => host!.querySelector(`a[href="${href}"]`)?.textContent ?? ''
+    expect(text('/cards/OP13-028')).toContain('You own a version')
+    expect(text('/cards/OP13-028')).not.toContain('In your portfolio')
+    expect(text('/cards/OP13-028p1')).toContain('You own a version')
+    expect(host!.textContent ?? '').toContain('2 you own a version')
   })
 })

@@ -4,7 +4,7 @@ Piecebook is the source of record for Jib’s copies. The Google Sheet is not re
 
 Rows live in the Worker’s existing `USER_DATA` KV, behind the same Cloudflare Access login as the rest of the private app. One row is one physical copy. Row ID (`OPB-xxxx`) is assigned by Piecebook when a row is added through the form, and it does not change after that. A CSV import keeps every Row ID in the file exactly (`OPB-0001` stays `OPB-0001`) and never renumbers them. The phone shows `data/bought-fixture.csv` until a signed-in read of `GET /api/holdings` succeeds. That file is a sample, not the collection.
 
-`/collection` redirects to `/portfolio`. Card lists (a set, a character, an artist, search) mark a print **In your portfolio** when a held or listed copy’s `code` is that print. `OP13-028 SP` does not mark `OP13-028`. The old owned checklist in `piecebook.v1` is left where it is and is not read for these marks.
+`/collection` redirects to `/portfolio`. Card lists (a set, a character, an artist, search) mark a print **In your portfolio** only when a held or listed copy’s `exactPrint` is that print id. A copy with no `exactPrint` marks every print of the card number inside its code **You own a version**. A bare `OP13-028` does not mark the base print as the one in the portfolio. The old owned checklist in `piecebook.v1` is left where it is and is not read for these marks.
 
 `data/portfolio-history.csv` is only the sample day’s totals. The real daily snapshot is stored next to the rows: one totals row per UTC day, a same-day write replaces that day, older days stay. Opening Portfolio records today. Line items are not written into the repo.
 

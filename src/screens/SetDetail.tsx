@@ -7,6 +7,7 @@ import { todayIso } from '../lib/format'
 import { getSealedGuidance } from '../data/sealed'
 import { getSetIntro, hasIntroContent, type SetIntro as SetIntroData } from '../data/intros'
 import { DEFAULT_SORT, matchesSearch, parseSort, sortCards, type SortKey } from '../lib/query'
+import { portfolioCountLine } from '../lib/portfolioMarks'
 import { useHoldingsBook } from '../store/holdingsBook'
 import { useWatchlist } from '../store/watchlist'
 import { useDecks } from '../store/decks'
@@ -137,7 +138,7 @@ function PendingSetDetail({ roster }: { roster: RosterSet }) {
 
 function SeededSetDetail({ set }: { set: CardSet }) {
   const [params, setParams] = useSearchParams()
-  const { inPortfolio } = useHoldingsBook()
+  const { mark } = useHoldingsBook()
   const watch = useWatchlist()
   // Search text lives in the URL as `?q=`, so "All 151 in OP-09" from global search
   // lands prefilled and the address stays truthful once the collector edits it.
@@ -162,10 +163,10 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   const visible = useMemo(() => {
     const bucket = tabs.find((t) => t.key === active)
     if (!bucket) return []
-    const sorted = sortCards(bucket.cards.filter((c) => matchesSearch(c, parsed.text) && matchesFacets(c, parsed, attrs, inPortfolio)), sort)
+    const sorted = sortCards(bucket.cards.filter((c) => matchesSearch(c, parsed.text) && matchesFacets(c, parsed, attrs, (n) => mark(n) != null)), sort)
     // On a deck page the leader leads, whatever the sort.
     return isDeck ? [...sorted.filter((c) => c.rarity === 'L'), ...sorted.filter((c) => c.rarity !== 'L')] : sorted
-  }, [tabs, active, parsed, attrs, inPortfolio, sort, isDeck])
+  }, [tabs, active, parsed, attrs, mark, sort, isDeck])
 
   const update = (patch: { rarity?: string; sort?: SortKey; q?: string }) => {
     const next = new URLSearchParams(params)
@@ -185,7 +186,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
   }
 
   const language = set.cards[0]?.language ?? 'EN'
-  const inBook = set.cards.filter((c) => inPortfolio(c.cardNumber)).length
+  const portfolioLine = portfolioCountLine(set.cards, mark)
   const sealed = getSealedGuidance(set.setCode, language)
   const sealedProduct = roster ? rosterSealedProduct(roster) : undefined
   const intro = introFor(roster, set.setCode, language)
@@ -195,7 +196,7 @@ function SeededSetDetail({ set }: { set: CardSet }) {
       <BackBar
         title={set.setCode}
         subline={set.setName}
-        meta={inBook > 0 ? `${inBook} in your portfolio` : undefined}
+        meta={portfolioLine ?? undefined}
         fallbackTo="/"
         action={<StarButton subject="set" name={set.setName} active={watch.isWatchingSet(set.setCode)} onToggle={() => watch.toggleSet(set.setCode)} />}
       />
@@ -224,7 +225,8 @@ function SeededSetDetail({ set }: { set: CardSet }) {
             <li key={card.cardNumber}>
               <CardCell
                 card={card}
-                inPortfolio={inPortfolio(card.cardNumber)}
+                inPortfolio={mark(card.cardNumber) === 'exact'}
+                ownsVersion={mark(card.cardNumber) === 'version'}
                 watching={watch.isWatchingCard(card.cardNumber)}
                 marketMove={history.loading ? undefined : gridMove(history.byCard.get(card.cardNumber) ?? []) ?? undefined}
               />

@@ -1,23 +1,43 @@
 import { describe, expect, it } from 'vitest'
-import { codeInBook, codesInBook } from './portfolioMarks'
+import { portfolioCountLine, portfolioIndex, portfolioMark } from './portfolioMarks'
 
 describe('portfolio marks', () => {
-  const codes = codesInBook([
-    { code: 'ST01-007', status: 'Held' },
-    { code: 'op05-100p2', status: 'Listed' },
-    { code: 'OP05-001', status: 'Sold' },
-    { code: 'OP13-028 SP', status: 'Held' },
-    { code: '  eb02-010  ', status: 'held' },
-  ])
+  it('marks In your portfolio only on the exactPrint, not the bare code', () => {
+    const index = portfolioIndex([
+      { code: 'OP10-119', status: 'Held', exactPrint: 'OP10-119p2' },
+      { code: 'OP10-119', status: 'Held', exactPrint: 'OP10-119P2' },
+    ])
+    expect(portfolioMark(index, 'OP10-119p2')).toBe('exact')
+    expect(portfolioMark(index, 'OP10-119')).toBeNull()
+    expect(portfolioMark(index, 'OP10-119p1')).toBeNull()
+    expect(portfolioMark(index, 'OP10-119p3')).toBeNull()
+  })
 
-  it('matches a holding code exactly and keeps a sold code out', () => {
-    expect(codeInBook(codes, 'ST01-007')).toBe(true)
-    expect(codeInBook(codes, 'st01-007')).toBe(true)
-    expect(codeInBook(codes, 'OP05-100p2')).toBe(true)
-    expect(codeInBook(codes, 'OP05-001')).toBe(false)
-    expect(codeInBook(codes, 'EB02-010')).toBe(true)
-    expect(codeInBook(codes, 'OP13-028')).toBe(false)
-    expect(codeInBook(codes, 'OP13-028 SP')).toBe(true)
-    expect(codeInBook(codes, 'OP09-001')).toBe(false)
+  it('marks You own a version on every print when exactPrint is empty', () => {
+    const index = portfolioIndex([
+      { code: 'OP13-028', status: 'Held', exactPrint: null },
+      { code: 'OP13-028 SP', status: 'Listed', exactPrint: '' },
+      { code: 'OP05-001', status: 'Sold', exactPrint: null },
+    ])
+    expect(portfolioMark(index, 'OP13-028')).toBe('version')
+    expect(portfolioMark(index, 'OP13-028p1')).toBe('version')
+    expect(portfolioMark(index, 'OP13-028')).not.toBe('exact')
+    expect(portfolioMark(index, 'OP05-001')).toBeNull()
+    expect(portfolioMark(index, 'OP10-119')).toBeNull()
+  })
+
+  it('lets an exact print win over a version of the same card', () => {
+    const index = portfolioIndex([
+      { code: 'OP10-119', status: 'Held', exactPrint: 'OP10-119p2' },
+      { code: 'OP10-119', status: 'Held', exactPrint: null },
+    ])
+    expect(portfolioMark(index, 'OP10-119p2')).toBe('exact')
+    expect(portfolioMark(index, 'OP10-119')).toBe('version')
+    expect(portfolioMark(index, 'OP10-119p1')).toBe('version')
+    const line = portfolioCountLine(
+      [{ cardNumber: 'OP10-119' }, { cardNumber: 'OP10-119p1' }, { cardNumber: 'OP10-119p2' }],
+      (cardNumber) => portfolioMark(index, cardNumber),
+    )
+    expect(line).toBe('1 in your portfolio · 2 you own a version')
   })
 })

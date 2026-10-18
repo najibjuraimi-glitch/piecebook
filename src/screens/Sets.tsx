@@ -42,8 +42,8 @@ export function SetsScreen() {
   // Facets (2.3) read every set's attributes; they load on the first search and stay.
   const attrs = useSearchAttributes(searching)
   const { owned } = useCollection()
-  const { inPortfolio } = useHoldingsBook()
-  const results = useMemo(() => searchAll(query, { attrs, isOwned: inPortfolio }), [query, attrs, inPortfolio])
+  const { mark } = useHoldingsBook()
+  const results = useMemo(() => searchAll(query, { attrs, isOwned: (n) => mark(n) != null }), [query, attrs, mark])
   const loading = searching && !attrs
   useStartHere(Object.keys(owned).length === 0)
 
