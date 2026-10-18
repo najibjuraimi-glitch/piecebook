@@ -64,6 +64,7 @@ import {
   shrinkQuad,
   stepLiveView,
   stepSceneHold,
+  tooDarkToTrack,
   warpImage,
   type FrameAssessment,
   type FrameMotion,
@@ -1414,10 +1415,55 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(pan30.contentShiftFrac ?? 0).toBeGreaterThan(0.25)
     expect(wrongLabels(pan30, 0.3)).toBe(0)
     const pan45 = dimPan(0.12, 0.45)
-    expect(pan45.frameMean ?? 255).toBeLessThan(DIM_FRAME_MEAN)
-    expect(pan45.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
-    expect(wrongLabels(pan45, 0.45)).toBe(0)
-    expect(placeRead(pan45)).toBe('discard')
+    expect(tooDarkToTrack(pan45.frameMean ?? 255)).toBe(true)
+    const missed = simulateCaseWatch({
+      durationMs: 30_000,
+      readMs: 8_000,
+      position: (t) => Math.min(0.45, (t / 8_000) * 0.45),
+      residual: () => pan45.residual,
+      contentResidual: () => pan45.contentResidual ?? 0,
+      frameMean: pan45.frameMean,
+    })
+    expect(missed.scans).toBe(0)
+  })
+
+  it('holds dim10 and dim12 for one scan, and pauses wobble8 after four', () => {
+    const watch = (exposure: number, position: (t: number) => number, durationMs: number) =>
+      simulateCaseWatch({
+        durationMs,
+        readMs: 2_000,
+        position,
+        frameMean: exposure * 180,
+        residual: () => 4,
+        contentResidual: () => 10,
+      })
+    const hold = () => 0
+    const wobble = (t: number) => 0.08 * Math.sin((2 * Math.PI * t) / 8_000)
+    for (const exposure of [0.1, 0.12]) {
+      const steady = watch(exposure, hold, 20_000)
+      expect(steady.scans).toBe(1)
+      expect(steady.paused).toBe(false)
+      const sway = watch(exposure, wobble, 120_000)
+      expect(sway.scans).toBe(4)
+      expect(sway.paused).toBe(true)
+      expect(sway.resumeCount).toBe(0)
+    }
+    const img = casePortrait()
+    const dim08 = compareFrames(
+      greyDownscale(noisy(expose(img, 0.08), 7, 11)),
+      greyDownscale(noisy(expose(translateImage(img, 0.3), 0.08), 7, 12)),
+    )
+    expect(tooDarkToTrack(dim08.frameMean ?? 255)).toBe(true)
+    expect(labelOffset(dim08, 100, 100)).toEqual({ x: 0, y: 0 })
+    const missed = simulateCaseWatch({
+      durationMs: 30_000,
+      readMs: 2_000,
+      position: (t) => Math.min(0.3, (t / 8_000) * 0.3),
+      residual: () => dim08.residual,
+      contentResidual: () => dim08.contentResidual ?? 0,
+      frameMean: dim08.frameMean,
+    })
+    expect(missed.scans).toBe(0)
   })
 
   it('does not resume on a dim shadow or near-black noise, and a dark swap needs a tap', () => {
@@ -1436,7 +1482,6 @@ describe('case view: one steady second, then not the same scene again', () => {
       return out
     }
     const shadow = compareFrames(greyDownscale(dim), greyDownscale(shadeHalf(dim)))
-    expect(shadow.frameMean ?? 0).toBeGreaterThanOrEqual(NEAR_BLACK_MEAN)
     expect(shadow.contentResidual ?? 99).toBeLessThan(PAUSE_RESUME_RESIDUAL)
     expect(shadow.frameMean ?? 255).toBeLessThan(DIM_FRAME_MEAN)
     expect(resumesPausedScan(shadow)).toBe(false)

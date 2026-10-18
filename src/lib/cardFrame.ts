@@ -556,7 +556,7 @@ export const DIM_FRAME_MEAN = 40
  * Below this grey level the local-mean residual amplifies noise. Resume and
  * unread checks use the raw residual, so a swap needs a tap.
  */
-export const NEAR_BLACK_MEAN = 13
+export const NEAR_BLACK_MEAN = 17
 /**
  * A paused scan resumes when the local-mean residual reaches this.
  * Shadows and sensor noise stay under it. A pale sleeve or a white table clears it.
@@ -883,20 +883,30 @@ function nearBlack(motion: FrameMotion): boolean {
   return (motion.frameMean ?? 255) < NEAR_BLACK_MEAN
 }
 
-/** Shift used to place or drop a read. Dim light trusts the local-mean shift. */
+/** A frame this dark cannot be tracked. Auto-scan stops and a tap is placed unshifted. */
+export function tooDarkToTrack(mean: number): boolean {
+  return mean < NEAR_BLACK_MEAN
+}
+
+export function frameTooDark(frame: GreyFrame): boolean {
+  return tooDarkToTrack(greyMean(frame))
+}
+
+/** Shift used to place or drop a read. Dim light trusts the local-mean shift, until it is too dark to track. */
 function placedShift(motion: FrameMotion): number {
+  if (tooDarkToTrack(motion.frameMean ?? 255)) return 0
   if (dimFrame(motion)) return motion.contentShiftFrac ?? motion.shiftFrac
   return motion.shiftFrac
 }
 
 function placedDelta(motion: FrameMotion): { dx: number; dy: number } {
+  if (tooDarkToTrack(motion.frameMean ?? 255)) return { dx: 0, dy: 0 }
   if (dimFrame(motion) && motion.contentDx != null && motion.contentDy != null) return { dx: motion.contentDx, dy: motion.contentDy }
   return { dx: motion.dx, dy: motion.dy }
 }
 
-/** Agreement of the pictures. Dim light uses the local-mean residual, which still sees a pan the search missed. */
+/** The raw residual. Local-mean residuals are not compared with the raw bars. */
 function placedResidual(motion: FrameMotion): number {
-  if (dimFrame(motion)) return motion.contentResidual ?? motion.residual
   return motion.residual
 }
 
@@ -914,7 +924,8 @@ function gateResidual(motion: FrameMotion): number {
  */
 export function sceneMoved(motion: FrameMotion): boolean {
   if (motion.shiftFrac >= SCENE_MOVE_FRAC || motion.residual >= SCENE_MOVE_MAD) return true
-  if ((motion.frameMean ?? 255) >= DIM_FRAME_MEAN) return false
+  const mean = motion.frameMean ?? 255
+  if (mean >= DIM_FRAME_MEAN || tooDarkToTrack(mean)) return false
   return (motion.contentShiftFrac ?? 0) >= SCENE_MOVE_FRAC
 }
 
@@ -1007,8 +1018,9 @@ export function dryStreakAfterDiscard(streak: number, motion: FrameMotion | null
 
 /** Shift for unread boxes. A residual of 6 or more is not trusted. */
 export function unreadBoxMotion(motion: FrameMotion | null, width: number, height: number): BoxMotion | null {
-  if (!motion || motion.residual >= BOX_MOTION_RESIDUAL) return null
-  return { dx: motion.dx, dy: motion.dy, width, height }
+  if (!motion || placedResidual(motion) >= BOX_MOTION_RESIDUAL) return null
+  const delta = placedDelta(motion)
+  return { dx: delta.dx, dy: delta.dy, width, height }
 }
 
 /**
@@ -1292,6 +1304,8 @@ export function simulateCaseWatch(input: {
   residual: (fromT: number, toT: number) => number
   /** Local-mean residual. When omitted, the gates use residual. */
   contentResidual?: (fromT: number, toT: number) => number
+  /** When set, dim and near-black rules apply to every tick. */
+  frameMean?: number
 }): CaseWatch {
   const dt = 200
   const asMotion = (fromT: number, fromPos: number, toT: number, toPos: number): FrameMotion => {
@@ -1303,6 +1317,7 @@ export function simulateCaseWatch(input: {
       dx: (toPos - fromPos) * 100,
       dy: 0,
       shiftFrac: Math.abs(toPos - fromPos),
+      ...(input.frameMean != null ? { frameMean: input.frameMean, contentShiftFrac: Math.abs(toPos - fromPos), contentDx: (toPos - fromPos) * 100, contentDy: 0 } : {}),
     }
   }
 
@@ -1418,7 +1433,8 @@ export function simulateCaseWatch(input: {
 
     if (paused) resumeFrom(pauseT, pausePos, pos, pauseT === t)
 
-    if (readingUntil == null && !paused) {
+    const trackable = input.frameMean == null || !tooDarkToTrack(input.frameMean)
+    if (readingUntil == null && !paused && trackable) {
       const hop = asMotion(prevT, prevPos, t, pos)
       let start = false
       if (movedReads >= MOVED_HOLD_AFTER) {

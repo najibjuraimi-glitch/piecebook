@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISION_URL } from '../config/vision'
-import { compareFrames, dryStreakAfterDiscard, emptySeen, forgetsSeenCards, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, resetsMovedHold, resumesPausedScan, scanIntervalOpen, sceneMoved, stepFrameHold, stepSceneHold, unreadBoxMotion, unreadSlabsAreNew, type GreyFrame, type SceneHold } from '../lib/cardFrame'
+import { compareFrames, dryStreakAfterDiscard, emptySeen, forgetsSeenCards, frameTooDark, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, resetsMovedHold, resumesPausedScan, scanIntervalOpen, sceneMoved, stepFrameHold, stepSceneHold, unreadBoxMotion, unreadSlabsAreNew, type GreyFrame, type SceneHold } from '../lib/cardFrame'
 import type { PixelImage } from '../lib/centering'
 import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
 import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
@@ -145,6 +145,8 @@ export function ScanLive({
   const [shot, setShot] = useState<LiveShot | null>(null)
   const [labelsCurrent, setLabelsCurrent] = useState(false)
   const [shutterReady, setShutterReady] = useState(false)
+  const [tooDark, setTooDark] = useState(false)
+  const tooDarkRef = useRef(false)
   const shutterReadyRef = useRef(false)
   const queuedTap = useRef(false)
   const shutterTimer = useRef(0)
@@ -288,7 +290,7 @@ export function ScanLive({
         queuedTap.current = true
         return
       }
-      if (!manual && (autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
+      if (!manual && (tooDarkRef.current || autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
       const video = videoRef.current
       const stream = streamRef.current
       if (!video || !stream) return
@@ -426,6 +428,11 @@ export function ScanLive({
         if (pixels) {
           const frame = greyDownscale(pixels)
           const now = Date.now()
+          const dark = frameTooDark(frame)
+          if (dark !== tooDarkRef.current) {
+            tooDarkRef.current = dark
+            setTooDark(dark)
+          }
           const step = stepSceneHold(holdRef.current, frame, now)
           holdRef.current = step.state
           if (autoPausedRef.current && pauseAnchor.current) {
@@ -444,7 +451,7 @@ export function ScanLive({
             setDim(true)
             if (forgetsSeenCards(step.motion)) forgetSeen()
           } else if (step.steady) setDim(false)
-          if (movedReads.current >= MOVED_HOLD_AFTER) {
+          if (!dark && movedReads.current >= MOVED_HOLD_AFTER) {
             const hop = prevTickFrame.current ? compareFrames(prevTickFrame.current, frame) : null
             const hopped = resetsMovedHold(hop)
             const settled = stepFrameHold(frameSteadySince.current, hopped, now, MOVED_HOLD_MS)
@@ -454,7 +461,7 @@ export function ScanLive({
               setHeld(true)
             }
             if (settled.ready && !autoPausedRef.current) void sendRef.current(false)
-          } else if (step.ready && !autoPausedRef.current) {
+          } else if (!dark && step.ready && !autoPausedRef.current) {
             void sendRef.current(false)
           }
           prevTickFrame.current = frame
@@ -538,7 +545,12 @@ export function ScanLive({
             </div>
           </div>
         )}
-        {held && !reading && !autoPaused && (
+        {tooDark && !reading && (
+          <button type="button" data-testid="scan-dark" onClick={() => void sendRef.current(true)} className="absolute inset-x-4 bottom-4 rounded-xl bg-white px-3 py-3 text-center text-[16px] font-semibold text-black">
+            Too dark to track, add light or tap to scan
+          </button>
+        )}
+        {held && !reading && !autoPaused && !tooDark && (
           <button type="button" data-testid="scan-settle" onClick={() => void sendRef.current(true)} className="absolute inset-x-4 bottom-4 rounded-xl bg-white px-3 py-3 text-center text-[16px] font-semibold text-black">
             Hold still, tap to scan
           </button>
