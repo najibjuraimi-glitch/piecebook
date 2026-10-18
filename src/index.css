@@ -66,3 +66,12 @@ input[type='date']::-webkit-calendar-picker-indicator {
   -webkit-appearance: none;
   appearance: none;
 }
+
+@keyframes scan-read {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(420%); }
+}
+
+.scan-read-bar {
+  animation: scan-read 1.2s ease-in-out infinite;
+}

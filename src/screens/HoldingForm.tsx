@@ -37,6 +37,7 @@ export function HoldingFormScreen({ mode }: { mode: 'add' | 'edit' | 'sold' }) {
   const [card, setCard] = useState('')
   const [code, setCode] = useState('')
   const [grade, setGrade] = useState('Raw')
+  const [language, setLanguage] = useState<'EN' | 'JP'>('EN')
   const [date, setDate] = useState(todayIso())
   const [where, setWhere] = useState('')
   const [paid, setPaid] = useState('')
@@ -81,6 +82,7 @@ export function HoldingFormScreen({ mode }: { mode: 'add' | 'edit' | 'sold' }) {
           setCard(found.cardName)
           setCode(found.code)
           setGrade(found.gradeText)
+          setLanguage(found.language === 'JP' ? 'JP' : 'EN')
           setDate(found.date ?? '')
           setWhere(found.seller)
           setPaid(found.paidSgd == null ? '' : String(found.paidSgd))
@@ -155,6 +157,7 @@ export function HoldingFormScreen({ mode }: { mode: 'add' | 'edit' | 'sold' }) {
       card: card.trim(),
       code: code.trim(),
       grade: grade.trim(),
+      language,
       date: date || null,
       where: where.trim(),
       paidSgd: paidN,
@@ -264,6 +267,23 @@ export function HoldingFormScreen({ mode }: { mode: 'add' | 'edit' | 'sold' }) {
           <div>
             <label htmlFor={`${ids}-grade`} className={label}>Grade / raw</label>
             <input id={`${ids}-grade`} value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="Raw or PSA 10" className={field} autoComplete="off" />
+          </div>
+          <div>
+            <p className={label}>Language</p>
+            <div className="mt-1.5 flex gap-2" role="radiogroup" aria-label="Language">
+              {(['EN', 'JP'] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={language === value}
+                  onClick={() => setLanguage(value)}
+                  className={`h-11 rounded-xl px-3 text-[14px] font-medium ${language === value ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
           </div>
           <div>
             <label htmlFor={`${ids}-date`} className={label}>Date</label>

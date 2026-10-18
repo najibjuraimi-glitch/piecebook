@@ -28,6 +28,8 @@ export interface Holding {
   card: string
   code: string
   grade: string
+  /** EN unless the row was saved as JP. Missing rows are EN. */
+  language: 'EN' | 'JP'
   where: string
   paidSgd: number | null
   gstSgd: number | null
@@ -90,6 +92,7 @@ export function holdingFromBought(copy: BoughtCopy): Holding {
     card: copy.cardName,
     code: copy.code,
     grade: copy.gradeText,
+    language: copy.language === 'JP' ? 'JP' : 'EN',
     where: copy.seller,
     paidSgd: copy.paidSgd,
     gstSgd: copy.gstSgd,
@@ -124,6 +127,7 @@ export function boughtCopyFromHolding(h: Holding): BoughtCopy {
     code: h.code,
     gradeText: h.grade,
     grade: legalGrade(h.grade),
+    language: h.language === 'JP' ? 'JP' : 'EN',
     seller: h.where,
     paidSgd: h.paidSgd,
     gstSgd: h.gstSgd,
@@ -157,6 +161,7 @@ function blankHolding(rowId: string): Holding {
     card: '',
     code: '',
     grade: '',
+    language: 'EN',
     where: '',
     paidSgd: null,
     gstSgd: null,
@@ -285,6 +290,14 @@ function applyFields(base: Holding, body: Record<string, unknown>, keys: string[
       ;(next as unknown as Record<string, unknown>)[key] = date
       continue
     }
+    if (key === 'language') {
+      if (value == null || value === '') continue
+      if (typeof value !== 'string') return fail(400, 'bad_field', 'language')
+      const text = value.trim().toUpperCase()
+      if (text !== 'EN' && text !== 'JP') return fail(400, 'bad_field', 'language')
+      next.language = text
+      continue
+    }
     if (key === 'status') {
       const status = readStatus(value)
       if (isFail(status)) return status
@@ -319,6 +332,7 @@ const WRITE_KEYS = [
   'card',
   'code',
   'grade',
+  'language',
   'where',
   'paidSgd',
   'gstSgd',
@@ -350,12 +364,14 @@ function checkRevision(doc: HoldingsDoc, body: Record<string, unknown>): Holding
 
 function finish(h: Holding): Holding | HoldingFailure {
   if (!h.card && !h.code) return fail(400, 'bad_field', 'card')
+  h = { ...h, language: h.language === 'JP' ? 'JP' : 'EN' }
   if (h.marketValueSgd == null) {
     h = { ...h, marketSource: h.marketSource, marketAsOf: null }
   }
   if (h.status !== 'Sold') {
     return {
       ...h,
+      language: h.language === 'JP' ? 'JP' : 'EN',
       soldDate: null,
       soldPrice: null,
       currency: '',
@@ -472,7 +488,13 @@ export function importHoldings(
   const parsed = parseBoughtMatrix(parseCsv(csv))
   if (parsed.missing.length) return fail(400, 'missing_headers', parsed.missing.join(', '))
   // Row IDs in the file are stored as written (OPB-0001 stays OPB-0001). Import does not assign new ones.
-  const copies = parsed.copies.map(holdingFromBought)
+  // A row that does not say EN or JP keeps the language already stored for that Row ID.
+  const priorLanguage = new Map(doc.copies.map((copy) => [copy.rowId, copy.language]))
+  const copies = parsed.copies.map((bought) => {
+    const holding = holdingFromBought(bought)
+    if (bought.language !== 'EN' && bought.language !== 'JP' && priorLanguage.get(bought.rowId) === 'JP') holding.language = 'JP'
+    return holding
+  })
   if (copies.length > MAX_HOLDINGS) return fail(400, 'too_many_rows')
   const seen = new Set<string>()
   for (const copy of copies) {

@@ -365,4 +365,27 @@ describe('watchlist book', () => {
     }, TODAY)
     expect(stale).toMatchObject({ ok: false, error: 'revision_conflict', revision: 1 })
   })
+
+  it('stores EN unless the row says JP', () => {
+    const en = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004', grade: 'Raw', targetSgd: 1 }, TODAY)
+    expect(en).toMatchObject({ ok: true, item: { language: 'EN' } })
+    const jp = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004', grade: 'Raw', targetSgd: 1, language: 'jp' }, TODAY)
+    expect(jp).toMatchObject({ ok: true, item: { language: 'JP' } })
+    const bad = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004', grade: 'Raw', targetSgd: 1, language: 'FR' }, TODAY)
+    expect(bad).toMatchObject({ ok: false, error: 'bad_field', detail: 'language' })
+    expect(jp.ok).toBe(true)
+    if (!jp.ok) return
+    const notes = patchWatchItem(jp.doc, jp.item.id, { revision: jp.doc.revision, notes: 'desk' }, TODAY)
+    expect(notes.ok).toBe(true)
+    if (!notes.ok) return
+    expect(notes.item.language).toBe('JP')
+    const blank = patchWatchItem(notes.doc, notes.item.id, { revision: notes.doc.revision, language: '' }, TODAY)
+    expect(blank.ok).toBe(true)
+    if (!blank.ok) return
+    expect(blank.item.language).toBe('JP')
+    const absent = patchWatchItem(blank.doc, blank.item.id, { revision: blank.doc.revision, language: null }, TODAY)
+    expect(absent.ok).toBe(true)
+    if (!absent.ok) return
+    expect(absent.item.language).toBe('JP')
+  })
 })

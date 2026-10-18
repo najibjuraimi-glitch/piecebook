@@ -7,7 +7,7 @@
 import { legalGrade, singaporeToday } from "../../src/lib/boughtBook.ts";
 import jpeg from "jpeg-js";
 import { matchScan, normaliseCondition } from "../../src/lib/scanMatch.ts";
-import { releaseCap, reserveCap } from "./cap.js";
+import { readCap, releaseCap, reserveCap } from "./cap.js";
 import { bookEmail, keyFor } from "./holdings.js";
 import { seedPrints, storedQuote } from "./storedPrice.js";
 
@@ -101,17 +101,25 @@ export function normaliseBox(box, width, height) {
   return { x, y, w, h }
 }
 
-/** Gemini box_2d is [ymin, xmin, ymax, xmax] on a 0–1000 scale. Never clamped. */
+/**
+ * Gemini box_2d is [ymin, xmin, ymax, xmax]. The usual scale is 0–1000.
+ * When every value is at most 1, it is already a fraction of the photo.
+ * Bounds are checked on the unrounded box, with a tiny tolerance, so a value
+ * that only crosses the edge after rounding is kept. Never clamped.
+ */
 export function boxFrom2d(raw) {
   if (!Array.isArray(raw) || raw.length !== 4) return null
   const [ymin, xmin, ymax, xmax] = raw.map(Number)
   if (![ymin, xmin, ymax, xmax].every((n) => Number.isFinite(n))) return null
-  const x = xmin / 1000
-  const y = ymin / 1000
-  const w = (xmax - xmin) / 1000
-  const h = (ymax - ymin) / 1000
-  if (w <= 0 || h <= 0 || x < 0 || y < 0 || x > 1 || y > 1 || x + w > 1 || y + h > 1) return null
-  return { x, y, w, h }
+  const scale = [ymin, xmin, ymax, xmax].every((n) => n <= 1) ? 1 : 1000
+  const x = xmin / scale
+  const y = ymin / scale
+  const w = (xmax - xmin) / scale
+  const h = (ymax - ymin) / scale
+  const eps = 1e-6
+  if (w <= 0 || h <= 0 || x < -eps || y < -eps || x > 1 + eps || y > 1 + eps || x + w > 1 + eps || y + h > 1 + eps) return null
+  const round = (n) => Math.round(n * 1e6) / 1e6
+  return { x: round(x), y: round(y), w: round(w), h: round(h) }
 }
 
 /** A box whose centre is on the wrong side of a neighbour in the same row or column is dropped. */
@@ -358,6 +366,12 @@ function withCrops(sights, decoded) {
  * One scan. `deps.modelFetch` and `deps.imageFetch` stand in for the network in tests.
  * The photo is not written to KV.
  */
+/** How many scans are left today. Does not reserve a slot. */
+export async function handleScanUsage(env, cors) {
+  const room = await readCap(env, singaporeToday(Date.now()))
+  return json({ usage: { today: room.used, cap: room.cap } }, 200, cors)
+}
+
 export async function handleScan(req, env, identity, cors, deps = {}) {
   let body
   try { body = await req.json() } catch { return json({ error: "bad_request" }, 400, cors) }

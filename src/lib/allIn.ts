@@ -91,10 +91,12 @@ export interface MaxHammerInput {
 
 export interface WatchBidSource {
   targetSgd: number | null
-  /** Manual English figure. A seed quote is not this field. */
+  /** Manual figure in S$. A seed quote is not this field. */
   marketSgd: number | null
   marketSource: string | null
   marketAsOf: string | null
+  /** Stored on the watch row. Missing rows are EN. */
+  language?: 'EN' | 'JP' | null
 }
 
 export interface WatchBidTarget {
@@ -104,8 +106,8 @@ export interface WatchBidTarget {
   asOf: string | null
   stale: boolean
   marketSgd: number | null
-  /** Manual figures are English. The page says so. */
-  language: 'EN'
+  /** The watch row's language. EN when the row did not say JP. */
+  language: 'EN' | 'JP'
   /** False when the only basis is a stale manual figure. The page waits for a tap. */
   prefill: boolean
 }
@@ -348,7 +350,7 @@ export function watchBidTarget(item: WatchBidSource, today: string): WatchBidTar
       asOf: market?.asOf ?? null,
       stale: market?.stale ?? false,
       marketSgd: market?.sgd ?? null,
-      language: 'EN',
+      language: item.language === 'JP' ? 'JP' : 'EN',
       prefill: true,
     }
   }
@@ -360,7 +362,7 @@ export function watchBidTarget(item: WatchBidSource, today: string): WatchBidTar
     asOf: market.asOf,
     stale: market.stale,
     marketSgd: market.sgd,
-    language: 'EN',
+    language: item.language === 'JP' ? 'JP' : 'EN',
     prefill: !market.stale,
   }
 }

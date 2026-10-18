@@ -21,13 +21,26 @@ import {
   flattenCard,
   glareReport,
   homographyFromQuads,
+  SCAN_INTERVAL_MS,
+  SCENE_MOVE_FRAC,
+  SCENE_MOVE_MAD,
+  SCENE_STEADY_MS,
+  compareFrames,
+  greyDownscale,
   initialLiveView,
+  initialSceneHold,
   insideQuad,
   invertMat3,
+  markSceneScanned,
+  nextDryStreak,
   pickCleanerFrame,
+  scanIntervalOpen,
+  sceneMoved,
   sharpness,
+  substantialSceneChange,
   shrinkQuad,
   stepLiveView,
+  stepSceneHold,
   warpImage,
   type FrameAssessment,
   type HintCode,
@@ -599,5 +612,245 @@ describe('live view: hints settle and auto-capture waits', () => {
     step = stepLiveView(step.state, frame(false, 'too-far', quad(20)), 4000)
     expect(step.offerShutter).toBe(true)
     expect(step.capture).toBe(false)
+  })
+})
+
+function patterned(width = 32, height = 24) {
+  const data = new Uint8Array(width * height)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) data[y * width + x] = (x * 13 + y * 29) % 251
+  }
+  return { width, height, data }
+}
+
+function shiftGrey(frame: { width: number; height: number; data: Uint8Array }, dx: number) {
+  const data = new Uint8Array(frame.data.length)
+  for (let y = 0; y < frame.height; y += 1) {
+    for (let x = 0; x < frame.width; x += 1) {
+      const sx = x - dx
+      data[y * frame.width + x] = sx >= 0 && sx < frame.width ? frame.data[y * frame.width + sx] : 0
+    }
+  }
+  return { width: frame.width, height: frame.height, data }
+}
+
+function brighten(frame: { width: number; height: number; data: Uint8Array }, delta: number) {
+  const data = new Uint8Array(frame.data.length)
+  for (let i = 0; i < data.length; i += 1) data[i] = Math.max(0, Math.min(255, frame.data[i] + delta))
+  return { width: frame.width, height: frame.height, data }
+}
+
+function translateImage(img: PixelImage, frac: number): PixelImage {
+  const dx = Math.round(img.width * frac)
+  const data = new Uint8ClampedArray(img.data.length)
+  for (let y = 0; y < img.height; y += 1) {
+    for (let x = 0; x < img.width; x += 1) {
+      const sx = x - dx
+      const di = (y * img.width + x) * 4
+      if (sx < 0 || sx >= img.width) {
+        data[di] = data[di + 1] = data[di + 2] = 128
+        data[di + 3] = 255
+        continue
+      }
+      const si = (y * img.width + sx) * 4
+      data[di] = img.data[si]
+      data[di + 1] = img.data[si + 1]
+      data[di + 2] = img.data[si + 2]
+      data[di + 3] = 255
+    }
+  }
+  return { width: img.width, height: img.height, data }
+}
+
+function sensorNoise(img: PixelImage): PixelImage {
+  const data = new Uint8ClampedArray(img.data)
+  for (let i = 0; i < data.length; i += 4) {
+    const delta = (i / 4) % 2 === 0 ? 2 : -2
+    data[i] = Math.max(0, Math.min(255, data[i] + delta))
+    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + delta))
+    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + delta))
+  }
+  return { width: img.width, height: img.height, data }
+}
+
+function translateSubpixel(img: PixelImage, fracX: number, fracY = 0): PixelImage {
+  const dx = img.width * fracX
+  const dy = img.height * fracY
+  const data = new Uint8ClampedArray(img.data.length)
+  const at = (x: number, y: number) => {
+    const cx = Math.min(img.width - 1, Math.max(0, x))
+    const cy = Math.min(img.height - 1, Math.max(0, y))
+    const i = (cy * img.width + cx) * 4
+    return [img.data[i], img.data[i + 1], img.data[i + 2]]
+  }
+  for (let y = 0; y < img.height; y += 1) {
+    for (let x = 0; x < img.width; x += 1) {
+      const sx = x - dx
+      const sy = y - dy
+      const x0 = Math.floor(sx)
+      const y0 = Math.floor(sy)
+      const tx = sx - x0
+      const ty = sy - y0
+      const a = at(x0, y0)
+      const b = at(x0 + 1, y0)
+      const c = at(x0, y0 + 1)
+      const d = at(x0 + 1, y0 + 1)
+      const mix = (i: number) => a[i] * (1 - tx) * (1 - ty) + b[i] * tx * (1 - ty) + c[i] * (1 - tx) * ty + d[i] * tx * ty
+      const di = (y * img.width + x) * 4
+      data[di] = mix(0)
+      data[di + 1] = mix(1)
+      data[di + 2] = mix(2)
+      data[di + 3] = 255
+    }
+  }
+  return { width: img.width, height: img.height, data }
+}
+
+function expose(img: PixelImage, factor: number): PixelImage {
+  const data = new Uint8ClampedArray(img.data.length)
+  for (let i = 0; i < img.data.length; i += 4) {
+    data[i] = Math.max(0, Math.min(255, Math.round(img.data[i] * factor)))
+    data[i + 1] = Math.max(0, Math.min(255, Math.round(img.data[i + 1] * factor)))
+    data[i + 2] = Math.max(0, Math.min(255, Math.round(img.data[i + 2] * factor)))
+    data[i + 3] = 255
+  }
+  return { width: img.width, height: img.height, data }
+}
+
+function contentFlicker(frame: { width: number; height: number; data: Uint8Array }) {
+  const data = new Uint8Array(frame.data)
+  for (let y = 4; y < 20; y += 1) {
+    for (let x = 4; x < 28; x += 1) data[y * frame.width + x] = 255 - data[y * frame.width + x]
+  }
+  return { width: frame.width, height: frame.height, data }
+}
+
+describe('case view: one steady second, then not the same scene again', () => {
+  const base = patterned()
+
+  it('is ready after a second of the same view and does not scan that view again', () => {
+    let step = stepSceneHold(initialSceneHold(), base, 0)
+    expect(step.ready).toBe(false)
+    step = stepSceneHold(step.state, brighten(base, 2), 100)
+    expect(step.steady).toBe(true)
+    expect(step.ready).toBe(false)
+    expect(step.state.steadySince).toBe(100)
+    step = stepSceneHold(step.state, brighten(base, -2), 100 + SCENE_STEADY_MS - 1)
+    expect(step.ready).toBe(false)
+    step = stepSceneHold(step.state, base, 100 + SCENE_STEADY_MS)
+    expect(step.ready).toBe(true)
+    step = stepSceneHold(markSceneScanned(step.state), base, 5000)
+    expect(step.ready).toBe(false)
+    expect(step.moved).toBe(false)
+  })
+
+  it('ends the spell when the picture shifts', () => {
+    let step = stepSceneHold(initialSceneHold(), base, 0)
+    step = stepSceneHold(step.state, brighten(base, 1), 200)
+    const moved = stepSceneHold(markSceneScanned(step.state), shiftGrey(base, 8), 800)
+    expect(moved.moved).toBe(true)
+    expect(moved.state.scanned).toBe(false)
+    expect(moved.state.steadySince).toBeNull()
+    const held = stepSceneHold(moved.state, shiftGrey(base, 8), 900)
+    expect(held.ready).toBe(false)
+    const again = stepSceneHold(held.state, shiftGrey(base, 8), 900 + SCENE_STEADY_MS)
+    expect(again.ready).toBe(true)
+  })
+
+  it('forgives one flicker that is not a pan and resets on the next', () => {
+    let step = stepSceneHold(initialSceneHold(), base, 0)
+    step = stepSceneHold(step.state, base, 100)
+    const flicker = contentFlicker(base)
+    const motion = compareFrames(base, flicker)
+    expect(motion.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(motion.residual).toBeGreaterThanOrEqual(SCENE_MOVE_MAD)
+    const wobble = stepSceneHold(step.state, flicker, 200)
+    expect(wobble.moved).toBe(false)
+    expect(wobble.state.steadySince).toBe(100)
+    const lost = stepSceneHold(wobble.state, flicker, 300)
+    expect(lost.moved).toBe(true)
+  })
+
+  it('waits four seconds between automatic scans, and lets the first one go', () => {
+    expect(scanIntervalOpen(null, 1000)).toBe(true)
+    expect(scanIntervalOpen(1000, 1000 + SCAN_INTERVAL_MS - 1)).toBe(false)
+    expect(scanIntervalOpen(1000, 1000 + SCAN_INTERVAL_MS)).toBe(true)
+  })
+
+  it('counts a 10% and a 20% pan of the case fixture as moved, and sensor noise as still', () => {
+    const full = loadJpegFixture('full.jpg')
+    const anchor = greyDownscale(full)
+    const ten = compareFrames(anchor, greyDownscale(translateImage(full, 0.1)))
+    const twenty = compareFrames(anchor, greyDownscale(translateImage(full, 0.2)))
+    const still = compareFrames(anchor, greyDownscale(sensorNoise(full)))
+    expect(Math.abs(ten.shiftFrac - 0.1)).toBeLessThan(0.03)
+    expect(sceneMoved(ten)).toBe(true)
+    expect(Math.abs(twenty.shiftFrac - 0.2)).toBeLessThan(0.03)
+    expect(sceneMoved(twenty)).toBe(true)
+    expect(still.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(still.residual).toBeLessThan(SCENE_MOVE_MAD)
+    expect(sceneMoved(still)).toBe(false)
+  })
+
+  it('keeps a 0.5% to 1% tremble and a 10% exposure change on the same view', () => {
+    const full = loadJpegFixture('full.jpg')
+    const anchor = greyDownscale(full)
+    for (const frac of [0.0025, -0.0025, 0.005, -0.005, 0.01, -0.01]) {
+      const motion = compareFrames(anchor, greyDownscale(translateSubpixel(full, frac, frac * 0.3)))
+      expect(motion.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+      expect(motion.residual).toBeLessThan(SCENE_MOVE_MAD)
+      expect(sceneMoved(motion)).toBe(false)
+    }
+    for (const factor of [1.1, 0.9]) {
+      const motion = compareFrames(anchor, greyDownscale(expose(full, factor)))
+      expect(motion.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+      expect(motion.residual).toBeLessThan(SCENE_MOVE_MAD)
+      expect(sceneMoved(motion)).toBe(false)
+    }
+    let step = stepSceneHold(initialSceneHold(), anchor, 0)
+    let t = 100
+    for (const frac of [0.0025, -0.0025, 0.005, -0.005, 0.01, -0.01]) {
+      step = stepSceneHold(step.state, greyDownscale(translateSubpixel(full, frac)), t)
+      expect(step.moved).toBe(false)
+      t += 200
+    }
+    step = stepSceneHold(step.state, greyDownscale(expose(full, 1.1)), t)
+    expect(step.moved).toBe(false)
+    expect(step.steady).toBe(true)
+    const ten = compareFrames(anchor, greyDownscale(translateImage(full, 0.1)))
+    const twenty = compareFrames(anchor, greyDownscale(translateImage(full, 0.2)))
+    expect(substantialSceneChange(ten)).toBe(false)
+    expect(substantialSceneChange(twenty)).toBe(true)
+  })
+
+  it('pauses after three scans that add no new card', () => {
+    let seen = new Set<string>()
+    let streak = 0
+    const step = (cards: { printId?: string | null; codeText?: string | null }[]) => {
+      const next = nextDryStreak(seen, streak, cards)
+      seen = next.seen
+      streak = next.streak
+      return next
+    }
+    expect(step([{ printId: 'OP09-004p2', codeText: 'OP09-004' }]).pause).toBe(false)
+    expect(streak).toBe(0)
+    expect(step([{ printId: 'OP09-004p2' }]).pause).toBe(false)
+    expect(step([{ codeText: 'OP09-004p2' }]).streak).toBe(2)
+    expect(step([{ printId: '', codeText: '  ' }]).pause).toBe(true)
+    expect(streak).toBe(3)
+    const box = { x: 0.1, y: 0.2, w: 0.2, h: 0.3 }
+    const unread = nextDryStreak(new Set(), 2, [{ printId: '', codeText: '', box }])
+    expect(unread.streak).toBe(0)
+    expect(unread.pause).toBe(false)
+    const samePlace = nextDryStreak(unread.seen, 0, [{ codeText: '', box: { x: 0.12, y: 0.18, w: 0.22, h: 0.28 } }])
+    expect(samePlace.streak).toBe(1)
+    const otherPlace = nextDryStreak(samePlace.seen, samePlace.streak, [{ box: { x: 0.6, y: 0.2, w: 0.2, h: 0.3 } }])
+    expect(otherPlace.streak).toBe(0)
+    const resumed = nextDryStreak(seen, 0, [{ printId: 'EB04-003' }])
+    expect(resumed.pause).toBe(false)
+    expect(resumed.streak).toBe(0)
+    const again = nextDryStreak(resumed.seen, resumed.streak, [{ codeText: 'EB04-003' }])
+    expect(again.streak).toBe(1)
+    expect(again.pause).toBe(false)
   })
 })

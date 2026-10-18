@@ -11,18 +11,18 @@ Shipped since the 16 Oct map:
 - **Singapore day (#63, #64).** Alerts, holdings and the watchlist use the Asia/Singapore calendar day, on the Worker and on the phone. A phone outside Singapore does not send a snapshot date the Worker rejects. Stale and hit agree between midnight and 8am SGT.
 - **Prints panel (#65).** Every Portfolio holding and every Watchlist item has a collapsed list of the seed prints of that card number, with the pin, the English stored price (source and date, or "no price"), and any Japanese figure labeled JP and not used as the value.
 - **All-in and max bid (#67).** The phone page `/bid`. Hammer, premium, payment fee, shipping, forwarder, a typed rate with its date, and GST Auto above S$400. The reverse side solves the max hammer. It does not fetch a rate or a price, and it does not place a bid. Formula: `docs/ALL-IN.md`.
+- **Watch and holding language.** Each watch row and each holding stores EN or JP. Existing rows are EN. `/bid` shows that stored language. A JP row's manual price is the live scan's JP comp.
 
 What comes next, in order:
 
 1. **Case scan.** One photo of a dealer case or a binder page. The existing vision Worker finds every card and reads the price stickers. Each card shows its English street price, with source and date, stale flagged, or "no price" when unknown, next to the sticker. Cards under street are highlighted. Test it on raw eBay and Carousell dealer-case photos. Depends on price coverage (item 3).
-2. **Watch row language (Auction V2).** A language field on the watch row, so the EN tag on `/bid` is stored data and not a label the page assumes.
-3. **English price source, free.** The coverage the case scan and the indexes need. No paid key.
-4. **Set index and portfolio index.** Base 100 on a stated date. Ranges 1W, 1M, 3M and ALL. The book is a second line. A minimum-data rule says when there is not enough history to draw the line.
-5. **Character indexes.** Raw against PSA 10, and movers.
-6. **Grading tracker.** Photos from before the card is sent off, a status timeline, and the grading cost added into the landed cost.
-7. **PSA 9 crack calculator, and an English-only cert gate (Auction).**
+2. **English price source, free.** The coverage the case scan and the indexes need. No paid key.
+3. **Set index and portfolio index.** Base 100 on a stated date. Ranges 1W, 1M, 3M and ALL. The book is a second line. A minimum-data rule says when there is not enough history to draw the line.
+4. **Character indexes.** Raw against PSA 10, and movers.
+5. **Grading tracker.** Photos from before the card is sent off, a status timeline, and the grading cost added into the landed cost.
+6. **PSA 9 crack calculator, and an English-only cert gate (Auction).**
 
-Phases 14–16 below stay written down. They are not this queue. The max-bid page in 15.1 has shipped. The street-price endpoint in 14.1 has not. Item 3 is a free English source for the case scan and the indexes. It is not the paid PriceCharting or eBay blocks in 14.1.
+Phases 14–16 below stay written down. They are not this queue. The max-bid page in 15.1 has shipped. The street-price endpoint in 14.1 has not. Item 2 is a free English source for the case scan and the indexes. It is not the paid PriceCharting or eBay blocks in 14.1.
 
 The guardrails do not move:
 
@@ -166,11 +166,10 @@ Phase 12 (Goldin ingest and batch sweep) stays "map only, do not build". 16.3 is
 ## Order and dependencies at a glance
 
 ```
-Done: Singapore day (#63, #64). Prints panel (#65). /bid all-in and max hammer (#67).
+Done: Singapore day (#63, #64). Prints panel (#65). /bid all-in and max hammer (#67). Watch and holding language (EN/JP).
 
 English price source (free) ──► case scan
                            ──► set + portfolio index ──► character indexes, raw vs PSA 10, movers
-Watch row language (independent; makes the EN tag on /bid real)
 Grading tracker (photos, status, grading cost into landed cost)
 PSA 9 crack calculator + English-only cert gate
 

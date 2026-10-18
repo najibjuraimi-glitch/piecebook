@@ -2,6 +2,8 @@
 
 Piecebook is the source of record for Jib’s copies. The Google Sheet is not read, and there is no service account. A CSV export of the old Bought tab can be imported once.
 
+Each copy stores `language`, `EN` or `JP`. A copy saved before the field existed is `EN`. The phone form edits it. A manual price on a JP row is the JP comp the live scan uses. It is not an English street price.
+
 Rows live in the Worker’s existing `USER_DATA` KV, behind the same Cloudflare Access login as the rest of the private app. One row is one physical copy. Row ID (`OPB-xxxx`) is assigned by Piecebook when a row is added through the form, and it does not change after that. A CSV import keeps every Row ID in the file exactly (`OPB-0001` stays `OPB-0001`) and never renumbers them. The phone shows `data/bought-fixture.csv` until a signed-in read of `GET /api/holdings` succeeds. That file is a sample, not the collection.
 
 `/collection` redirects to `/portfolio`. Card lists (a set, a character, an artist, search) mark a print **In your portfolio** only when a held or listed copy’s `exactPrint` is that print id. A copy with no `exactPrint` marks every print of the card number inside its code **You own a version**. A bare `OP13-028` does not mark the base print as the one in the portfolio. The old owned checklist in `piecebook.v1` is left where it is and is not read for these marks.

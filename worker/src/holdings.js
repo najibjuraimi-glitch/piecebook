@@ -50,6 +50,7 @@ export function bookEmail(identity, env) {
 async function readDoc(kv, email) {
   const doc = await kv.get(keyFor(email, STORE), "json");
   if (!doc || typeof doc.revision !== "number" || !Array.isArray(doc.copies)) return emptyHoldings();
+  doc.copies = doc.copies.map((copy) => ({ ...copy, language: copy?.language === "JP" ? "JP" : "EN" }));
   return doc;
 }
 
