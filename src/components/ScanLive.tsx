@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISION_URL } from '../config/vision'
-import { compareFrames, greyDownscale, initialSceneHold, markSceneScanned, nextDryStreak, scanIntervalOpen, sceneMoved, stepSceneHold, type GreyFrame, type SceneHold } from '../lib/cardFrame'
+import { compareFrames, greyDownscale, initialSceneHold, markSceneScanned, nextDryStreak, scanIntervalOpen, sceneMoved, stepSceneHold, substantialSceneChange, type GreyFrame, type SceneHold } from '../lib/cardFrame'
 import type { PixelImage } from '../lib/centering'
 import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
 import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
@@ -283,7 +283,8 @@ export function ScanLive({
         }
         failuresRef.current = 0
         const nowFrame = frameGrey()
-        const movedSince = Boolean(signature && nowFrame && sceneMoved(compareFrames(signature, nowFrame)))
+        const motion = signature && nowFrame ? compareFrames(signature, nowFrame) : null
+        const movedSince = Boolean(motion && sceneMoved(motion))
         setReadError(null)
         setShot({ scan: result.scan, file, targets: result.targets })
         if (result.usage) {
@@ -292,15 +293,26 @@ export function ScanLive({
         }
         setLabelsCurrent(!movedSince)
         setDim(false)
-        const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards)
-        seenCards.current = outcome.seen
-        dryStreak.current = outcome.streak
-        if (outcome.pause) {
-          autoPausedRef.current = true
-          setAutoPaused(true)
-        } else if (outcome.streak === 0) {
-          autoPausedRef.current = false
-          setAutoPaused(false)
+        if (movedSince) {
+          if (motion && substantialSceneChange(motion)) {
+            seenCards.current = new Set()
+            dryStreak.current = 0
+          }
+          if (autoPausedRef.current) {
+            autoPausedRef.current = false
+            setAutoPaused(false)
+          }
+        } else {
+          const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards)
+          seenCards.current = outcome.seen
+          dryStreak.current = outcome.streak
+          if (outcome.pause) {
+            autoPausedRef.current = true
+            setAutoPaused(true)
+          } else if (outcome.streak === 0) {
+            autoPausedRef.current = false
+            setAutoPaused(false)
+          }
         }
       } finally {
         busyRef.current = false
@@ -342,6 +354,10 @@ export function ScanLive({
           if (step.moved) {
             failuresRef.current = 0
             setDim(true)
+            if (step.motion && substantialSceneChange(step.motion)) {
+              seenCards.current = new Set()
+              dryStreak.current = 0
+            }
             if (autoPausedRef.current) {
               autoPausedRef.current = false
               dryStreak.current = 0
@@ -412,12 +428,20 @@ export function ScanLive({
         {reading && (
           <div className="absolute inset-x-6 top-6" data-testid="scan-reading">
             <p className="text-center text-[17px] font-semibold text-white">reading case, about 30s</p>
-            <div className="mx-auto mt-2 h-2 max-w-xs overflow-hidden rounded-full bg-white/30" role="progressbar" aria-valuemin={0} aria-valuemax={30} aria-valuenow={Math.round(readPct * 30)}>
-              <div className="h-full bg-white" style={{ width: `${readPct * 100}%` }} />
+            <div
+              className="mx-auto mt-2 h-2 max-w-xs overflow-hidden rounded-full bg-white/30"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={30}
+              aria-valuenow={readPct >= 1 ? undefined : Math.round(readPct * 30)}
+              aria-valuetext={readPct >= 1 ? 'still reading' : undefined}
+              data-indeterminate={readPct >= 1 ? 'true' : 'false'}
+            >
+              <div className={`h-full bg-white ${readPct >= 1 ? 'scan-read-bar w-1/3' : ''}`} style={readPct >= 1 ? undefined : { width: `${readPct * 100}%` }} />
             </div>
           </div>
         )}
-        {autoPaused && (
+        {autoPaused && labelsCurrent && (
           <button type="button" data-testid="scan-hold" onClick={clearAutoPause} className="absolute inset-x-4 top-16 rounded-xl bg-white px-3 py-3 text-center text-[16px] font-semibold text-black">
             Paused to save scans, move or tap to resume
           </button>

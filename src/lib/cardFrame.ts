@@ -533,7 +533,9 @@ export const SCAN_INTERVAL_MS = 4000
 export const SCENE_LONG_EDGE = 128
 /** A shift of this share of the long edge is a pan, not sensor noise. */
 export const SCENE_MOVE_FRAC = 0.06
-/** Unaligned mean absolute difference above this is a different picture. */
+/** A shift this large is a different view, so cards seen before it are forgotten. */
+export const SCENE_RESET_FRAC = 0.2
+/** Residual difference, after aligning and removing exposure, above which the picture itself changed. */
 export const SCENE_MOVE_MAD = 12
 
 export interface GreyFrame {
@@ -545,6 +547,8 @@ export interface GreyFrame {
 export interface FrameMotion {
   /** Mean absolute grey difference before aligning, 0–255. */
   mad: number
+  /** Difference after the shift, with the mean removed and a small blur. */
+  residual: number
   dx: number
   dy: number
   /** Shift length as a share of the long edge. */
@@ -608,18 +612,32 @@ export function meanAbsDiff(anchor: GreyFrame, next: GreyFrame): number {
 }
 
 function blockSad(anchor: GreyFrame, next: GreyFrame, dx: number, dy: number, x0: number, y0: number, x1: number, y1: number): number | null {
-  let sad = 0
+  let sumA = 0
+  let sumB = 0
   let n = 0
   for (let y = y0; y < y1; y += 2) {
     for (let x = x0; x < x1; x += 2) {
       const bx = x + dx
       const by = y + dy
       if (bx < 0 || by < 0 || bx >= next.width || by >= next.height) continue
-      sad += Math.abs(anchor.data[y * anchor.width + x] - next.data[by * next.width + bx])
+      sumA += anchor.data[y * anchor.width + x]
+      sumB += next.data[by * next.width + bx]
       n += 1
     }
   }
-  return n ? sad / n : null
+  if (!n) return null
+  const meanA = sumA / n
+  const meanB = sumB / n
+  let sad = 0
+  for (let y = y0; y < y1; y += 2) {
+    for (let x = x0; x < x1; x += 2) {
+      const bx = x + dx
+      const by = y + dy
+      if (bx < 0 || by < 0 || bx >= next.width || by >= next.height) continue
+      sad += Math.abs(anchor.data[y * anchor.width + x] - meanA - (next.data[by * next.width + bx] - meanB))
+    }
+  }
+  return sad / n
 }
 
 /** Best whole-pixel shift of the anchor block inside the next frame, searched out to a quarter of the long edge. */
@@ -657,17 +675,99 @@ export function blockShift(anchor: GreyFrame, next: GreyFrame): { dx: number; dy
   return { dx: refined.dx, dy: refined.dy }
 }
 
-/** Mean absolute difference, plus a block search for how far the picture slid. */
-export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
-  const mad = meanAbsDiff(anchor, next)
-  const shift = blockShift(anchor, next)
-  const shiftFrac = Math.hypot(shift.dx, shift.dy) / Math.max(anchor.width, anchor.height, 1)
-  return { mad, dx: shift.dx, dy: shift.dy, shiftFrac }
+function overlapSamples(anchor: GreyFrame, next: GreyFrame, dx: number, dy: number): { a: Float32Array; b: Float32Array; width: number; height: number } | null {
+  const x0 = Math.max(0, -dx)
+  const y0 = Math.max(0, -dy)
+  const x1 = Math.min(anchor.width, next.width - dx)
+  const y1 = Math.min(anchor.height, next.height - dy)
+  const width = x1 - x0
+  const height = y1 - y0
+  if (width < 8 || height < 8) return null
+  const a = new Float32Array(width * height)
+  const b = new Float32Array(width * height)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      a[y * width + x] = anchor.data[(y + y0) * anchor.width + (x + x0)]
+      b[y * width + x] = next.data[(y + y0 + dy) * next.width + (x + x0 + dx)]
+    }
+  }
+  return { a, b, width, height }
 }
 
-/** A pan of about 6% or a picture that no longer matches. Sensor noise stays under both. */
+/** A wide box blur, so a fraction of a pixel does not read as a new picture. */
+function blurBox(src: Float32Array, width: number, height: number, radius: number): Float32Array {
+  const out = new Float32Array(src.length)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      let sum = 0
+      let n = 0
+      for (let ky = -radius; ky <= radius; ky += 1) {
+        const yy = y + ky
+        if (yy < 0 || yy >= height) continue
+        for (let kx = -radius; kx <= radius; kx += 1) {
+          const xx = x + kx
+          if (xx < 0 || xx >= width) continue
+          sum += src[yy * width + xx]
+          n += 1
+        }
+      }
+      out[y * width + x] = sum / n
+    }
+  }
+  return out
+}
+
+/**
+ * How different the pictures are once the slide is removed.
+ * The mean is taken off so a brighter exposure is not a new scene, then a blur
+ * so a tremble smaller than a pixel is not one either.
+ */
+export function alignedResidual(anchor: GreyFrame, next: GreyFrame, dx: number, dy: number): number {
+  const pair = overlapSamples(anchor, next, dx, dy)
+  if (!pair) return meanAbsDiff(anchor, next)
+  const a = blurBox(pair.a, pair.width, pair.height, 2)
+  const b = blurBox(pair.b, pair.width, pair.height, 2)
+  let meanA = 0
+  let meanB = 0
+  for (let i = 0; i < a.length; i += 1) {
+    meanA += a[i]
+    meanB += b[i]
+  }
+  meanA /= a.length
+  meanB /= b.length
+  let sum = 0
+  for (let i = 0; i < a.length; i += 1) sum += Math.abs(a[i] - meanA - (b[i] - meanB))
+  return sum / a.length
+}
+
+/** Shift first, then the residual of the aligned frames. A shift that does not actually line the pictures up is dropped. */
+export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
+  const mad = meanAbsDiff(anchor, next)
+  let shift = blockShift(anchor, next)
+  let residual = alignedResidual(anchor, next, shift.dx, shift.dy)
+  if (shift.dx !== 0 || shift.dy !== 0) {
+    const atZero = alignedResidual(anchor, next, 0, 0)
+    if (residual > atZero * 0.75) {
+      shift = { dx: 0, dy: 0 }
+      residual = atZero
+    }
+  }
+  const shiftFrac = Math.hypot(shift.dx, shift.dy) / Math.max(anchor.width, anchor.height, 1)
+  return { mad, residual, dx: shift.dx, dy: shift.dy, shiftFrac }
+}
+
+/**
+ * Moved when the frame slid by about 6% of its length.
+ * A tremble or an exposure change stays put: the residual after aligning,
+ * removing the mean, and blurring has to clear the bar on its own.
+ */
 export function sceneMoved(motion: FrameMotion): boolean {
-  return motion.shiftFrac >= SCENE_MOVE_FRAC || motion.mad >= SCENE_MOVE_MAD
+  return motion.shiftFrac >= SCENE_MOVE_FRAC || motion.residual >= SCENE_MOVE_MAD
+}
+
+/** A large slide, or a picture that still disagrees after aligning. The seen cards belong to the view before this. */
+export function substantialSceneChange(motion: FrameMotion): boolean {
+  return motion.shiftFrac >= SCENE_RESET_FRAC || motion.residual >= SCENE_MOVE_MAD
 }
 
 /**
@@ -675,28 +775,33 @@ export function sceneMoved(motion: FrameMotion): boolean {
  * across a grid of slabs counts even when each quadrant stays the same brightness.
  * One mild flicker is forgiven. A real shift ends the spell.
  */
-export function stepSceneHold(prev: SceneHold, frame: GreyFrame, now: number): { state: SceneHold; steady: boolean; moved: boolean; ready: boolean } {
+export function stepSceneHold(prev: SceneHold, frame: GreyFrame, now: number): { state: SceneHold; steady: boolean; moved: boolean; ready: boolean; motion: FrameMotion | null } {
   if (!prev.anchor) {
-    return { state: { anchor: frame, steadySince: null, misses: 0, scanned: false }, steady: false, moved: false, ready: false }
+    return { state: { anchor: frame, steadySince: null, misses: 0, scanned: false }, steady: false, moved: false, ready: false, motion: null }
   }
   const motion = compareFrames(prev.anchor, frame)
   if (!sceneMoved(motion)) {
     const steadySince = prev.steadySince ?? now
     const state = { anchor: prev.anchor, steadySince, misses: 0, scanned: prev.scanned }
-    return { state, steady: true, moved: false, ready: !state.scanned && now - steadySince >= SCENE_STEADY_MS }
+    return { state, steady: true, moved: false, ready: !state.scanned && now - steadySince >= SCENE_STEADY_MS, motion }
   }
   const hard = motion.shiftFrac >= SCENE_MOVE_FRAC
   if (!hard && prev.misses < 1) {
-    return { state: { ...prev, misses: prev.misses + 1 }, steady: false, moved: false, ready: false }
+    return { state: { ...prev, misses: prev.misses + 1 }, steady: false, moved: false, ready: false, motion }
   }
-  return { state: { anchor: frame, steadySince: null, misses: 0, scanned: false }, steady: false, moved: true, ready: false }
+  return { state: { anchor: frame, steadySince: null, misses: 0, scanned: false }, steady: false, moved: true, ready: false, motion }
 }
 
-/** Print id when it was read, otherwise the code text. Blank when neither was. */
-export function scanCardKey(card: { printId?: string | null; codeText?: string | null }): string {
+/** Print id, otherwise the code text. An unread slab is its place in this view. Blank when there is nothing to tell it by. */
+export function scanCardKey(card: { printId?: string | null; codeText?: string | null; box?: { x: number; y: number; w: number; h: number } | null }): string {
   const printId = (card.printId || '').trim()
   if (printId) return printId
-  return (card.codeText || '').trim()
+  const code = (card.codeText || '').trim()
+  if (code) return code
+  const box = card.box
+  if (!box) return ''
+  const q = (n: number) => Math.round(n * 10) / 10
+  return `box:${q(box.x)}:${q(box.y)}:${q(box.w)}:${q(box.h)}`
 }
 
 /**
@@ -706,7 +811,7 @@ export function scanCardKey(card: { printId?: string | null; codeText?: string |
 export function nextDryStreak(
   seen: ReadonlySet<string>,
   streak: number,
-  cards: { printId?: string | null; codeText?: string | null }[],
+  cards: { printId?: string | null; codeText?: string | null; box?: { x: number; y: number; w: number; h: number } | null }[],
 ): { seen: Set<string>; streak: number; pause: boolean } {
   const nextSeen = new Set(seen)
   let fresh = false

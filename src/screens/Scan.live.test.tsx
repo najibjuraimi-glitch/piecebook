@@ -123,10 +123,13 @@ beforeEach(() => {
       },
       getImageData(_x: number, _y: number, w: number, h: number) {
         const data = new Uint8ClampedArray(w * h * 4)
+        const cell = 16
         for (let y = 0; y < h; y += 1) {
           for (let x = 0; x < w; x += 1) {
+            const sx = x + pan
+            const id = Math.floor(sx / cell) * 13 + Math.floor(y / cell) * 29
+            const v = sx % cell < 2 || y % cell < 2 ? 16 : 40 + (Math.abs(id * 17) % 180)
             const i = (y * w + x) * 4
-            const v = ((x + pan) * 17 + y * 13) % 180 + 20
             data[i] = data[i + 1] = data[i + 2] = v
             data[i + 3] = 255
           }
@@ -390,7 +393,52 @@ describe('scan camera', () => {
     expect(view.querySelector('[data-testid="scan-moved"]')?.textContent).toBe('moved, rescanning')
     expect(view.querySelector('[data-testid="scan-label-0"]')).toBeNull()
     expect(view.querySelector('[data-testid="scan-label-1"]')).toBeNull()
+    expect(view.textContent).not.toContain('Paused to save scans')
   })
+
+  it('does not pause when the case moves during the read, and the bar keeps moving after 30s', async () => {
+    installPointer(true)
+    installCamera('ok')
+    let release: (() => void) | null = null
+    vi.stubGlobal('fetch', async (input: RequestInfo, init?: RequestInit) => {
+      const url = String(input)
+      const method = (init?.method || 'GET').toUpperCase()
+      if (url.endsWith('/scan') && method === 'GET') return json({ usage: { today: 1, cap: 60 } })
+      if (url.endsWith('/scan')) {
+        scans.push(url)
+        if (scans.length < 3) return json(scanPayload([]))
+        return new Promise((resolve) => {
+          release = () => resolve(json(scanPayload([])))
+        })
+      }
+      if (url.endsWith('/watchlist')) return json({ revision: 0, items: [] })
+      if (url.endsWith('/holdings')) return json({ revision: 0, copies: [], history: [] })
+      return json({ error: 'no' }, 404)
+    })
+    const view = await renderScan()
+    expect(await waitUntil(() => scans.length >= 1, 8000)).toBe(true)
+    pan = 40
+    expect(await waitUntil(() => scans.length >= 2, 8000)).toBe(true)
+    pan = 90
+    expect(await waitUntil(() => scans.length >= 3, 8000)).toBe(true)
+    pan = 160
+    const started = Date.now()
+    const clock = vi.spyOn(Date, 'now').mockImplementation(() => started + 31000)
+    await wait(400)
+    const bar = view.querySelector('[role="progressbar"]')
+    expect(bar?.getAttribute('data-indeterminate')).toBe('true')
+    expect(bar?.hasAttribute('aria-valuenow')).toBe(false)
+    clock.mockRestore()
+    await act(async () => {
+      release?.()
+      await new Promise((resolve) => setTimeout(resolve, 40))
+    })
+    expect(view.querySelector('[data-testid="scan-moved"]')?.textContent).toBe('moved, rescanning')
+    expect(view.querySelector('[data-testid="scan-hold"]')).toBeNull()
+    expect(view.textContent).not.toContain('Paused to save scans')
+    expect(await waitUntil(() => scans.length >= 4, 8000)).toBe(true)
+    expect(view.textContent).not.toContain('Paused to save scans')
+  }, 30000)
 
   it('aborts the scan request when the live view unmounts', async () => {
     installPointer(true)
