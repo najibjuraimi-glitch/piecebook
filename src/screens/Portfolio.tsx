@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CardArt } from '../components/CardArt'
+import { PrintsPanel } from '../components/PrintsPanel'
 import { DataLink } from '../components/DataLink'
 import { EmptyState } from '../components/EmptyState'
 import { Screen, ScreenTitle } from '../components/Screen'
@@ -71,6 +72,21 @@ function QuoteLine({ copy }: { copy: ValuedCopy }) {
   )
 }
 
+function pinOf(copy: ValuedCopy): string | null {
+  const exact = copy.exactPrint?.trim()
+  return exact || null
+}
+
+function pinsDiffer(group: HoldingGroup): boolean {
+  const pins = new Set(group.copies.map(pinOf))
+  return pins.size > 1
+}
+
+function sharedPin(group: HoldingGroup): string | null {
+  if (pinsDiffer(group) || group.copies.length === 0) return null
+  return pinOf(group.copies[0])
+}
+
 function sharedQuote(group: HoldingGroup): ValuedCopy | 'mixed' | null {
   const priced = group.copies.filter((c) => c.quote)
   if (priced.length === 0) return null
@@ -124,6 +140,12 @@ function Group({ group, editable }: { group: HoldingGroup; editable: boolean }) 
       </div>
       {shared === 'mixed' ? <p className="mt-2 text-meta text-muted">Mixed values</p> : shared ? <QuoteLine copy={shared} /> : null}
       {under && <p className="mt-1 text-meta text-bad">Under cost</p>}
+      <PrintsPanel
+        code={group.code}
+        grade={group.grade}
+        exactPrint={sharedPin(group)}
+        mixed={pinsDiffer(group)}
+      />
       <details className="mt-2">
         <summary className="flex min-h-12 cursor-pointer list-none items-center text-meta font-medium text-ink">
           {count === 1 ? 'Row ID' : 'Row IDs'}
@@ -200,6 +222,7 @@ function SoldRow({ copy, editable }: { copy: ValuedCopy; editable: boolean }) {
         {` · Shipping ${money(copy.shippingOutSgd)}`}
       </p>
       <p className="tabular text-meta text-muted">Net {money(copy.netSgd)} · Realized {signed(copy.realizedSgd)}</p>
+      <PrintsPanel code={copy.code} grade={copy.grade} exactPrint={copy.exactPrint} />
       {editable && (
         <p className="mt-2">
           <Link to={`/portfolio/${encodeURIComponent(copy.rowId)}/sold`} className="text-meta font-medium text-ink underline decoration-line underline-offset-2">

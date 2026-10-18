@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
+import { PrintsPanel } from '../components/PrintsPanel'
 import { Screen, ScreenTitle } from '../components/Screen'
 import { dismissAlerts, getAlerts } from '../lib/alertsClient'
 import { NO_PRICE_YET } from '../lib/cardPrices'
@@ -104,8 +105,8 @@ export function WatchlistScreen() {
       ) : (
         <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
           {items.map((item) => (
-            <li key={item.id}>
-              <Link to={`/watchlist/${encodeURIComponent(item.id)}`} className="block px-4 py-3">
+            <li key={item.id} className="px-4 py-3">
+              <Link to={`/watchlist/${encodeURIComponent(item.id)}`} className="block">
                 <p className="text-[15px] font-medium text-ink">
                   {item.code} · {item.grade}
                 </p>
@@ -118,6 +119,7 @@ export function WatchlistScreen() {
                 </p>
                 {item.notes ? <p className="mt-1 text-meta text-muted">{item.notes}</p> : null}
               </Link>
+              <PrintsPanel code={item.code} grade={item.grade === 'PSA 10' ? 'psa10' : item.grade === 'PSA 9' ? 'psa9' : 'raw'} codeIsPin />
             </li>
           ))}
         </ul>
