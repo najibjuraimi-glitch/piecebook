@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISION_URL } from '../config/vision'
-import { compareFrames, dryStreakAfterDiscard, emptySeen, forgetsSeenCards, frameTooDark, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, resetsMovedHold, resumesPausedScan, scanIntervalOpen, sceneMoved, stepDarkState, stepFrameHold, stepSceneHold, unreadBoxMotion, unreadSlabsAreNew, type GreyFrame, type SceneHold } from '../lib/cardFrame'
+import { brightestHalfMean, compareFrames, dryStreakAfterDiscard, emptySeen, forgetsSeenCards, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, resetsMovedHold, resumesPausedScan, scanIntervalOpen, sceneMoved, stepDarkState, stepFrameHold, stepSceneHold, unreadBoxMotion, unreadSlabsAreNew, type GreyFrame, type SceneHold } from '../lib/cardFrame'
 import type { PixelImage } from '../lib/centering'
 import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
 import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
@@ -429,8 +429,8 @@ export function ScanLive({
         if (pixels) {
           const frame = greyDownscale(pixels)
           const now = Date.now()
-          const nextDark = stepDarkState(tooDarkRef.current, darkBrightSince.current, !frameTooDark(frame), now)
-          darkBrightSince.current = nextDark.brightSince
+          const nextDark = stepDarkState(tooDarkRef.current, darkBrightSince.current, brightestHalfMean(frame), now)
+          darkBrightSince.current = nextDark.pendingSince
           const dark = nextDark.dark
           if (dark !== tooDarkRef.current) {
             tooDarkRef.current = dark

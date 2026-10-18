@@ -24,6 +24,7 @@ import {
   SCAN_INTERVAL_MS,
   BOX_MOTION_RESIDUAL,
   MOVED_HOLD_MS,
+  DIM_SLIDE_RESIDUAL,
   PAUSE_RESUME_RESIDUAL,
   SCENE_MOVE_FRAC,
   SCENE_MOVE_MAD,
@@ -64,6 +65,7 @@ import {
   shrinkQuad,
   stepLiveView,
   brightestHalfMean,
+  cameBackDark,
   frameTooDark,
   stepDarkState,
   stepSceneHold,
@@ -666,6 +668,21 @@ function brighten(frame: { width: number; height: number; data: Uint8Array }, de
   const data = new Uint8Array(frame.data.length)
   for (let i = 0; i < data.length; i += 1) data[i] = Math.max(0, Math.min(255, frame.data[i] + delta))
   return { width: frame.width, height: frame.height, data }
+}
+
+function revealDark(img: PixelImage, frac: number): PixelImage {
+  const moved = translateImage(img, frac)
+  const dx = Math.round(img.width * frac)
+  if (dx === 0) return moved
+  const x0 = dx > 0 ? 0 : img.width + dx
+  const x1 = dx > 0 ? dx : img.width
+  for (let y = 0; y < img.height; y += 1) {
+    for (let x = x0; x < x1; x += 1) {
+      const i = (y * img.width + x) * 4
+      moved.data[i] = moved.data[i + 1] = moved.data[i + 2] = 0
+    }
+  }
+  return moved
 }
 
 function translateImage(img: PixelImage, frac: number): PixelImage {
@@ -1431,6 +1448,207 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(missed.scans).toBe(0)
   })
 
+  it('drops a dim14 pan30 sent in the light when the read comes back dark', () => {
+    const lit = expose(casePortrait(), 0.14)
+    const cache = new Map<number, ReturnType<typeof greyDownscale>>()
+    const frameAt = (frac: number) => {
+      const key = Math.round(frac * 100) / 100
+      let frame = cache.get(key)
+      if (!frame) {
+        frame = greyDownscale(revealDark(lit, key))
+        cache.set(key, frame)
+      }
+      return frame
+    }
+    const sent = frameAt(0)
+    const back = frameAt(0.3)
+    expect(frameTooDark(sent)).toBe(false)
+    expect(frameTooDark(back)).toBe(true)
+    const card = 1 / 3
+    const watch = (readMs: number) => {
+      const dt = 200
+      let t = 0
+      let anchorPos = 0
+      let steadySince: number | null = null
+      let scanned = false
+      let lastScanAt: number | null = null
+      let readingUntil: number | null = null
+      let capturePos = 0
+      let wrong = 0
+      let dark = false
+      let pending: number | null = null
+      const posAt = (time: number) => (time <= 1_000 ? 0 : Math.min(0.3, ((time - 1_000) / 2_000) * 0.3))
+      while (t <= 1_000 + readMs + dt) {
+        const pos = posAt(t)
+        const frame = frameAt(pos)
+        const nextDark = stepDarkState(dark, pending, brightestHalfMean(frame), t)
+        dark = nextDark.dark
+        pending = nextDark.pendingSince
+        if (readingUntil != null && t >= readingUntil) {
+          const motion = compareFrames(frameAt(capturePos), frame)
+          expect(cameBackDark(motion)).toBe(true)
+          expect(placeRead(motion)).toBe('discard')
+          expect(labelOffset(motion, frame.width, frame.height)).toBeNull()
+          expect(dryStreakAfterDiscard(2, motion)).toBeNull()
+          if (placeRead(motion) === 'show') {
+            const offset = labelOffset(motion, 100, 100)
+            if (offset && Math.abs(offset.x - (pos - capturePos)) > card / 2) wrong += 1
+          }
+          readingUntil = null
+          lastScanAt = t
+          scanned = false
+          anchorPos = pos
+          steadySince = null
+        }
+        if (readingUntil == null && !dark) {
+          const hold = compareFrames(frameAt(anchorPos), frame)
+          if (!sceneMoved(hold)) {
+            if (steadySince == null || steadySince > t) steadySince = t
+            if (!scanned && t - steadySince >= SCENE_STEADY_MS && scanIntervalOpen(lastScanAt, t)) {
+              scanned = true
+              readingUntil = t + readMs
+              capturePos = pos
+            }
+          } else {
+            anchorPos = pos
+            steadySince = null
+            scanned = false
+          }
+        }
+        t += dt
+      }
+      expect(readingUntil).toBeNull()
+      return wrong
+    }
+    expect(watch(8_000)).toBe(0)
+    expect(watch(33_700)).toBe(0)
+    const tapped = compareFrames(back, frameAt(0.32))
+    expect(labelOffset(tapped, 100, 100)).toEqual({ x: 0, y: 0 })
+  })
+
+  it('does not flicker the dark cue on a dim14 band shadow or a slow drift', () => {
+    const img = casePortrait()
+    const bandAt = (shift: number) => {
+      const base = expose(img, 0.14)
+      const out = copy(base)
+      const width = Math.floor(out.width * 0.4)
+      const x0 = Math.max(0, Math.min(out.width - width, Math.round(shift * out.width)))
+      for (let y = 0; y < out.height; y += 1) {
+        for (let x = x0; x < x0 + width; x += 1) {
+          const i = (y * out.width + x) * 4
+          out.data[i] = Math.round(out.data[i] * 0.6)
+          out.data[i + 1] = Math.round(out.data[i + 1] * 0.6)
+          out.data[i + 2] = Math.round(out.data[i + 2] * 0.6)
+        }
+      }
+      return greyDownscale(out)
+    }
+    const run = (halfAt: (t: number) => number) => {
+      let dark = false
+      let pending: number | null = null
+      let toggles = 0
+      let immediate = false
+      let immediateSince: number | null = null
+      let immediateToggles = 0
+      let minHalf = 255
+      for (let t = 0; t <= 120_000; t += 200) {
+        const half = halfAt(t)
+        if (half < minHalf) minHalf = half
+        const next = stepDarkState(dark, pending, half, t)
+        if (next.dark !== dark) toggles += 1
+        dark = next.dark
+        pending = next.pendingSince
+        const brightEnough = half >= 18
+        let entered: boolean = immediate
+        let since: number | null = immediateSince
+        if (!brightEnough) {
+          entered = true
+          since = null
+        } else if (!immediate) {
+          entered = false
+          since = null
+        } else {
+          const started: number = immediateSince != null && immediateSince <= t ? immediateSince : t
+          if (t - started >= 1_000) {
+            entered = false
+            since = null
+          } else {
+            entered = true
+            since = started
+          }
+        }
+        if (entered !== immediate) immediateToggles += 1
+        immediate = entered
+        immediateSince = since
+      }
+      return { toggles, immediateToggles, minHalf }
+    }
+    const band = run((t) => brightestHalfMean(bandAt(0.5 + 0.3 * Math.sin((2 * Math.PI * t) / 2_000))))
+    expect(band.minHalf).toBeLessThan(17.5)
+    expect(band.immediateToggles).toBeGreaterThan(0)
+    expect(band.toggles).toBe(0)
+    const lit = expose(img, 0.14)
+    const driftCache = new Map<number, number>()
+    const drift = run((t) => {
+      const frac = Math.round(Math.min(0.36, 0.003 * (t / 1000)) * 100) / 100
+      let half = driftCache.get(frac)
+      if (half == null) {
+        half = brightestHalfMean(greyDownscale(revealDark(lit, frac)))
+        driftCache.set(frac, half)
+      }
+      return half
+    })
+    expect(drift.minHalf).toBeLessThan(18)
+    expect(drift.minHalf).toBeGreaterThanOrEqual(17.5)
+    expect(drift.toggles).toBe(0)
+    const dim13 = brightestHalfMean(greyDownscale(expose(img, 0.13)))
+    expect(dim13).toBeLessThan(17.5)
+    let state = stepDarkState(false, null, dim13, 0)
+    expect(state.dark).toBe(false)
+    state = stepDarkState(state.dark, state.pendingSince, dim13, 1000)
+    expect(state.dark).toBe(true)
+    state = stepDarkState(state.dark, state.pendingSince, dim13, 5000)
+    expect(state.dark).toBe(true)
+    for (const exposure of [0.12, 0.1, 0.08]) {
+      const half = brightestHalfMean(greyDownscale(expose(img, exposure)))
+      let held = stepDarkState(false, null, half, 0)
+      held = stepDarkState(held.dark, held.pendingSince, half, 1000)
+      expect(held.dark).toBe(true)
+    }
+  })
+
+  it('does not resume dim14 during the 8% wobble before a 45% pan', () => {
+    const img = casePortrait()
+    const lit = expose(img, 0.14)
+    const anchor = greyDownscale(noisy(lit, 7, 4))
+    let resumes = 0
+    let peak = 0
+    for (let step = 0; step <= 8; step += 1) {
+      const frac = 0.08 * Math.sin((Math.PI * step) / 8)
+      const frame = greyDownscale(noisy(translateImage(lit, frac), 7, 20 + step))
+      const motion = compareFrames(anchor, frame)
+      peak = Math.max(peak, motion.contentResidual ?? 0)
+      if (resumesPausedScan(motion)) resumes += 1
+    }
+    expect(peak).toBeGreaterThan(PAUSE_RESUME_RESIDUAL)
+    expect(resumes).toBe(0)
+    const swapped = expose(copy(img), 0.14)
+    const band = Math.floor(swapped.height / 2)
+    for (let y = 0; y < band; y += 1) {
+      for (let x = 0; x < swapped.width; x += 1) {
+        const i = (y * swapped.width + x) * 4
+        swapped.data[i] = 255 - swapped.data[i]
+        swapped.data[i + 1] = 255 - swapped.data[i + 1]
+        swapped.data[i + 2] = 255 - swapped.data[i + 2]
+      }
+    }
+    const row = compareFrames(greyDownscale(lit), greyDownscale(noisy(translateImage(swapped, 0.08), 7, 5)))
+    expect(row.contentResidual ?? 0).toBeGreaterThanOrEqual(DIM_SLIDE_RESIDUAL)
+    expect(resumesPausedScan(row)).toBe(true)
+    const panned = compareFrames(anchor, greyDownscale(noisy(translateImage(lit, 0.45), 7, 9)))
+    expect(resumesPausedScan(panned)).toBe(true)
+  })
+
   it('keeps real dim10 and dim12 dark, and pauses a mean of about 20 after four wobble scans', () => {
     const portrait = casePortrait()
     for (const exposure of [0.1, 0.12]) {
@@ -1513,16 +1731,18 @@ describe('case view: one steady second, then not the same scene again', () => {
     let on = false
     for (let t = 0; t <= 120_000; t += 200) {
       if (rand() < 0.08) on = !on
-      const next = stepDarkState(dark, brightSince, !frameTooDark(on ? shadowed : lit), t)
+      const next = stepDarkState(dark, brightSince, brightestHalfMean(on ? shadowed : lit), t)
       dark = next.dark
-      brightSince = next.brightSince
+      brightSince = next.pendingSince
     }
     expect(dark).toBe(false)
-    let state = stepDarkState(false, null, false, 0)
+    let state = stepDarkState(false, null, 17, 0)
+    expect(state.dark).toBe(false)
+    state = stepDarkState(state.dark, state.pendingSince, 17, 1000)
     expect(state.dark).toBe(true)
-    state = stepDarkState(state.dark, state.brightSince, true, 800)
+    state = stepDarkState(state.dark, state.pendingSince, 18, 1000)
     expect(state.dark).toBe(true)
-    state = stepDarkState(state.dark, state.brightSince, true, 800 + 1000)
+    state = stepDarkState(state.dark, state.pendingSince, 18, 2000)
     expect(state.dark).toBe(false)
     const tracked = { mad: 0, residual: 4, dx: 0, dy: 0, shiftFrac: 0, frameMean: 20, brightHalf: 22, contentResidual: 8.8, contentShiftFrac: 0, contentDx: 0, contentDy: 0 }
     expect(placeRead(tracked)).toBe('show')

@@ -559,13 +559,20 @@ export const DIM_FRAME_MEAN = 40
 export const NEAR_BLACK_MEAN = 17
 /** Darkness is the brightest half of the frame, not the whole-frame mean. */
 export const BRIGHT_HALF_MIN = 18
-/** A bright spell this long clears the too-dark state. Entering it is immediate. */
+/** Enter the too-dark state only after the brightest half has stayed under this. */
+export const DARK_ENTER_MAX = 17.5
+/** A spell this long enters or clears the too-dark state. */
 export const DARK_CLEAR_MS = 1000
 /**
  * A paused scan resumes when the local-mean residual reaches this.
  * Shadows and sensor noise stay under it. A pale sleeve or a white table clears it.
  */
 export const PAUSE_RESUME_RESIDUAL = 15
+/**
+ * A dim slide under a new view has to clear this before it resumes.
+ * An 8% wobble in dim light sits between the ordinary gate and this one.
+ */
+export const DIM_SLIDE_RESIDUAL = 20
 
 export interface GreyFrame {
   width: number
@@ -592,6 +599,10 @@ export interface FrameMotion {
   frameMean?: number
   /** Brightest of the four halves of the darker frame. */
   brightHalf?: number
+  /** Brightest half of the frame the read was sent from. */
+  anchorBright?: number
+  /** Brightest half of the frame the read came back on. */
+  nextBright?: number
   dx: number
   dy: number
   /** Shift length. X is a share of the width and y a share of the height, then combined. */
@@ -890,6 +901,8 @@ export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
     dy: raw.dy,
     shiftFrac: raw.shiftFrac,
     frameMean: Math.min(greyMean(anchor), greyMean(next)),
+    anchorBright: brightestHalfMean(anchor),
+    nextBright: brightestHalfMean(next),
     brightHalf: Math.min(brightestHalfMean(anchor), brightestHalfMean(next)),
     get contentResidual() {
       return ensure().residual
@@ -924,21 +937,33 @@ export function frameTooDark(frame: GreyFrame): boolean {
 }
 
 /**
- * Darkness turns on immediately. It turns off only after the brightest half
- * has stayed above the bar for a second, so a passing shadow does not flicker the cue.
+ * Enter after a second under 17.5. Clear after a second at 18 or more.
+ * The band between those holds the current state, so a shadow does not flicker the cue.
  */
 export function stepDarkState(
   dark: boolean,
-  brightSince: number | null,
-  brightEnough: boolean,
+  pendingSince: number | null,
+  brightHalf: number,
   now: number,
-  clearMs = DARK_CLEAR_MS,
-): { dark: boolean; brightSince: number | null } {
-  if (!brightEnough) return { dark: true, brightSince: null }
-  if (!dark) return { dark: false, brightSince: null }
-  const since = brightSince != null && brightSince <= now ? brightSince : now
-  if (now - since >= clearMs) return { dark: false, brightSince: null }
-  return { dark: true, brightSince: since }
+  holdMs = DARK_CLEAR_MS,
+): { dark: boolean; pendingSince: number | null } {
+  const since = pendingSince != null && pendingSince <= now ? pendingSince : now
+  if (!dark) {
+    if (brightHalf >= DARK_ENTER_MAX) return { dark: false, pendingSince: null }
+    if (now - since >= holdMs) return { dark: true, pendingSince: null }
+    return { dark: false, pendingSince: since }
+  }
+  if (brightHalf < BRIGHT_HALF_MIN) return { dark: true, pendingSince: null }
+  if (now - since >= holdMs) return { dark: false, pendingSince: null }
+  return { dark: true, pendingSince: since }
+}
+
+/** The read was sent from a frame that could be tracked and came back too dark to place. */
+export function cameBackDark(motion: FrameMotion | null): boolean {
+  if (!motion) return false
+  const sent = motion.anchorBright ?? motion.brightHalf ?? motion.frameMean ?? 255
+  const back = motion.nextBright ?? motion.brightHalf ?? motion.frameMean ?? 255
+  return !tooDarkToTrack(sent) && tooDarkToTrack(back)
 }
 
 /** Shift used to place or drop a read. Dim light trusts the local-mean shift, until it is too dark to track. */
@@ -946,14 +971,18 @@ function trackLevel(motion: FrameMotion): number {
   return motion.brightHalf ?? motion.frameMean ?? 255
 }
 
+function sentWhileDark(motion: FrameMotion): boolean {
+  return tooDarkToTrack(motion.anchorBright ?? motion.brightHalf ?? motion.frameMean ?? 255)
+}
+
 function placedShift(motion: FrameMotion): number {
-  if (tooDarkToTrack(trackLevel(motion))) return 0
+  if (sentWhileDark(motion)) return 0
   if (dimFrame(motion)) return motion.contentShiftFrac ?? motion.shiftFrac
   return motion.shiftFrac
 }
 
 function placedDelta(motion: FrameMotion): { dx: number; dy: number } {
-  if (tooDarkToTrack(trackLevel(motion))) return { dx: 0, dy: 0 }
+  if (sentWhileDark(motion)) return { dx: 0, dy: 0 }
   if (dimFrame(motion) && motion.contentDx != null && motion.contentDy != null) return { dx: motion.contentDx, dy: motion.contentDy }
   return { dx: motion.dx, dy: motion.dy }
 }
@@ -998,11 +1027,15 @@ export function substantialSceneChange(motion: FrameMotion): boolean {
  * A paused scan resumes on a slide of about 20% of the frame, or when the
  * local-mean residual reaches about 15. A shadow does not. Near-black frames
  * use the raw residual, so a swap there needs a tap. A 15% pan does not.
+ * A dim wobble under 20% has to clear a higher residual, so sensor noise does not.
  */
 export function resumesPausedScan(motion: FrameMotion | null): boolean {
   if (!motion) return false
   const shift = motion.contentShiftFrac ?? motion.shiftFrac
-  return shift >= SCENE_RESET_FRAC || gateResidual(motion) >= PAUSE_RESUME_RESIDUAL
+  if (shift >= SCENE_RESET_FRAC) return true
+  const residual = gateResidual(motion)
+  if (dimFrame(motion) && shift > 0 && shift < SCENE_RESET_FRAC && residual < DIM_SLIDE_RESIDUAL) return false
+  return residual >= PAUSE_RESUME_RESIDUAL
 }
 
 /** The hold-still clock restarts on a real slide. A light blinking in place does not restart it. */
@@ -1032,6 +1065,7 @@ export function stepFrameHold(since: number | null, frameMoved: boolean, now: nu
  */
 export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
   if (!motion) return 'show'
+  if (cameBackDark(motion)) return 'discard'
   const shift = placedShift(motion)
   const residual = placedResidual(motion)
   const substantial = shift >= SCENE_RESET_FRAC || residual >= SCENE_MOVE_MAD
@@ -1071,7 +1105,7 @@ export function rearmAfterDiscard(state: SceneHold): SceneHold {
  * A real slide does not. Three of these pauses the camera.
  */
 export function dryStreakAfterDiscard(streak: number, motion: FrameMotion | null): { streak: number; pause: boolean } | null {
-  if (!motion || placedShift(motion) >= SCENE_MOVE_FRAC || placeRead(motion) !== 'discard') return null
+  if (!motion || cameBackDark(motion) || placedShift(motion) >= SCENE_MOVE_FRAC || placeRead(motion) !== 'discard') return null
   const next = streak + 1
   return { streak: next, pause: next >= 3 }
 }
