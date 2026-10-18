@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { allIn, fanaticsShipping, FEE_PRESETS, gstWarning, maxHammer, PREMIUM_PRESETS, watchBidTarget } from './allIn'
+import { allIn, FANATICS_SHIPPING_PROMPT, fanaticsShipping, FEE_PRESETS, gstWarning, maxHammer, PREMIUM_PRESETS, watchBidTarget } from './allIn'
 import { todayIso } from './format'
 
 const goldin = {
@@ -99,18 +99,17 @@ describe('all-in', () => {
 describe('max hammer', () => {
   it('solves the hammer that lands on the all-in', () => {
     const forward = allIn({ ...goldin, hammer: 100 })!
-    const back = maxHammer({ ...goldin, targetSgd: forward.allInSgd })
-    expect(back?.hammer).toBe(100)
-    expect(back?.allInSgd).toBe(forward.allInSgd)
+    const back = asBid(maxHammer({ ...goldin, targetSgd: forward.allInSgd }))
+    expect(back.hammer).toBe(100)
+    expect(back.allInSgd).toBe(forward.allInSgd)
   })
 
   it('steps the hammer down so the all-in stays inside a tighter target', () => {
     const target = 190.85
-    const back = maxHammer({ ...goldin, targetSgd: target })
-    expect(back).not.toBeNull()
-    expect(back!.hammer).toBeLessThan(100)
-    expect(back!.allInSgd).toBeLessThanOrEqual(target)
-    const next = allIn({ ...goldin, hammer: roundUpCent(back!.hammer) })
+    const back = asBid(maxHammer({ ...goldin, targetSgd: target }))
+    expect(back.hammer).toBeLessThan(100)
+    expect(back.allInSgd).toBeLessThanOrEqual(target)
+    const next = allIn({ ...goldin, hammer: roundUpCent(back.hammer) })
     expect(next!.allInSgd).toBeGreaterThan(target)
   })
 
@@ -157,7 +156,7 @@ describe('max hammer', () => {
     expect(inside).toMatchObject({ hammer: 292.52, importSgd: 400, gstOn: false, allInSgd: 400 })
     const above = maxHammer({ ...shared, targetSgd: 436.01 })
     expect(above).toMatchObject({ hammer: 292.53, gstOn: true, allInSgd: 436.01 })
-    expect(above!.allInSgd).toBeLessThanOrEqual(436.01)
+    expect(asBid(above).allInSgd).toBeLessThanOrEqual(436.01)
   })
 
   it('returns the exact JPY cent', () => {
@@ -182,6 +181,7 @@ describe('max hammer', () => {
     expect(fanaticsShipping(1499.99)).toBe(15)
     expect(fanaticsShipping(1500)).toBe(25)
     expect(fanaticsShipping(3000)).toBe(25)
+    expect(fanaticsShipping(3000.01)).toBeNull()
     const tier = allIn({
       hammer: 1300,
       currency: 'USD',
@@ -196,6 +196,52 @@ describe('max hammer', () => {
     expect(tier).toMatchObject({ premium: 260, sellerShipping: 25, shippingTier: 25 })
     const override = allIn({ ...tier!, sellerShipping: 15, fanaticsTier: true, hammer: 1300, gst: 'off' })
     expect(override).toMatchObject({ sellerShipping: 15, shippingTier: null })
+    expect(
+      allIn({
+        hammer: 100,
+        currency: 'USD',
+        premiumPercent: 20,
+        paymentFeePercent: 2.9,
+        sellerShipping: null,
+        fanaticsTier: true,
+        forwarderSgd: 0,
+        fx: 1,
+        gst: 'off',
+      }),
+    ).toBeNull()
+    expect(
+      allIn({
+        hammer: 2600,
+        currency: 'USD',
+        premiumPercent: 20,
+        paymentFeePercent: 2.9,
+        sellerShipping: null,
+        fanaticsTier: true,
+        forwarderSgd: 0,
+        fx: 1,
+        gst: 'off',
+      }),
+    ).toBeNull()
+  })
+
+  it('solves the Boa EB03 max from the Fanatics card fee, not the no-fee hammer', () => {
+    const shared = {
+      currency: 'USD',
+      premiumPercent: 20,
+      paymentFeePercent: 2.9,
+      sellerShipping: null,
+      fanaticsTier: true,
+      forwarderSgd: 8.96,
+      fx: 1.279918,
+      gst: 'off' as const,
+    }
+    const back = maxHammer({ ...shared, targetSgd: 2140.11 })
+    expect(back).toMatchObject({ hammer: 1327.62, sellerShipping: 25, paymentFeePercent: 2.9, gstOn: false })
+    const noFee = maxHammer({ ...shared, paymentFeePercent: 0, targetSgd: 2140.11 })
+    expect(noFee).toMatchObject({ hammer: 1366.72 })
+    expect(maxHammer({ ...shared, targetSgd: 50 })).toBe('fanatics-shipping')
+    expect(maxHammer({ ...shared, targetSgd: 100_000 })).toBe('fanatics-shipping')
+    expect(FANATICS_SHIPPING_PROMPT).toBe('Type the shipping from the Fanatics checkout.')
   })
 })
 
@@ -231,6 +277,11 @@ describe('watch bid target', () => {
     expect(watchBidTarget({ targetSgd: null, marketSgd: null, marketSource: null, marketAsOf: null }, today)).toBeNull()
   })
 })
+
+function asBid(result: ReturnType<typeof maxHammer>) {
+  if (result == null || result === 'fanatics-shipping') throw new Error('expected a hammer')
+  return result
+}
 
 function roundUpCent(hammer: number): number {
   return Math.round(hammer * 100 + 1) / 100

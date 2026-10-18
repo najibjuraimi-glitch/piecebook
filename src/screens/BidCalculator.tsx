@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { BackBar, Screen } from '../components/Screen'
 import {
   allIn,
+  FANATICS_SHIPPING_PROMPT,
   fanaticsShipping,
   FEE_PRESETS,
   gstWarning,
@@ -63,6 +64,7 @@ export function BidCalculator() {
   const [preset, setPreset] = useState<PremiumPresetId | 'custom'>('ebay')
   const [customPercent, setCustomPercent] = useState('')
   const [feePreset, setFeePreset] = useState<FeePresetId | 'custom'>('ebay')
+  const [feeTouched, setFeeTouched] = useState(false)
   const [customFee, setCustomFee] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [hammer, setHammer] = useState('')
@@ -113,6 +115,17 @@ export function BidCalculator() {
     return () => ac.abort()
   }, [itemId])
 
+  function selectPremium(id: PremiumPresetId | 'custom') {
+    setPreset(id)
+    if (feeTouched || id === 'custom') return
+    setFeePreset(id)
+  }
+
+  function selectFee(id: FeePresetId | 'custom') {
+    setFeeTouched(true)
+    setFeePreset(id)
+  }
+
   const premiumPercent = preset === 'custom' ? moneyOf(customPercent) : PREMIUM_PRESETS.find((item) => item.id === preset)!.percent
   const paymentFeePercent = feePreset === 'custom' ? moneyOf(customFee) : FEE_PRESETS.find((item) => item.id === feePreset)!.percent
   const shippingTyped = moneyOf(shipping)
@@ -145,12 +158,19 @@ export function BidCalculator() {
   else if (shared && mode === 'all-in') {
     const hammerN = moneyOf(hammer)
     if (hammerN === 'bad') blocked = 'Use a number that is zero or more.'
-    else if (hammerN !== 'blank') result = allIn({ ...shared, hammer: hammerN })
+    else if (hammerN !== 'blank') {
+      result = allIn({ ...shared, hammer: hammerN })
+      if (!result && preset === 'fanatics' && sellerShipping == null) blocked = FANATICS_SHIPPING_PROMPT
+    }
   } else if (shared && mode === 'max') {
     if (targetN === 'bad') blocked = 'Use a number that is zero or more.'
     else if (targetN !== 'blank') {
-      result = maxHammer({ ...shared, targetSgd: targetN })
-      if (!result) blocked = 'Shipping and the forwarder already pass that all-in.'
+      const solved = maxHammer({ ...shared, targetSgd: targetN })
+      if (solved === 'fanatics-shipping') blocked = FANATICS_SHIPPING_PROMPT
+      else {
+        result = solved
+        if (!result) blocked = 'Shipping and the forwarder already pass that all-in.'
+      }
     }
   }
 
@@ -264,7 +284,7 @@ export function BidCalculator() {
                 type="button"
                 role="radio"
                 aria-checked={preset === item.id}
-                onClick={() => setPreset(item.id)}
+                onClick={() => selectPremium(item.id)}
                 className={`h-11 rounded-xl px-3 text-[14px] font-medium ${preset === item.id ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
               >
                 {item.label} {item.percent}%
@@ -274,7 +294,7 @@ export function BidCalculator() {
               type="button"
               role="radio"
               aria-checked={preset === 'custom'}
-              onClick={() => setPreset('custom')}
+              onClick={() => selectPremium('custom')}
               className={`h-11 rounded-xl px-3 text-[14px] font-medium ${preset === 'custom' ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
             >
               Custom
@@ -300,7 +320,7 @@ export function BidCalculator() {
                 type="button"
                 role="radio"
                 aria-checked={feePreset === item.id}
-                onClick={() => setFeePreset(item.id)}
+                onClick={() => selectFee(item.id)}
                 className={`h-11 rounded-xl px-3 text-[14px] font-medium ${feePreset === item.id ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
               >
                 {item.label}
@@ -310,7 +330,7 @@ export function BidCalculator() {
               type="button"
               role="radio"
               aria-checked={feePreset === 'custom'}
-              onClick={() => setFeePreset('custom')}
+              onClick={() => selectFee('custom')}
               className={`h-11 rounded-xl px-3 text-[14px] font-medium ${feePreset === 'custom' ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
             >
               Custom
@@ -321,7 +341,10 @@ export function BidCalculator() {
               aria-label="Custom payment fee percent"
               inputMode="decimal"
               value={customFee}
-              onChange={(e) => setCustomFee(e.target.value)}
+              onChange={(e) => {
+                setFeeTouched(true)
+                setCustomFee(e.target.value)
+              }}
               className={`tabular ${field}`}
             />
           )}
@@ -335,7 +358,7 @@ export function BidCalculator() {
           <input id={`${ids}-shipping`} inputMode="decimal" value={shipping} onChange={(e) => setShipping(e.target.value)} className={`tabular ${field}`} />
           {preset === 'fanatics' && (
             <p className="mt-1 text-meta text-muted">
-              Fanatics shipping is US$15 from US$750 to US$1,500 of hammer plus premium, and US$25 from US$1,500 to US$3,000. Leave this blank to use that tier. A typed amount overrides it.
+              Fanatics shipping is US$15 from US$750 to US$1,500 of hammer plus premium, and US$25 from US$1,500 to US$3,000. Leave this blank inside that band. Outside it, type the shipping from the Fanatics checkout. A typed amount overrides the tier.
             </p>
           )}
           {shippingOverride && suggestedTier != null && (

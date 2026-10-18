@@ -124,10 +124,13 @@ function percentOk(n: number): boolean {
   return Number.isFinite(n) && n >= 0 && n <= 100
 }
 
+/** Shown when Fanatics shipping is blank and the closing value is outside the verified tiers. */
+export const FANATICS_SHIPPING_PROMPT = 'Type the shipping from the Fanatics checkout.'
+
 /**
- * Fanatics seller shipping by hammer + premium.
- * US$15 from US$750 up to US$1,500, US$25 from US$1,500 through US$3,000.
- * Outside that, null. A typed amount overrides this.
+ * Fanatics seller shipping by hammer + premium, only where the tier is verified.
+ * US$15 from US$750 up to US$1,500. US$25 from US$1,500 through US$3,000.
+ * Outside that band, null. Nothing else is filled in.
  */
 export function fanaticsShipping(closing: number): 15 | 25 | null {
   if (closing >= 1500 && closing <= 3000) return 25
@@ -135,14 +138,64 @@ export function fanaticsShipping(closing: number): 15 | 25 | null {
   return null
 }
 
-function shippingFor(hammer: number, premiumPercent: number, typed: number | null, tier: boolean): { amount: number; tier: number | null } {
+function closingOf(hammer: number, premiumPercent: number): number {
   const premium = round2((round2(hammer) * premiumPercent) / 100)
-  const closing = round2(round2(hammer) + premium)
-  const band = tier ? fanaticsShipping(closing) : null
-  if (typed != null) return { amount: typed, tier: band }
-  if (band != null) return { amount: band, tier: band }
-  if (tier && closing > 3000) return { amount: 25, tier: 25 }
-  return { amount: 0, tier: null }
+  return round2(round2(hammer) + premium)
+}
+
+const FANATICS_CENT_CAP = 1_000_000
+
+function firstCent(pred: (cents: number) => boolean): number | null {
+  if (!pred(FANATICS_CENT_CAP)) return null
+  let lo = 0
+  let hi = FANATICS_CENT_CAP
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi) / 2)
+    if (pred(mid)) hi = mid
+    else lo = mid + 1
+  }
+  return pred(lo) ? lo : null
+}
+
+function lastCent(pred: (cents: number) => boolean): number | null {
+  if (!pred(0)) return null
+  let lo = 0
+  let hi = FANATICS_CENT_CAP
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi + 1) / 2)
+    if (pred(mid)) lo = mid
+    else hi = mid - 1
+  }
+  return pred(lo) ? lo : null
+}
+
+/** Highest cent inside the verified Fanatics band whose all-in fits. GST stays in `fits`. */
+function maxInsideFanaticsBand(premiumPercent: number, fits: (cents: number) => boolean): number | 'fanatics-shipping' | null {
+  const lo = firstCent((cents) => closingOf(cents / 100, premiumPercent) >= 750)
+  const hi = lastCent((cents) => closingOf(cents / 100, premiumPercent) <= 3000)
+  if (lo == null || hi == null || lo > hi) return 'fanatics-shipping'
+  if (!fits(lo) || fits(hi)) return 'fanatics-shipping'
+  let low = lo
+  let high = hi
+  while (low < high) {
+    const mid = Math.floor((low + high + 1) / 2)
+    if (fits(mid)) low = mid
+    else high = mid - 1
+  }
+  return fits(low) ? low : null
+}
+
+function shippingFor(
+  hammer: number,
+  premiumPercent: number,
+  typed: number | null,
+  tier: boolean,
+): { amount: number; tier: number | null } | 'missing' {
+  if (typed != null) return { amount: typed, tier: null }
+  if (!tier) return { amount: 0, tier: null }
+  const band = fanaticsShipping(closingOf(hammer, premiumPercent))
+  if (band == null) return 'missing'
+  return { amount: band, tier: band }
 }
 
 function gstApplies(mode: GstMode, importSgd: number): boolean {
@@ -174,6 +227,7 @@ export function allIn(input: AllInInput): AllInResult | null {
   const hammer = round2(input.hammer)
   const premium = round2((hammer * input.premiumPercent) / 100)
   const resolved = shippingFor(hammer, input.premiumPercent, input.sellerShipping, input.fanaticsTier === true)
+  if (resolved === 'missing') return null
   const sellerShipping = round2(resolved.amount)
   const invoice = round2(hammer + premium + sellerShipping)
   const charged = round2(invoice * (1 + input.paymentFeePercent / 100))
@@ -222,8 +276,9 @@ function rawHammer(input: MaxHammerInput, fx: number, gstOn: boolean, sellerShip
  * Reverse: the highest hammer, in cents of the hammer currency, whose all-in is still at or under the target.
  * The search is a bisection, so the GST jump at S$400 and a yen both land on the exact cent.
  * Null when the shipping and forwarder already pass the target.
+ * `fanatics-shipping` when a blank Fanatics field is outside the verified US$750–3,000 band.
  */
-export function maxHammer(input: MaxHammerInput): AllInResult | null {
+export function maxHammer(input: MaxHammerInput): AllInResult | 'fanatics-shipping' | null {
   const currency = currencyOf(input.currency)
   if (!currency) return null
   if (!money(input.forwarderSgd) || !money(input.targetSgd)) return null
@@ -247,6 +302,12 @@ export function maxHammer(input: MaxHammerInput): AllInResult | null {
     if (cents < 0 || !Number.isSafeInteger(cents)) return false
     const result = allIn({ ...shared, hammer: cents / 100 })
     return result != null && result.allInSgd <= input.targetSgd + 1e-9
+  }
+  if (input.fanaticsTier === true && input.sellerShipping == null) {
+    const band = maxInsideFanaticsBand(input.premiumPercent, fits)
+    if (band == null) return null
+    if (band === 'fanatics-shipping') return band
+    return allIn({ ...shared, hammer: band / 100 })
   }
   if (!fits(0)) return null
   const shippingGuess = input.sellerShipping ?? 0

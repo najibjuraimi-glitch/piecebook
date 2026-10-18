@@ -10,13 +10,13 @@ Hammer, buyer's premium and seller shipping are in the hammer currency. Premium 
 
 Auction invoice = hammer + premium + seller shipping.
 
-The payment fee is a percent of that invoice, still in the hammer currency: eBay 0%, Fanatics card 2.9%, Goldin about 3%, or a custom percent. eBay 0% is the no-card case. The fee is its own line. The amount that converts is the invoice plus that fee.
+The payment fee is a percent of that invoice, still in the hammer currency. Choosing eBay, Fanatics or Goldin also sets the fee: 0%, 2.9% or about 3%. The fee buttons stay put once you tap one, so ACH can stay at 0%. The fee is its own line. The amount that converts is the invoice plus that fee.
 
 That charge converts at the typed rate (S$ per 1 unit). SGD needs no rate. The forwarder fee is already in S$ (a Portland fee goes in this box).
 
 The import is the converted charge plus the forwarder fee. GST Auto, the default, adds 9% only when that import is over S$400. On and Off override Auto. A lot within S$20 of S$400, or an override that disagrees with Auto, says so. All-in is the import plus GST.
 
-Fanatics seller shipping is US$15 when the hammer plus premium is US$750 to US$1,500, and US$25 from US$1,500 to US$3,000. A blank shipping field uses that tier. A typed amount overrides it.
+Fanatics seller shipping is US$15 when the hammer plus premium is US$750 to US$1,500, and US$25 from US$1,500 to US$3,000. A blank field uses that tier only inside the band. Outside it, the page asks you to type the shipping from the Fanatics checkout and does not guess US$0 or another tier. A typed amount overrides the tier.
 
 ## Reverse
 

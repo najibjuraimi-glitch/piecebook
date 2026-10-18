@@ -76,7 +76,8 @@ describe('All-in calculator', () => {
       typeInto(fxDate, '2026-10-01')
     })
     const body = host!.textContent ?? ''
-    expect(body).toContain('S$190.86')
+    expect(body).toContain('S$196.25')
+    expect(body).toContain('Payment fee 3%')
     expect(body).toContain("Buyer's premium 22%")
     expect(body).toContain('Seller shipping')
     expect(body).toContain('Forwarder')
@@ -122,5 +123,55 @@ describe('All-in calculator', () => {
     act(() => use!.click())
     expect(target.value).toBe('90')
     expect(body).not.toContain('Japanese')
+  })
+
+  it('sets the Fanatics card fee from the premium preset and blocks shipping outside the known tier', () => {
+    act(() => {
+      root!.render(
+        <MemoryRouter initialEntries={['/bid']}>
+          <Routes>
+            <Route path="/bid" element={<BidCalculator />} />
+          </Routes>
+        </MemoryRouter>,
+      )
+    })
+    const click = (label: string, group?: string) => {
+      const scope = group
+        ? [...host!.querySelectorAll('[role="radiogroup"]')].find((el) => el.getAttribute('aria-label') === group)
+        : host
+      const button = [...scope!.querySelectorAll('button')].find((el) => el.textContent === label)
+      act(() => button!.click())
+      return button
+    }
+    click('Max bid')
+    click('Fanatics 20%', "Buyer's premium")
+    click('Off', 'GST')
+    const feeGroup = [...host!.querySelectorAll('[role="radiogroup"]')].find((el) => el.getAttribute('aria-label') === 'Payment fee')
+    const fee = feeGroup!.querySelector('[aria-checked="true"]')
+    expect(fee?.textContent).toBe('Fanatics card 2.9%')
+    const type = (suffix: string, value: string) => {
+      const input = host!.querySelector(`[id$="-${suffix}"]`) as HTMLInputElement
+      typeInto(input, value)
+    }
+    act(() => {
+      type('target', '2140.11')
+      type('forwarder', '8.96')
+      type('fx', '1.279918')
+      type('fx-date', '2026-10-17')
+    })
+    const body = host!.textContent ?? ''
+    expect(body).toContain('$1,327.62')
+    expect(body).not.toContain('$1,366.72')
+    click('eBay 0%', 'Payment fee')
+    click('Goldin 22%', "Buyer's premium")
+    const feeAgain = [...host!.querySelectorAll('[role="radiogroup"]')].find((el) => el.getAttribute('aria-label') === 'Payment fee')
+    expect(feeAgain!.querySelector('[aria-checked="true"]')?.textContent).toBe('eBay 0%')
+    click('All-in')
+    click('Fanatics 20%', "Buyer's premium")
+    act(() => {
+      type('hammer', '100')
+    })
+    expect(host!.textContent).toContain('Type the shipping from the Fanatics checkout.')
+    expect(host!.querySelector('section')).toBeNull()
   })
 })
