@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISION_URL } from '../config/vision'
-import { compareFrames, greyDownscale, initialSceneHold, markSceneScanned, nextDryStreak, scanIntervalOpen, sceneMoved, stepSceneHold, substantialSceneChange, type GreyFrame, type SceneHold } from '../lib/cardFrame'
+import { compareFrames, emptySeen, greyDownscale, initialSceneHold, markSceneScanned, nextDryStreak, scanIntervalOpen, sceneMoved, steadyWaitMs, stepSceneHold, substantialSceneChange, type BoxMotion, type GreyFrame, type SceneHold } from '../lib/cardFrame'
 import type { PixelImage } from '../lib/centering'
 import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
 import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
@@ -116,7 +116,9 @@ export function ScanLive({
   const lastScanAt = useRef<number | null>(null)
   const busyRef = useRef(false)
   const failuresRef = useRef(0)
-  const seenCards = useRef(new Set<string>())
+  const seenCards = useRef(emptySeen())
+  const seenFrame = useRef<GreyFrame | null>(null)
+  const movedReads = useRef(0)
   const dryStreak = useRef(0)
   const autoPausedRef = useRef(false)
   const usageFromScan = useRef(false)
@@ -242,6 +244,16 @@ export function ScanLive({
     setAutoPaused(false)
   }, [])
 
+  const releaseMovedHold = useCallback(() => {
+    movedReads.current = 0
+  }, [])
+
+  const forgetSeen = () => {
+    seenCards.current = emptySeen()
+    seenFrame.current = null
+    dryStreak.current = 0
+  }
+
   const armShutter = useCallback(() => {
     setShutterReady(false)
     window.setTimeout(() => setShutterReady(true), SHUTTER_WAIT_MS)
@@ -251,6 +263,7 @@ export function ScanLive({
     async (manual: boolean) => {
       if (busyRef.current) return
       if (manual && !shutterReady) return
+      if (manual) releaseMovedHold()
       if (!manual && (autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
       const video = videoRef.current
       const stream = streamRef.current
@@ -294,17 +307,22 @@ export function ScanLive({
         setLabelsCurrent(!movedSince)
         setDim(false)
         if (movedSince) {
-          if (motion && substantialSceneChange(motion)) {
-            seenCards.current = new Set()
-            dryStreak.current = 0
-          }
+          movedReads.current += 1
+          if (motion && substantialSceneChange(motion)) forgetSeen()
           if (autoPausedRef.current) {
             autoPausedRef.current = false
             setAutoPaused(false)
           }
         } else {
-          const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards)
+          movedReads.current = 0
+          const current = signature ?? nowFrame
+          const from = seenFrame.current
+          const between = from && current ? compareFrames(from, current) : null
+          if (between && substantialSceneChange(between)) forgetSeen()
+          const boxMotion: BoxMotion | null = between && from ? { dx: between.dx, dy: between.dy, width: from.width, height: from.height } : null
+          const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards, boxMotion)
           seenCards.current = outcome.seen
+          if (current) seenFrame.current = current
           dryStreak.current = outcome.streak
           if (outcome.pause) {
             autoPausedRef.current = true
@@ -320,7 +338,7 @@ export function ScanLive({
         if (manual) armShutter()
       }
     },
-    [armShutter, frameGrey, onScan, shutterReady],
+    [armShutter, frameGrey, onScan, releaseMovedHold, shutterReady],
   )
   sendRef.current = send
 
@@ -349,15 +367,12 @@ export function ScanLive({
       if (video) {
         const pixels = analysisFrame(video, canvas)
         if (pixels) {
-          const step = stepSceneHold(holdRef.current, greyDownscale(pixels), Date.now())
+          const step = stepSceneHold(holdRef.current, greyDownscale(pixels), Date.now(), steadyWaitMs(movedReads.current))
           holdRef.current = step.state
           if (step.moved) {
             failuresRef.current = 0
             setDim(true)
-            if (step.motion && substantialSceneChange(step.motion)) {
-              seenCards.current = new Set()
-              dryStreak.current = 0
-            }
+            if (step.motion && substantialSceneChange(step.motion)) forgetSeen()
             if (autoPausedRef.current) {
               autoPausedRef.current = false
               dryStreak.current = 0
@@ -398,7 +413,7 @@ export function ScanLive({
           Close
         </button>
       </div>
-      <div ref={boxRef} className="relative min-h-0 flex-1 overflow-hidden">
+      <div ref={boxRef} onClick={releaseMovedHold} className="relative min-h-0 flex-1 overflow-hidden">
         <video ref={videoRef} playsInline muted autoPlay className="absolute inset-0 h-full w-full object-contain" data-testid="scan-video" />
         {labelsCurrent && scan?.cards.map((card) => {
           if (!card.box) return null

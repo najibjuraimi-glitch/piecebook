@@ -22,10 +22,13 @@ import {
   glareReport,
   homographyFromQuads,
   SCAN_INTERVAL_MS,
+  MOVED_HOLD_MS,
   SCENE_MOVE_FRAC,
   SCENE_MOVE_MAD,
   SCENE_STEADY_MS,
+  boxIoU,
   compareFrames,
+  emptySeen,
   greyDownscale,
   initialLiveView,
   initialSceneHold,
@@ -37,6 +40,7 @@ import {
   scanIntervalOpen,
   sceneMoved,
   sharpness,
+  steadyWaitMs,
   substantialSceneChange,
   shrinkQuad,
   stepLiveView,
@@ -792,8 +796,8 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(sceneMoved(still)).toBe(false)
   })
 
-  it('keeps a 0.5% to 1% tremble and a 10% exposure change on the same view', () => {
-    const full = loadJpegFixture('full.jpg')
+  it('keeps a 0.5% to 1% tremble and a 10% exposure change on a real card photo', () => {
+    const full = loadJpegFixture('nami-op09-070-sp-front.jpg')
     const anchor = greyDownscale(full)
     for (const frac of [0.0025, -0.0025, 0.005, -0.005, 0.01, -0.01]) {
       const motion = compareFrames(anchor, greyDownscale(translateSubpixel(full, frac, frac * 0.3)))
@@ -817,14 +821,36 @@ describe('case view: one steady second, then not the same scene again', () => {
     step = stepSceneHold(step.state, greyDownscale(expose(full, 1.1)), t)
     expect(step.moved).toBe(false)
     expect(step.steady).toBe(true)
-    const ten = compareFrames(anchor, greyDownscale(translateImage(full, 0.1)))
-    const twenty = compareFrames(anchor, greyDownscale(translateImage(full, 0.2)))
-    expect(substantialSceneChange(ten)).toBe(false)
-    expect(substantialSceneChange(twenty)).toBe(true)
+  })
+
+  it('resets a portrait frame on a sideways pan of about 20% of the width', () => {
+    const portrait = loadJpegFixture('portrait.jpg')
+    const anchor = greyDownscale(portrait)
+    expect(anchor.height).toBeGreaterThan(anchor.width)
+    const side = compareFrames(anchor, greyDownscale(translateImage(portrait, 0.2)))
+    expect(Math.abs(Math.abs(side.dx) / anchor.width - 0.2)).toBeLessThan(0.04)
+    expect(side.shiftFrac).toBeGreaterThanOrEqual(0.18)
+    expect(substantialSceneChange(side)).toBe(true)
+    const smaller = compareFrames(anchor, greyDownscale(translateImage(portrait, 0.1)))
+    expect(sceneMoved(smaller)).toBe(true)
+    expect(substantialSceneChange(smaller)).toBe(false)
+  })
+
+  it('waits three seconds of steadiness after two moved reads, and one second otherwise', () => {
+    expect(steadyWaitMs(0)).toBe(SCENE_STEADY_MS)
+    expect(steadyWaitMs(1)).toBe(SCENE_STEADY_MS)
+    expect(steadyWaitMs(2)).toBe(MOVED_HOLD_MS)
+    let step = stepSceneHold(initialSceneHold(), base, 0, MOVED_HOLD_MS)
+    step = stepSceneHold(step.state, base, 100, MOVED_HOLD_MS)
+    step = stepSceneHold(step.state, base, 100 + SCENE_STEADY_MS, MOVED_HOLD_MS)
+    expect(step.steady).toBe(true)
+    expect(step.ready).toBe(false)
+    step = stepSceneHold(step.state, base, 100 + MOVED_HOLD_MS, MOVED_HOLD_MS)
+    expect(step.ready).toBe(true)
   })
 
   it('pauses after three scans that add no new card', () => {
-    let seen = new Set<string>()
+    let seen = emptySeen()
     let streak = 0
     const step = (cards: { printId?: string | null; codeText?: string | null }[]) => {
       const next = nextDryStreak(seen, streak, cards)
@@ -839,7 +865,7 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(step([{ printId: '', codeText: '  ' }]).pause).toBe(true)
     expect(streak).toBe(3)
     const box = { x: 0.1, y: 0.2, w: 0.2, h: 0.3 }
-    const unread = nextDryStreak(new Set(), 2, [{ printId: '', codeText: '', box }])
+    const unread = nextDryStreak(emptySeen(), 2, [{ printId: '', codeText: '', box }])
     expect(unread.streak).toBe(0)
     expect(unread.pause).toBe(false)
     const samePlace = nextDryStreak(unread.seen, 0, [{ codeText: '', box: { x: 0.12, y: 0.18, w: 0.22, h: 0.28 } }])
@@ -852,5 +878,23 @@ describe('case view: one steady second, then not the same scene again', () => {
     const again = nextDryStreak(resumed.seen, resumed.streak, [{ codeText: 'EB04-003' }])
     expect(again.streak).toBe(1)
     expect(again.pause).toBe(false)
+  })
+
+  it('matches an unread slab by overlap after the shift, including y 0.25 and 0.247', () => {
+    const firstBox = { x: 0.2, y: 0.25, w: 0.3, h: 0.4 }
+    const nudged = { x: 0.2, y: 0.247, w: 0.3, h: 0.4 }
+    expect(Math.round(firstBox.y * 10) / 10).not.toBe(Math.round(nudged.y * 10) / 10)
+    expect(boxIoU(firstBox, nudged)).toBeGreaterThanOrEqual(0.5)
+    const first = nextDryStreak(emptySeen(), 2, [{ printId: '', codeText: '', box: firstBox }])
+    expect(first.streak).toBe(0)
+    expect(first.pause).toBe(false)
+    const second = nextDryStreak(first.seen, 0, [{ box: nudged }])
+    expect(second.streak).toBe(1)
+    expect(second.pause).toBe(false)
+    const slid = { x: 0.4, y: 0.25, w: 0.3, h: 0.4 }
+    expect(boxIoU(firstBox, slid)).toBeLessThan(0.5)
+    const width = 100
+    const shifted = nextDryStreak(first.seen, 0, [{ box: slid }], { dx: 0.2 * width, dy: 0, width, height: 80 })
+    expect(shifted.streak).toBe(1)
   })
 })
