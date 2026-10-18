@@ -24,11 +24,14 @@ import {
   SCAN_INTERVAL_MS,
   BOX_MOTION_RESIDUAL,
   MOVED_HOLD_MS,
+  PAUSE_RESUME_RESIDUAL,
   SCENE_MOVE_FRAC,
   SCENE_MOVE_MAD,
+  SCENE_RESET_FRAC,
   SCENE_STEADY_MS,
   boxIoU,
   compareFrames,
+  dryStreakAfterDiscard,
   emptySeen,
   greyDownscale,
   initialLiveView,
@@ -41,9 +44,12 @@ import {
   nextDryStreak,
   placeRead,
   rearmAfterDiscard,
+  resetsMovedHold,
+  resumesPausedScan,
   pickCleanerFrame,
   scanIntervalOpen,
   sceneMoved,
+  simulateCaseWatch,
   sharpness,
   simulateDriftScans,
   simulatePausedMotion,
@@ -51,6 +57,7 @@ import {
   stepFrameHold,
   substantialSceneChange,
   unreadBoxMotion,
+  unreadSlabsAreNew,
   shrinkQuad,
   stepLiveView,
   stepSceneHold,
@@ -719,6 +726,45 @@ function translateSubpixel(img: PixelImage, fracX: number, fracY = 0): PixelImag
   return { width: img.width, height: img.height, data }
 }
 
+function caseGrid(): PixelImage {
+  const width = 240
+  const height = 180
+  const data = new Uint8ClampedArray(width * height * 4)
+  const img = { width, height, data }
+  for (let row = 0; row < 2; row += 1) {
+    for (let col = 0; col < 3; col += 1) {
+      const tone = 30 + (row * 3 + col) * 35
+      paintRect(img, col * 80, row * 90, 80, 90, [tone, tone, tone])
+    }
+  }
+  return img
+}
+
+function repaint(img: PixelImage, x0: number, y0: number, w: number, h: number): PixelImage {
+  const out = copy(img)
+  for (let y = y0; y < y0 + h; y += 1) {
+    for (let x = x0; x < x0 + w; x += 1) {
+      const on = ((x >> 2) + (y >> 2)) % 2 === 0
+      const v = on ? 245 : 12
+      const i = (y * img.width + x) * 4
+      out.data[i] = v
+      out.data[i + 1] = v
+      out.data[i + 2] = v
+      out.data[i + 3] = 255
+    }
+  }
+  return out
+}
+
+/** A single slab. Small enough that the residual stays under a row swap. */
+function swapLeftOfRow1(img: PixelImage): PixelImage {
+  return repaint(img, 8, 8, 40, 36)
+}
+
+function swapWholeRow1(img: PixelImage): PixelImage {
+  return repaint(img, 0, 0, img.width, 90)
+}
+
 function expose(img: PixelImage, factor: number): PixelImage {
   const data = new Uint8ClampedArray(img.data.length)
   for (let i = 0; i < img.data.length; i += 4) {
@@ -924,18 +970,168 @@ describe('case view: one steady second, then not the same scene again', () => {
     }
   })
 
-  it('resumes a pause on a 45% pan and not on a slow drift', () => {
+  it('resumes a pause on a fifth of the frame or a local-mean residual of 16, and not on a shadow', () => {
     const pan = simulatePausedMotion(0.3, 1_500, 30_000)
     expect(pan.resumed).toBe(true)
     expect(pan.scans).toBeGreaterThan(0)
     const drift = simulatePausedMotion(0.003, 60_000)
     expect(drift.resumed).toBe(false)
     expect(drift.scans).toBe(0)
+    const shadow = simulatePausedMotion(0, 60_000, 0, 8.7)
+    expect(shadow.resumed).toBe(false)
+    expect(shadow.scans).toBe(0)
+    const changed = simulatePausedMotion(0, 1_000, 2_000, PAUSE_RESUME_RESIDUAL)
+    expect(changed.resumed).toBe(true)
+    expect(changed.scans).toBeGreaterThan(0)
+    const sway = { mad: 8, residual: 2, dx: 8, dy: 0, shiftFrac: 0.08 }
+    const fifteen = { mad: 8, residual: 2, dx: 15, dy: 0, shiftFrac: 0.15, contentShiftFrac: 0.15, contentResidual: 3 }
+    const slide = { mad: 8, residual: 2, dx: 20, dy: 0, shiftFrac: SCENE_RESET_FRAC }
+    const shade = { mad: 30, residual: 31, dx: 0, dy: 0, shiftFrac: 0, contentResidual: 8.7 }
+    expect(resumesPausedScan(sway)).toBe(false)
+    expect(resumesPausedScan(fifteen)).toBe(false)
+    expect(resumesPausedScan(slide)).toBe(true)
+    expect(resumesPausedScan(shade)).toBe(false)
+    expect(resumesPausedScan({ ...shade, contentResidual: undefined, residual: 31 })).toBe(true)
+    expect(resumesPausedScan({ ...shade, residual: PAUSE_RESUME_RESIDUAL, contentResidual: PAUSE_RESUME_RESIDUAL })).toBe(true)
     const swapped = { mad: 20, residual: 8.1, dx: 8, dy: 0, shiftFrac: 0.08 }
     expect(placeRead(swapped)).toBe('discard')
-    const slide = { mad: 20, residual: 5, dx: 8, dy: 0, shiftFrac: 0.08 }
-    expect(placeRead(slide)).toBe('show')
-    expect(labelOffset(slide, 100, 80)).toEqual({ x: 0.08, y: 0 })
+    const kept = { mad: 20, residual: 5, dx: 8, dy: 0, shiftFrac: 0.08 }
+    expect(placeRead(kept)).toBe('show')
+    expect(labelOffset(kept, 100, 80)).toEqual({ x: 0.08, y: 0 })
+  })
+
+  it('counts a residual-only discard toward the dry streak, and not a slide', () => {
+    const blink = { mad: 30, residual: 23.6, dx: 0, dy: 0, shiftFrac: 0 }
+    expect(placeRead(blink)).toBe('discard')
+    let streak = 0
+    let pause = false
+    for (let i = 0; i < 3; i += 1) {
+      const step = dryStreakAfterDiscard(streak, blink)
+      expect(step).not.toBeNull()
+      streak = step!.streak
+      pause = step!.pause
+    }
+    expect(streak).toBe(3)
+    expect(pause).toBe(true)
+    const slide = { mad: 10, residual: 2, dx: 8, dy: 0, shiftFrac: SCENE_MOVE_FRAC }
+    expect(dryStreakAfterDiscard(2, slide)).toBeNull()
+  })
+
+  it('keeps a wobble of 8% paused near four scans, and a blink near three', () => {
+    const wobble = simulateCaseWatch({
+      durationMs: 120_000,
+      readMs: 2_000,
+      position: (t) => 0.08 * Math.sin((2 * Math.PI * t) / 8_000),
+      residual: () => 0,
+    })
+    expect(wobble.scans).toBe(4)
+    expect(wobble.paused).toBe(true)
+    expect(wobble.resumedSameTick).toBe(false)
+    expect(wobble.resumeCount).toBe(0)
+
+    const phase = (t: number) => Math.floor(t / 3000) % 2
+    const blink = simulateCaseWatch({
+      durationMs: 300_000,
+      readMs: 2_000,
+      position: () => 0,
+      residual: (from, to) => (phase(from) === phase(to) ? 0 : 23.6),
+      contentResidual: (from, to) => (phase(from) === phase(to) ? 0 : 4),
+    })
+    expect(blink.scans).toBe(3)
+    expect(blink.paused).toBe(true)
+    expect(blink.resumeCount).toBe(0)
+    expect(blink.resumedSameTick).toBe(false)
+  })
+
+  it('does not resume a slow read on the tick it pauses, and a row swap still resumes', () => {
+    const watch = (rate: number) =>
+      simulateCaseWatch({
+        durationMs: 360_000,
+        readMs: 33_700,
+        position: (t) => rate * (t / 1000),
+        residual: () => 0,
+      })
+    for (const rate of [0.002, 0.003, 0.004]) {
+      const session = watch(rate)
+      expect(session.resumedSameTick).toBe(false)
+      expect(session.shiftAtPause).not.toBeNull()
+      expect(session.shiftAtPause!).toBeGreaterThanOrEqual(SCENE_MOVE_FRAC)
+      expect(session.shiftAtPause!).toBeLessThan(SCENE_RESET_FRAC)
+    }
+    const row = simulatePausedMotion(0, 1_000, 5_000, 31.6)
+    expect(row.resumed).toBe(true)
+    expect(simulatePausedMotion(0, 1_000, 5_000, 41.5).resumed).toBe(true)
+    const held = simulateCaseWatch({
+      durationMs: 45_000,
+      readMs: 2_000,
+      position: (t) => 0.01 * (t / 1000),
+      residual: (from, to) => (from < 36_000 && to >= 36_000 ? 35 : 0),
+    })
+    expect(held.resumedSameTick).toBe(false)
+    expect(held.pausedAt).not.toBeNull()
+    expect(held.pausedAt!).toBeLessThan(36_000)
+    expect(held.resumedAt).toBeGreaterThanOrEqual(36_000)
+    expect(held.pausedAt! + 20_000).toBeGreaterThan(held.resumedAt!)
+  })
+
+  it('keeps read keys when a row changes, and a shadow is not a new slab', () => {
+    for (const contentResidual of [0.5, 8.7]) {
+      const shadow = { mad: 30, residual: 31, dx: 0, dy: 0, shiftFrac: 0, contentResidual }
+      expect(unreadSlabsAreNew(shadow)).toBe(false)
+      expect(resumesPausedScan(shadow)).toBe(false)
+    }
+    const rowSwap = { mad: 40, residual: 25.9, dx: 0, dy: 0, shiftFrac: 0, contentResidual: 24.4 }
+    expect(unreadSlabsAreNew(rowSwap)).toBe(true)
+    expect(unreadSlabsAreNew({ ...rowSwap, contentResidual: 31.7 })).toBe(true)
+    expect(forgetsSeenCards(rowSwap)).toBe(false)
+    const left = { x: 0, y: 0, w: 1 / 3, h: 0.5 }
+    const named = { printId: 'OP09-004', codeText: 'OP09-004', box: { x: 2 / 3, y: 0, w: 1 / 3, h: 0.5 } }
+    const first = nextDryStreak(emptySeen(), 0, [{ box: left }, named])
+    expect(first.seen.keys.has('OP09-004')).toBe(true)
+    const same = nextDryStreak(first.seen, 2, [{ box: left }, named])
+    expect(same.pause).toBe(true)
+    const row = nextDryStreak(first.seen, 2, [{ box: left }, named], null, unreadSlabsAreNew(rowSwap))
+    expect(row.streak).toBe(0)
+    expect(row.pause).toBe(false)
+    expect(row.seen.keys.has('OP09-004')).toBe(true)
+    expect(row.seen.boxes).toHaveLength(1)
+    const grid = caseGrid()
+    const anchor = greyDownscale(grid)
+    const oneSlab = compareFrames(anchor, greyDownscale(swapLeftOfRow1(grid)))
+    const wholeRow = compareFrames(anchor, greyDownscale(swapWholeRow1(grid)))
+    expect(oneSlab.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(wholeRow.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(oneSlab.contentResidual ?? 0).toBeLessThan(PAUSE_RESUME_RESIDUAL)
+    expect(unreadSlabsAreNew(oneSlab)).toBe(false)
+    expect(forgetsSeenCards(oneSlab)).toBe(false)
+    expect(forgetsSeenCards(wholeRow)).toBe(false)
+  })
+
+  it('moves labels by a shift under 6% when the pictures still agree', () => {
+    const nudge = { mad: 4, residual: BOX_MOTION_RESIDUAL - 1, dx: 3, dy: -1, shiftFrac: 0.03 }
+    expect(placeRead(nudge)).toBe('show')
+    expect(labelOffset(nudge, 100, 50)).toEqual({ x: 0.03, y: -0.02 })
+    expect(labelOffset({ ...nudge, residual: BOX_MOTION_RESIDUAL }, 100, 50)).toEqual({ x: 0, y: 0 })
+  })
+
+  it('ignores a 3s on and 3s off blink while the phone is steady', () => {
+    const blink = { mad: 40, residual: 23, dx: 0, dy: 0, shiftFrac: 0 }
+    expect(sceneMoved(blink)).toBe(true)
+    expect(resetsMovedHold(blink)).toBe(false)
+    let since: number | null = 0
+    let ready = false
+    for (let t = 200; t <= 9000; t += 200) {
+      const edge = t % 3000 === 0
+      const hop = edge ? blink : { mad: 1, residual: 1, dx: 0, dy: 0, shiftFrac: 0 }
+      const step = stepFrameHold(since, resetsMovedHold(hop), t)
+      since = step.since
+      ready = step.ready
+    }
+    expect(ready).toBe(true)
+    expect(since).toBe(0)
+    const slide = { mad: 8, residual: 2, dx: 8, dy: 0, shiftFrac: SCENE_MOVE_FRAC }
+    expect(resetsMovedHold(slide)).toBe(true)
+    expect(stepFrameHold(since, true, 9000).since).toBeNull()
   })
 
   it('shows a 0.75% tremor on the case grid unshifted, and a discard scans again', () => {
@@ -968,6 +1164,120 @@ describe('case view: one steady second, then not the same scene again', () => {
     const rearmed = stepSceneHold(rearmAfterDiscard(scanned.state), anchor, 100 + SCENE_STEADY_MS + 100)
     expect(rearmed.ready).toBe(true)
     expect(rearmed.state.scanned).toBe(false)
+  })
+
+  it('keeps a shadow under the local-mean gate and lets a row swap through', () => {
+    const width = 196
+    const height = 256
+    const data = new Uint8ClampedArray(width * height * 4)
+    const img: PixelImage = { width, height, data }
+    const cols = 3
+    const rows = 4
+    const cw = Math.floor(width / cols)
+    const ch = Math.floor(height / rows)
+    const slab = (x: number, y: number, row: number, col: number) => {
+      const period = 12 + row * 4
+      const phase = col * 5 + row
+      const on = Math.floor((x + phase * 3) / period) % 2 === Math.floor((y + phase) / (8 + col * 2)) % 2
+      return on ? 30 + row * 25 + col * 15 : 210 - row * 10
+    }
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const col = Math.min(cols - 1, Math.floor(x / cw))
+        const row = Math.min(rows - 1, Math.floor(y / ch))
+        const tone = slab(x, y, row, col)
+        const i = (y * width + x) * 4
+        data[i] = tone
+        data[i + 1] = Math.min(255, tone + 20)
+        data[i + 2] = Math.max(0, 180 - tone)
+        data[i + 3] = 255
+      }
+    }
+    const shadeHalf = (factor: number) => {
+      const out = copy(img)
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width / 2; x += 1) {
+          const i = (y * width + x) * 4
+          out.data[i] = Math.round(out.data[i] * factor)
+          out.data[i + 1] = Math.round(out.data[i + 1] * factor)
+          out.data[i + 2] = Math.round(out.data[i + 2] * factor)
+        }
+      }
+      return out
+    }
+    const invertRows = (n: number, factor = 1) => {
+      const out = expose(copy(img), factor)
+      for (let row = 0; row < n; row += 1) {
+        for (let y = row * ch; y < (row + 1) * ch && y < height; y += 1) {
+          for (let x = 0; x < width; x += 1) {
+            const i = (y * width + x) * 4
+            out.data[i] = 255 - out.data[i]
+            out.data[i + 1] = 255 - out.data[i + 1]
+            out.data[i + 2] = 255 - out.data[i + 2]
+          }
+        }
+      }
+      return out
+    }
+    const anchor = greyDownscale(img)
+    expect(anchor.width).toBe(98)
+    expect(anchor.height).toBe(128)
+    const half = (factor: number) => compareFrames(anchor, greyDownscale(shadeHalf(factor)))
+    for (const factor of [0.7, 0.6, 0.5, 0.4]) {
+      const motion = half(factor)
+      expect(motion.contentResidual ?? 0).toBeGreaterThan(0.5)
+      expect(motion.contentResidual ?? 0).toBeLessThan(8.7)
+      expect(resumesPausedScan(motion)).toBe(false)
+      expect(unreadSlabsAreNew(motion)).toBe(false)
+    }
+    const fifty = half(0.5)
+    expect(fifty.residual).toBeGreaterThan(28)
+    expect(fifty.shiftFrac).toBe(0)
+    const swayed = compareFrames(anchor, greyDownscale(translateImage(shadeHalf(0.6), 0.08)))
+    expect(swayed.shiftFrac).toBe(0)
+    expect(swayed.residual).toBeGreaterThan(26)
+    expect(swayed.contentShiftFrac ?? 0).toBeGreaterThan(0.07)
+    expect(swayed.contentShiftFrac ?? 0).toBeLessThan(0.1)
+    expect(swayed.contentResidual ?? 0).toBeGreaterThan(5)
+    expect(swayed.contentResidual ?? 0).toBeLessThan(8)
+    expect(resumesPausedScan(swayed)).toBe(false)
+    const pan15 = compareFrames(anchor, greyDownscale(translateImage(img, 0.15)))
+    expect(pan15.shiftFrac).toBeGreaterThan(0.12)
+    expect(pan15.shiftFrac).toBeLessThan(SCENE_RESET_FRAC)
+    expect(Math.abs((pan15.contentShiftFrac ?? 0) - pan15.shiftFrac)).toBeLessThan(0.02)
+    expect(resumesPausedScan(pan15)).toBe(false)
+    for (const factor of [1, 0.6, 0.45]) {
+      const motion = compareFrames(anchor, greyDownscale(invertRows(2, factor)))
+      expect(motion.contentResidual ?? 0).toBeGreaterThanOrEqual(PAUSE_RESUME_RESIDUAL)
+      expect(resumesPausedScan(motion)).toBe(true)
+      expect(unreadSlabsAreNew(motion)).toBe(true)
+      expect(forgetsSeenCards(motion)).toBe(false)
+    }
+    const oneRow = compareFrames(anchor, greyDownscale(invertRows(1)))
+    expect(oneRow.contentResidual ?? 0).toBeLessThan(PAUSE_RESUME_RESIDUAL)
+    expect(unreadSlabsAreNew(oneRow)).toBe(false)
+    const differed = fifty
+    let seed = 50
+    const rand = () => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+      return seed / 4294967296
+    }
+    let dark = false
+    const shadeOn = new Map<number, boolean>()
+    for (let t = 0; t <= 300_000; t += 200) {
+      if (rand() < 0.08) dark = !dark
+      shadeOn.set(t, dark)
+    }
+    const blink = simulateCaseWatch({
+      durationMs: 300_000,
+      readMs: 2_000,
+      position: () => 0,
+      residual: (from, to) => (shadeOn.get(from) === shadeOn.get(to) ? 0 : differed.residual),
+      contentResidual: (from, to) => (shadeOn.get(from) === shadeOn.get(to) ? 0 : differed.contentResidual ?? 0),
+    })
+    expect(blink.scans).toBeLessThan(10)
+    expect(blink.resumeCount).toBe(0)
+    expect(blink.paused).toBe(true)
   })
 
   it('times the moving-read hold from one frame to the next', () => {

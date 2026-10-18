@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISION_URL } from '../config/vision'
-import { compareFrames, emptySeen, forgetsSeenCards, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, scanIntervalOpen, sceneMoved, stepFrameHold, stepSceneHold, substantialSceneChange, unreadBoxMotion, type GreyFrame, type SceneHold } from '../lib/cardFrame'
+import { compareFrames, dryStreakAfterDiscard, emptySeen, forgetsSeenCards, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, resetsMovedHold, resumesPausedScan, scanIntervalOpen, sceneMoved, stepFrameHold, stepSceneHold, unreadBoxMotion, unreadSlabsAreNew, type GreyFrame, type SceneHold } from '../lib/cardFrame'
 import type { PixelImage } from '../lib/centering'
 import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
 import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
@@ -355,6 +355,16 @@ export function ScanLive({
           setLabelShift({ x: 0, y: 0 })
           if (forgetsSeenCards(motion)) forgetSeen()
           holdRef.current = rearmAfterDiscard(holdRef.current)
+          const dry = dryStreakAfterDiscard(dryStreak.current, motion)
+          if (dry) {
+            dryStreak.current = dry.streak
+            if (dry.pause) {
+              autoPausedRef.current = true
+              // A missing frame must not keep the anchor from an older photo.
+              pauseAnchor.current = nowFrame
+              setAutoPaused(true)
+            }
+          }
         } else {
           const width = signature?.width ?? nowFrame?.width ?? 1
           const height = signature?.height ?? nowFrame?.height ?? 1
@@ -364,14 +374,15 @@ export function ScanLive({
           const from = seenFrame.current
           const between = from && current ? compareFrames(from, current) : null
           if (forgetsSeenCards(between)) forgetSeen()
-          const boxMotion = unreadBoxMotion(between, from?.width ?? width, from?.height ?? height)
-          const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards, boxMotion)
+          const unreadAreNew = unreadSlabsAreNew(between)
+          const boxMotion = unreadAreNew ? null : unreadBoxMotion(between, from?.width ?? width, from?.height ?? height)
+          const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards, boxMotion, unreadAreNew)
           seenCards.current = outcome.seen
           if (current) seenFrame.current = current
           dryStreak.current = outcome.streak
           if (outcome.pause) {
             autoPausedRef.current = true
-            pauseAnchor.current = current
+            if (nowFrame) pauseAnchor.current = nowFrame
             setAutoPaused(true)
           } else if (outcome.streak === 0) {
             autoPausedRef.current = false
@@ -419,7 +430,7 @@ export function ScanLive({
           holdRef.current = step.state
           if (autoPausedRef.current && pauseAnchor.current) {
             const fromPause = compareFrames(pauseAnchor.current, frame)
-            if (substantialSceneChange(fromPause)) {
+            if (resumesPausedScan(fromPause)) {
               forgetSeen()
               autoPausedRef.current = false
               pauseAnchor.current = null
@@ -435,7 +446,7 @@ export function ScanLive({
           } else if (step.steady) setDim(false)
           if (movedReads.current >= MOVED_HOLD_AFTER) {
             const hop = prevTickFrame.current ? compareFrames(prevTickFrame.current, frame) : null
-            const hopped = Boolean(hop && sceneMoved(hop))
+            const hopped = resetsMovedHold(hop)
             const settled = stepFrameHold(frameSteadySince.current, hopped, now, MOVED_HOLD_MS)
             frameSteadySince.current = settled.since
             if (!heldRef.current) {
@@ -532,12 +543,12 @@ export function ScanLive({
             Hold still, tap to scan
           </button>
         )}
-        {autoPaused && labelsCurrent && (
+        {autoPaused && (
           <button type="button" data-testid="scan-hold" onClick={clearAutoPause} className="absolute inset-x-4 top-16 rounded-xl bg-white px-3 py-3 text-center text-[16px] font-semibold text-black">
             Paused to save scans, move or tap to resume
           </button>
         )}
-        {shot && !labelsCurrent && <p className="absolute inset-x-4 top-16 text-center text-[16px] font-semibold text-white" data-testid="scan-moved">moved, rescanning</p>}
+        {shot && !labelsCurrent && !autoPaused && <p className="absolute inset-x-4 top-16 text-center text-[16px] font-semibold text-white" data-testid="scan-moved">moved, rescanning</p>}
         {readError && (
           <p className="absolute inset-x-4 top-16 rounded-xl bg-black/80 px-3 py-2 text-center text-[16px] font-medium" role="alert">
             {readError}

@@ -543,6 +543,15 @@ export const SCENE_RESET_FRAC = 0.2
 export const SCENE_MOVE_MAD = 12
 /** Unread boxes are shifted into the new frame only when the aligned pictures still agree. */
 export const BOX_MOTION_RESIDUAL = 6
+/** Local-mean box radius on the downscaled frame. A shadow divides out; a new row does not. */
+export const CONTENT_MEAN_RADIUS = 10
+/** Ratio images are put back on this grey level before the residual is measured. */
+export const CONTENT_LEVEL = 128
+/**
+ * A paused scan resumes when the local-mean residual reaches this.
+ * Shadows, even a dark half plus a small sway, stay under it. A row swap clears it.
+ */
+export const PAUSE_RESUME_RESIDUAL = 16
 
 export interface GreyFrame {
   width: number
@@ -555,6 +564,13 @@ export interface FrameMotion {
   mad: number
   /** Difference after the shift, with the mean removed and a small blur. */
   residual: number
+  /**
+   * Residual after each frame is divided by its local mean.
+   * Set by compareFrames. Synthetic motions may omit it and the gates fall back to residual.
+   */
+  contentResidual?: number
+  /** Shift measured on the local-mean frames. A shadow can hide the raw shift. */
+  contentShiftFrac?: number
   dx: number
   dy: number
   /** Shift length. X is a share of the width and y a share of the height, then combined. */
@@ -746,8 +762,38 @@ export function alignedResidual(anchor: GreyFrame, next: GreyFrame, dx: number, 
   return sum / a.length
 }
 
-/** Shift first, then the residual of the aligned frames. A shift that does not actually line the pictures up is dropped. */
-export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
+/**
+ * Divide each pixel by the mean of a box around it, then scale back to grey 128.
+ * A shadow is a local multiplier, so it flattens. A different slab does not.
+ */
+export function divideByLocalMean(frame: GreyFrame, radius = CONTENT_MEAN_RADIUS): GreyFrame {
+  const { width, height, data } = frame
+  const stride = width + 1
+  const integral = new Float64Array(stride * (height + 1))
+  for (let y = 0; y < height; y += 1) {
+    let row = 0
+    for (let x = 0; x < width; x += 1) {
+      row += data[y * width + x]
+      integral[(y + 1) * stride + (x + 1)] = integral[y * stride + (x + 1)] + row
+    }
+  }
+  const at = (x: number, y: number) => integral[y * stride + x]
+  const out = new Uint8Array(data.length)
+  for (let y = 0; y < height; y += 1) {
+    const y0 = Math.max(0, y - radius)
+    const y1 = Math.min(height, y + radius + 1)
+    for (let x = 0; x < width; x += 1) {
+      const x0 = Math.max(0, x - radius)
+      const x1 = Math.min(width, x + radius + 1)
+      const mean = (at(x1, y1) - at(x0, y1) - at(x1, y0) + at(x0, y0)) / ((x1 - x0) * (y1 - y0))
+      const ratio = mean > 0 ? (data[y * width + x] / mean) * CONTENT_LEVEL : CONTENT_LEVEL
+      out[y * width + x] = Math.max(0, Math.min(255, Math.round(ratio)))
+    }
+  }
+  return { width, height, data: out }
+}
+
+function motionOf(anchor: GreyFrame, next: GreyFrame): FrameMotion {
   const mad = meanAbsDiff(anchor, next)
   let shift = blockShift(anchor, next)
   let residual = alignedResidual(anchor, next, shift.dx, shift.dy)
@@ -764,6 +810,13 @@ export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
   return { mad, residual, dx: shift.dx, dy: shift.dy, shiftFrac }
 }
 
+/** Shift first, then the residual of the aligned frames. A shift that does not actually line the pictures up is dropped. */
+export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
+  const raw = motionOf(anchor, next)
+  const content = motionOf(divideByLocalMean(anchor), divideByLocalMean(next))
+  return { ...raw, contentResidual: content.residual, contentShiftFrac: content.shiftFrac }
+}
+
 /**
  * Moved when the frame slid by about 6% of its width or its height.
  * A tremble or an exposure change stays put: the residual after aligning,
@@ -776,6 +829,23 @@ export function sceneMoved(motion: FrameMotion): boolean {
 /** A slide of about 20% of the width or the height, or a picture that still disagrees after aligning. */
 export function substantialSceneChange(motion: FrameMotion): boolean {
   return motion.shiftFrac >= SCENE_RESET_FRAC || motion.residual >= SCENE_MOVE_MAD
+}
+
+/**
+ * A paused scan resumes on a slide of about 20% of the frame, or when the
+ * local-mean residual reaches about 16. A shadow does not. A 15% pan does not.
+ * A row swap does.
+ */
+export function resumesPausedScan(motion: FrameMotion | null): boolean {
+  if (!motion) return false
+  const shift = motion.contentShiftFrac ?? motion.shiftFrac
+  const residual = motion.contentResidual ?? motion.residual
+  return shift >= SCENE_RESET_FRAC || residual >= PAUSE_RESUME_RESIDUAL
+}
+
+/** The hold-still clock restarts on a real slide. A light blinking in place does not restart it. */
+export function resetsMovedHold(motion: FrameMotion | null): boolean {
+  return Boolean(motion && motion.shiftFrac >= SCENE_MOVE_FRAC)
 }
 
 /** One second against the anchor, or three after two moved reads. The three is frame-to-frame, not against the anchor. */
@@ -805,10 +875,14 @@ export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
   return 'show'
 }
 
-/** Fraction to add to each label. Null when the read is discarded. Zero when the shift is under 6%. */
+/**
+ * Fraction to add to each label. Null when the read is discarded.
+ * A shift under 6% is applied when the pictures still agree. When they do not, the labels stay put.
+ */
 export function labelOffset(motion: FrameMotion | null, width: number, height: number): { x: number; y: number } | null {
-  if (!motion || placeRead(motion) === 'discard') return placeRead(motion) === 'discard' ? null : { x: 0, y: 0 }
-  if (motion.shiftFrac < SCENE_MOVE_FRAC) return { x: 0, y: 0 }
+  if (!motion) return { x: 0, y: 0 }
+  if (placeRead(motion) === 'discard') return null
+  if (motion.shiftFrac < SCENE_MOVE_FRAC && motion.residual >= BOX_MOTION_RESIDUAL) return { x: 0, y: 0 }
   return { x: motion.dx / Math.max(width, 1), y: motion.dy / Math.max(height, 1) }
 }
 
@@ -822,10 +896,31 @@ export function rearmAfterDiscard(state: SceneHold): SceneHold {
   return { ...state, scanned: false }
 }
 
+/**
+ * A discarded read whose shift is under 6% counts toward the dry-streak pause.
+ * A real slide does not. Three of these pauses the camera.
+ */
+export function dryStreakAfterDiscard(streak: number, motion: FrameMotion | null): { streak: number; pause: boolean } | null {
+  if (!motion || motion.shiftFrac >= SCENE_MOVE_FRAC || placeRead(motion) !== 'discard') return null
+  const next = streak + 1
+  return { streak: next, pause: next >= 3 }
+}
+
 /** Shift for unread boxes. A residual of 6 or more is not trusted. */
 export function unreadBoxMotion(motion: FrameMotion | null, width: number, height: number): BoxMotion | null {
   if (!motion || motion.residual >= BOX_MOTION_RESIDUAL) return null
   return { dx: motion.dx, dy: motion.dy, width, height }
+}
+
+/**
+ * The local-mean picture changed enough to be a different row of slabs.
+ * A shadow does not. A swap of one to three slabs stays under the gate and needs a tap.
+ * Named keys stay either way.
+ */
+export function unreadSlabsAreNew(motion: FrameMotion | null): boolean {
+  if (!motion) return false
+  const residual = motion.contentResidual ?? motion.residual
+  return residual >= PAUSE_RESUME_RESIDUAL
 }
 
 /**
@@ -912,15 +1007,17 @@ const BOX_MATCH_IOU = 0.5
  * How many scans in a row added no new card. Three pauses the camera.
  * An unread slab matches a box already seen when the overlap, after the
  * measured shift between the two frames, is at least half the union.
+ * When the picture changed in place, those unread slabs count as new and named keys stay.
  */
 export function nextDryStreak(
   seen: SeenCards,
   streak: number,
   cards: { printId?: string | null; codeText?: string | null; box?: CardBox | null }[],
   motion: BoxMotion | null = null,
+  unreadAreNew = false,
 ): { seen: SeenCards; streak: number; pause: boolean } {
   const keys = new Set(seen.keys)
-  const boxes = seen.boxes.map((box) => (motion ? shiftBox(box, motion.dx, motion.dy, motion.width, motion.height) : { ...box }))
+  const boxes = unreadAreNew ? [] : seen.boxes.map((box) => (motion ? shiftBox(box, motion.dx, motion.dy, motion.width, motion.height) : { ...box }))
   let fresh = false
   for (const card of cards) {
     const key = scanCardKey(card)
@@ -997,6 +1094,11 @@ export function simulateDriftScans(driftPerSec: number, durationMs = 360_000, re
           seen = emptySeen()
           streak = 0
         }
+        const dry = dryStreakAfterDiscard(streak, motion)
+        if (dry) {
+          streak = dry.streak
+          if (dry.pause) paused = true
+        }
       } else {
         const outcome = nextDryStreak(seen, streak, [card], unreadBoxMotion(motion, 100, 100))
         seen = outcome.seen
@@ -1044,10 +1146,10 @@ export function simulateDriftScans(driftPerSec: number, durationMs = 360_000, re
 
 /**
  * While paused, motion accumulates from the frame that caused the pause.
- * That anchor does not reset at 6%, so a real pan resumes and a slow drift does not.
- * After a resume, a still second starts one scan.
+ * That anchor does not reset. A slide of about 20%, or a local-mean residual of 16, resumes it.
+ * A shadow under that residual does not. After a resume, a still second starts one scan.
  */
-export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs = 0): { resumed: boolean; scans: number } {
+export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs = 0, residual = 0): { resumed: boolean; scans: number } {
   const dt = 200
   let t = 0
   let pos = 0
@@ -1057,8 +1159,8 @@ export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs
   const end = moveMs + holdMs
   while (t <= end) {
     if (!resumed) {
-      const motion: FrameMotion = { mad: 0, residual: 0, dx: pos * 100, dy: 0, shiftFrac: Math.abs(pos) }
-      if (substantialSceneChange(motion)) resumed = true
+      const motion: FrameMotion = { mad: 0, residual, dx: pos * 100, dy: 0, shiftFrac: Math.abs(pos) }
+      if (resumesPausedScan(motion)) resumed = true
     } else if (scans === 0) {
       if (steadySince == null || steadySince > t) steadySince = t
       if (t - steadySince >= SCENE_STEADY_MS) scans += 1
@@ -1067,6 +1169,183 @@ export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs
     t += dt
   }
   return { resumed, scans }
+}
+
+export interface CaseWatch {
+  scans: number
+  paused: boolean
+  resumedSameTick: boolean
+  resumeCount: number
+  /** Shift from the frame that was sent to the frame when a pause began. */
+  shiftAtPause: number | null
+  pausedAt: number | null
+  resumedAt: number | null
+}
+
+/**
+ * The live loop: steadiness, a read, then either a dry pause or another scan.
+ * The pause anchor is the frame when the reading returns, so the motion during
+ * that read cannot resume the pause on the same tick.
+ */
+export function simulateCaseWatch(input: {
+  durationMs: number
+  readMs: number
+  position: (t: number) => number
+  residual: (fromT: number, toT: number) => number
+  /** Local-mean residual. When omitted, the gates use residual. */
+  contentResidual?: (fromT: number, toT: number) => number
+}): CaseWatch {
+  const dt = 200
+  const asMotion = (fromT: number, fromPos: number, toT: number, toPos: number): FrameMotion => {
+    const contentResidual = input.contentResidual?.(fromT, toT)
+    return {
+      mad: 0,
+      residual: input.residual(fromT, toT),
+      ...(contentResidual != null ? { contentResidual } : {}),
+      dx: (toPos - fromPos) * 100,
+      dy: 0,
+      shiftFrac: Math.abs(toPos - fromPos),
+    }
+  }
+
+  let t = 0
+  let anchorPos: number | null = null
+  let anchorT = 0
+  let steadySince: number | null = null
+  let misses = 0
+  let scanned = false
+  let paused = false
+  let pausePos = 0
+  let pauseT = 0
+  let movedReads = 0
+  let frameSteady: number | null = null
+  let prevPos = input.position(0)
+  let prevT = 0
+  let streak = 0
+  let named = false
+  let lastScanAt: number | null = null
+  let readingUntil: number | null = null
+  let capturePos = 0
+  let captureT = 0
+  let scans = 0
+  let resumedSameTick = false
+  let resumeCount = 0
+  let shiftAtPause: number | null = null
+  let pausedAt: number | null = null
+  let resumedAt: number | null = null
+
+  const resumeFrom = (fromT: number, fromPos: number, pos: number, sameTick: boolean) => {
+    const motion = asMotion(fromT, fromPos, t, pos)
+    if (!resumesPausedScan(motion)) return
+    if (sameTick) resumedSameTick = true
+    paused = false
+    if (resumedAt == null) resumedAt = t
+    resumeCount += 1
+    streak = 0
+    named = false
+    anchorPos = pos
+    anchorT = t
+    steadySince = t
+    misses = 0
+    scanned = false
+    movedReads = 0
+    frameSteady = null
+  }
+
+  while (t <= input.durationMs) {
+    const pos = input.position(t)
+    let ready = false
+    if (anchorPos == null) {
+      anchorPos = pos
+      anchorT = t
+    } else {
+      const hold = asMotion(anchorT, anchorPos, t, pos)
+      if (!sceneMoved(hold)) {
+        if (steadySince == null || steadySince > t) steadySince = t
+        misses = 0
+        ready = !scanned && t - steadySince >= SCENE_STEADY_MS
+      } else {
+        const hard = hold.shiftFrac >= SCENE_MOVE_FRAC
+        if (!hard && misses < 1) misses += 1
+        else {
+          anchorPos = pos
+          anchorT = t
+          steadySince = null
+          misses = 0
+          scanned = false
+        }
+      }
+    }
+
+    if (readingUntil != null && t >= readingUntil) {
+      const motion = asMotion(captureT, capturePos, t, pos)
+      if (sceneMoved(motion)) movedReads += 1
+      else movedReads = 0
+      if (movedReads >= MOVED_HOLD_AFTER) frameSteady = null
+      if (placeRead(motion) === 'discard') {
+        if (forgetsSeenCards(motion)) {
+          named = false
+          streak = 0
+        }
+        scanned = false
+        const dry = dryStreakAfterDiscard(streak, motion)
+        if (dry) {
+          streak = dry.streak
+          if (dry.pause) {
+            shiftAtPause = motion.shiftFrac
+            paused = true
+            if (pausedAt == null) pausedAt = t
+            pausePos = pos
+            pauseT = t
+            resumeFrom(pauseT, pausePos, pos, true)
+          }
+        }
+      } else if (!named) {
+        named = true
+        streak = 0
+      } else {
+        streak += 1
+        if (streak >= 3) {
+          shiftAtPause = motion.shiftFrac
+          paused = true
+          if (pausedAt == null) pausedAt = t
+          pausePos = pos
+          pauseT = t
+          resumeFrom(pauseT, pausePos, pos, true)
+        }
+      }
+      lastScanAt = t
+      readingUntil = null
+    }
+
+    if (paused) resumeFrom(pauseT, pausePos, pos, pauseT === t)
+
+    if (readingUntil == null && !paused) {
+      const hop = asMotion(prevT, prevPos, t, pos)
+      let start = false
+      if (movedReads >= MOVED_HOLD_AFTER) {
+        const step = stepFrameHold(frameSteady, resetsMovedHold(hop), t)
+        frameSteady = step.since
+        start = step.ready && scanIntervalOpen(lastScanAt, t)
+      } else {
+        start = ready && scanIntervalOpen(lastScanAt, t)
+      }
+      if (start) {
+        scans += 1
+        readingUntil = t + input.readMs
+        capturePos = pos
+        captureT = t
+        scanned = true
+        if (movedReads >= MOVED_HOLD_AFTER) frameSteady = null
+      }
+    }
+
+    prevPos = pos
+    prevT = t
+    t += dt
+  }
+
+  return { scans, paused, resumedSameTick, resumeCount, shiftAtPause, pausedAt, resumedAt }
 }
 
 /** Of two shots of the same side, the one with less glare on the card; ties keep the first. */
