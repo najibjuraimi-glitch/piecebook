@@ -68,7 +68,15 @@ export function WatchlistScreen() {
 
   return (
     <Screen>
-      <ScreenTitle title="Watchlist" subline="English price against your target, in S$" />
+      <ScreenTitle
+        title="Watchlist"
+        subline="English price against your target, in S$"
+        aside={
+          <Link to="/bid" className="text-meta font-medium text-ink underline decoration-line underline-offset-2">
+            All-in
+          </Link>
+        }
+      />
       {note && <p className="mb-4 text-meta text-ink">{note}</p>}
       {revision != null && (
         <Link
@@ -120,6 +128,9 @@ export function WatchlistScreen() {
                 {item.notes ? <p className="mt-1 text-meta text-muted">{item.notes}</p> : null}
               </Link>
               <PrintsPanel code={item.code} grade={item.grade === 'PSA 10' ? 'psa10' : item.grade === 'PSA 9' ? 'psa9' : 'raw'} codeIsPin />
+              <Link to={`/bid?item=${encodeURIComponent(item.id)}`} className="mt-1 inline-flex min-h-11 items-center text-meta font-medium text-ink underline decoration-line underline-offset-2">
+                Max bid
+              </Link>
             </li>
           ))}
         </ul>
