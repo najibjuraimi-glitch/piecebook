@@ -793,9 +793,14 @@ export function stepFrameHold(since: number | null, frameMoved: boolean, now: nu
   return { since: started, ready: now - started >= holdMs }
 }
 
-/** A returned read is dropped only when the scene itself changed. A moderate slide is kept. */
+/**
+ * A returned read is kept when the aligned pictures still agree.
+ * A residual of 6 or more, or a shift of about 20%, is dropped.
+ * A moderate slide with a low residual is shown, shifted.
+ */
 export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
-  if (motion && substantialSceneChange(motion)) return 'discard'
+  if (!motion) return 'show'
+  if (substantialSceneChange(motion) || motion.residual >= BOX_MOTION_RESIDUAL) return 'discard'
   return 'show'
 }
 
@@ -1023,6 +1028,33 @@ export function simulateDriftScans(driftPerSec: number, durationMs = 360_000, re
     t += dt
   }
   return { scans, moved, paused }
+}
+
+/**
+ * While paused, motion accumulates from the frame that caused the pause.
+ * That anchor does not reset at 6%, so a real pan resumes and a slow drift does not.
+ * After a resume, a still second starts one scan.
+ */
+export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs = 0): { resumed: boolean; scans: number } {
+  const dt = 200
+  let t = 0
+  let pos = 0
+  let resumed = false
+  let scans = 0
+  let steadySince: number | null = null
+  const end = moveMs + holdMs
+  while (t <= end) {
+    if (!resumed) {
+      const motion: FrameMotion = { mad: 0, residual: 0, dx: pos * 100, dy: 0, shiftFrac: Math.abs(pos) }
+      if (substantialSceneChange(motion)) resumed = true
+    } else if (scans === 0) {
+      if (steadySince == null || steadySince > t) steadySince = t
+      if (t - steadySince >= SCENE_STEADY_MS) scans += 1
+    }
+    if (t < moveMs) pos += driftPerSec * (dt / 1000)
+    t += dt
+  }
+  return { resumed, scans }
 }
 
 /** Of two shots of the same side, the one with less glare on the card; ties keep the first. */

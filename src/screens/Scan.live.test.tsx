@@ -623,10 +623,14 @@ describe('scan camera', () => {
     await wait(4500)
     expect(scans.length).toBe(n)
     expect(view.querySelector('[data-testid="scan-pause"]')?.textContent).toBe('Resume')
-    pan = 160
-    await wait(700)
-    expect(view.textContent).not.toContain('Paused to save scans, move or tap to resume')
-  }, 30000)
+    const from = pan
+    const steps = 12
+    for (let i = 1; i <= steps; i += 1) {
+      pan = from + Math.round((90 * i) / steps)
+      await wait(220)
+    }
+    expect(await waitUntil(() => !(view.textContent || '').includes('Paused to save scans, move or tap to resume'), 4000)).toBe(true)
+  }, 35000)
 
   it('stays paused when the case moves during a manual pause', async () => {
     installPointer(true)

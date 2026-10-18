@@ -118,6 +118,7 @@ export function ScanLive({
   const failuresRef = useRef(0)
   const seenCards = useRef(emptySeen())
   const seenFrame = useRef<GreyFrame | null>(null)
+  const pauseAnchor = useRef<GreyFrame | null>(null)
   const movedReads = useRef(0)
   const prevTickFrame = useRef<GreyFrame | null>(null)
   const frameSteadySince = useRef<number | null>(null)
@@ -245,15 +246,9 @@ export function ScanLive({
 
   const clearAutoPause = useCallback(() => {
     autoPausedRef.current = false
+    pauseAnchor.current = null
     dryStreak.current = 0
     setAutoPaused(false)
-  }, [])
-
-  const releaseMovedHold = useCallback(() => {
-    movedReads.current = 0
-    frameSteadySince.current = null
-    heldRef.current = false
-    setHeld(false)
   }, [])
 
   const forgetSeen = () => {
@@ -270,13 +265,20 @@ export function ScanLive({
   const send = useCallback(
     async (manual: boolean) => {
       if (busyRef.current) return
-      if (manual && heldRef.current) releaseMovedHold()
       if (manual && !shutterReady) return
-      if (!manual && (autoPausedRef.current || heldRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
+      if (!manual && (autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
       const video = videoRef.current
       const stream = streamRef.current
       if (!video || !stream) return
       busyRef.current = true
+      if (heldRef.current) {
+        if (manual) {
+          movedReads.current = 0
+          frameSteadySince.current = null
+        }
+        heldRef.current = false
+        setHeld(false)
+      }
       if (!manual) holdRef.current = markSceneScanned(holdRef.current)
       const signature = frameGrey()
       setReading(true)
@@ -343,6 +345,7 @@ export function ScanLive({
           dryStreak.current = outcome.streak
           if (outcome.pause) {
             autoPausedRef.current = true
+            pauseAnchor.current = current
             setAutoPaused(true)
           } else if (outcome.streak === 0) {
             autoPausedRef.current = false
@@ -355,7 +358,7 @@ export function ScanLive({
         if (manual) armShutter()
       }
     },
-    [armShutter, frameGrey, onScan, releaseMovedHold, shutterReady],
+    [armShutter, frameGrey, onScan, shutterReady],
   )
   sendRef.current = send
 
@@ -388,17 +391,21 @@ export function ScanLive({
           const now = Date.now()
           const step = stepSceneHold(holdRef.current, frame, now)
           holdRef.current = step.state
+          if (autoPausedRef.current && pauseAnchor.current) {
+            const fromPause = compareFrames(pauseAnchor.current, frame)
+            if (substantialSceneChange(fromPause)) {
+              forgetSeen()
+              autoPausedRef.current = false
+              pauseAnchor.current = null
+              setAutoPaused(false)
+              failuresRef.current = 0
+              holdRef.current = { anchor: frame, steadySince: now, misses: 0, scanned: false }
+            }
+          }
           if (step.moved) {
             failuresRef.current = 0
             setDim(true)
-            if (step.motion && substantialSceneChange(step.motion)) {
-              forgetSeen()
-              if (autoPausedRef.current) {
-                autoPausedRef.current = false
-                dryStreak.current = 0
-                setAutoPaused(false)
-              }
-            }
+            if (step.motion && substantialSceneChange(step.motion)) forgetSeen()
           } else if (step.steady) setDim(false)
           if (movedReads.current >= MOVED_HOLD_AFTER) {
             const hop = prevTickFrame.current ? compareFrames(prevTickFrame.current, frame) : null
@@ -409,12 +416,7 @@ export function ScanLive({
               heldRef.current = true
               setHeld(true)
             }
-            if (settled.ready && !autoPausedRef.current) {
-              heldRef.current = false
-              setHeld(false)
-              frameSteadySince.current = null
-              void sendRef.current(false)
-            }
+            if (settled.ready && !autoPausedRef.current) void sendRef.current(false)
           } else if (step.ready && !autoPausedRef.current) {
             void sendRef.current(false)
           }
@@ -456,7 +458,7 @@ export function ScanLive({
           Close
         </button>
       </div>
-      <div ref={boxRef} onClick={releaseMovedHold} className="relative min-h-0 flex-1 overflow-hidden">
+      <div ref={boxRef} className="relative min-h-0 flex-1 overflow-hidden">
         <video ref={videoRef} playsInline muted autoPlay className="absolute inset-0 h-full w-full object-contain" data-testid="scan-video" />
         {labelsCurrent && scan?.cards.map((card) => {
           if (!card.box) return null
@@ -499,7 +501,7 @@ export function ScanLive({
             </div>
           </div>
         )}
-        {held && !autoPaused && (
+        {held && !reading && !autoPaused && (
           <button type="button" data-testid="scan-settle" onClick={() => void sendRef.current(true)} className="absolute inset-x-4 bottom-4 rounded-xl bg-white px-3 py-3 text-center text-[16px] font-semibold text-black">
             Hold still, tap to scan
           </button>

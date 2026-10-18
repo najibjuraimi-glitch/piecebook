@@ -35,13 +35,16 @@ import {
   initialSceneHold,
   insideQuad,
   invertMat3,
+  labelOffset,
   markSceneScanned,
   nextDryStreak,
+  placeRead,
   pickCleanerFrame,
   scanIntervalOpen,
   sceneMoved,
   sharpness,
   simulateDriftScans,
+  simulatePausedMotion,
   steadyWaitMs,
   stepFrameHold,
   substantialSceneChange,
@@ -800,7 +803,7 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(sceneMoved(still)).toBe(false)
   })
 
-  it('keeps a 0.5% to 1% tremble and a 10% exposure change on the slab grid', () => {
+  it('keeps a 0.5% to 1% tremble and a 10% exposure change on the generated case grid', () => {
     const full = loadJpegFixture('full.jpg')
     const anchor = greyDownscale(full)
     for (const frac of [0.0025, -0.0025, 0.005, -0.005, 0.01, -0.01]) {
@@ -917,6 +920,20 @@ describe('case view: one steady second, then not the same scene again', () => {
       const session = simulateDriftScans(drift, 360_000, 33_700)
       expect(session.scans <= 3 || session.paused).toBe(true)
     }
+  })
+
+  it('resumes a pause on a 45% pan and not on a slow drift', () => {
+    const pan = simulatePausedMotion(0.3, 1_500, 30_000)
+    expect(pan.resumed).toBe(true)
+    expect(pan.scans).toBeGreaterThan(0)
+    const drift = simulatePausedMotion(0.003, 60_000)
+    expect(drift.resumed).toBe(false)
+    expect(drift.scans).toBe(0)
+    const swapped = { mad: 20, residual: 8.1, dx: 8, dy: 0, shiftFrac: 0.08 }
+    expect(placeRead(swapped)).toBe('discard')
+    const slide = { mad: 20, residual: 5, dx: 8, dy: 0, shiftFrac: 0.08 }
+    expect(placeRead(slide)).toBe('show')
+    expect(labelOffset(slide, 100, 80)).toEqual({ x: 0.08, y: 0 })
   })
 
   it('times the moving-read hold from one frame to the next', () => {
