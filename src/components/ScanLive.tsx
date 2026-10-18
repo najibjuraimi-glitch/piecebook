@@ -360,7 +360,8 @@ export function ScanLive({
             dryStreak.current = dry.streak
             if (dry.pause) {
               autoPausedRef.current = true
-              if (nowFrame) pauseAnchor.current = nowFrame
+              // A missing frame must not keep the anchor from an older photo.
+              pauseAnchor.current = nowFrame
               setAutoPaused(true)
             }
           }

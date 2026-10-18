@@ -543,8 +543,15 @@ export const SCENE_RESET_FRAC = 0.2
 export const SCENE_MOVE_MAD = 12
 /** Unread boxes are shifted into the new frame only when the aligned pictures still agree. */
 export const BOX_MOTION_RESIDUAL = 6
-/** A paused scan resumes on a picture change this large. Shadows stay under it (max about 23.6). */
-export const PAUSE_RESUME_RESIDUAL = 26
+/** Local-mean box radius on the downscaled frame. A shadow divides out; a new row does not. */
+export const CONTENT_MEAN_RADIUS = 10
+/** Ratio images are put back on this grey level before the residual is measured. */
+export const CONTENT_LEVEL = 128
+/**
+ * A paused scan resumes when the local-mean residual reaches this.
+ * Shadows, even a dark half plus a small sway, stay under it. A row swap clears it.
+ */
+export const PAUSE_RESUME_RESIDUAL = 16
 
 export interface GreyFrame {
   width: number
@@ -557,6 +564,13 @@ export interface FrameMotion {
   mad: number
   /** Difference after the shift, with the mean removed and a small blur. */
   residual: number
+  /**
+   * Residual after each frame is divided by its local mean.
+   * Set by compareFrames. Synthetic motions may omit it and the gates fall back to residual.
+   */
+  contentResidual?: number
+  /** Shift measured on the local-mean frames. A shadow can hide the raw shift. */
+  contentShiftFrac?: number
   dx: number
   dy: number
   /** Shift length. X is a share of the width and y a share of the height, then combined. */
@@ -748,8 +762,38 @@ export function alignedResidual(anchor: GreyFrame, next: GreyFrame, dx: number, 
   return sum / a.length
 }
 
-/** Shift first, then the residual of the aligned frames. A shift that does not actually line the pictures up is dropped. */
-export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
+/**
+ * Divide each pixel by the mean of a box around it, then scale back to grey 128.
+ * A shadow is a local multiplier, so it flattens. A different slab does not.
+ */
+export function divideByLocalMean(frame: GreyFrame, radius = CONTENT_MEAN_RADIUS): GreyFrame {
+  const { width, height, data } = frame
+  const stride = width + 1
+  const integral = new Float64Array(stride * (height + 1))
+  for (let y = 0; y < height; y += 1) {
+    let row = 0
+    for (let x = 0; x < width; x += 1) {
+      row += data[y * width + x]
+      integral[(y + 1) * stride + (x + 1)] = integral[y * stride + (x + 1)] + row
+    }
+  }
+  const at = (x: number, y: number) => integral[y * stride + x]
+  const out = new Uint8Array(data.length)
+  for (let y = 0; y < height; y += 1) {
+    const y0 = Math.max(0, y - radius)
+    const y1 = Math.min(height, y + radius + 1)
+    for (let x = 0; x < width; x += 1) {
+      const x0 = Math.max(0, x - radius)
+      const x1 = Math.min(width, x + radius + 1)
+      const mean = (at(x1, y1) - at(x0, y1) - at(x1, y0) + at(x0, y0)) / ((x1 - x0) * (y1 - y0))
+      const ratio = mean > 0 ? (data[y * width + x] / mean) * CONTENT_LEVEL : CONTENT_LEVEL
+      out[y * width + x] = Math.max(0, Math.min(255, Math.round(ratio)))
+    }
+  }
+  return { width, height, data: out }
+}
+
+function motionOf(anchor: GreyFrame, next: GreyFrame): FrameMotion {
   const mad = meanAbsDiff(anchor, next)
   let shift = blockShift(anchor, next)
   let residual = alignedResidual(anchor, next, shift.dx, shift.dy)
@@ -764,6 +808,13 @@ export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
   const height = Math.max(anchor.height, 1)
   const shiftFrac = Math.hypot(shift.dx / width, shift.dy / height)
   return { mad, residual, dx: shift.dx, dy: shift.dy, shiftFrac }
+}
+
+/** Shift first, then the residual of the aligned frames. A shift that does not actually line the pictures up is dropped. */
+export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
+  const raw = motionOf(anchor, next)
+  const content = motionOf(divideByLocalMean(anchor), divideByLocalMean(next))
+  return { ...raw, contentResidual: content.residual, contentShiftFrac: content.shiftFrac }
 }
 
 /**
@@ -782,12 +833,14 @@ export function substantialSceneChange(motion: FrameMotion): boolean {
 
 /**
  * A paused scan resumes on a slide of about 20% of the frame, or when the
- * picture still disagrees by 26 after aligning. An 8% sway does not. A shadow,
- * up to a residual of about 23.6, does not. A row swap (about 32 to 42) does.
+ * local-mean residual reaches about 16. A shadow does not. A 15% pan does not.
+ * A row swap does.
  */
 export function resumesPausedScan(motion: FrameMotion | null): boolean {
   if (!motion) return false
-  return motion.shiftFrac >= SCENE_RESET_FRAC || motion.residual >= PAUSE_RESUME_RESIDUAL
+  const shift = motion.contentShiftFrac ?? motion.shiftFrac
+  const residual = motion.contentResidual ?? motion.residual
+  return shift >= SCENE_RESET_FRAC || residual >= PAUSE_RESUME_RESIDUAL
 }
 
 /** The hold-still clock restarts on a real slide. A light blinking in place does not restart it. */
@@ -860,12 +913,14 @@ export function unreadBoxMotion(motion: FrameMotion | null, width: number, heigh
 }
 
 /**
- * The picture changed in place enough to be a different row of slabs.
- * Shadows (about 19 to 24) do not. A swap of one to three slabs stays under this
- * and needs a tap. Named keys stay either way.
+ * The local-mean picture changed enough to be a different row of slabs.
+ * A shadow does not. A swap of one to three slabs stays under the gate and needs a tap.
+ * Named keys stay either way.
  */
 export function unreadSlabsAreNew(motion: FrameMotion | null): boolean {
-  return Boolean(motion && motion.residual >= PAUSE_RESUME_RESIDUAL)
+  if (!motion) return false
+  const residual = motion.contentResidual ?? motion.residual
+  return residual >= PAUSE_RESUME_RESIDUAL
 }
 
 /**
@@ -1091,7 +1146,7 @@ export function simulateDriftScans(driftPerSec: number, durationMs = 360_000, re
 
 /**
  * While paused, motion accumulates from the frame that caused the pause.
- * That anchor does not reset. A slide of about 20%, or a residual of 26, resumes it.
+ * That anchor does not reset. A slide of about 20%, or a local-mean residual of 16, resumes it.
  * A shadow under that residual does not. After a resume, a still second starts one scan.
  */
 export function simulatePausedMotion(driftPerSec: number, moveMs: number, holdMs = 0, residual = 0): { resumed: boolean; scans: number } {
@@ -1137,15 +1192,21 @@ export function simulateCaseWatch(input: {
   readMs: number
   position: (t: number) => number
   residual: (fromT: number, toT: number) => number
+  /** Local-mean residual. When omitted, the gates use residual. */
+  contentResidual?: (fromT: number, toT: number) => number
 }): CaseWatch {
   const dt = 200
-  const asMotion = (fromT: number, fromPos: number, toT: number, toPos: number): FrameMotion => ({
-    mad: 0,
-    residual: input.residual(fromT, toT),
-    dx: (toPos - fromPos) * 100,
-    dy: 0,
-    shiftFrac: Math.abs(toPos - fromPos),
-  })
+  const asMotion = (fromT: number, fromPos: number, toT: number, toPos: number): FrameMotion => {
+    const contentResidual = input.contentResidual?.(fromT, toT)
+    return {
+      mad: 0,
+      residual: input.residual(fromT, toT),
+      ...(contentResidual != null ? { contentResidual } : {}),
+      dx: (toPos - fromPos) * 100,
+      dy: 0,
+      shiftFrac: Math.abs(toPos - fromPos),
+    }
+  }
 
   let t = 0
   let anchorPos: number | null = null
