@@ -3,6 +3,7 @@ import { localDayIso, singaporeDay, todayIso } from './format'
 
 describe('Singapore day', () => {
   it('uses the Singapore calendar day near midnight when the device is not in Singapore', () => {
+    // npm test pins TZ=UTC, so this stays the previous evening even on a Singapore Mac.
     expect(Intl.DateTimeFormat().resolvedOptions().timeZone).not.toBe('Asia/Singapore')
     // 15:59 UTC is still 16 Oct in Singapore. 16:01 UTC is 00:01 on 17 Oct.
     const before = new Date('2026-10-16T15:59:00.000Z')

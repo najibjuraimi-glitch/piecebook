@@ -38,6 +38,8 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'worker/**/*.test.ts'],
     environment: 'node',
+    // Date getters in tests are UTC, including on a machine set to Asia/Singapore.
+    env: { TZ: 'UTC' },
   },
   // Root by default; GitHub Pages project sites live under /piecebook/ (see .github/workflows/pages.yml).
   base: process.env.PIECEBOOK_BASE ?? '/',
