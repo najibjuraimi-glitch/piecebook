@@ -212,7 +212,7 @@ describe('under street and lot math', () => {
     expect(numbered.cards[0]).toMatchObject({
       codeText: 'EB04-003',
       printId: 'EB04-003p1',
-      candidates: ['EB04-003', 'EB04-003p1'],
+      candidates: ['EB04-003p1', 'EB04-003'],
     })
     expect(numbered.cards[0].candidates.length).toBeGreaterThan(0)
   })
@@ -354,8 +354,8 @@ describe('label code, character, and alias', () => {
       quoteFor,
       today: '2026-10-18',
     })
-    expect(promo.cards[0]).toMatchObject({ priced: false, drag: 'Promo not in price data' })
-    expect(promo.cards[1]).toMatchObject({ priced: false, printId: null, drag: 'Promo not in price data' })
+    expect(promo.cards[0]).toMatchObject({ priced: false, drag: 'Promo/collection: not in price data', collection: true })
+    expect(promo.cards[1]).toMatchObject({ priced: false, printId: null, drag: 'Promo/collection: not in price data', collection: true })
   })
 
   it('does not subtract a USD lot ask from the SGD street, and passes the lot into the bid link', () => {
@@ -438,8 +438,8 @@ describe('label code, character, and alias', () => {
   it('says print not in seed for a full code that is not Japanese', () => {
     const missing = matchScan({
       sights: [
-        sight({ code: 'EB04-106', codeText: 'EB04-106', parallel: null, name: 'Card', language: 'JP', languageEvidence: 'card_text_japanese', labelText: 'EB04' }),
-        sight({ col: 1, code: 'PRB02-078', codeText: 'PRB02-078', parallel: null, name: 'Card', language: 'JP', languageEvidence: 'card_text_japanese', labelText: 'PRB02' }),
+        sight({ code: 'EB04-106', codeText: 'EB04-106', parallel: null, name: 'Card', language: 'EN', labelText: 'EB04' }),
+        sight({ col: 1, code: 'PRB02-078', codeText: 'PRB02-078', parallel: null, name: 'Card', language: 'EN', labelText: 'PRB02' }),
       ],
       prints,
       quoteFor,
@@ -508,13 +508,38 @@ describe('label code, character, and alias', () => {
       quoteFor,
       today: '2026-10-18',
     })
-    expect(scan.cards[0]).toMatchObject({ printId: null, ambiguous: true, lowConfidence: true, priced: false })
-    expect(scan.cards[0].candidates).toContain('OP01-001')
-    expect(scan.cards[0].candidates).not.toContain('OP09-001')
+    expect(scan.cards[0]).toMatchObject({ printId: 'OP01-001', ambiguous: false, priced: false })
+    expect(scan.cards[0].candidates).toEqual(['OP01-001'])
     expect(scan.cards[1].candidates).toContain('OP02-004')
     expect(scan.cards[1].printId).toBeNull()
     expect(scan.cards[2].candidates).toContain('OP09-013')
     expect(scan.cards[2].printId).toBeNull()
+  })
+
+  it('uses the label set and number when the read code names someone else', () => {
+    const rows: PrintRow[] = [
+      { cardNumber: 'OP10-061', baseNumber: 'OP10-061', variant: '', rarity: 'UC', language: 'EN', name: 'Special Long-Range Attack!! Bagworm', character: 'Special Long-Range Attack!! Bagworm' },
+      { cardNumber: 'OP09-061', baseNumber: 'OP09-061', variant: '', rarity: 'L', language: 'EN', name: 'Monkey.D.Luffy', character: 'Monkey.D.Luffy' },
+      { cardNumber: 'OP09-061p1', baseNumber: 'OP09-061', variant: 'Alternate Art', rarity: 'L', language: 'EN', name: 'Monkey.D.Luffy', character: 'Monkey.D.Luffy' },
+    ]
+    const scan = matchScan({
+      sights: [sight({
+        code: 'OP10-061',
+        codeText: 'OP10-061',
+        setCode: 'EN 2ND ANNIVERSARY SET',
+        name: 'Luffy',
+        parallel: null,
+        language: 'EN',
+        labelText: 'EN 2ND ANNIVERSARY SET #061',
+      })],
+      prints: rows,
+      quoteFor,
+      today: '2026-10-18',
+    })
+    expect(scan.cards[0].codeText).toBe('OP09-061')
+    expect(scan.cards[0].printId).toBeNull()
+    expect(scan.cards[0].candidates).toEqual(['OP09-061', 'OP09-061p1'])
+    expect(scan.cards[0].liked).toBe('Luffy')
   })
 
   it('does not resolve PCC leaders to the starter base prints', () => {
@@ -534,21 +559,48 @@ describe('label code, character, and alias', () => {
       today: '2026-10-18',
     })
     expect(scan.cards.map((card) => card.printId)).toEqual([null, null, null])
-    expect(scan.cards.map((card) => card.drag)).toEqual(['Promo not in price data', 'Promo not in price data', 'Promo not in price data'])
+    expect(scan.cards.map((card) => card.drag)).toEqual(['Promo/collection: not in price data', 'Promo/collection: not in price data', 'Promo/collection: not in price data'])
+    expect(scan.cards.every((card) => card.collection && card.candidates.length === 0 && !card.ambiguous)).toBe(true)
   })
 
-  it('rejects card number 000 and still finds a name when the set is Film Red', () => {
+  it('rejects card number 000', () => {
     expect(assembleCode('#000', 'EB04')).toBe('#000')
     expect(assembleCode('000', 'OP09')).toBe('000')
-    const film = matchScan({
-      sights: [sight({ code: null, codeText: null, setCode: 'FILM RED', name: 'Shanks', parallel: null, language: 'EN', labelText: 'FILM RED' })],
-      prints,
+  })
+
+  it('leaves Film Red Chopper and a premium Kid out of the seed prices', () => {
+    const rows: PrintRow[] = [
+      { cardNumber: 'OP01-006', baseNumber: 'OP01-006', variant: '', rarity: 'C', language: 'EN', name: 'Tony Tony.Chopper', character: 'Tony Tony.Chopper' },
+      { cardNumber: 'ST02-001', baseNumber: 'ST02-001', variant: '', rarity: 'L', language: 'EN', name: 'Eustass"Captain"Kid', character: 'Eustass"Captain"Kid' },
+    ]
+    const scan = matchScan({
+      sights: [
+        sight({
+          code: '#006',
+          codeText: '#006',
+          name: 'Chopper',
+          parallel: null,
+          language: 'EN',
+          labelText: null,
+          slab: { grader: 'PSA', grade: '10', cert: '1', year: '2024', setName: 'FILM RED', blackLabel: false },
+        }),
+        sight({
+          col: 1,
+          code: '#001',
+          codeText: '#001',
+          name: 'Kid',
+          parallel: 'base',
+          language: 'EN',
+          labelText: null,
+          slab: { grader: 'PSA', grade: '10', cert: '2', year: '2024', setName: 'PREMIUM CARD COLL - KID', blackLabel: false },
+        }),
+      ],
+      prints: rows,
       quoteFor,
       today: '2026-10-18',
     })
-    expect(film.cards[0].printId).toBeNull()
-    expect(film.cards[0].candidates).toContain('OP09-004')
-    expect(film.cards[0].ambiguous).toBe(true)
+    expect(scan.cards[0]).toMatchObject({ printId: null, candidates: [], ambiguous: false, collection: true, drag: 'Promo/collection: not in price data' })
+    expect(scan.cards[1]).toMatchObject({ printId: null, candidates: [], ambiguous: false, collection: true, drag: 'Promo/collection: not in price data' })
   })
 
   it('prices a watch-row manual figure and includes it in the max lot offer', () => {

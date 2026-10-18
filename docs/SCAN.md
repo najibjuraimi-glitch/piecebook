@@ -24,4 +24,6 @@ A full code that is not an English print in the seed says **print not in seed**.
 
 A fresh manual English watch price for the same print and grade counts ahead of the seed, including in the lot total and the max-lot offer. A stale seed figure is shown with its date and stays out of the lot total. Picking a print keeps that watch price. **Max lot offer** opens `/bid` with the target, the house, the ask currency, and each clearing card. The bid page splits the solved hammer across those cards. A USD lot ask is not subtracted from the S$ street.
 
-Boxes are `box_2d` values from 0 to 1000. A box past the photo, or one that disagrees with its row and column, is dropped. Each card can include a small crop. The photo cap uses the Asia/Singapore day. On staging the counter is a Durable Object; without that binding it stays in KV. PRB-02 prints are already in `prb02-en-seed.csv`.
+Boxes are `box_2d` values from 0 to 1000. A box past the photo, or one that disagrees with its row and column, is dropped. The scan returns those boxes and does not build a crop for every card. The phone crops the photo it already has for display. One card can be cropped on the server with `POST /scan/crop`; that call does not use the daily photo cap. A scan that fails gives its cap slot back.
+
+Street prices in S$ use `usdToSgd` and `data/fx-usd-sgd.json`, the same ECB table as the book. The photo cap uses the Asia/Singapore day. On staging the counter is a Durable Object; without that binding it stays in KV. PRB-02 prints are already in `prb02-en-seed.csv`.

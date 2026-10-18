@@ -147,9 +147,29 @@ export function dropDisagreedBoxes(sights) {
   return sights.map((sight, index) => (bad.has(index) ? { ...sight, box: null } : sight))
 }
 
+/** Width and height from the JPEG header. Does not decode the pixels. */
+export function jpegSize(data) {
+  try {
+    const bytes = bytesFromBase64(data)
+    if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return { width: 0, height: 0 }
+    let i = 2
+    while (i + 9 < bytes.length) {
+      if (bytes[i] !== 0xff) { i += 1; continue }
+      const marker = bytes[i + 1]
+      if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd9)) { i += 2; continue }
+      const len = (bytes[i + 2] << 8) + bytes[i + 3]
+      if (len < 2 || i + 2 + len > bytes.length) break
+      const sof = (marker >= 0xc0 && marker <= 0xc3) || (marker >= 0xc5 && marker <= 0xc7) || (marker >= 0xc9 && marker <= 0xcb) || (marker >= 0xcd && marker <= 0xcf)
+      if (sof) return { height: (bytes[i + 5] << 8) + bytes[i + 6], width: (bytes[i + 7] << 8) + bytes[i + 8] }
+      i += 2 + len
+    }
+  } catch { /* a box still works when the model sent fractions */ }
+  return { width: 0, height: 0 }
+}
+
 function decodeJpeg(data) {
   try {
-    const decoded = jpeg.decode(bytesFromBase64(data), { useTArray: true, formatAsRGBA: true, maxResolutionInMP: 24 })
+    const decoded = jpeg.decode(bytesFromBase64(data), { useTArray: true, formatAsRGBA: true, maxResolutionInMP: 8 })
     if (!decoded?.width || !decoded?.height || !decoded.data) return null
     return decoded
   } catch {
@@ -263,16 +283,13 @@ function json(body, status, cors) {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...cors } })
 }
 
-const CROP_MIN = 600
-const CROP_MAX = 1600
+const CROP_MAX = 600
 
-/** Scale so the long edge is at least 600px and at most 1600px. */
+/** Scale down so the long edge is at most 600px. Never upscale. */
 export function cropScale(width, height) {
   const long = Math.max(width, height)
-  if (long <= 0) return 1
-  if (long < CROP_MIN) return CROP_MIN / long
-  if (long > CROP_MAX) return CROP_MAX / long
-  return 1
+  if (long <= CROP_MAX) return 1
+  return CROP_MAX / long
 }
 
 function bytesFromBase64(data) {
@@ -364,61 +381,89 @@ export async function handleScan(req, env, identity, cors, deps = {}) {
   const day = singaporeToday(Date.now())
   const room = await reserveCap(env, day)
   if (room.limited) return json({ error: "daily_cap_reached", cap: room.cap, used: room.used }, 429, cors)
-  const giveBack = () => (room.held ? releaseCap(env, day) : Promise.resolve())
-
-  const modelFetch = deps.modelFetch || fetch
-  let response
+  let keep = false
   try {
-    response = await modelFetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-      body: JSON.stringify({
-        contents: [{ role: "user", parts: [{ text: SCAN_PROMPT }, { inline_data: { mime_type: image.mime || "image/jpeg", data: image.data } }] }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: SCAN_SCHEMA,
-          temperature: 0.1,
-          maxOutputTokens: 12288,
-          thinkingConfig: { thinkingLevel: "low" },
-        },
-      }),
+    const modelFetch = deps.modelFetch || fetch
+    let response
+    try {
+      response = await modelFetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: SCAN_PROMPT }, { inline_data: { mime_type: image.mime || "image/jpeg", data: image.data } }] }],
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: SCAN_SCHEMA,
+            temperature: 0.1,
+            maxOutputTokens: 12288,
+            thinkingConfig: { thinkingLevel: "low" },
+          },
+        }),
+      })
+    } catch {
+      return json({ error: "model_error" }, 502, cors)
+    }
+    if (!response.ok) {
+      let detail = ""
+      try { detail = await response.text() } catch { detail = "" }
+      return json({ error: "model_error", status: response.status, detail: safeDetail(detail) }, 502, cors)
+    }
+    let payload
+    try { payload = await response.json() } catch { return json({ error: "unparseable_model_output" }, 502, cors) }
+    const textPart = payload?.candidates?.[0]?.content?.parts?.filter((part) => part && !part.thought && typeof part.text === "string").map((part) => part.text).join("") || ""
+    let parsed
+    try { parsed = JSON.parse(textPart) } catch { return json({ error: "unparseable_model_output" }, 502, cors) }
+    const size = jpegSize(image.data)
+    const sights = dropDisagreedBoxes(normaliseScanSights(parsed, size)).map((sight) => ({ ...sight, crop: null }))
+    const targets = await watchTargets(env, identity)
+    const summary = matchScan({
+      sights,
+      prints: seedPrints(),
+      quoteFor: (id, grade) => storedQuote(id, grade),
+      today: singaporeToday(Date.now()),
+      targets,
+      caption,
+      lotAskSgd: lotAsk,
+      lotAskCurrency,
+      imageUrl,
     })
+    keep = true
+    return json({
+      ...summary,
+      targets,
+      imageStored: false,
+      ai_guess: true,
+      model: env.GEMINI_MODEL,
+      usage: { today: room.used, cap: room.cap },
+      disclaimer: "AI estimate. A condition note is not a grade and is not a PSA prediction.",
+    }, 200, cors)
+  } finally {
+    if (!keep && room.held) await releaseCap(env, day).catch(() => {})
+  }
+}
+
+/** One card, on request. Does not use the daily photo cap. A failure is crop: null. */
+export async function handleScanCrop(req, env, cors, deps = {}) {
+  try {
+    let body
+    try { body = await req.json() } catch { return json({ crop: null, imageStored: false }, 200, cors) }
+    const box = body.box
+    if (!box || typeof box !== "object") return json({ crop: null, imageStored: false }, 200, cors)
+    let image = null
+    if (typeof body.imageUrl === "string" && body.imageUrl.trim()) {
+      const fetched = await imageFromUrl(body.imageUrl.trim(), deps.imageFetch || fetch)
+      if (fetched.error) return json({ crop: null, imageStored: false }, 200, cors)
+      image = fetched
+    } else if (typeof body.image === "string") {
+      image = parseDataUrl(body.image)
+    }
+    if (!image?.data || image.data.length * 0.75 > MAX_IMAGE_BYTES) return json({ crop: null, imageStored: false }, 200, cors)
+    const started = Date.now()
+    const decoded = decodeJpeg(image.data)
+    if (!decoded || Date.now() - started > 1500) return json({ crop: null, imageStored: false }, 200, cors)
+    const crop = cropDecoded(decoded, box)
+    return json({ crop: crop || null, imageStored: false }, 200, cors)
   } catch {
-    await giveBack()
-    return json({ error: "model_error" }, 502, cors)
+    return json({ crop: null, imageStored: false }, 200, cors)
   }
-  if (!response.ok) {
-    let detail = ""
-    try { detail = await response.text() } catch { detail = "" }
-    await giveBack()
-    return json({ error: "model_error", status: response.status, detail: safeDetail(detail) }, 502, cors)
-  }
-  let payload
-  try { payload = await response.json() } catch { await giveBack(); return json({ error: "unparseable_model_output" }, 502, cors) }
-  const textPart = payload?.candidates?.[0]?.content?.parts?.filter((part) => part && !part.thought && typeof part.text === "string").map((part) => part.text).join("") || ""
-  let parsed
-  try { parsed = JSON.parse(textPart) } catch { await giveBack(); return json({ error: "unparseable_model_output" }, 502, cors) }
-  const decoded = decodeJpeg(image.data)
-  const sights = withCrops(dropDisagreedBoxes(normaliseScanSights(parsed, { width: decoded?.width || 0, height: decoded?.height || 0 })), decoded)
-  const targets = await watchTargets(env, identity)
-  const summary = matchScan({
-    sights,
-    prints: seedPrints(),
-    quoteFor: (id, grade) => storedQuote(id, grade),
-    today: singaporeToday(Date.now()),
-    targets,
-    caption,
-    lotAskSgd: lotAsk,
-    lotAskCurrency,
-    imageUrl,
-  })
-  return json({
-    ...summary,
-    targets,
-    imageStored: false,
-    ai_guess: true,
-    model: env.GEMINI_MODEL,
-    usage: { today: room.used, cap: room.cap },
-    disclaimer: "AI estimate. A condition note is not a grade and is not a PSA prediction.",
-  }, 200, cors)
 }

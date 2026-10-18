@@ -107,9 +107,9 @@ describe('scan sights', () => {
     expect(sights[0]).toMatchObject({ code: '#106', setCode: 'EB04' })
     const named = normaliseScanSights({ cards: [{ row: 0, col: 0, confidence: 1, code: '#061', set_name: 'EN 2ND ANNIVERSARY SET' }] })
     expect(named[0].setCode).toBe('EN 2ND ANNIVERSARY SET')
-    expect(cropScale(100, 40)).toBe(6)
-    expect(cropScale(800, 400)).toBe(1)
-    expect(cropScale(2000, 1000)).toBe(0.8)
+    expect(cropScale(100, 40)).toBe(1)
+    expect(cropScale(800, 400)).toBe(0.75)
+    expect(cropScale(2000, 1000)).toBe(0.3)
     const dropped = dropDisagreedBoxes(sights)
     expect(dropped[0].box).toBeNull()
     expect(dropped[1].box).toBeNull()
@@ -146,12 +146,26 @@ describe('POST /scan', () => {
     expect(body.imageStored).toBe(false)
     expect(body.cards[0]).toMatchObject({ printId: 'OP09-004p2', language: 'EN', condition: { whitening: true, judge: 'estimate' } })
     expect(body.cards[0].box).toEqual({ x: 0.05, y: 0.1, w: 0.2, h: 0.3 })
+    expect(body.cards[0].crop).toBeNull()
     expect(body.cards[1]).toMatchObject({ language: 'JP', priced: false, certUrl: 'https://www.psacard.com/cert/999' })
     expect(body.cards[1].street.sgd).toBeNull()
     expect(body.usage.today).toBe(1)
     expect(h.used()).toBe(1)
     expect(JSON.stringify(body)).not.toContain('sk-SECRET-KEY')
     expect(h.requests[0]).toContain('generateContent')
+  })
+
+  it('does not count a failed model call against the daily cap', async () => {
+    const kv = new MemoryKV()
+    const env = { GEMINI_MODEL: 'test-model', GEMINI_API_KEY: 'sk-SECRET-KEY', DAILY_CAP: '60', ACCESS_TEAM_DOMAIN: '', ACCESS_AUD: '', VISION_CAP: kv }
+    const modelFetch = async () => new Response('upstream down', { status: 503 })
+    const response = await worker.fetch(new Request('https://piecebook-vision.najibjuraimi.workers.dev/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: PIXEL }),
+    }), env, {} as never, { modelFetch, imageFetch: async () => new Response(null, { status: 500 }) })
+    expect(response.status).toBe(502)
+    expect(Number(kv.store.get(`count:${DAY}`) ?? 0)).toBe(0)
   })
 
   it('refuses a listing page and does not call the model', async () => {

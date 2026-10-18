@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BackBar, Screen } from '../components/Screen'
 import { ALL_CARDS } from '../data/seed'
@@ -7,7 +7,7 @@ import { isStale } from '../lib/boughtBook'
 import { todayIso, formatSgd, formatUsd } from '../lib/format'
 import { legalQuote } from '../lib/loadBought'
 import { characterForPrint } from '../lib/printCharacter'
-import { choosePrint, lotOfferPath, summariseRows, type ScanRow, type ScanSummary, type WatchTarget } from '../lib/scanMatch'
+import { choosePrint, lotOfferPath, summariseRows, type ScanBox, type ScanRow, type ScanSummary, type WatchTarget } from '../lib/scanMatch'
 
 const field =
   'mt-1.5 block h-11 w-full rounded-xl border border-line bg-paper/60 px-3.5 text-body text-ink placeholder:text-muted/70 focus:border-ink focus:bg-surface focus:outline-none'
@@ -48,6 +48,8 @@ export function ScanScreen() {
   const [busy, setBusy] = useState(false)
   const [saved, setSaved] = useState(false)
   const [preview, setPreview] = useState<string | null>(null)
+  const photo = preview || imageUrl.trim() || null
+  const crops = useBrowserCrops(photo, scan?.cards ?? [])
   const rows = useMemo(() => prints(), [])
 
   const run = async () => {
@@ -186,7 +188,7 @@ export function ScanScreen() {
           <ul className="space-y-3">
             {scan.cards.map((card) => (
               <li key={card.index} className={`rounded-2xl border px-3 py-3 ${card.underStreet || card.targetHit ? 'border-good bg-[#E7F6EE]' : 'border-line bg-surface'}`}>
-                <CardLine card={card} onPick={(printId) => pick(card.index, printId)} />
+                <CardLine card={card} crop={crops[card.index] ?? null} onPick={(printId) => pick(card.index, printId)} onServerCrop={photo && !crops[card.index] ? () => serverCrop(photo, card.box, file) : undefined} />
               </li>
             ))}
           </ul>
@@ -245,13 +247,94 @@ function LotLine({ scan, preset }: { scan: ScanSummary; preset: 'ebay' | 'fanati
   )
 }
 
-function CardLine({ card, onPick }: { card: ScanRow; onPick: (printId: string) => void }) {
+function useBrowserCrops(src: string | null, cards: ScanRow[]): Record<number, string> {
+  const [crops, setCrops] = useState<Record<number, string>>({})
+  const key = cards.map((card) => `${card.index}:${card.box ? `${card.box.x},${card.box.y},${card.box.w},${card.box.h}` : ''}`).join('|')
+  useEffect(() => {
+    if (!src || !cards.some((card) => card.box)) {
+      setCrops({})
+      return
+    }
+    let cancel = false
+    const img = new Image()
+    img.onload = () => {
+      if (cancel) return
+      const next: Record<number, string> = {}
+      for (const card of cards) {
+        if (!card.box) continue
+        const url = drawCrop(img, card.box)
+        if (url) next[card.index] = url
+      }
+      setCrops(next)
+    }
+    img.onerror = () => {
+      if (!cancel) setCrops({})
+    }
+    if (!src.startsWith('blob:') && !src.startsWith('data:')) img.crossOrigin = 'anonymous'
+    img.src = src
+    return () => {
+      cancel = true
+    }
+  }, [src, key])
+  return crops
+}
+
+function drawCrop(img: HTMLImageElement, box: ScanBox): string | null {
+  try {
+    const sw = Math.max(1, Math.round(box.w * img.naturalWidth))
+    const sh = Math.max(1, Math.round(box.h * img.naturalHeight))
+    const long = Math.max(sw, sh)
+    const scale = long > 480 ? 480 / long : 1
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(sw * scale))
+    canvas.height = Math.max(1, Math.round(sh * scale))
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(img, Math.round(box.x * img.naturalWidth), Math.round(box.y * img.naturalHeight), sw, sh, 0, 0, canvas.width, canvas.height)
+    return canvas.toDataURL('image/jpeg', 0.8)
+  } catch {
+    return null
+  }
+}
+
+async function serverCrop(src: string, box: ScanBox | null, file: File | null): Promise<string | null> {
+  if (!box) return null
+  const body: Record<string, unknown> = { box }
+  if (file) body.image = await fileToDataUrl(file)
+  else if (src.startsWith('http')) body.imageUrl = src
+  else return null
+  const res = await fetch(`${VISION_URL}/scan/crop`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => null)
+  return typeof data?.crop === 'string' ? data.crop : null
+}
+
+function CardLine({ card, crop, onPick, onServerCrop }: { card: ScanRow; crop: string | null; onPick: (printId: string) => void; onServerCrop?: () => Promise<string | null> }) {
+  const [asked, setAsked] = useState<string | null>(null)
+  const shown = crop || asked
   const street = card.priced && card.street.sgd != null ? formatSgd(card.street.sgd) : 'No price yet'
   const today = todayIso()
   const staleSources = card.street.sources.filter((source) => isStale(source.asOf, today))
   return (
     <div>
-      {card.crop && <img src={card.crop} alt="" className="mb-2 h-16 w-auto rounded-lg" />}
+      {shown && <img src={shown} alt="" className="mb-2 h-16 w-auto rounded-lg" />}
+      {!shown && onServerCrop && (
+        <button
+          type="button"
+          className="mb-2 text-meta font-medium text-ink underline decoration-line underline-offset-2"
+          onClick={() => {
+            void onServerCrop().then((url) => {
+              if (url) setAsked(url)
+            })
+          }}
+        >
+          Crop this card
+        </button>
+      )}
       <p className="text-[15px] font-medium text-ink">
         {card.name || 'Card'}
         {card.language ? ` · ${card.language}` : ' · Language not read'}

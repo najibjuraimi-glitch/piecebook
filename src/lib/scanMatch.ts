@@ -146,6 +146,8 @@ export interface ScanRow {
   condition: ScanCondition
   /** Why this card is left out of the lot sum. Null when it counts. */
   drag: string | null
+  /** The label is a promo or collection that is not in the seed. */
+  collection: boolean
   contributionSgd: number | null
 }
 
@@ -388,6 +390,7 @@ function nameCandidates(name: string | null, setRaw: string | null, rows: PrintR
 export function collectionLabel(text: string | null | undefined): boolean {
   const t = (text || '').toUpperCase()
   if (!t.trim()) return false
+  if (/\bFILM\s+RED\b/.test(t)) return true
   if (/2\s*ND\s+ANNIVERSARY/.test(t)) return false
   return /PREMIUM\s+CARD\s+COLL/.test(t)
     || /PREMIUM\s+COLLECTION/.test(t)
@@ -413,26 +416,86 @@ function namesAgree(read: string | null | undefined, print: PrintRow): boolean {
   return nameHits(read, print.name || '') || nameHits(read, print.character || '')
 }
 
-function promoUnread(code: string | null, label: string | null): boolean {
-  const blob = `${code || ''} ${label || ''}`
+function labelNumber(sight: Pick<ScanSight, 'code' | 'codeText' | 'labelText'>): string | null {
+  const labeled = `${sight.labelText || ''} ${sight.codeText || ''}`.match(/#\s*(\d{1,3})\b/)
+  if (labeled && Number(labeled[1]) > 0) return labeled[1].padStart(3, '0')
+  const fromCode = splitPrintCode(loosenCode(sight.code || sight.codeText || ''))
+  const num = fromCode?.id.match(/-(\d{3})$/)
+  if (num && num[1] !== '000') return num[1]
+  return null
+}
+
+/**
+ * The read code named a different person. Try the label's set plus its number,
+ * then that name plus the number in every set.
+ */
+function recoverByName(
+  sight: Pick<ScanSight, 'code' | 'codeText' | 'name' | 'labelText' | 'parallel'>,
+  setRaw: string | null,
+  rows: PrintRow[],
+): { printId: string | null; ambiguous: boolean; candidates: string[]; nameMismatch: boolean; codeText: string } | null {
+  const num = labelNumber(sight)
+  const fromSet = num ? assembleCode(`#${num}`, setRaw) : null
+  if (fromSet && splitPrintCode(loosenCode(fromSet))) {
+    const retry = resolveScanPrint(fromSet, sight.parallel, rows)
+    const named = retry.candidates.filter((id) => {
+      const row = rows.find((item) => item.cardNumber.toUpperCase() === id.toUpperCase())
+      return row && namesAgree(sight.name, row)
+    })
+    if (named.length === 1) return { printId: named[0], ambiguous: false, candidates: named, nameMismatch: false, codeText: fromSet }
+    if (named.length > 1) return { printId: null, ambiguous: true, candidates: named, nameMismatch: false, codeText: fromSet }
+  }
+  const across = num ? nameNumberCandidates(sight.name, `#${num}`, rows) : []
+  if (across.length === 1) return { printId: across[0], ambiguous: false, candidates: across, nameMismatch: false, codeText: across[0].replace(/p\d+$/i, '') }
+  if (across.length > 1) {
+    const base = across[0].replace(/p\d+$/i, '')
+    return { printId: null, ambiguous: true, candidates: across, nameMismatch: false, codeText: across.every((id) => id.toUpperCase().startsWith(base.toUpperCase())) ? base : across[0] }
+  }
+  return null
+}
+
+function promoUnread(code: string | null, label: string | null, setName: string | null): boolean {
+  const blob = `${code || ''} ${label || ''} ${setName || ''}`
   return /\bP-\d{1,4}\b/i.test(blob) || collectionLabel(blob)
+}
+
+const CANDIDATE_CAP = 8
+
+function limitCandidates(ids: string[], name: string | null | undefined, parallel: string | null | undefined, rows: PrintRow[]): string[] {
+  let list = ids
+  if (name?.trim()) {
+    const agreed = list.filter((id) => {
+      const row = rows.find((item) => item.cardNumber.toUpperCase() === id.toUpperCase())
+      return row && namesAgree(name, row)
+    })
+    list = agreed.length ? agreed : nameCandidates(name, null, rows)
+  }
+  const word = (parallel || '').trim().toLowerCase()
+  const ranked = list
+    .map((id, index) => {
+      const row = rows.find((item) => item.cardNumber.toUpperCase() === id.toUpperCase())
+      const parallelFirst = row && word && wordMatches(row, word) ? 0 : 1
+      return { id, parallelFirst, index }
+    })
+    .sort((a, b) => a.parallelFirst - b.parallelFirst || a.index - b.index)
+  return ranked.slice(0, CANDIDATE_CAP).map((item) => item.id)
 }
 
 /** Set plus number, the Shanks Silver alias, a manga label, or a name inside one set. */
 export function readScanCode(
   sight: Pick<ScanSight, 'code' | 'codeText' | 'setCode' | 'name' | 'labelText' | 'parallel' | 'slab' | 'picked'>,
   rows: PrintRow[],
-): { codeText: string | null; printId: string | null; ambiguous: boolean; candidates: string[]; nameMismatch: boolean } {
+): { codeText: string | null; printId: string | null; ambiguous: boolean; candidates: string[]; nameMismatch: boolean; collection: boolean } {
   const setRaw = sight.setCode || sight.slab?.setName || null
   const assembled = assembleCode(sight.code || sight.codeText, setRaw)
-  const codeText = assembled || sight.codeText || sight.code
+  let codeText = assembled || sight.codeText || sight.code
   const alias = shanksSilverAlias([sight.code, sight.codeText, sight.setCode, sight.name, sight.labelText, sight.parallel, sight.slab?.setName])
   if (alias && rows.some((row) => row.cardNumber.toUpperCase() === alias.toUpperCase())) {
-    return { codeText: alias, printId: alias, ambiguous: false, candidates: [alias], nameMismatch: false }
+    return { codeText: alias, printId: alias, ambiguous: false, candidates: [alias], nameMismatch: false, collection: false }
   }
   const parallel = mangaFromAltLabel(setRaw, assembled, sight.labelText ?? null, sight.parallel, rows)
   let resolved = { ...resolveScanPrint(assembled, parallel, rows), nameMismatch: false }
-  const labelBlob = `${sight.labelText || ''} ${setRaw || ''}`
+  const labelBlob = `${sight.labelText || ''} ${sight.setCode || ''} ${sight.slab?.setName || ''}`
   const mappedSet = Boolean(setRaw && !setToken(setRaw) && setPrefix(setRaw))
   if (collectionLabel(labelBlob) && !mappedSet) {
     const collection = resolved.candidates
@@ -440,16 +503,29 @@ export function readScanCode(
       .filter((row): row is PrintRow => Boolean(row && collectionPrint(row)))
     const current = resolved.printId ? rows.find((row) => row.cardNumber.toUpperCase() === resolved.printId!.toUpperCase()) : undefined
     if (!current || (baseOrAa(current) && !collectionPrint(current))) {
+      if (collection.length === 0) {
+        return { codeText, printId: null, ambiguous: false, candidates: [], nameMismatch: false, collection: true }
+      }
       resolved = collection.length === 1
         ? { printId: collection[0].cardNumber, ambiguous: false, candidates: collection.map((row) => row.cardNumber), nameMismatch: false }
-        : { printId: null, ambiguous: collection.length > 1, candidates: collection.map((row) => row.cardNumber), nameMismatch: false }
+        : { printId: null, ambiguous: true, candidates: collection.map((row) => row.cardNumber), nameMismatch: false }
     }
   }
   if (!sight.picked && resolved.printId && sight.name?.trim()) {
     const print = rows.find((row) => row.cardNumber.toUpperCase() === resolved.printId!.toUpperCase())
     if (print && !namesAgree(sight.name, print)) {
-      const named = nameCandidates(sight.name, sight.slab ? setRaw : null, rows)
-      resolved = { printId: null, ambiguous: true, candidates: named.length ? named : resolved.candidates, nameMismatch: true }
+      const recovered = recoverByName(sight, setRaw, rows)
+      if (recovered) {
+        codeText = recovered.codeText
+        resolved = recovered
+      } else {
+        resolved = {
+          printId: null,
+          ambiguous: true,
+          candidates: nameCandidates(sight.name, sight.slab ? setRaw : null, rows),
+          nameMismatch: true,
+        }
+      }
     }
   }
   const parsed = assembled ? splitPrintCode(loosenCode(assembled)) : null
@@ -461,7 +537,9 @@ export function readScanCode(
     const across = nameNumberCandidates(sight.name ?? null, sight.code || sight.codeText, rows)
     if (across.length) resolved = { printId: null, ambiguous: true, candidates: across, nameMismatch: false }
   }
-  return { codeText, printId: resolved.printId, ambiguous: resolved.ambiguous, candidates: resolved.candidates, nameMismatch: resolved.nameMismatch }
+  const candidates = limitCandidates(resolved.candidates, sight.name, sight.parallel, rows)
+  const printId = resolved.printId && candidates.some((id) => id.toUpperCase() === resolved.printId!.toUpperCase()) ? resolved.printId : null
+  return { codeText, printId, ambiguous: resolved.ambiguous || (resolved.printId != null && printId == null && candidates.length > 0), candidates, nameMismatch: resolved.nameMismatch, collection: false }
 }
 
 export function resolveScanPrint(code: string | null, parallel: string | null, rows: PrintRow[]): { printId: string | null; ambiguous: boolean; candidates: string[] } {
@@ -704,7 +782,8 @@ function priceSight(
     printId: resolved.printId,
     codeText: resolved.codeText,
     known: resolved.candidates.length > 0 || resolved.printId != null,
-    promo: promoUnread(resolved.codeText, sight.labelText),
+    promo: promoUnread(resolved.codeText, sight.labelText, sight.slab?.setName ?? sight.setCode ?? null),
+    collection: resolved.collection,
     street: streetWithEvidence,
     slab: sight.slab,
     grade,
@@ -742,6 +821,7 @@ function priceSight(
     condition: sight.condition ?? emptyCondition(),
     drag,
     contributionSgd: fresh ? round2(street.sgd! * 0.9) : null,
+    collection: resolved.collection,
   }
 }
 
@@ -761,20 +841,21 @@ function dragReason(input: {
   codeText: string | null
   known: boolean
   promo: boolean
+  collection: boolean
   street: ScanStreet
   slab: ScanSlab | null
   grade: LegalGrade | null
 }): string | null {
   if (!input.forSale) return 'Not for sale'
   if (input.labelLang && input.labelLang !== 'EN') return `${input.labelLang} is not priced as English`
-  if (!input.printId && !input.ambiguous && fullPrintCode(input.codeText)) {
-    return input.promo ? 'Promo not in price data' : 'print not in seed'
-  }
   if (input.language == null) return 'Language not read'
   if (input.language !== 'EN') return `${input.language} is not priced as English`
+  if (!input.printId && !input.ambiguous && fullPrintCode(input.codeText)) {
+    return input.promo || input.collection ? 'Promo/collection: not in price data' : 'print not in seed'
+  }
   if (input.lowConfidence) return 'Low confidence'
   if (input.ambiguous) return 'Print not exact'
-  if (!input.printId && input.promo) return 'Promo not in price data'
+  if (!input.printId && (input.promo || input.collection)) return 'Promo/collection: not in price data'
   if (!input.printId) return 'print not in seed'
   if (input.slab && input.grade == null) {
     return input.slab.grade ? 'no stored price for this print/grade' : 'Slab grade not read'

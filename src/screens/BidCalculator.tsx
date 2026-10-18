@@ -488,10 +488,20 @@ function parseLot(raw: string | null): { id: string; sgd: number }[] {
   return out
 }
 
-function hammerShares(hammer: number, lot: { id: string; sgd: number }[]): { id: string; share: number }[] {
+/** Split a hammer across cards. Largest-remainder rounding makes the shares add up to the hammer. */
+export function hammerShares(hammer: number, lot: { id: string; sgd: number }[]): { id: string; share: number }[] {
   const sum = lot.reduce((total, row) => total + row.sgd, 0)
-  if (sum <= 0) return []
-  return lot.map((row) => ({ id: row.id, share: round2((hammer * row.sgd) / sum) }))
+  if (sum <= 0 || !lot.length) return []
+  const targetCents = Math.round(round2(hammer) * 100)
+  const exact = lot.map((row) => (targetCents * row.sgd) / sum)
+  const floors = exact.map((n) => Math.floor(n + 1e-9))
+  let leftover = targetCents - floors.reduce((total, n) => total + n, 0)
+  const order = exact
+    .map((n, index) => ({ index, frac: n - Math.floor(n + 1e-9) }))
+    .sort((a, b) => b.frac - a.frac || a.index - b.index)
+  const cents = floors.slice()
+  for (let i = 0; i < leftover; i += 1) cents[order[i].index] += 1
+  return lot.map((row, index) => ({ id: row.id, share: cents[index] / 100 }))
 }
 
 function gstLabel(result: AllInResult): string {
