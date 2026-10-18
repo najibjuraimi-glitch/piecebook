@@ -32,13 +32,13 @@ function fail(result, cors) {
   return json(body, result.status, cors);
 }
 
-const keyFor = (email, name) => `u:${String(email).toLowerCase()}:${name}`;
+export const keyFor = (email, name) => `u:${String(email).toLowerCase()}:${name}`;
 
 /**
  * One book. A signed-in phone uses its Access email. A service token has no
  * email; it is pinned to OWNER_EMAIL, the same address the phone uses.
  */
-function bookEmail(identity, env) {
+export function bookEmail(identity, env) {
   if (identity.kind === "service") return String(env.OWNER_EMAIL || "").trim().toLowerCase();
   return String(identity.email || "").trim().toLowerCase();
 }
@@ -60,12 +60,12 @@ async function loadHistory(kv, email) {
 }
 
 /** Service token: client id (JWT common_name). Signed-in phone: Access email. Never the secret. */
-function callerOf(identity) {
+export function callerOf(identity) {
   if (identity && identity.kind === "service") return String(identity.name || "").trim();
   return String((identity && identity.email) || "").trim().toLowerCase();
 }
 
-function writeNote(identity, now, op, rowId) {
+export function writeNote(identity, now, op, rowId) {
   const note = { at: new Date(now).toISOString(), caller: callerOf(identity), op };
   if (rowId) note.rowId = rowId;
   return note;

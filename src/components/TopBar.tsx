@@ -16,7 +16,7 @@ const LINKS = [
   { to: '/', label: 'Sets', match: isSetsSection },
   { to: '/collection', label: 'Collection', match: (p: string) => p.startsWith('/collection') },
   { to: '/decks', label: 'Decks', match: (p: string) => p.startsWith('/decks') },
-  { to: '/portfolio', label: 'Portfolio', match: (p: string) => p.startsWith('/portfolio') },
+  { to: '/portfolio', label: 'Portfolio', match: (p: string) => p.startsWith('/portfolio') || p.startsWith('/watchlist') },
   { to: '/belong', label: 'World', match: isBelongSection },
 ]
 

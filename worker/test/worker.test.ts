@@ -502,3 +502,131 @@ describe('/holdings', () => {
     expect(await r.json()).toMatchObject({ error: 'holdings_not_configured' })
   })
 })
+
+describe('/watchlist and /alerts', () => {
+  it('stays closed without Access and when KV is missing', async () => {
+    const closed = await call(req('/watchlist'), env({ ACCESS_TEAM_DOMAIN: '', ACCESS_AUD: '' }))
+    expect(closed.status).toBe(503)
+    expect(await closed.json()).toMatchObject({ error: 'watchlist_not_configured' })
+    const alerts = await call(req('/alerts'), env({ ACCESS_TEAM_DOMAIN: '', ACCESS_AUD: '' }))
+    expect(await alerts.json()).toMatchObject({ error: 'alerts_not_configured' })
+    const missing = await call(req('/watchlist', { jwt: await signer.sign(userClaims()) }), env({ USER_DATA: undefined }))
+    expect(missing.status).toBe(503)
+  })
+
+  it('pins a service-token write to the owner book and logs the caller', async () => {
+    const kv = new MemoryKV()
+    const e = env({ USER_DATA: kv, OWNER_EMAIL: 'NajibJuraimi@gmail.com' })
+    const lines: unknown[] = []
+    const secret = 'super-secret-token-value'
+    const svc = await signer.sign(serviceClaims())
+    const send = (method: string, jwt: string, path: string, body?: unknown) =>
+      worker.fetch(
+        req(path, {
+          method,
+          jwt,
+          headers: { 'Content-Type': 'application/json', 'CF-Access-Client-Secret': secret },
+          body: body == null ? undefined : JSON.stringify(body),
+        }),
+        e,
+        {} as never,
+        { ...deps, log: (line: unknown) => lines.push(line) },
+      )
+
+    const created = await send('POST', svc, '/watchlist', { revision: 0, code: 'OP09-004 SP', grade: 'Raw', targetSgd: 5, notes: 'base print' })
+    expect(created.status).toBe(201)
+    const createdBody = await created.json()
+    expect(createdBody.item).toMatchObject({ id: 'WL-0001', code: 'OP09-004 SP', grade: 'Raw', hit: true, stale: true, source: 'Limitless' })
+    expect(createdBody.item.priceSgd).toBeGreaterThan(0)
+    expect(createdBody.item.priceLabel).toBeNull()
+    expect(JSON.stringify(createdBody)).not.toContain('Japanese')
+    expect(JSON.stringify(createdBody)).not.toContain(secret)
+
+    const user = await signer.sign(userClaims())
+    const phone = await call(req('/watchlist', { jwt: user }), e)
+    expect(await phone.json()).toMatchObject({ revision: 1, items: [{ id: 'WL-0001', code: 'OP09-004 SP' }] })
+    expect([...kv.store.keys()].filter((k) => k.includes('watchlist'))).toEqual([
+      'u:najibjuraimi@gmail.com:watchlist.v1',
+      'u:najibjuraimi@gmail.com:watchlist-history.v1',
+    ])
+
+    const clash = await send('POST', user, '/watchlist', { revision: 0, code: 'OP01-001', grade: 'Raw', targetSgd: 1 })
+    expect(clash.status).toBe(409)
+    expect(await clash.json()).toMatchObject({ error: 'revision_conflict', revision: 1 })
+
+    const patched = await send('PATCH', user, '/watchlist/WL-0001', { revision: 1, notes: 'phone' })
+    expect(patched.status).toBe(200)
+    const slab = await send('POST', svc, '/watchlist', { revision: 2, code: 'OP09-004', grade: 'PSA 10', targetSgd: 1 })
+    expect(slab.status).toBe(201)
+    const slabBody = await slab.json()
+    expect(slabBody.item).toMatchObject({ id: 'WL-0002', priceSgd: null, priceLabel: 'No price yet', hit: false })
+    expect(JSON.stringify(slabBody)).not.toContain('Japanese')
+
+    const removed = await send('DELETE', user, '/watchlist/WL-0002', { revision: 3 })
+    expect(removed.status).toBe(200)
+    const book = await (await call(req('/watchlist', { jwt: user }), e)).json()
+    expect(book.items.map((row: { id: string }) => row.id)).toEqual(['WL-0001'])
+    expect(book.writes).toEqual([
+      { at: '2026-10-16T09:00:00.000Z', caller: 'abc123.access', op: 'create', rowId: 'WL-0001' },
+      { at: '2026-10-16T09:00:00.000Z', caller: 'najibjuraimi@gmail.com', op: 'patch', rowId: 'WL-0001' },
+      { at: '2026-10-16T09:00:00.000Z', caller: 'abc123.access', op: 'create', rowId: 'WL-0002' },
+      { at: '2026-10-16T09:00:00.000Z', caller: 'najibjuraimi@gmail.com', op: 'delete', rowId: 'WL-0002' },
+    ])
+    const other = await call(req('/watchlist', { jwt: await signer.sign(userClaims({ email: 'someone@else.example' })) }), e)
+    expect(await other.json()).toMatchObject({ revision: 0, items: [] })
+    const raw = [...kv.store.values()].join('\n')
+    expect(raw).not.toContain(secret)
+    expect(raw).not.toContain(svc)
+    expect(JSON.stringify(lines).includes(secret)).toBe(false)
+  })
+
+  it('polls under-all-in and watchlist hits, and keeps a dismiss on the owner', async () => {
+    const kv = new MemoryKV()
+    const e = env({ USER_DATA: kv })
+    const svc = await signer.sign(serviceClaims())
+    const user = await signer.sign(userClaims())
+    const send = (method: string, jwt: string, path: string, body?: unknown) =>
+      call(
+        req(path, {
+          method,
+          jwt,
+          headers: { 'Content-Type': 'application/json' },
+          body: body == null ? undefined : JSON.stringify(body),
+        }),
+        e,
+      )
+    expect((await send('POST', svc, '/holdings', { revision: 0, card: 'Nami', code: 'ST01-007', grade: 'Raw', allInSgd: 50, marketValueSgd: 4, marketSource: 'Cards', marketAsOf: '2026-10-16' })).status).toBe(201)
+    expect((await send('POST', svc, '/watchlist', { revision: 0, code: 'OP09-004', grade: 'Raw', targetSgd: 999 })).status).toBe(201)
+    expect((await send('POST', svc, '/watchlist', { revision: 1, code: 'OP09-004p2', grade: 'PSA 10', targetSgd: 99999 })).status).toBe(201)
+
+    const first = await (await call(req('/alerts', { jwt: svc }), e)).json()
+    expect(first.underAllIn.map((row: { rowId: string }) => row.rowId)).toEqual(['OPB-0001'])
+    expect(first.watchlist.map((row: { code: string }) => row.code)).toEqual(['OP09-004'])
+    expect(first.watchlist[0].priceSgd).toBeGreaterThan(0)
+    expect(first.watchlist[0].priceSgd).toBeLessThanOrEqual(999)
+    expect(JSON.stringify(first)).not.toContain('Japanese')
+    expect([...kv.store.keys()].filter((k) => k.endsWith(':alerts.v1'))).toEqual([])
+
+    const dismissed = await send('POST', user, '/alerts/dismiss', {
+      revision: 0,
+      underAllIn: ['OPB-0001'],
+      watchlist: ['WL-0001'],
+    })
+    expect(dismissed.status).toBe(200)
+    const after = await dismissed.json()
+    expect(after.underAllIn).toEqual([])
+    expect(after.watchlist).toEqual([])
+    expect(after.revision).toBe(1)
+    expect(after.writes).toEqual([{ at: '2026-10-16T09:00:00.000Z', caller: 'najibjuraimi@gmail.com', op: 'dismiss' }])
+    expect([...kv.store.keys()].filter((k) => k.endsWith(':alerts.v1'))).toEqual(['u:najibjuraimi@gmail.com:alerts.v1'])
+
+    const phone = await (await call(req('/alerts', { jwt: user }), e)).json()
+    expect(phone.underAllIn).toEqual([])
+    expect(phone.watchlist).toEqual([])
+    const other = await (await call(req('/alerts', { jwt: await signer.sign(userClaims({ email: 'someone@else.example' })) }), e)).json()
+    expect(other).toMatchObject({ revision: 0, underAllIn: [], watchlist: [] })
+
+    const clash = await send('POST', svc, '/alerts/dismiss', { revision: 0, underAllIn: ['OPB-0001'], watchlist: [] })
+    expect(clash.status).toBe(409)
+  })
+})

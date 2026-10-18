@@ -26,7 +26,7 @@ Overall ROI is unrealized P/L on priced holdings plus realized P/L, divided by t
 
 Holdings group only when Code and the Grade/Raw text both match. PSA 10 and raw of the same card are separate lines. Each line expands to its Row IDs.
 
-An under-all-in alert fires once per Row ID when the active price (English or manual) is under all-in. It fires again only when that price is strictly lower than the last alerted price. Dismissing stores that price in this browser (`piecebook.boughtAlerts.v1`). No price means no alert.
+An under-all-in alert fires once per Row ID when the active price (English or manual) is under all-in. It fires again only when that price is strictly lower than the last alerted price. On the sample book, dismissing stores that price in this browser (`piecebook.boughtAlerts.v1`). Signed in, the same memory is `u:<email>:alerts.v1`, so a dismiss holds on every device. `GET /alerts` returns those hits and the watchlist hits. No price means no alert.
 
 ## Phone
 

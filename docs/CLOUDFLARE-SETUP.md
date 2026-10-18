@@ -219,6 +219,11 @@ and update those rows while `/sync` stays read-only. The token has no email, so 
 `u:<OWNER_EMAIL>:holdings.v1`, the same key the phone uses when signed in as that address. The
 shape is in `docs/BOUGHT-SHEET.md`. No Google service account and no extra secret.
 
+The target watchlist uses the same namespace and the same owner pin (`/api/watchlist`,
+`u:<OWNER_EMAIL>:watchlist.v1`). Alert dismissals are `u:<OWNER_EMAIL>:alerts.v1`. Cards polls
+`GET /api/alerts`. The shape is in `docs/WATCHLIST.md`. This is not the starred list
+(`piecebook.watchlist.v1`).
+
 ## 11. The old site: banner, then retirement
 
 - Turn the "we moved" banner on without touching code **[API ✓ with `gh`]**:

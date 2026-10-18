@@ -50,8 +50,9 @@ fallthrough = true
 
 # --- Cloud sync store (step 4 in docs/CLOUDFLARE-SETUP.md) ---
 # Holdings use this same namespace: u:<email>:holdings.v1 and
-# u:<email>:holdings-history.v1. /sync only lists piecebook.* keys, so it
-# leaves the book alone.
+# u:<email>:holdings-history.v1. The target list is u:<email>:watchlist.v1
+# (history beside it) and alert dismissals are u:<email>:alerts.v1.
+# /sync only lists piecebook.* keys, so it leaves those books alone.
 [[kv_namespaces]]
 binding = "USER_DATA"
 id = "fbb335c717da4e0e98ffd433cb702ca2"
