@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { DangerGhostButton, PrimaryButton } from '../components/Buttons'
+import { PrintsPanel } from '../components/PrintsPanel'
 import { BackBar, Screen } from '../components/Screen'
 import { parseMoney } from '../lib/boughtBook'
 import { todayIso } from '../lib/format'
@@ -158,6 +159,9 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
               {hit ? ' · At or under target' : ''}
               {stale ? ' · Stale, older than 7 days' : ''}
             </p>
+          )}
+          {code.trim() && (
+            <PrintsPanel code={code} grade={grade === 'PSA 10' ? 'psa10' : grade === 'PSA 9' ? 'psa9' : 'raw'} codeIsPin />
           )}
           <div>
             <label htmlFor={`${ids}-target`} className={label}>

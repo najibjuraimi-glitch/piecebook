@@ -24,7 +24,7 @@ Every row includes `priceSgd`, `url`, `source`, `asOf`, and `stale`. When neithe
 
 ## Phone
 
-Portfolio links to Watchlist. **Add a target** (`/watchlist/new`), **Edit target** (`/watchlist/:id`), and **Remove** on the edit form. The list and the edit form show the price, its source and date, **No price yet**, **At or under target**, and **Stale, older than 7 days**. A price dated more than 7 days ago is stale. A price from 7 days ago is not.
+Portfolio links to Watchlist. **Add a target** (`/watchlist/new`), **Edit target** (`/watchlist/:id`), and **Remove** on the edit form. The list and the edit form show the price, its source and date, **No price yet**, **At or under target**, and **Stale, older than 7 days**. Each row has a collapsed **Prints** list of every seed print of that card number. The row’s print id is marked Pinned. A Japanese figure is labeled JP and is not the value. A price dated more than 7 days ago is stale. A price from 7 days ago is not.
 
 ## Agent API
 
