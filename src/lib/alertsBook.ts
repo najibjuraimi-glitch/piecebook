@@ -2,8 +2,8 @@
  * Alert memory for one person. Under-all-in and watchlist hits remember the
  * last price that already fired, so the same price stays quiet on every device.
  */
-import { dismissAlerts, freshUnderCostAlerts, type AlertMemory, type UnderCostAlert, type ValuedCopy } from './boughtBook'
-import { dismissWatchHits, freshWatchHits, type ValuedWatchItem, type WatchHit } from './watchlist'
+import { dismissAlerts, underCostAlertList, type AlertMemory, type UnderCostAlert, type ValuedCopy } from './boughtBook'
+import { dismissWatchHits, watchAlertList, type ValuedWatchItem, type WatchHit } from './watchlist'
 
 export interface AlertWrite {
   at: string
@@ -15,6 +15,8 @@ export interface AlertsDoc {
   revision: number
   underAllIn: AlertMemory
   watchlist: AlertMemory
+  /** First time each alert fired, keyed `underAllIn:<rowId>` or `watchlist:<id>`. Not a revision. */
+  firedAt: Record<string, string>
   writes: AlertWrite[]
 }
 
@@ -29,7 +31,7 @@ export interface AlertsFailure {
 const MAX_WRITES = 2000
 
 export function emptyAlerts(): AlertsDoc {
-  return { revision: 0, underAllIn: {}, watchlist: {}, writes: [] }
+  return { revision: 0, underAllIn: {}, watchlist: {}, firedAt: {}, writes: [] }
 }
 
 export function normaliseAlerts(doc: unknown): AlertsDoc {
@@ -39,6 +41,7 @@ export function normaliseAlerts(doc: unknown): AlertsDoc {
     revision: typeof raw.revision === 'number' && Number.isInteger(raw.revision) ? raw.revision : 0,
     underAllIn: memoryOf(raw.underAllIn),
     watchlist: memoryOf(raw.watchlist),
+    firedAt: stringsOf((raw as { firedAt?: unknown }).firedAt),
     writes: Array.isArray(raw.writes) ? raw.writes.filter(isWrite) : [],
   }
 }
@@ -52,17 +55,35 @@ function memoryOf(value: unknown): AlertMemory {
   return memory
 }
 
+function stringsOf(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {}
+  const out: Record<string, string> = {}
+  for (const [key, text] of Object.entries(value)) {
+    if (typeof text === 'string' && text) out[key] = text
+  }
+  return out
+}
+
 function isWrite(value: unknown): value is AlertWrite {
   if (!value || typeof value !== 'object') return false
   const row = value as AlertWrite
   return typeof row.at === 'string' && typeof row.caller === 'string' && typeof row.op === 'string'
 }
 
-export function currentAlerts(copies: ValuedCopy[], items: ValuedWatchItem[], doc: AlertsDoc): { underAllIn: UnderCostAlert[]; watchlist: WatchHit[] } {
+export function currentAlerts(
+  copies: ValuedCopy[],
+  items: ValuedWatchItem[],
+  doc: AlertsDoc,
+  includeDismissed = false,
+): { underAllIn: UnderCostAlert[]; watchlist: WatchHit[] } {
   return {
-    underAllIn: freshUnderCostAlerts(copies, doc.underAllIn),
-    watchlist: freshWatchHits(items, doc.watchlist),
+    underAllIn: underCostAlertList(copies, doc.underAllIn, includeDismissed),
+    watchlist: watchAlertList(items, doc.watchlist, includeDismissed),
   }
+}
+
+export function alertKey(alert: { type?: string; rowId?: string; id?: string }): string {
+  return alert.type === 'watchlist' ? `watchlist:${alert.id}` : `underAllIn:${alert.rowId}`
 }
 
 function fail(status: number, error: string, detail?: string, revision?: number): AlertsFailure {
@@ -105,24 +126,16 @@ export function dismissAlertIds(
       revision: doc.revision + 1,
       underAllIn: dismissAlerts(doc.underAllIn, underHits),
       watchlist: dismissWatchHits(doc.watchlist, watchHits),
+      firedAt: doc.firedAt,
       writes: writes.length > MAX_WRITES ? writes.slice(writes.length - MAX_WRITES) : writes,
     },
   }
 }
 
-/** Drop one watch id's dismissal. A later row that reuses the id can fire again. */
-export function forgetWatchId(doc: AlertsDoc, id: string, write: AlertWrite): { doc: AlertsDoc; changed: boolean } {
+/** Drop one watch id's dismissal without moving the alerts revision. */
+export function forgetWatchId(doc: AlertsDoc, id: string): { doc: AlertsDoc; changed: boolean } {
   if (doc.watchlist[id] == null) return { doc, changed: false }
   const watchlist = { ...doc.watchlist }
   delete watchlist[id]
-  const writes = doc.writes.concat(write)
-  return {
-    changed: true,
-    doc: {
-      revision: doc.revision + 1,
-      underAllIn: doc.underAllIn,
-      watchlist,
-      writes: writes.length > MAX_WRITES ? writes.slice(writes.length - MAX_WRITES) : writes,
-    },
-  }
+  return { changed: true, doc: { ...doc, watchlist } }
 }

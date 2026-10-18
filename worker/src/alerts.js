@@ -13,6 +13,7 @@ import { valueCopies } from "../../src/lib/boughtBook.ts";
 import { currentAlerts, dismissAlertIds, forgetWatchId, normaliseAlerts } from "../../src/lib/alertsBook.ts";
 import { boughtCopyFromHolding, emptyHoldings } from "../../src/lib/holdings.ts";
 import { emptyWatch, valueWatchItems } from "../../src/lib/watchlist.ts";
+import { writerAllowed } from "./access.js";
 import { bookEmail, callerOf, keyFor, writeNote } from "./holdings.js";
 import { storedQuote } from "./storedPrice.js";
 
@@ -51,10 +52,10 @@ async function readAlerts(kv, email) {
   return normaliseAlerts(await kv.get(keyFor(email, ALERTS), "json"));
 }
 
-function hitsFor(holdings, watch, alerts, today) {
+function hitsFor(holdings, watch, alerts, today, includeDismissed = false) {
   const copies = valueCopies(holdings.copies.map(boughtCopyFromHolding), storedQuote, today);
   const items = valueWatchItems(watch.items, storedQuote, today);
-  return currentAlerts(copies, items, alerts);
+  return currentAlerts(copies, items, alerts, includeDismissed);
 }
 
 export async function handleAlerts(req, env, identity, cors, deps = {}) {
@@ -68,14 +69,42 @@ export async function handleAlerts(req, env, identity, cors, deps = {}) {
   const log = deps.log || (() => {});
   const email = bookEmail(identity, env);
   if (!email) return json({ error: "no_identity" }, 403, cors);
+  if (req.method !== "GET" && !writerAllowed(identity, env)) return json({ error: "writer_not_allowed" }, 403, cors);
 
   const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
   if (declared > MAX_BODY) return json({ error: "too_large" }, 413, cors);
 
   if (req.method === "GET" && parts.length === 1) {
+    const includeDismissed = url.searchParams.get("includeDismissed") === "1";
+    const sinceRaw = url.searchParams.get("since");
+    let sinceMs = null;
+    if (sinceRaw) {
+      sinceMs = Date.parse(sinceRaw);
+      if (!Number.isFinite(sinceMs)) return json({ error: "bad_since" }, 400, cors);
+    }
     const alerts = await readAlerts(kv, email);
-    const current = hitsFor(await readHoldings(kv, email), await readWatch(kv, email), alerts, today);
-    return json({ source: "piecebook", revision: alerts.revision, ...current, writes: alerts.writes }, 200, cors);
+    const current = hitsFor(await readHoldings(kv, email), await readWatch(kv, email), alerts, today, includeDismissed);
+    const nowIso = new Date(now).toISOString();
+    const firedAt = { ...(alerts.firedAt || {}) };
+    let changed = false;
+    const stamp = (alert) => {
+      const key = alert.type === "watchlist" ? `watchlist:${alert.id}` : `underAllIn:${alert.rowId}`;
+      const isNew = !alert.dismissed && (alert.previousLowSgd != null || !firedAt[key]);
+      if (isNew && firedAt[key] !== nowIso) {
+        firedAt[key] = nowIso;
+        changed = true;
+      }
+      return { ...alert, firedAt: firedAt[key] || null };
+    };
+    let underAllIn = current.underAllIn.map(stamp);
+    let watchlist = current.watchlist.map(stamp);
+    if (changed) await kv.put(keyFor(email, ALERTS), JSON.stringify({ ...alerts, firedAt }));
+    if (sinceMs != null) {
+      const after = (alert) => alert.firedAt && Date.parse(alert.firedAt) > sinceMs;
+      underAllIn = underAllIn.filter(after);
+      watchlist = watchlist.filter(after);
+    }
+    return json({ source: "piecebook", revision: alerts.revision, underAllIn, watchlist, writes: alerts.writes }, 200, cors);
   }
 
   if (req.method === "POST" && parts.length === 2 && parts[1] === "dismiss") {
@@ -105,9 +134,9 @@ export async function handleAlerts(req, env, identity, cors, deps = {}) {
 }
 
 /** Called when a watch row is removed, so that id's dismissal does not silence a later row. */
-export async function forgetWatchAlert(kv, email, id, identity, now) {
+export async function forgetWatchAlert(kv, email, id) {
   const alerts = await readAlerts(kv, email);
-  const result = forgetWatchId(alerts, id, writeNote(identity, now, "forget", id));
+  const result = forgetWatchId(alerts, id);
   if (!result.changed) return;
   await kv.put(keyFor(email, ALERTS), JSON.stringify(result.doc));
 }

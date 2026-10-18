@@ -5,7 +5,8 @@
  * Index median is not a price. A parallel does not inherit another print.
  */
 import { parseCsv } from '../data/csv'
-import { printCode, type LegalGrade, type PriceQuote } from './boughtBook'
+import { type LegalGrade, type PriceQuote } from './boughtBook'
+import { resolveHoldingPrint, type PrintRow } from './printResolve'
 import { usdToSgd } from './fx'
 
 const PARALLEL_RE = /p\d+$/i
@@ -65,15 +66,42 @@ function gradedQuote(row: SeedRow, grade: 'psa9' | 'psa10'): PriceQuote | null {
   return { usd, sgd: usdToSgd(usd), source: 'OP Box Index', url, asOf, detail }
 }
 
-function rowFor(rows: Map<string, SeedRow>, code: string): SeedRow | undefined {
-  const id = printCode(code)
+export function printsFromSeedRows(rows: Iterable<SeedRow>): PrintRow[] {
+  const prints: PrintRow[] = []
+  for (const row of rows) {
+    const cardNumber = row.card_number
+    if (!cardNumber) continue
+    prints.push({
+      cardNumber,
+      baseNumber: cardNumber.replace(/p\d+$/i, ''),
+      variant: row.variant || '',
+      rarity: row.rarity || '',
+      language: row.language || '',
+    })
+  }
+  return prints
+}
+
+function rowFor(rows: Map<string, SeedRow>, id: string): SeedRow | undefined {
   return rows.get(id) ?? rows.get(id.toUpperCase()) ?? [...rows.entries()].find(([key]) => key.toUpperCase() === id.toUpperCase())?.[1]
 }
 
-/** English stored quote for this print and grade. Null when there is none. Never a Japanese figure. */
+const printCache = new WeakMap<Map<string, SeedRow>, PrintRow[]>()
+
+function printsFor(rows: Map<string, SeedRow>): PrintRow[] {
+  const cached = printCache.get(rows)
+  if (cached) return cached
+  const prints = printsFromSeedRows(rows.values())
+  printCache.set(rows, prints)
+  return prints
+}
+
+/** English stored quote for this print and grade. A variant word prices only when it names one print. Never the base, and never a Japanese figure. */
 export function quoteStored(rows: Map<string, SeedRow>, code: string, grade: LegalGrade | null): PriceQuote | null {
   if (!code || (grade !== 'raw' && grade !== 'psa9' && grade !== 'psa10')) return null
-  const row = rowFor(rows, code)
+  const print = resolveHoldingPrint(code, printsFor(rows))
+  if (!print) return null
+  const row = rowFor(rows, print.cardNumber)
   if (!row) return null
   const lang = (row.language || '').trim().toUpperCase()
   if (lang !== 'EN') return null

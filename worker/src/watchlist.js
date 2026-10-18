@@ -11,10 +11,12 @@
  * time. The client secret is not stored. Prices on a read are English stored
  * quotes; a missing one is "No price yet". Japanese prices are not used.
  */
+import { parallelLabel, resolveHoldingPrint } from "../../src/lib/printResolve.ts";
 import { createWatchItem, deleteWatchItem, emptyWatch, patchWatchItem, valueWatchItems } from "../../src/lib/watchlist.ts";
+import { writerAllowed } from "./access.js";
 import { forgetWatchAlert } from "./alerts.js";
 import { bookEmail, callerOf, keyFor, writeNote } from "./holdings.js";
-import { storedQuote } from "./storedPrice.js";
+import { seedPrints, storedQuote } from "./storedPrice.js";
 
 const STORE = "watchlist.v1";
 const HISTORY = "watchlist-history.v1";
@@ -32,6 +34,7 @@ function fail(result, cors) {
   const body = { error: result.error };
   if (result.detail) body.detail = result.detail;
   if (result.revision != null) body.revision = result.revision;
+  if (result.candidates) body.candidates = result.candidates;
   return json(body, result.status, cors);
 }
 
@@ -68,12 +71,28 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
   const log = deps.log || (() => {});
   const email = bookEmail(identity, env);
   if (!email) return json({ error: "no_identity" }, 403, cors);
+  if (req.method !== "GET" && !writerAllowed(identity, env)) return json({ error: "writer_not_allowed" }, 403, cors);
 
   const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
   if (declared > MAX_BODY) return json({ error: "too_large" }, 413, cors);
 
   if (req.method === "GET" && parts.length === 1) {
     const doc = await readDoc(kv, email);
+    const prints = seedPrints();
+    if (url.searchParams.get("format") === "targets") {
+      const targets = doc.items.map((item) => {
+        const print = resolveHoldingPrint(item.code, prints);
+        return {
+          print: print ? print.cardNumber : item.code,
+          parallel: print ? parallelLabel(print) : null,
+          language: print ? print.language || null : null,
+          grade: item.grade,
+          targetSgd: item.targetSgd ?? null,
+          externalId: item.externalId ?? null,
+        };
+      });
+      return json({ source: "piecebook", revision: doc.revision, targets }, 200, cors);
+    }
     const writes = await loadWrites(kv, email);
     return json({ source: "piecebook", revision: doc.revision, items: valueWatchItems(doc.items, quoteFor, today), writes }, 200, cors);
   }
@@ -92,7 +111,7 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
 
   if (req.method === "POST" && parts.length === 1) {
     const doc = await readDoc(kv, email);
-    const result = createWatchItem(doc, body, today);
+    const result = createWatchItem(doc, body, today, seedPrints());
     if (!result.ok) return fail(result, cors);
     await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
     await recordWrite(kv, email, identity, now, "create", result.item.id);
@@ -110,7 +129,7 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
     }
     if (req.method === "PATCH") {
       const doc = await readDoc(kv, email);
-      const result = patchWatchItem(doc, id, body, today);
+      const result = patchWatchItem(doc, id, body, today, seedPrints());
       if (!result.ok) return fail(result, cors);
       await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
       await recordWrite(kv, email, identity, now, "patch", id);
@@ -124,7 +143,7 @@ export async function handleWatchlist(req, env, identity, cors, deps = {}) {
       if (!result.ok) return fail(result, cors);
       await kv.put(keyFor(email, STORE), JSON.stringify(result.doc));
       await recordWrite(kv, email, identity, now, "delete", id);
-      await forgetWatchAlert(kv, email, id, identity, now);
+      await forgetWatchAlert(kv, email, id);
       log({ evt: "watchlist_write", op: "delete", rowId: id, caller: callerOf(identity), at: new Date(now).toISOString() });
       return json({ source: "piecebook", revision: result.doc.revision }, 200, cors);
     }

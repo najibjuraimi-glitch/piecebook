@@ -76,6 +76,8 @@ export interface BoughtCopy {
   notes: string
   /** Click-through only. Never fetched, never used as a price. */
   priceChartingUrl: string | null
+  /** Seed print id when the sheet code is not itself one print. Null uses the code. */
+  exactPrint?: string | null
   status: CopyStatus
   statusText: string
   soldDate: string | null
@@ -130,6 +132,7 @@ export interface BoughtSummary {
 export type AlertMemory = Record<string, number>
 
 export interface UnderCostAlert {
+  type: 'underAllIn'
   rowId: string
   code: string
   cardName: string
@@ -138,6 +141,12 @@ export interface UnderCostAlert {
   legalSgd: number
   allInSgd: number
   previousLowSgd: number | null
+  url: string | null
+  source: string | null
+  asOf: string | null
+  stale: boolean
+  dismissed?: boolean
+  firedAt?: string | null
 }
 
 export interface SnapshotView {
@@ -360,6 +369,7 @@ export function parseBoughtMatrix(matrix: string[][]): { copies: BoughtCopy[]; m
       manualAsOf: manualMarketSgd != null ? manualAsOf : null,
       notes,
       priceChartingUrl: httpsUrl(cell(row, index, 'PriceCharting URL')),
+      exactPrint: index['Exact print'] === undefined ? null : cell(row, index, 'Exact print').trim() || null,
       status,
       statusText,
       soldDate: parseSheetDate(soldDateLabel),
@@ -414,7 +424,11 @@ export function valueCopies(
   quoteFor: (code: string, grade: LegalGrade | null) => PriceQuote | null,
   today: string,
 ): ValuedCopy[] {
-  return copies.map((copy) => valueCopy(copy, quoteFor(copy.code, copy.grade), today))
+  return copies.map((copy) => {
+    const exact = copy.exactPrint?.trim()
+    const code = exact ? (/^[A-Za-z]{1,4}\d{0,3}-\d{3}(?:p\d+)?$/.test(exact) ? exact : '') : copy.code
+    return valueCopy(copy, code ? quoteFor(code, copy.grade) : null, today)
+  })
 }
 
 function sum(nums: (number | null | undefined)[]): number | null {
@@ -503,25 +517,35 @@ export function summariseBought(copies: ValuedCopy[]): BoughtSummary {
  * Fire when a held or listed copy's legal price is under its all-in.
  * The same price does not fire again. A strictly lower legal price does.
  */
-export function freshUnderCostAlerts(copies: ValuedCopy[], memory: AlertMemory): UnderCostAlert[] {
+export function underCostAlertList(copies: ValuedCopy[], memory: AlertMemory, includeDismissed = false): UnderCostAlert[] {
   const alerts: UnderCostAlert[] = []
   for (const copy of copies) {
     if (!copy.underCost || !copy.quote || copy.allInSgd == null) continue
     const prev = memory[copy.rowId]
-    if (prev == null || copy.quote.sgd < prev) {
-      alerts.push({
-        rowId: copy.rowId,
-        code: copy.code,
-        cardName: copy.cardName,
-        gradeText: copy.gradeText,
-        status: copy.status,
-        legalSgd: copy.quote.sgd,
-        allInSgd: copy.allInSgd,
-        previousLowSgd: prev ?? null,
-      })
-    }
+    const dismissed = prev != null && copy.quote.sgd >= prev
+    if (dismissed && !includeDismissed) continue
+    alerts.push({
+      type: 'underAllIn',
+      rowId: copy.rowId,
+      code: copy.code,
+      cardName: copy.cardName,
+      gradeText: copy.gradeText,
+      status: copy.status,
+      legalSgd: copy.quote.sgd,
+      allInSgd: copy.allInSgd,
+      previousLowSgd: prev ?? null,
+      url: copy.quote.url,
+      source: copy.quote.source,
+      asOf: copy.quote.asOf || null,
+      stale: copy.stale,
+      dismissed,
+    })
   }
   return alerts
+}
+
+export function freshUnderCostAlerts(copies: ValuedCopy[], memory: AlertMemory): UnderCostAlert[] {
+  return underCostAlertList(copies, memory, false)
 }
 
 export function dismissAlerts(memory: AlertMemory, alerts: UnderCostAlert[]): AlertMemory {

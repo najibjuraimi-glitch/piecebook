@@ -221,8 +221,26 @@ shape is in `docs/BOUGHT-SHEET.md`. No Google service account and no extra secre
 
 The target watchlist uses the same namespace and the same owner pin (`/api/watchlist`,
 `u:<OWNER_EMAIL>:watchlist.v1`). Alert dismissals are `u:<OWNER_EMAIL>:alerts.v1`. Cards polls
-`GET /api/alerts`. The shape is in `docs/WATCHLIST.md`. This is not the starred list
+`GET /api/alerts`. Piecebook does not push alerts. The shape is in `docs/WATCHLIST.md`. This is not the starred list
 (`piecebook.watchlist.v1`).
+
+`WRITE_CLIENT_IDS` is optional. When it is a comma-separated list of service-token client ids
+(the Access JWT `common_name`), only those tokens may write holdings, the watchlist, or alert
+dismissals. A signed-in phone is still allowed. Leave it unset and the check is off. It is not a secret.
+
+## Staging Worker for Pages previews
+
+Production Pages binds `VISION` to `piecebook-vision` (root `wrangler.toml`). A preview should not
+share that book. `worker/wrangler.toml` `[env.staging]` is a separate Worker, `piecebook-vision-staging`,
+with its own KV placeholders (`REPLACE_WITH_STAGING_USER_DATA` and `REPLACE_WITH_STAGING_VISION_CAP`).
+Create the namespaces, paste the ids over the placeholders, then
+`npx wrangler deploy --config worker/wrangler.toml --env staging`. Do not use `npm run worker:deploy`
+for that; that command deploys production.
+
+In the Pages project, Settings → Bindings, set the **Preview** service binding `VISION` to
+`piecebook-vision-staging` and leave the **Production** binding on `piecebook-vision`.
+`https://<preview>.piecebook.pages.dev/api` then calls the staging Worker. The function
+`functions/api/[[path]].js` does not change: it always fetches `env.VISION`.
 
 ## 11. The old site: banner, then retirement
 

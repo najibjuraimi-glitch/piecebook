@@ -111,7 +111,7 @@ export function WatchlistScreen() {
                 </p>
                 <p className="tabular mt-1 text-meta text-ink">{priceLine(item)}</p>
                 <p className="mt-1 text-meta text-muted">
-                  Target {formatSgd(item.targetSgd)}
+                  {item.targetSgd == null ? 'No target' : `Target ${formatSgd(item.targetSgd)}`}
                   {item.hit ? ' · At or under target' : ''}
                   {item.stale ? ' · Stale, older than 7 days' : ''}
                   {item.added ? ` · Added ${formatDate(item.added)}` : ''}

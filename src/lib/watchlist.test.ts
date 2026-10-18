@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { ALL_CARDS } from '../data/seed'
 import { legalGrade, type PriceQuote } from './boughtBook'
 import { legalQuote } from './loadBought'
+import { explainWatchCode } from './printResolve'
+import { quoteFor } from '../../scripts/bought-prices.mjs'
 import { quoteStored, rowsFromSeedTexts } from './storedQuotes'
 import {
   createWatchItem,
@@ -65,17 +67,21 @@ describe('watchlist book', () => {
     expect(rawQuote).not.toBeNull()
     expect(parallel).not.toBeNull()
     const [raw] = valueWatchItems(
-      [{ id: 'WL-0001', code: 'OP09-004 SP', grade: 'Raw', targetSgd: rawQuote!.sgd, notes: '', added: '2026-10-16' }],
+      [{ id: 'WL-0001', code: 'OP09-004p3', grade: 'Raw', targetSgd: parallel!.sgd, notes: '', added: '2026-10-16' }],
       legalQuote,
       TODAY,
     )
-    expect(raw.priceSgd).toBe(rawQuote!.sgd)
-    expect(raw.priceSgd).not.toBe(parallel!.sgd)
-    expect(raw.source).toBe(rawQuote!.source)
-    expect(raw.asOf).toBe(rawQuote!.asOf)
-    expect(raw.hit).toBe(true)
+    expect(raw.priceSgd).toBe(parallel!.sgd)
+    expect(raw.priceSgd).not.toBe(rawQuote!.sgd)
+    expect(raw.url).toContain('limitlesstcg.com')
+    expect(raw.source).toBe(parallel!.source)
+    expect(raw.asOf).toBe(parallel!.asOf)
+    expect(raw.hit).toBe(false)
     expect(raw.stale).toBe(true)
-    expect(raw.code).toBe('OP09-004 SP')
+    expect(legalQuote('OP09-004 SP', 'raw')).toEqual(parallel)
+    expect(quoteFor('OP09-004 SP', 'raw')).toEqual(legalQuote('OP09-004 SP', 'raw'))
+    expect(legalQuote('OP09-004 SP', 'raw')!.sgd).not.toBe(rawQuote!.sgd)
+    expect(legalQuote('OP09-004 parallel', 'raw')).toBeNull()
 
     const above = valueWatchItem({ ...raw, targetSgd: Math.round((raw.priceSgd! - 0.01) * 100) / 100 }, legalQuote, TODAY)
     expect(above.hit).toBe(false)
@@ -119,7 +125,16 @@ describe('watchlist book', () => {
     expect(fresh.stale).toBe(false)
     expect(fresh.hit).toBe(true)
     expect(older.stale).toBe(true)
+    expect(older.hit).toBe(false)
     expect(older.priceLabel).toBeNull()
+    const open = valueWatchItem(
+      { id: 'WL-0007', code: 'OP09-004', grade: 'Raw', targetSgd: null, notes: '', added: TODAY },
+      () => ({ ...rawQuote!, asOf: '2026-10-12' }),
+      TODAY,
+    )
+    expect(open.hit).toBe(false)
+    expect(open.priceSgd).toBe(rawQuote!.sgd)
+    expect(open.url).toBe(rawQuote!.url)
   })
 
   it('does not price a blank language or a Japanese printing from the seed text', () => {
@@ -155,7 +170,14 @@ describe('watchlist book', () => {
   })
 
   it('fires a hit once, and again only on a lower price', () => {
-    const item = valueWatchItem({ id: 'WL-0001', code: 'OP09-004', grade: 'Raw', targetSgd: 999, notes: '', added: TODAY }, legalQuote, TODAY)
+    const item = valueWatchItem(
+      { id: 'WL-0001', code: 'OP09-004', grade: 'Raw', targetSgd: 999, notes: '', added: TODAY },
+      () => ({ ...legalQuote('OP09-004', 'raw')!, asOf: '2026-10-12' }),
+      TODAY,
+    )
+    expect(item.stale).toBe(false)
+    expect(item.hit).toBe(true)
+    expect(item.url).toContain('limitlesstcg.com')
     const first = freshWatchHits([item], {})
     expect(first).toHaveLength(1)
     expect(first[0].priceSgd).toBe(item.priceSgd)
@@ -167,5 +189,32 @@ describe('watchlist book', () => {
     expect(again[0].previousLowSgd).toBe(item.priceSgd)
     const quiet = valueWatchItem({ ...item, code: 'OP09-004', grade: 'PSA 10', targetSgd: 1 }, legalQuote, TODAY)
     expect(freshWatchHits([quiet], {})).toEqual([])
+  })
+
+  it('rejects a variant word, keeps a print id, and allows a null target', () => {
+    const prints = ALL_CARDS.map((card) => ({
+      cardNumber: card.cardNumber,
+      baseNumber: card.baseNumber,
+      variant: card.variant || '',
+      rarity: card.rarity,
+      language: card.language,
+    }))
+    const named = explainWatchCode('OP09-004 SP', prints)
+    expect(named.ok).toBe(false)
+    if (!named.ok) expect(named.candidates).toEqual(['OP09-004p3'])
+    const rejected = createWatchItem(emptyWatch(), { revision: 0, code: 'OP09-004 SP', grade: 'Raw', targetSgd: 5 }, TODAY, prints)
+    expect(rejected).toMatchObject({ ok: false, error: 'ambiguous_print' })
+    const made = createWatchItem(
+      emptyWatch(),
+      { revision: 0, code: 'eb03-053p2', grade: 'PSA 10', targetSgd: null, externalId: 'ch-001', priceChartingUrl: 'https://www.pricecharting.com/game/one-piece/nami' },
+      TODAY,
+      prints,
+    )
+    expect(made).toMatchObject({ ok: true, item: { code: 'EB03-053p2', grade: 'PSA 10', targetSgd: null, externalId: 'CH-001' } })
+    if (!made.ok) return
+    const again = createWatchItem(made.doc, { revision: 1, code: 'EB03-053p2', grade: 'PSA 10', targetSgd: 1 }, TODAY, prints)
+    expect(again).toMatchObject({ ok: false, error: 'duplicate_print' })
+    const sameChase = createWatchItem(made.doc, { revision: 1, code: 'OP09-004', grade: 'Raw', targetSgd: 1, externalId: 'CH-001' }, TODAY, prints)
+    expect(sameChase).toMatchObject({ ok: false, error: 'duplicate_external_id' })
   })
 })

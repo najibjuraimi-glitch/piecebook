@@ -12,6 +12,7 @@
  *   PATCH  /holdings/:rowId
  *   POST   /holdings/:rowId/sold
  */
+import { writerAllowed } from "./access.js";
 import { acceptSnapshot, createHolding, emptyHoldings, importHoldings, markSold, patchHolding } from "../../src/lib/holdings.ts";
 
 const STORE = "holdings.v1";
@@ -93,6 +94,7 @@ export async function handleHoldings(req, env, identity, cors, deps = {}) {
   const log = deps.log || (() => {});
   const email = bookEmail(identity, env);
   if (!email) return json({ error: "no_identity" }, 403, cors);
+  if (req.method !== "GET" && !writerAllowed(identity, env)) return json({ error: "writer_not_allowed" }, 403, cors);
 
   const declared = parseInt(req.headers.get("Content-Length") || "0", 10);
   if (declared > MAX_BODY) return json({ error: "too_large" }, 413, cors);

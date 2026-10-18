@@ -32,6 +32,7 @@ ACCESS_TEAM_DOMAIN = "https://piecebook.cloudflareaccess.com"
 ACCESS_AUD = "413881efdd7d08215540d0aa34ee8dae0cdc169deb17ce0e12fe0e66424febea"
 OWNER_EMAIL = "najibjuraimi@gmail.com"      # identity a service token reads as
 SERVICE_TOKEN_WRITE = "0"                   # "1" to let agents write
+# WRITE_CLIENT_IDS = ""                     # optional. Comma-separated service-token client ids allowed to write. Empty means no allowlist.
 
 [[kv_namespaces]]
 binding = "VISION_CAP"
@@ -66,3 +67,19 @@ kv_namespaces = [
   { binding = "VISION_CAP", id = "local-vision-cap" },
   { binding = "USER_DATA", id = "local-user-data" },
 ]
+
+# Staging Worker for Pages previews. Do not deploy until the KV ids below are
+# real namespaces (`npx wrangler kv namespace create`). `npm run worker:deploy`
+# does not pass --env staging, so this block is not production.
+# Deploy, when the ids are real: `npx wrangler deploy --config worker/wrangler.toml --env staging`
+[env.staging]
+name = "piecebook-vision-staging"
+vars = { GEMINI_MODEL = "gemini-3.8-flash", DAILY_CAP = "60", ACCESS_TEAM_DOMAIN = "https://piecebook.cloudflareaccess.com", ACCESS_AUD = "413881efdd7d08215540d0aa34ee8dae0cdc169deb17ce0e12fe0e66424febea", OWNER_EMAIL = "najibjuraimi@gmail.com", SERVICE_TOKEN_WRITE = "0", ALLOWED_ORIGINS = "https://najibjuraimi-glitch.github.io,https://piecebook.pages.dev,https://*.piecebook.pages.dev" }
+
+[[env.staging.kv_namespaces]]
+binding = "USER_DATA"
+id = "REPLACE_WITH_STAGING_USER_DATA"
+
+[[env.staging.kv_namespaces]]
+binding = "VISION_CAP"
+id = "REPLACE_WITH_STAGING_VISION_CAP"

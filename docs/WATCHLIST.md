@@ -8,15 +8,19 @@ Rows live in the Worker’s `USER_DATA` KV, behind the same Cloudflare Access lo
 
 ## What a row stores
 
-`id` (`WL-xxxx`), print code, target grade (`Raw`, `PSA 9`, or `PSA 10`), target price SGD, notes, and the date it was added. Piecebook assigns the next `WL-xxxx` when the id is omitted, and does not assign an id again after it is removed. An id the caller sends is kept, including one that was removed. `CH-001` is not an id. `Near Mint` and `Ungraded` are not grades here. Removing a row also clears that id's alert dismissal, so a later row with the same id can fire again.
+`id` (`WL-xxxx`), print code, target grade (`Raw`, `PSA 9`, or `PSA 10`), target price SGD (or null), notes, the date it was added, an optional `externalId` (`CH-001` … `CH-006`), and an optional PriceCharting link. Piecebook assigns the next `WL-xxxx` when the id is omitted, and does not assign an id again after it is removed. An id the caller sends is kept. `CH-001` is an `externalId`, not the row id. The same print and grade cannot be stored twice. `Near Mint` and `Ungraded` are not grades here. Removing a row clears that id's alert dismissal and does not change the alerts revision.
+
+The code has to be one seed print id, such as `EB03-053p2` or `OP09-004`. `OP09-004 SP` is rejected with `ambiguous_print` and the list of print ids that word could mean. Send `OP09-004p3`, not the words.
 
 ## The price on a row
 
-The current price is the English stored price for that print and grade, the same figure Portfolio uses. Raw is the seed’s ungraded Limitless price. PSA 10 or PSA 9 is used only when the stored printing is English. The price uses the card number inside the code (`OP09-004` inside `OP09-004 SP`). The row still shows the code that was saved.
+The current price is the English stored price for that exact print and grade. Raw is the seed’s ungraded Limitless price. PSA 10 or PSA 9 is used only when the stored printing is English. A variant word is not priced as the base print.
 
-The read includes `priceSgd`, `source`, and `asOf`. When there is no English price, `priceSgd` is null and `priceLabel` is **No price yet**. A Japanese OP Box Index median is never a watchlist price and never a hit.
+Every row includes `priceSgd`, `url`, `source`, `asOf`, and `stale`. When there is no English price, `priceSgd` is null and `priceLabel` is **No price yet**. A Japanese OP Box Index median is never a watchlist price and never a hit.
 
-`hit` is true when that price is at or under the target. A price dated more than 7 days ago is marked `stale` and still shown. No price is not a hit and is not marked stale.
+`hit` is true only when there is a target and the price is at or under it and the price is not stale. A null target is not a hit. A price dated more than 7 days ago is marked `stale`, still shown, and is not a hit. No price is not a hit and is not marked stale.
+
+`GET /watchlist?format=targets` returns `{ print, parallel, language, grade, targetSgd, externalId }` for each row. Auction uses that list to scan. `parallel` is the seed’s variant label, or null on a base print.
 
 ## Phone
 
@@ -26,7 +30,7 @@ Portfolio links to Watchlist. **Add a target** (`/watchlist/new`), **Edit target
 
 Same host as the rest of the private API: `https://piecebook.pages.dev/api`. A browser sends its Access cookie. Cards sends the service token headers it already uses for `/sync`. The token is never printed and must not be committed.
 
-A service token may add, edit, and remove watchlist rows even while `SERVICE_TOKEN_WRITE` is `0`. That flag still blocks `/sync` writes.
+A service token may add, edit, and remove watchlist rows even while `SERVICE_TOKEN_WRITE` is `0`. That flag still blocks `/sync` writes. `WRITE_CLIENT_IDS`, when set to a comma-separated list of service-token client ids (the Access JWT `common_name`), is the only service tokens that may write holdings, the watchlist, or alert dismissals. A signed-in phone is still allowed. When the variable is empty, it is not checked.
 
 Every write sends the `revision` from the last GET. A stale revision is `409 revision_conflict`. Every write appends one line to the history: `at` (UTC), `caller`, `op` (`create`, `patch`, `delete`), and `rowId`. The caller is the service token’s client id (the Access JWT `common_name`) or the signed-in Access email. The client secret is not stored.
 
@@ -49,7 +53,7 @@ curl -s "${H[@]}" -X DELETE "$PIECEBOOK_API/watchlist/WL-0001" -H 'Content-Type:
 
 ## Alerts
 
-`GET /alerts` is what Cards polls. It returns the under-all-in hits from the holdings book and the watchlist hits from this book, for the same owner.
+Cards polls `GET /alerts`. Piecebook does not push alerts. The response is the under-all-in hits from the holdings book and the watchlist hits from this book, for the same owner. Each alert has `type` (`underAllIn` or `watchlist`), `url`, `source`, `asOf`, `stale`, `firedAt`, and `dismissed`. `?since=` is an ISO timestamp; only alerts whose `firedAt` is later than that are returned. `?includeDismissed=1` also returns alerts that already fired at this price. Without it, those stay out.
 
 An under-all-in hit fires once per Row ID when the active price (English or manual) is under all-in, and again only when that price is strictly lower. A watchlist hit fires when the English price is at or under the target, and again only on a strictly lower price. No price means no hit.
 

@@ -174,8 +174,8 @@ describe('legal values', () => {
     expect(raw.code).toBe('OP09-004 SP')
     expect(raw.gradeText).toBe('Raw')
     expect(raw.grade).toBe('raw')
-    expect(raw.quote).toEqual(legalQuote('OP09-004', 'raw'))
-    expect(raw.quote!.sgd).not.toBe(legalQuote('OP09-004p3', 'raw')!.sgd)
+    expect(raw.quote).toEqual(legalQuote('OP09-004p3', 'raw'))
+    expect(raw.quote!.sgd).not.toBe(legalQuote('OP09-004', 'raw')!.sgd)
 
     const slab = copies.find((c) => c.rowId === 'OPB-0302')!
     expect(slab.code).toBe('OP09-004 SP')
@@ -192,6 +192,19 @@ describe('legal values', () => {
     expect(groups.find((g) => g.copies.some((c) => c.rowId === 'OPB-0304'))!.copies).toHaveLength(1)
     expect(groups.find((g) => g.copies.some((c) => c.rowId === 'OPB-0301'))!.gradeText).toBe('Raw')
     expect(groups.find((g) => g.copies.some((c) => c.rowId === 'OPB-0305'))!.code).toBe('OP09-004')
+  })
+
+  it('uses an exact print when the sheet code is a variant, and the manual figure when it is not one print', () => {
+    const header = ['Row ID', 'Code', 'Grade/Raw', 'All-in SGD', 'Status', 'Card', 'Market value SGD', 'Exact print']
+    const copies = valued([
+      header,
+      ['OPB-0401', 'OP09-004 SP', 'Raw', '10', 'Held', 'Shanks', '12', 'OP09-004'],
+      ['OPB-0402', 'OP09-004 parallel', 'Raw', '10', 'Held', 'Shanks', '8', ''],
+    ])
+    expect(copies[0].quote).toEqual(legalQuote('OP09-004', 'raw'))
+    expect(copies[0].quote!.sgd).not.toBe(legalQuote('OP09-004p3', 'raw')!.sgd)
+    expect(copies[1].quote).toMatchObject({ source: 'Sheet (Cards)', sgd: 8, usd: null })
+    expect(copies[1].quote!.sgd).not.toBe(legalQuote('OP09-004', 'raw')!.sgd)
   })
 
   it('groups the same code and grade text, and keeps PSA 10 apart from raw', () => {

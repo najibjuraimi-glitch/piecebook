@@ -55,7 +55,7 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
         if (found) {
           setCode(found.code)
           setGrade(found.grade)
-          setTarget(String(found.targetSgd))
+          setTarget(found.targetSgd == null ? '' : String(found.targetSgd))
           setNotes(found.notes)
           setAdded(found.added)
           setPriced(priceLine(found))
@@ -76,9 +76,13 @@ export function WatchItemForm({ mode }: { mode: 'add' | 'edit' }) {
       setError('Sign in to save a target.')
       return
     }
-    const targetSgd = moneyOrNull(target)
-    if (!code.trim() || targetSgd == null) {
-      setError('Add a print code and a target price.')
+    const targetSgd = target.trim() ? moneyOrNull(target) : null
+    if (!code.trim()) {
+      setError('Add a print code.')
+      return
+    }
+    if (target.trim() && targetSgd == null) {
+      setError('The target price needs to be a number, or left blank.')
       return
     }
     setSaving(true)

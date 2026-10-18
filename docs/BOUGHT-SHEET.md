@@ -12,7 +12,7 @@ Date, card, code, grade/raw, where/seller, paid / GST / forwarding / all-in SGD,
 
 ## How a copy is valued
 
-1. An English stored price for that exact print and grade. Raw is the seed’s ungraded Limitless price. PSA 10 or PSA 9 is used only when the stored printing is English. The price uses the card number inside the sheet’s code (`OP09-004` inside `OP09-004 SP`). A grade is read from the words before a parenthesis, so `PSA 10 (cert 149322006)` is PSA 10. The row still shows the sheet’s code and grade.
+1. An English stored price for one seed print and grade. Raw is that print’s ungraded Limitless price. PSA 10 or PSA 9 is used only when the stored printing is English. `OP09-004` and `OP09-004p3` are print ids. A variant word such as `OP09-004 SP` is priced only when that word names exactly one print (the SP), and it never takes the base print’s price. If the word matches nothing or more than one print, the row uses the manual figure. An optional `exactPrint` (`OP09-004`) is that print even when the sheet code still says `OP09-004 SP`. A grade is read from the words before a parenthesis, so `PSA 10 (cert 149322006)` is PSA 10. The row still shows the sheet’s code and grade.
 2. Otherwise the manual market value, labeled with the source that was saved (a Bought CSV with neither `Source` nor `Market source` labels a present figure `Sheet (Cards)`) and its date. `Market as of` (`yyyy-mm-dd`) is that date when the column is filled.
 3. Otherwise **No price yet**.
 

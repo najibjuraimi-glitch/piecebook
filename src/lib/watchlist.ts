@@ -6,6 +6,7 @@
  */
 import { NO_PRICE_YET } from './cardPrices'
 import {
+  httpsUrl,
   isEnglishStoredQuote,
   isStale,
   parseMoney,
@@ -15,6 +16,7 @@ import {
   type LegalGrade,
   type PriceQuote,
 } from './boughtBook'
+import { explainWatchCode, type PrintRow } from './printResolve'
 
 export const WATCH_ID_RE = /^WL-\d{4,}$/
 export const MAX_WATCH = 2000
@@ -25,9 +27,13 @@ export interface WatchItem {
   id: string
   code: string
   grade: WatchGrade
-  targetSgd: number
+  targetSgd: number | null
   notes: string
   added: string
+  /** Chase id such as CH-001. Null when the row was not given one. */
+  externalId?: string | null
+  /** Click-through only. Never fetched, never used as a price. */
+  priceChartingUrl?: string | null
 }
 
 export interface WatchDoc {
@@ -41,6 +47,7 @@ export interface ValuedWatchItem extends WatchItem {
   priceSgd: number | null
   source: string | null
   asOf: string | null
+  url: string | null
   /** The words to show when there is no English price. Null when priceSgd is set. */
   priceLabel: typeof NO_PRICE_YET | null
   hit: boolean
@@ -48,6 +55,7 @@ export interface ValuedWatchItem extends WatchItem {
 }
 
 export interface WatchHit {
+  type: 'watchlist'
   id: string
   code: string
   grade: WatchGrade
@@ -55,8 +63,11 @@ export interface WatchHit {
   priceSgd: number
   source: string
   asOf: string
+  url: string | null
   stale: boolean
   previousLowSgd: number | null
+  dismissed?: boolean
+  firedAt?: string | null
 }
 
 export interface WatchFailure {
@@ -65,6 +76,7 @@ export interface WatchFailure {
   error: string
   detail?: string
   revision?: number
+  candidates?: string[]
 }
 
 export function emptyWatch(): WatchDoc {
@@ -103,17 +115,20 @@ export function valueWatchItem(item: WatchItem, quoteFor: QuoteFor, today: strin
   const grade = typeof item.grade === 'string' ? canonicalGrade(item.grade) : null
   const quoted = grade ? quoteFor(item.code, grade) : null
   const quote = isEnglishStoredQuote(quoted) ? quoted : null
+  const stored = { ...item, externalId: item.externalId ?? null, priceChartingUrl: item.priceChartingUrl ?? null }
   if (!quote) {
-    return { ...item, priceSgd: null, source: null, asOf: null, priceLabel: NO_PRICE_YET, hit: false, stale: false }
+    return { ...stored, priceSgd: null, source: null, asOf: null, url: null, priceLabel: NO_PRICE_YET, hit: false, stale: false }
   }
   const stale = isStale(quote.asOf, today)
+  const hit = item.targetSgd != null && !stale && quote.sgd <= item.targetSgd
   return {
-    ...item,
+    ...stored,
     priceSgd: quote.sgd,
     source: quote.source,
     asOf: quote.asOf,
+    url: quote.url,
     priceLabel: null,
-    hit: quote.sgd <= item.targetSgd,
+    hit,
     stale,
   }
 }
@@ -126,13 +141,40 @@ export function valueWatchItems(items: WatchItem[], quoteFor: QuoteFor, today: s
  * Fire when the English price is at or under the target.
  * The same price does not fire again. A strictly lower price does.
  */
+export function watchAlertList(items: ValuedWatchItem[], memory: AlertMemory, includeDismissed = false): WatchHit[] {
+  const hits: WatchHit[] = []
+  for (const item of items) {
+    if (item.priceSgd == null || item.targetSgd == null || !item.source || !item.asOf || item.stale) continue
+    if (item.priceSgd > item.targetSgd) continue
+    const prev = memory[item.id]
+    const dismissed = prev != null && item.priceSgd >= prev
+    if (dismissed && !includeDismissed) continue
+    hits.push({
+      type: 'watchlist',
+      id: item.id,
+      code: item.code,
+      grade: item.grade,
+      targetSgd: item.targetSgd,
+      priceSgd: item.priceSgd,
+      source: item.source,
+      asOf: item.asOf,
+      url: item.url,
+      stale: false,
+      previousLowSgd: prev ?? null,
+      dismissed,
+    })
+  }
+  return hits
+}
+
 export function freshWatchHits(items: ValuedWatchItem[], memory: AlertMemory): WatchHit[] {
   const hits: WatchHit[] = []
   for (const item of items) {
-    if (!item.hit || item.priceSgd == null || !item.source || !item.asOf) continue
+    if (!item.hit || item.stale || item.priceSgd == null || item.targetSgd == null || !item.source || !item.asOf) continue
     const prev = memory[item.id]
     if (prev == null || item.priceSgd < prev) {
       hits.push({
+        type: 'watchlist',
         id: item.id,
         code: item.code,
         grade: item.grade,
@@ -140,8 +182,10 @@ export function freshWatchHits(items: ValuedWatchItem[], memory: AlertMemory): W
         priceSgd: item.priceSgd,
         source: item.source,
         asOf: item.asOf,
+        url: item.url,
         stale: item.stale,
         previousLowSgd: prev ?? null,
+        dismissed: false,
       })
     }
   }
@@ -157,8 +201,15 @@ export function dismissWatchHits(memory: AlertMemory, hits: WatchHit[]): AlertMe
   return next
 }
 
-function fail(status: number, error: string, detail?: string, revision?: number): WatchFailure {
-  return { ok: false, status, error, ...(detail ? { detail } : {}), ...(revision != null ? { revision } : {}) }
+function fail(status: number, error: string, detail?: string, revision?: number, candidates?: string[]): WatchFailure {
+  return {
+    ok: false,
+    status,
+    error,
+    ...(detail ? { detail } : {}),
+    ...(revision != null ? { revision } : {}),
+    ...(candidates ? { candidates } : {}),
+  }
 }
 
 function asRecord(body: unknown): Record<string, unknown> | null {
@@ -192,11 +243,27 @@ function readGrade(value: unknown): WatchGrade | WatchFailure {
   return fail(400, 'bad_field', 'grade')
 }
 
-function readTarget(value: unknown): number | WatchFailure {
-  if (value == null || value === '') return fail(400, 'bad_field', 'targetSgd')
+function readTarget(value: unknown): number | null | WatchFailure {
+  if (value == null || value === '') return null
   const n = typeof value === 'number' ? value : typeof value === 'string' ? parseMoney(value) : null
   if (n == null || !Number.isFinite(n) || n < 0) return fail(400, 'bad_field', 'targetSgd')
   return round2(n)
+}
+
+function readExternalId(value: unknown): string | null | WatchFailure {
+  if (value == null || value === '') return null
+  if (typeof value !== 'string') return fail(400, 'bad_field', 'externalId')
+  const id = value.trim().toUpperCase()
+  if (!/^CH-\d{3,}$/.test(id)) return fail(400, 'bad_field', 'externalId')
+  return id
+}
+
+function readLink(value: unknown): string | null | WatchFailure {
+  if (value == null || value === '') return null
+  if (typeof value !== 'string') return fail(400, 'bad_field', 'priceChartingUrl')
+  const url = httpsUrl(value)
+  if (!url || url.length > 400) return fail(400, 'bad_url')
+  return url
 }
 
 function readNotes(value: unknown): string | WatchFailure {
@@ -236,6 +303,14 @@ function applyItem(base: WatchItem, body: Record<string, unknown>, today: string
       const notes = readNotes(value)
       if (isFail(notes)) return notes
       next.notes = notes
+    } else if (key === 'externalId') {
+      const externalId = readExternalId(value)
+      if (isFail(externalId)) return externalId
+      next.externalId = externalId
+    } else if (key === 'priceChartingUrl') {
+      const url = readLink(value)
+      if (isFail(url)) return url
+      next.priceChartingUrl = url
     } else if (key === 'added') {
       const added = readAdded(value, today)
       if (isFail(added)) return added
@@ -245,12 +320,13 @@ function applyItem(base: WatchItem, body: Record<string, unknown>, today: string
   return next
 }
 
-const WRITE_KEYS = ['code', 'grade', 'targetSgd', 'notes', 'added']
+const WRITE_KEYS = ['code', 'grade', 'targetSgd', 'notes', 'added', 'externalId', 'priceChartingUrl']
 
 export function createWatchItem(
   doc: WatchDoc,
   body: unknown,
   today: string,
+  prints: PrintRow[] = [],
 ): { ok: true; doc: WatchDoc; item: WatchItem } | WatchFailure {
   const raw = asRecord(body)
   if (!raw) return fail(400, 'bad_request')
@@ -263,11 +339,26 @@ export function createWatchItem(
     id = raw.id.trim()
   }
   if (doc.items.some((item) => item.id === id)) return fail(409, 'duplicate_id', id)
-  const applied = applyItem({ id, code: '', grade: 'Raw', targetSgd: 0, notes: '', added: today }, raw, today, WRITE_KEYS)
+  const applied = applyItem(
+    { id, code: '', grade: 'Raw', targetSgd: null, notes: '', added: today, externalId: null, priceChartingUrl: null },
+    raw,
+    today,
+    WRITE_KEYS,
+  )
   if (isFail(applied)) return applied
   if (!applied.code) return fail(400, 'bad_field', 'code')
   if (!Object.prototype.hasOwnProperty.call(raw, 'grade')) return fail(400, 'bad_field', 'grade')
-  if (!Object.prototype.hasOwnProperty.call(raw, 'targetSgd')) return fail(400, 'bad_field', 'targetSgd')
+  if (prints.length) {
+    const named = explainWatchCode(applied.code, prints)
+    if (!named.ok) return fail(400, named.error, named.detail, undefined, named.candidates)
+    applied.code = named.print.cardNumber
+  }
+  if (doc.items.some((item) => item.code.toUpperCase() === applied.code.toUpperCase() && item.grade === applied.grade)) {
+    return fail(409, 'duplicate_print', `${applied.code} ${applied.grade}`)
+  }
+  if (applied.externalId && doc.items.some((item) => item.externalId === applied.externalId)) {
+    return fail(409, 'duplicate_external_id', applied.externalId)
+  }
   const used = idNumber(id) ?? highWater(doc) - 1
   return { ok: true, doc: { revision: doc.revision + 1, next: Math.max(highWater(doc), used + 1), items: [...doc.items, applied] }, item: applied }
 }
@@ -277,6 +368,7 @@ export function patchWatchItem(
   id: string,
   body: unknown,
   today: string,
+  prints: PrintRow[] = [],
 ): { ok: true; doc: WatchDoc; item: WatchItem } | WatchFailure {
   const raw = asRecord(body)
   if (!raw) return fail(400, 'bad_request')
@@ -284,9 +376,20 @@ export function patchWatchItem(
   if (rev) return rev
   const idx = doc.items.findIndex((item) => item.id === id)
   if (idx < 0) return fail(404, 'not_found')
-  const applied = applyItem(doc.items[idx], raw, today, WRITE_KEYS)
+  let applied = applyItem(doc.items[idx], raw, today, WRITE_KEYS)
   if (isFail(applied)) return applied
   if (!applied.code) return fail(400, 'bad_field', 'code')
+  if (prints.length) {
+    const named = explainWatchCode(applied.code, prints)
+    if (!named.ok) return fail(400, named.error, named.detail, undefined, named.candidates)
+    applied = { ...applied, code: named.print.cardNumber }
+  }
+  if (doc.items.some((item, i) => i !== idx && item.code.toUpperCase() === applied.code.toUpperCase() && item.grade === applied.grade)) {
+    return fail(409, 'duplicate_print', `${applied.code} ${applied.grade}`)
+  }
+  if (applied.externalId && doc.items.some((item, i) => i !== idx && item.externalId === applied.externalId)) {
+    return fail(409, 'duplicate_external_id', applied.externalId)
+  }
   const items = doc.items.slice()
   items[idx] = { ...applied, id }
   return { ok: true, doc: { revision: doc.revision + 1, next: highWater(doc), items }, item: items[idx] }
