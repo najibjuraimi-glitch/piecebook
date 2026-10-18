@@ -31,6 +31,8 @@ import {
   SCENE_STEADY_MS,
   boxIoU,
   compareFrames,
+  contentMotionComputeCount,
+  DIM_FRAME_MEAN,
   dryStreakAfterDiscard,
   emptySeen,
   greyDownscale,
@@ -765,6 +767,50 @@ function swapWholeRow1(img: PixelImage): PixelImage {
   return repaint(img, 0, 0, img.width, 90)
 }
 
+function casePortrait(): PixelImage {
+  const width = 196
+  const height = 256
+  const data = new Uint8ClampedArray(width * height * 4)
+  const cols = 3
+  const rows = 4
+  const cw = Math.floor(width / cols)
+  const ch = Math.floor(height / rows)
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const col = Math.min(cols - 1, Math.floor(x / cw))
+      const row = Math.min(rows - 1, Math.floor(y / ch))
+      const period = 12 + row * 4
+      const phase = col * 5 + row
+      const on = Math.floor((x + phase * 3) / period) % 2 === Math.floor((y + phase) / (8 + col * 2)) % 2
+      const tone = on ? 30 + row * 25 + col * 15 : 210 - row * 10
+      const i = (y * width + x) * 4
+      data[i] = tone
+      data[i + 1] = Math.min(255, tone + 20)
+      data[i + 2] = Math.max(0, 180 - tone)
+      data[i + 3] = 255
+    }
+  }
+  return { width, height, data }
+}
+
+function noisy(img: PixelImage, sigma: number, seed = 8): PixelImage {
+  const out = copy(img)
+  let state = seed
+  const rand = () => {
+    state = (Math.imul(state, 1664525) + 1013904223) >>> 0
+    return state / 4294967296
+  }
+  for (let i = 0; i < out.data.length; i += 4) {
+    const u = Math.max(1e-9, rand())
+    const v = rand()
+    const n = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) * sigma
+    out.data[i] = Math.max(0, Math.min(255, Math.round(out.data[i] + n)))
+    out.data[i + 1] = Math.max(0, Math.min(255, Math.round(out.data[i + 1] + n)))
+    out.data[i + 2] = Math.max(0, Math.min(255, Math.round(out.data[i + 2] + n)))
+  }
+  return out
+}
+
 function expose(img: PixelImage, factor: number): PixelImage {
   const data = new Uint8ClampedArray(img.data.length)
   for (let i = 0; i < img.data.length; i += 4) {
@@ -1278,6 +1324,74 @@ describe('case view: one steady second, then not the same scene again', () => {
     expect(blink.scans).toBeLessThan(10)
     expect(blink.resumeCount).toBe(0)
     expect(blink.paused).toBe(true)
+  })
+
+  it('floors near-black noise, keeps a pale sleeve and a white table over the gate, and sees a dim pan', () => {
+    const img = casePortrait()
+    const anchor = greyDownscale(img)
+    const before = contentMotionComputeCount()
+    const lit = compareFrames(anchor, greyDownscale(translateImage(img, 0.1)))
+    expect(contentMotionComputeCount()).toBe(before)
+    expect(sceneMoved(lit)).toBe(true)
+    expect(contentMotionComputeCount()).toBe(before)
+    const still = compareFrames(anchor, anchor)
+    expect(contentMotionComputeCount()).toBe(before)
+    expect(still.contentResidual).toBe(0)
+    expect(contentMotionComputeCount()).toBe(before + 1)
+    expect(still.contentShiftFrac).toBe(0)
+    expect(contentMotionComputeCount()).toBe(before + 1)
+
+    const dark = expose(img, 0.05)
+    const noise = compareFrames(greyDownscale(dark), greyDownscale(noisy(dark, 8)))
+    expect(noise.frameMean ?? 255).toBeLessThan(20)
+    expect(noise.contentResidual ?? 99).toBeLessThan(PAUSE_RESUME_RESIDUAL)
+    expect(resumesPausedScan(noise)).toBe(false)
+    expect(unreadSlabsAreNew(noise)).toBe(false)
+
+    const sleeveImg = copy(img)
+    for (let y = 0; y < img.height; y += 1) {
+      for (let x = 0; x < img.width; x += 1) {
+        const tone = Math.floor(y / 18) % 2 === 0 ? 214 : 236
+        const i = (y * img.width + x) * 4
+        sleeveImg.data[i] = sleeveImg.data[i + 1] = sleeveImg.data[i + 2] = tone
+      }
+    }
+    const sleeve = compareFrames(anchor, greyDownscale(sleeveImg))
+    expect(sleeve.contentResidual ?? 0).toBeGreaterThan(PAUSE_RESUME_RESIDUAL)
+    expect(sleeve.contentResidual ?? 0).toBeLessThan(20)
+    expect(resumesPausedScan(sleeve)).toBe(true)
+
+    const tableImg = copy(img)
+    for (let y = 0; y < img.height * 0.85; y += 1) {
+      for (let x = 0; x < img.width; x += 1) {
+        const i = (y * img.width + x) * 4
+        tableImg.data[i] = tableImg.data[i + 1] = tableImg.data[i + 2] = 250
+      }
+    }
+    const table = compareFrames(anchor, greyDownscale(tableImg))
+    expect(table.contentResidual ?? 0).toBeGreaterThan(PAUSE_RESUME_RESIDUAL)
+    expect(resumesPausedScan(table)).toBe(true)
+    expect(unreadSlabsAreNew(table)).toBe(true)
+
+    for (const frac of [0.1, 0.2, 0.3]) {
+      const started = contentMotionComputeCount()
+      const dimA = noisy(expose(img, 0.15), 7, 11)
+      const dimB = noisy(expose(translateImage(img, frac), 0.15), 7, 12)
+      const motion = compareFrames(greyDownscale(dimA), greyDownscale(dimB))
+      expect(contentMotionComputeCount()).toBe(started)
+      expect(motion.frameMean ?? 255).toBeLessThan(DIM_FRAME_MEAN)
+      expect(motion.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+      expect(motion.residual).toBeLessThan(SCENE_MOVE_MAD)
+      expect(sceneMoved(motion)).toBe(true)
+      expect(contentMotionComputeCount()).toBe(started + 1)
+      expect(motion.contentShiftFrac ?? 0).toBeGreaterThan(frac - 0.03)
+      expect(motion.contentShiftFrac ?? 0).toBeLessThan(frac + 0.03)
+      let step = stepSceneHold(initialSceneHold(), greyDownscale(dimA), 0)
+      step = stepSceneHold(step.state, greyDownscale(dimB), 200)
+      expect(step.moved).toBe(false)
+      step = stepSceneHold(step.state, greyDownscale(dimB), 400)
+      expect(step.moved).toBe(true)
+    }
   })
 
   it('times the moving-read hold from one frame to the next', () => {

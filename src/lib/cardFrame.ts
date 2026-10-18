@@ -548,10 +548,20 @@ export const CONTENT_MEAN_RADIUS = 10
 /** Ratio images are put back on this grey level before the residual is measured. */
 export const CONTENT_LEVEL = 128
 /**
- * A paused scan resumes when the local-mean residual reaches this.
- * Shadows, even a dark half plus a small sway, stay under it. A row swap clears it.
+ * The local mean never divides by less than this. Near-black pixels would
+ * otherwise turn sensor noise into a fake row change.
  */
-export const PAUSE_RESUME_RESIDUAL = 16
+export const CONTENT_MEAN_FLOOR = 24
+/**
+ * Below this grey level the raw block match misses a real pan. The local-mean
+ * shift is consulted only then, so a normally lit tick does not pay for it.
+ */
+export const DIM_FRAME_MEAN = 40
+/**
+ * A paused scan resumes when the local-mean residual reaches this.
+ * Shadows and sensor noise stay under it. A pale sleeve or a white table clears it.
+ */
+export const PAUSE_RESUME_RESIDUAL = 15
 
 export interface GreyFrame {
   width: number
@@ -566,11 +576,13 @@ export interface FrameMotion {
   residual: number
   /**
    * Residual after each frame is divided by its local mean.
-   * Set by compareFrames. Synthetic motions may omit it and the gates fall back to residual.
+   * Computed the first time it is read. Synthetic motions may set it directly.
    */
   contentResidual?: number
-  /** Shift measured on the local-mean frames. A shadow can hide the raw shift. */
+  /** Shift measured on the local-mean frames. A shadow or a dim frame can hide the raw shift. */
   contentShiftFrac?: number
+  /** Mean grey of the darker frame. A low value means the raw shift is not trusted. */
+  frameMean?: number
   dx: number
   dy: number
   /** Shift length. X is a share of the width and y a share of the height, then combined. */
@@ -786,7 +798,8 @@ export function divideByLocalMean(frame: GreyFrame, radius = CONTENT_MEAN_RADIUS
       const x0 = Math.max(0, x - radius)
       const x1 = Math.min(width, x + radius + 1)
       const mean = (at(x1, y1) - at(x0, y1) - at(x1, y0) + at(x0, y0)) / ((x1 - x0) * (y1 - y0))
-      const ratio = mean > 0 ? (data[y * width + x] / mean) * CONTENT_LEVEL : CONTENT_LEVEL
+      const divisor = Math.max(mean, CONTENT_MEAN_FLOOR)
+      const ratio = (data[y * width + x] / divisor) * CONTENT_LEVEL
       out[y * width + x] = Math.max(0, Math.min(255, Math.round(ratio)))
     }
   }
@@ -810,20 +823,60 @@ function motionOf(anchor: GreyFrame, next: GreyFrame): FrameMotion {
   return { mad, residual, dx: shift.dx, dy: shift.dy, shiftFrac }
 }
 
-/** Shift first, then the residual of the aligned frames. A shift that does not actually line the pictures up is dropped. */
+function greyMean(frame: GreyFrame): number {
+  let sum = 0
+  const data = frame.data
+  for (let i = 0; i < data.length; i += 1) sum += data[i]
+  return data.length ? sum / data.length : 0
+}
+
+/** How many times the local-mean comparison has actually run. A lit frame does not add one. */
+let contentMotionComputes = 0
+export function contentMotionComputeCount(): number {
+  return contentMotionComputes
+}
+
+/**
+ * Shift first, then the residual of the aligned frames. A shift that does not
+ * actually line the pictures up is dropped. The local-mean comparison waits
+ * until a gate reads it.
+ */
 export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
   const raw = motionOf(anchor, next)
-  const content = motionOf(divideByLocalMean(anchor), divideByLocalMean(next))
-  return { ...raw, contentResidual: content.residual, contentShiftFrac: content.shiftFrac }
+  let content: FrameMotion | undefined
+  const ensure = () => {
+    if (!content) {
+      contentMotionComputes += 1
+      content = motionOf(divideByLocalMean(anchor), divideByLocalMean(next))
+    }
+    return content
+  }
+  return {
+    mad: raw.mad,
+    residual: raw.residual,
+    dx: raw.dx,
+    dy: raw.dy,
+    shiftFrac: raw.shiftFrac,
+    frameMean: Math.min(greyMean(anchor), greyMean(next)),
+    get contentResidual() {
+      return ensure().residual
+    },
+    get contentShiftFrac() {
+      return ensure().shiftFrac
+    },
+  }
 }
 
 /**
  * Moved when the frame slid by about 6% of its width or its height.
  * A tremble or an exposure change stays put: the residual after aligning,
  * removing the mean, and blurring has to clear the bar on its own.
+ * In dim light the raw match misses a real pan, so the local-mean shift counts too.
  */
 export function sceneMoved(motion: FrameMotion): boolean {
-  return motion.shiftFrac >= SCENE_MOVE_FRAC || motion.residual >= SCENE_MOVE_MAD
+  if (motion.shiftFrac >= SCENE_MOVE_FRAC || motion.residual >= SCENE_MOVE_MAD) return true
+  if ((motion.frameMean ?? 255) >= DIM_FRAME_MEAN) return false
+  return (motion.contentShiftFrac ?? 0) >= SCENE_MOVE_FRAC
 }
 
 /** A slide of about 20% of the width or the height, or a picture that still disagrees after aligning. */
@@ -833,8 +886,8 @@ export function substantialSceneChange(motion: FrameMotion): boolean {
 
 /**
  * A paused scan resumes on a slide of about 20% of the frame, or when the
- * local-mean residual reaches about 16. A shadow does not. A 15% pan does not.
- * A row swap does.
+ * local-mean residual reaches about 15. A shadow or sensor noise does not.
+ * A pale sleeve or a white table does. A 15% pan does not. A row swap does.
  */
 export function resumesPausedScan(motion: FrameMotion | null): boolean {
   if (!motion) return false
