@@ -1,11 +1,10 @@
 import { useEffect } from 'react'
-import { Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useNavigationType } from 'react-router-dom'
 import { TabBar } from './components/TabBar'
 import { TopBar } from './components/TopBar'
 import { SetsScreen } from './screens/Sets'
 import { SetDetailScreen } from './screens/SetDetail'
 import { CardDetailScreen } from './screens/CardDetail'
-import { CollectionScreen } from './screens/Collection'
 import { HoldingFormScreen } from './screens/HoldingForm'
 import { PortfolioScreen } from './screens/Portfolio'
 import { WatchlistScreen } from './screens/Watchlist'
@@ -50,7 +49,7 @@ export default function App() {
         <Route path="/" element={<SetsScreen />} />
         <Route path="/sets/:setCode" element={<SetDetailScreen />} />
         <Route path="/cards/:cardNumber" element={<CardDetailScreen />} />
-        <Route path="/collection" element={<CollectionScreen />} />
+        <Route path="/collection" element={<Navigate to="/portfolio" replace />} />
         <Route path="/portfolio" element={<PortfolioScreen />} />
         <Route path="/portfolio/new" element={<HoldingFormScreen mode="add" />} />
         <Route path="/portfolio/:rowId/sold" element={<HoldingFormScreen mode="sold" />} />

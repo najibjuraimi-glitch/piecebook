@@ -14,14 +14,13 @@ export const isBelongSection = (p: string) => p === '/belong' || p.startsWith('/
 
 const LINKS = [
   { to: '/', label: 'Sets', match: isSetsSection },
-  { to: '/collection', label: 'Collection', match: (p: string) => p.startsWith('/collection') },
   { to: '/decks', label: 'Decks', match: (p: string) => p.startsWith('/decks') },
   { to: '/portfolio', label: 'Portfolio', match: (p: string) => p.startsWith('/portfolio') || p.startsWith('/watchlist') },
   { to: '/belong', label: 'World', match: isBelongSection },
 ]
 
 /**
- * Tablet/desktop chrome: wordmark left, five text links right. Nothing else —
+ * Tablet/desktop chrome: wordmark left, four text links right. Nothing else —
  * no search, cart, charts or bell. Hidden on phone, where the TabBar takes over.
  */
 export function TopBar({ pathname }: { pathname: string }) {

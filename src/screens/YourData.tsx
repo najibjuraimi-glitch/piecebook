@@ -85,7 +85,7 @@ export function YourDataScreen() {
 
   return (
     <Screen>
-      <BackBar fallbackTo="/collection" crumbs={[{ label: 'Collection', to: '/collection' }, { label: 'Your data' }]} />
+      <BackBar fallbackTo="/portfolio" crumbs={[{ label: 'Portfolio', to: '/portfolio' }, { label: 'Your data' }]} />
       <h1 className="text-display text-ink">Your data</h1>
       <p className="mt-2 max-w-[60ch] text-body text-ink">
         On this device: {describeSummary(local)}. Prices and the catalogue are not part of this; they ship with the app.

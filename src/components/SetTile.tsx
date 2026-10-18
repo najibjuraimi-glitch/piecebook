@@ -4,7 +4,7 @@ import { getSet } from '../data/seed'
 import { comingLine, displayCode, displayName, isUpcoming, productLabel, rosterSealedProduct, type RosterSet } from '../data/roster'
 import { latestBoxPrice } from '../data/boxPrices'
 import { formatDate, formatUsMarketUsd, pluralCards } from '../lib/format'
-import { useCollection } from '../store/collection'
+import { useHoldingsBook } from '../store/holdingsBook'
 import { useWatchlist } from '../store/watchlist'
 import { SealedPrice } from './SealedPrice'
 import { StarIcon } from './StarButton'
@@ -29,8 +29,8 @@ export function SetTile({ set }: { set: RosterSet }) {
   const name = displayName(set)
   const coming = upcoming ? comingLine(set) : null
   const watching = useWatchlist().isWatchingSet(set.setCode)
-  const { isOwned } = useCollection()
-  const ownedInSet = catalog ? catalog.cards.filter((c) => isOwned(c.cardNumber)).length : 0
+  const { inPortfolio } = useHoldingsBook()
+  const inBook = catalog ? catalog.cards.filter((c) => inPortfolio(c.cardNumber)).length : 0
   return (
     <Link
       to={`/sets/${encodeURIComponent(set.setCode)}`}
@@ -62,7 +62,7 @@ export function SetTile({ set }: { set: RosterSet }) {
         ) : (
           <p className="tabular mt-1 text-meta text-muted">
             {catalog ? (set.product === 'starter_deck' ? `${catalog.cards.length} different cards` : pluralCards(catalog.cards.length)) : 'Checklist soon'}
-            {ownedInSet > 0 && <span className="text-ink"> · you own {ownedInSet}</span>}
+            {inBook > 0 && <span className="text-ink"> · {inBook} in your portfolio</span>}
           </p>
         )}
 

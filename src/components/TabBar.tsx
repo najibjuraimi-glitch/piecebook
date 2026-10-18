@@ -3,7 +3,6 @@ import { isBelongSection, isSetsSection } from './TopBar'
 
 const TABS = [
   { to: '/', label: 'Sets', icon: SetsIcon, match: isSetsSection },
-  { to: '/collection', label: 'Collection', icon: CollectionIcon, match: (p: string) => p.startsWith('/collection') },
   { to: '/decks', label: 'Decks', icon: DecksIcon, match: (p: string) => p.startsWith('/decks') },
   { to: '/portfolio', label: 'Portfolio', icon: PortfolioIcon, match: (p: string) => p.startsWith('/portfolio') || p.startsWith('/watchlist') },
   { to: '/belong', label: 'World', icon: BelongIcon, match: isBelongSection },
@@ -45,15 +44,6 @@ function SetsIcon({ active }: { active: boolean }) {
     <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
       <rect x="4" y="5" width="11" height="15" rx="2" stroke="currentColor" strokeWidth="1.75" fill={active ? 'currentColor' : 'none'} />
       <path d="M17 6.5l2.5.7a1.5 1.5 0 011 1.9L17.4 19" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function CollectionIcon({ active }: { active: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
-      <rect x="3.5" y="4.5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.75" fill={active ? 'currentColor' : 'none'} />
-      <path d="M8 12.5l2.5 2.5 5.5-5.5" stroke={active ? '#F7F5F0' : 'currentColor'} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
