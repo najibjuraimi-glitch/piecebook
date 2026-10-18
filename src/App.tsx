@@ -10,6 +10,7 @@ import { PortfolioScreen } from './screens/Portfolio'
 import { WatchlistScreen } from './screens/Watchlist'
 import { WatchItemForm } from './screens/WatchItemForm'
 import { BidCalculator } from './screens/BidCalculator'
+import { ScanScreen } from './screens/Scan'
 import { NotFoundScreen } from './screens/NotFound'
 import { AboutPricesScreen } from './screens/AboutPrices'
 import { CharacterScreen } from './screens/Character'
@@ -59,6 +60,7 @@ export default function App() {
         <Route path="/watchlist/new" element={<WatchItemForm mode="add" />} />
         <Route path="/watchlist/:id" element={<WatchItemForm mode="edit" />} />
         <Route path="/bid" element={<BidCalculator />} />
+        <Route path="/scan" element={<ScanScreen />} />
         <Route path="/about-prices" element={<AboutPricesScreen />} />
         <Route path="/data" element={<DataHealthScreen />} />
         <Route path="/characters/:name" element={<CharacterScreen />} />

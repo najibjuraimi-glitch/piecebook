@@ -60,7 +60,8 @@ export function BidCalculator() {
   const ids = useId()
   const [params] = useSearchParams()
   const itemId = params.get('item')?.trim() || ''
-  const [mode, setMode] = useState<Mode>(itemId ? 'max' : 'all-in')
+  const lotTarget = params.get('target')?.trim() || ''
+  const [mode, setMode] = useState<Mode>(itemId || lotTarget ? 'max' : 'all-in')
   const [preset, setPreset] = useState<PremiumPresetId | 'custom'>('ebay')
   const [customPercent, setCustomPercent] = useState('')
   const [feePreset, setFeePreset] = useState<FeePresetId | 'custom'>('ebay')
@@ -73,7 +74,7 @@ export function BidCalculator() {
   const [fx, setFx] = useState('')
   const [fxDate, setFxDate] = useState('')
   const [gstMode, setGstMode] = useState<GstMode>('auto')
-  const [target, setTarget] = useState('')
+  const [target, setTarget] = useState(lotTarget)
   const [linked, setLinked] = useState<ValuedWatchItem | null>(null)
   const [linkNote, setLinkNote] = useState<string | null>(itemId ? 'Loading the watch row…' : null)
 
