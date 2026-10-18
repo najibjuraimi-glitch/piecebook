@@ -481,12 +481,14 @@ describe('scan camera', () => {
     expect(view.querySelector('[data-testid="scan-moved"]')).toBeNull()
     await shoot(80)
     expect(view.textContent).toContain('Hold still, tap to scan')
-    await waitUntil(() => view.querySelector<HTMLButtonElement>('[data-testid="scan-shutter"]')?.disabled === false, 2500)
+    expect(view.querySelector<HTMLButtonElement>('[data-testid="scan-shutter"]')?.disabled).toBe(true)
     const before = scans.length
     await act(async () => {
       view.querySelector<HTMLButtonElement>('[data-testid="scan-settle"]')?.click()
       await new Promise((resolve) => setTimeout(resolve, 40))
     })
+    expect(scans.length).toBe(before)
+    expect(await waitUntil(() => scans.length > before, 3000)).toBe(true)
     pan = 80
     await act(async () => {
       release?.()

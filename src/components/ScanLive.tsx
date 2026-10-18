@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VISION_URL } from '../config/vision'
-import { compareFrames, emptySeen, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, scanIntervalOpen, sceneMoved, stepFrameHold, stepSceneHold, substantialSceneChange, unreadBoxMotion, type GreyFrame, type SceneHold } from '../lib/cardFrame'
+import { compareFrames, emptySeen, forgetsSeenCards, greyDownscale, initialSceneHold, labelOffset, markSceneScanned, MOVED_HOLD_AFTER, MOVED_HOLD_MS, nextDryStreak, placeRead, rearmAfterDiscard, scanIntervalOpen, sceneMoved, stepFrameHold, stepSceneHold, substantialSceneChange, unreadBoxMotion, type GreyFrame, type SceneHold } from '../lib/cardFrame'
 import type { PixelImage } from '../lib/centering'
 import { overlayForCard, placeOverlayLabels, type BookPrice, type LabelTone } from '../lib/scanLabel'
 import type { ScanSummary, WatchTarget } from '../lib/scanMatch'
@@ -145,6 +145,9 @@ export function ScanLive({
   const [shot, setShot] = useState<LiveShot | null>(null)
   const [labelsCurrent, setLabelsCurrent] = useState(false)
   const [shutterReady, setShutterReady] = useState(false)
+  const shutterReadyRef = useRef(false)
+  const queuedTap = useRef(false)
+  const shutterTimer = useRef(0)
   const [usage, setUsage] = useState<{ today: number; cap: number } | null>(null)
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [videoSize, setVideoSize] = useState({ w: 0, h: 0 })
@@ -188,7 +191,6 @@ export function ScanLive({
     let cancelled = false
     let videoEl: HTMLVideoElement | null = null
     let markLive: (() => void) | null = null
-    let shutterTimer = 0
     const open = async () => {
       const high = { audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 3840 }, height: { ideal: 2160 } } }
       const plain = { audio: false, video: { facingMode: { ideal: 'environment' } } }
@@ -217,7 +219,15 @@ export function ScanLive({
         video.addEventListener('loadedmetadata', markLive)
         video.addEventListener('resize', markLive)
         void video.play().then(markLive).catch(() => undefined)
-        shutterTimer = window.setTimeout(() => setShutterReady(true), SHUTTER_WAIT_MS)
+        window.clearTimeout(shutterTimer.current)
+        shutterTimer.current = window.setTimeout(() => {
+          shutterReadyRef.current = true
+          setShutterReady(true)
+          if (queuedTap.current) {
+            queuedTap.current = false
+            void sendRef.current(true)
+          }
+        }, SHUTTER_WAIT_MS)
       } catch (err) {
         if (cancelled) return
         unavailableRef.current(cameraErrorText(err))
@@ -226,7 +236,7 @@ export function ScanLive({
     void open()
     return () => {
       cancelled = true
-      window.clearTimeout(shutterTimer)
+      window.clearTimeout(shutterTimer.current)
       if (videoEl && markLive) {
         videoEl.removeEventListener('loadedmetadata', markLive)
         videoEl.removeEventListener('resize', markLive)
@@ -258,14 +268,26 @@ export function ScanLive({
   }
 
   const armShutter = useCallback(() => {
+    shutterReadyRef.current = false
     setShutterReady(false)
-    window.setTimeout(() => setShutterReady(true), SHUTTER_WAIT_MS)
+    window.clearTimeout(shutterTimer.current)
+    shutterTimer.current = window.setTimeout(() => {
+      shutterReadyRef.current = true
+      setShutterReady(true)
+      if (queuedTap.current) {
+        queuedTap.current = false
+        void sendRef.current(true)
+      }
+    }, SHUTTER_WAIT_MS)
   }, [])
 
   const send = useCallback(
     async (manual: boolean) => {
       if (busyRef.current) return
-      if (manual && !shutterReady) return
+      if (manual && !shutterReadyRef.current) {
+        queuedTap.current = true
+        return
+      }
       if (!manual && (autoPausedRef.current || !scanIntervalOpen(lastScanAt.current, Date.now()))) return
       const video = videoRef.current
       const stream = streamRef.current
@@ -282,7 +304,10 @@ export function ScanLive({
       if (!manual) holdRef.current = markSceneScanned(holdRef.current)
       const signature = frameGrey()
       setReading(true)
-      if (manual) setShutterReady(false)
+      if (manual) {
+        shutterReadyRef.current = false
+        setShutterReady(false)
+      }
       try {
         const blob = await captureStill(video, stream)
         if (!blob) {
@@ -328,7 +353,8 @@ export function ScanLive({
         if (!show) {
           setLabelsCurrent(false)
           setLabelShift({ x: 0, y: 0 })
-          if (motion && substantialSceneChange(motion)) forgetSeen()
+          if (forgetsSeenCards(motion)) forgetSeen()
+          holdRef.current = rearmAfterDiscard(holdRef.current)
         } else {
           const width = signature?.width ?? nowFrame?.width ?? 1
           const height = signature?.height ?? nowFrame?.height ?? 1
@@ -337,7 +363,7 @@ export function ScanLive({
           const current = signature ?? nowFrame
           const from = seenFrame.current
           const between = from && current ? compareFrames(from, current) : null
-          if (between && substantialSceneChange(between)) forgetSeen()
+          if (forgetsSeenCards(between)) forgetSeen()
           const boxMotion = unreadBoxMotion(between, from?.width ?? width, from?.height ?? height)
           const outcome = nextDryStreak(seenCards.current, dryStreak.current, result.scan.cards, boxMotion)
           seenCards.current = outcome.seen
@@ -358,7 +384,7 @@ export function ScanLive({
         if (manual) armShutter()
       }
     },
-    [armShutter, frameGrey, onScan, shutterReady],
+    [armShutter, frameGrey, onScan],
   )
   sendRef.current = send
 
@@ -405,7 +431,7 @@ export function ScanLive({
           if (step.moved) {
             failuresRef.current = 0
             setDim(true)
-            if (step.motion && substantialSceneChange(step.motion)) forgetSeen()
+            if (forgetsSeenCards(step.motion)) forgetSeen()
           } else if (step.steady) setDim(false)
           if (movedReads.current >= MOVED_HOLD_AFTER) {
             const hop = prevTickFrame.current ? compareFrames(prevTickFrame.current, frame) : null

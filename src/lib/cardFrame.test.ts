@@ -35,10 +35,12 @@ import {
   initialSceneHold,
   insideQuad,
   invertMat3,
+  forgetsSeenCards,
   labelOffset,
   markSceneScanned,
   nextDryStreak,
   placeRead,
+  rearmAfterDiscard,
   pickCleanerFrame,
   scanIntervalOpen,
   sceneMoved,
@@ -934,6 +936,38 @@ describe('case view: one steady second, then not the same scene again', () => {
     const slide = { mad: 20, residual: 5, dx: 8, dy: 0, shiftFrac: 0.08 }
     expect(placeRead(slide)).toBe('show')
     expect(labelOffset(slide, 100, 80)).toEqual({ x: 0.08, y: 0 })
+  })
+
+  it('shows a 0.75% tremor on the case grid unshifted, and a discard scans again', () => {
+    const full = loadJpegFixture('full.jpg')
+    const anchor = greyDownscale(full)
+    const motion = compareFrames(anchor, greyDownscale(translateSubpixel(full, 0.0075, 0.00225)))
+    expect(motion.shiftFrac).toBeLessThan(SCENE_MOVE_FRAC)
+    expect(motion.residual).toBeGreaterThanOrEqual(BOX_MOTION_RESIDUAL)
+    expect(placeRead(motion)).toBe('show')
+    expect(labelOffset(motion, anchor.width, anchor.height)).toEqual({ x: 0, y: 0 })
+    expect(sceneMoved(motion)).toBe(false)
+    expect(forgetsSeenCards(motion)).toBe(false)
+
+    const shadow = { mad: 20, residual: SCENE_MOVE_MAD + 3, dx: 1, dy: 0, shiftFrac: 0.02 }
+    expect(substantialSceneChange(shadow)).toBe(true)
+    expect(placeRead(shadow)).toBe('discard')
+    expect(forgetsSeenCards(shadow)).toBe(false)
+    const slidAway = { mad: 20, residual: 0, dx: 25, dy: 0, shiftFrac: 0.25 }
+    expect(forgetsSeenCards(slidAway)).toBe(true)
+    expect(placeRead(slidAway)).toBe('discard')
+
+    let step = stepSceneHold(initialSceneHold(), anchor, 0)
+    step = stepSceneHold(step.state, anchor, 100)
+    expect(step.steady).toBe(true)
+    expect(step.ready).toBe(false)
+    step = stepSceneHold(step.state, anchor, 100 + SCENE_STEADY_MS)
+    expect(step.ready).toBe(true)
+    const scanned = stepSceneHold(markSceneScanned(step.state), anchor, 100 + SCENE_STEADY_MS + 50)
+    expect(scanned.ready).toBe(false)
+    const rearmed = stepSceneHold(rearmAfterDiscard(scanned.state), anchor, 100 + SCENE_STEADY_MS + 100)
+    expect(rearmed.ready).toBe(true)
+    expect(rearmed.state.scanned).toBe(false)
   })
 
   it('times the moving-read hold from one frame to the next', () => {

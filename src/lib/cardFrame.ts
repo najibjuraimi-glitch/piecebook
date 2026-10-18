@@ -794,20 +794,32 @@ export function stepFrameHold(since: number | null, frameMoved: boolean, now: nu
 }
 
 /**
- * A returned read is kept when the aligned pictures still agree.
- * A residual of 6 or more, or a shift of about 20%, is dropped.
- * A moderate slide with a low residual is shown, shifted.
+ * A returned read is kept when the phone has barely moved.
+ * The residual check applies only once the shift is a real slide (about 6%).
+ * Below that, drop the read only when the scene itself changed, and show it unshifted.
  */
 export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
   if (!motion) return 'show'
-  if (substantialSceneChange(motion) || motion.residual >= BOX_MOTION_RESIDUAL) return 'discard'
+  if (motion.shiftFrac < SCENE_MOVE_FRAC) return substantialSceneChange(motion) ? 'discard' : 'show'
+  if (motion.residual >= BOX_MOTION_RESIDUAL || substantialSceneChange(motion)) return 'discard'
   return 'show'
 }
 
-/** Fraction to add to each label. Null when the read is discarded. */
+/** Fraction to add to each label. Null when the read is discarded. Zero when the shift is under 6%. */
 export function labelOffset(motion: FrameMotion | null, width: number, height: number): { x: number; y: number } | null {
-  if (placeRead(motion) === 'discard' || !motion) return placeRead(motion) === 'discard' ? null : { x: 0, y: 0 }
+  if (!motion || placeRead(motion) === 'discard') return placeRead(motion) === 'discard' ? null : { x: 0, y: 0 }
+  if (motion.shiftFrac < SCENE_MOVE_FRAC) return { x: 0, y: 0 }
   return { x: motion.dx / Math.max(width, 1), y: motion.dy / Math.max(height, 1) }
+}
+
+/** A moving shadow (high residual, shift under 6%) does not wipe the cards already seen. */
+export function forgetsSeenCards(motion: FrameMotion | null): boolean {
+  return Boolean(motion && motion.shiftFrac >= SCENE_MOVE_FRAC && substantialSceneChange(motion))
+}
+
+/** A discarded read must be allowed to scan again. The same steady view is not stranded. */
+export function rearmAfterDiscard(state: SceneHold): SceneHold {
+  return { ...state, scanned: false }
 }
 
 /** Shift for unread boxes. A residual of 6 or more is not trusted. */
@@ -981,7 +993,7 @@ export function simulateDriftScans(driftPerSec: number, durationMs = 360_000, re
         movedReads = 0
       }
       if (placeRead(motion) === 'discard') {
-        if (substantialSceneChange(motion)) {
+        if (forgetsSeenCards(motion)) {
           seen = emptySeen()
           streak = 0
         }
