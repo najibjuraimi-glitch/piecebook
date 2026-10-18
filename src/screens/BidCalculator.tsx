@@ -1,7 +1,19 @@
 import { useEffect, useId, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { BackBar, Screen } from '../components/Screen'
-import { allIn, maxHammer, PREMIUM_PRESETS, watchBidTarget, type AllInResult, type PremiumPresetId } from '../lib/allIn'
+import {
+  allIn,
+  fanaticsShipping,
+  FEE_PRESETS,
+  gstWarning,
+  maxHammer,
+  PREMIUM_PRESETS,
+  watchBidTarget,
+  type AllInResult,
+  type FeePresetId,
+  type GstMode,
+  type PremiumPresetId,
+} from '../lib/allIn'
 import { parseMoney } from '../lib/boughtBook'
 import { formatDate, formatSgd, formatUsd, todayIso } from '../lib/format'
 import { getWatchlist } from '../lib/watchlistClient'
@@ -50,13 +62,15 @@ export function BidCalculator() {
   const [mode, setMode] = useState<Mode>(itemId ? 'max' : 'all-in')
   const [preset, setPreset] = useState<PremiumPresetId | 'custom'>('ebay')
   const [customPercent, setCustomPercent] = useState('')
+  const [feePreset, setFeePreset] = useState<FeePresetId | 'custom'>('ebay')
+  const [customFee, setCustomFee] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [hammer, setHammer] = useState('')
   const [shipping, setShipping] = useState('')
   const [forwarder, setForwarder] = useState('')
   const [fx, setFx] = useState('')
   const [fxDate, setFxDate] = useState('')
-  const [gst, setGst] = useState(true)
+  const [gstMode, setGstMode] = useState<GstMode>('auto')
   const [target, setTarget] = useState('')
   const [linked, setLinked] = useState<ValuedWatchItem | null>(null)
   const [linkNote, setLinkNote] = useState<string | null>(itemId ? 'Loading the watch row…' : null)
@@ -89,7 +103,7 @@ export function BidCalculator() {
           setLinkNote(`${found.code} · ${found.grade}. No target or manual English price.`)
           return
         }
-        setTarget((current) => (current.trim() ? current : String(bid.targetSgd)))
+        if (bid.prefill) setTarget((current) => (current.trim() ? current : String(bid.targetSgd)))
         setLinkNote(null)
       })
       .catch((err: unknown) => {
@@ -100,22 +114,26 @@ export function BidCalculator() {
   }, [itemId])
 
   const premiumPercent = preset === 'custom' ? moneyOf(customPercent) : PREMIUM_PRESETS.find((item) => item.id === preset)!.percent
-  const shippingN = amount(moneyOf(shipping), 0)
+  const paymentFeePercent = feePreset === 'custom' ? moneyOf(customFee) : FEE_PRESETS.find((item) => item.id === feePreset)!.percent
+  const shippingTyped = moneyOf(shipping)
   const forwarderN = amount(moneyOf(forwarder), 0)
   const targetN = moneyOf(target)
   const fxN = currency === 'SGD' ? 1 : moneyOf(fx)
   const fxReady = currency === 'SGD' || (typeof fxN === 'number' && fxN > 0 && /^\d{4}-\d{2}-\d{2}$/.test(fxDate))
-  const percentReady = typeof premiumPercent === 'number'
-  const badField = premiumPercent === 'bad' || shippingN == null || forwarderN == null || fxN === 'bad'
+  const percentReady = typeof premiumPercent === 'number' && typeof paymentFeePercent === 'number'
+  const badField = premiumPercent === 'bad' || paymentFeePercent === 'bad' || shippingTyped === 'bad' || forwarderN == null || fxN === 'bad'
+  const sellerShipping = shippingTyped === 'blank' ? null : shippingTyped === 'bad' ? null : shippingTyped
   const shared =
-    percentReady && shippingN != null && forwarderN != null && typeof fxN === 'number' && fxReady
+    percentReady && shippingTyped !== 'bad' && forwarderN != null && typeof fxN === 'number' && fxReady
       ? {
           currency,
           premiumPercent,
-          sellerShipping: shippingN,
+          paymentFeePercent,
+          sellerShipping,
+          fanaticsTier: preset === 'fanatics',
           forwarderSgd: forwarderN,
           fx: fxN,
-          gst,
+          gst: gstMode,
         }
       : null
 
@@ -135,6 +153,9 @@ export function BidCalculator() {
       if (!result) blocked = 'Shipping and the forwarder already pass that all-in.'
     }
   }
+
+  const suggestedTier = result && preset === 'fanatics' ? fanaticsShipping(result.hammer + result.premium) : null
+  const shippingOverride = suggestedTier != null && shipping.trim() !== '' && result != null && result.sellerShipping !== suggestedTier
 
   const bid = linked
     ? watchBidTarget(
@@ -162,15 +183,25 @@ export function BidCalculator() {
             {linked.code} · {linked.grade}
           </Link>
           {bid?.from === 'target' ? ` · Target ${formatSgd(bid.targetSgd)}` : ''}
-          {bid?.from === 'market' && bid.marketSgd != null ? ` · 0.9 × ${formatSgd(bid.marketSgd)}` : ''}
+          {bid?.from === 'market' && bid.prefill && bid.marketSgd != null ? ` · 0.9 × ${formatSgd(bid.marketSgd)}` : ''}
         </p>
       )}
       {bid?.marketSgd != null && (
         <p className="mb-4 text-meta text-muted">
-          {bid.source}
+          {bid.language} · {bid.source}
           {bid.asOf ? ` · ${formatDate(bid.asOf)}` : ''}
           {bid.stale ? ' · Stale, older than 7 days' : ''}
+          {bid.from === 'market' ? ` · 0.9 × ${formatSgd(bid.marketSgd)}` : ''}
         </p>
+      )}
+      {bid && !bid.prefill && (
+        <button
+          type="button"
+          onClick={() => setTarget(String(bid.targetSgd))}
+          className="mb-4 inline-flex h-11 items-center rounded-xl border border-line px-3 text-[14px] font-medium text-ink"
+        >
+          Use this target
+        </button>
       )}
       {linkNote && <p className="mb-4 text-meta text-ink">{linkNote}</p>}
 
@@ -261,10 +292,60 @@ export function BidCalculator() {
         </div>
 
         <div>
+          <p className={label}>Payment fee</p>
+          <div className="mt-1.5 flex flex-wrap gap-2" role="radiogroup" aria-label="Payment fee">
+            {FEE_PRESETS.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="radio"
+                aria-checked={feePreset === item.id}
+                onClick={() => setFeePreset(item.id)}
+                className={`h-11 rounded-xl px-3 text-[14px] font-medium ${feePreset === item.id ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
+              >
+                {item.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              role="radio"
+              aria-checked={feePreset === 'custom'}
+              onClick={() => setFeePreset('custom')}
+              className={`h-11 rounded-xl px-3 text-[14px] font-medium ${feePreset === 'custom' ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
+            >
+              Custom
+            </button>
+          </div>
+          {feePreset === 'custom' && (
+            <input
+              aria-label="Custom payment fee percent"
+              inputMode="decimal"
+              value={customFee}
+              onChange={(e) => setCustomFee(e.target.value)}
+              className={`tabular ${field}`}
+            />
+          )}
+          <p className="mt-1 text-meta text-muted">Percent of the hammer, premium and seller shipping. eBay 0% is the ACH case.</p>
+        </div>
+
+        <div>
           <label htmlFor={`${ids}-shipping`} className={label}>
             Seller shipping, same currency
           </label>
           <input id={`${ids}-shipping`} inputMode="decimal" value={shipping} onChange={(e) => setShipping(e.target.value)} className={`tabular ${field}`} />
+          {preset === 'fanatics' && (
+            <p className="mt-1 text-meta text-muted">
+              Fanatics shipping is US$15 from US$750 to US$1,500 of hammer plus premium, and US$25 from US$1,500 to US$3,000. Leave this blank to use that tier. A typed amount overrides it.
+            </p>
+          )}
+          {shippingOverride && suggestedTier != null && (
+            <p className="mt-1 text-meta text-ink" role="status">
+              This invoice is in the US${suggestedTier} Fanatics tier.{' '}
+              <button type="button" onClick={() => setShipping(String(suggestedTier))} className="font-medium underline decoration-line underline-offset-2">
+                Use US${suggestedTier}
+              </button>
+            </p>
+          )}
         </div>
         <div>
           <label htmlFor={`${ids}-forwarder`} className={label}>
@@ -289,15 +370,35 @@ export function BidCalculator() {
             </div>
           </>
         )}
-        <button
-          type="button"
-          role="switch"
-          aria-checked={gst}
-          onClick={() => setGst((on) => !on)}
-          className={`inline-flex h-11 items-center rounded-xl px-3 text-[14px] font-medium ${gst ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
-        >
-          GST 9% {gst ? 'on' : 'off'}
-        </button>
+        <div>
+          <p className={label}>GST 9%</p>
+          <div className="mt-1.5 flex gap-2" role="radiogroup" aria-label="GST">
+            {(
+              [
+                ['auto', 'Auto'],
+                ['on', 'On'],
+                ['off', 'Off'],
+              ] as const
+            ).map(([id, name]) => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={gstMode === id}
+                onClick={() => setGstMode(id)}
+                className={`h-11 rounded-xl px-3 text-[14px] font-medium ${gstMode === id ? 'bg-ink text-paper' : 'border border-line text-ink'}`}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-meta text-muted">Auto adds 9% only when the import is over S$400.</p>
+          {result && gstWarning(result.gstMode, result.importSgd) && (
+            <p className="mt-1 text-meta text-ink" role="status">
+              {gstWarning(result.gstMode, result.importSgd)}
+            </p>
+          )}
+        </div>
       </div>
 
       {blocked && <p className="mt-4 text-meta text-ink">{blocked}</p>}
@@ -316,19 +417,29 @@ export function BidCalculator() {
           <ul className="mt-4 space-y-2">
             <Line label="Hammer" value={formatForeign(result.hammer, result.currency)} />
             <Line label={`Buyer's premium ${trimPercent(result.premiumPercent)}%`} value={formatForeign(result.premium, result.currency)} />
-            <Line label="Seller shipping" value={formatForeign(result.sellerShipping, result.currency)} />
+            <Line
+              label={result.shippingTier != null ? 'Seller shipping · Fanatics tier' : 'Seller shipping'}
+              value={formatForeign(result.sellerShipping, result.currency)}
+            />
             <Line label="Auction invoice" value={formatForeign(result.invoice, result.currency)} />
+            <Line label={`Payment fee ${trimPercent(result.paymentFeePercent)}%`} value={formatForeign(result.paymentFee, result.currency)} />
             {result.currency !== 'SGD' && (
               <Line label={`1 ${result.currency} = S$${rateText(result.fx)}${fxDate ? ` · ${formatDate(fxDate)}` : ''}`} value={formatSgd(result.paidSgd)} />
             )}
             <Line label="Forwarder" value={formatSgd(result.forwarderSgd)} />
-            <Line label={result.gstOn ? 'GST 9%' : 'GST off'} value={formatSgd(result.gstSgd)} />
+            <Line label="Import" value={formatSgd(result.importSgd)} />
+            <Line label={gstLabel(result)} value={formatSgd(result.gstSgd)} />
             <Line label="All-in" value={formatSgd(result.allInSgd)} />
           </ul>
         </section>
       )}
     </Screen>
   )
+}
+
+function gstLabel(result: AllInResult): string {
+  if (result.gstMode === 'auto') return result.gstOn ? 'GST 9% · over S$400' : 'GST off · S$400 or under'
+  return result.gstOn ? 'GST 9%' : 'GST off'
 }
 
 function trimPercent(percent: number): string {

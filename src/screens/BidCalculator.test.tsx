@@ -57,8 +57,12 @@ describe('All-in calculator', () => {
         </MemoryRouter>,
       )
     })
-    const button = [...host!.querySelectorAll('button')].find((el) => el.textContent === 'Goldin 22%')
-    act(() => button!.click())
+    const premium = [...host!.querySelectorAll('button')].find((el) => el.textContent === 'Goldin 22%')
+    const gstOn = [...host!.querySelectorAll('button')].find((el) => el.textContent === 'On')
+    act(() => {
+      premium!.click()
+      gstOn!.click()
+    })
     const hammer = host!.querySelector('#_r_0_-hammer, [id$="-hammer"]') as HTMLInputElement
     const shipping = host!.querySelector('[id$="-shipping"]') as HTMLInputElement
     const forwarder = host!.querySelector('[id$="-forwarder"]') as HTMLInputElement
@@ -109,9 +113,13 @@ describe('All-in calculator', () => {
     expect(body).toContain('OP10-119 · Raw')
     expect(body).toContain('0.9 × S$100')
     expect(body).toContain('Cards')
+    expect(body).toContain('EN')
     expect(body).toContain('1 Sep 2026')
     expect(body).toContain('Stale, older than 7 days')
     const target = host!.querySelector('[id$="-target"]') as HTMLInputElement
+    expect(target.value).toBe('')
+    const use = [...host!.querySelectorAll('button')].find((el) => el.textContent === 'Use this target')
+    act(() => use!.click())
     expect(target.value).toBe('90')
     expect(body).not.toContain('Japanese')
   })
