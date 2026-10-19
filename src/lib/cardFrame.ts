@@ -548,10 +548,31 @@ export const CONTENT_MEAN_RADIUS = 10
 /** Ratio images are put back on this grey level before the residual is measured. */
 export const CONTENT_LEVEL = 128
 /**
- * A paused scan resumes when the local-mean residual reaches this.
- * Shadows, even a dark half plus a small sway, stay under it. A row swap clears it.
+ * Below this grey level the raw block match misses a real pan. Label placement
+ * and the scene check use the local-mean shift only then.
  */
-export const PAUSE_RESUME_RESIDUAL = 16
+export const DIM_FRAME_MEAN = 40
+/**
+ * Below this grey level the local-mean residual amplifies noise. Resume and
+ * unread checks use the raw residual, so a swap needs a tap.
+ */
+export const NEAR_BLACK_MEAN = 17
+/** Darkness is the brightest half of the frame, not the whole-frame mean. */
+export const BRIGHT_HALF_MIN = 18
+/** Enter the too-dark state only after the brightest half has stayed under this. */
+export const DARK_ENTER_MAX = 17.5
+/** A spell this long enters or clears the too-dark state. */
+export const DARK_CLEAR_MS = 1000
+/**
+ * A paused scan resumes when the local-mean residual reaches this.
+ * Shadows and sensor noise stay under it. A pale sleeve or a white table clears it.
+ */
+export const PAUSE_RESUME_RESIDUAL = 15
+/**
+ * A dim slide under a new view has to clear this before it resumes.
+ * An 8% wobble in dim light sits between the ordinary gate and this one.
+ */
+export const DIM_SLIDE_RESIDUAL = 20
 
 export interface GreyFrame {
   width: number
@@ -566,11 +587,22 @@ export interface FrameMotion {
   residual: number
   /**
    * Residual after each frame is divided by its local mean.
-   * Set by compareFrames. Synthetic motions may omit it and the gates fall back to residual.
+   * Computed the first time it is read. Synthetic motions may set it directly.
    */
   contentResidual?: number
-  /** Shift measured on the local-mean frames. A shadow can hide the raw shift. */
+  /** Shift measured on the local-mean frames. A shadow or a dim frame can hide the raw shift. */
   contentShiftFrac?: number
+  /** Pixel shift of the local-mean frames, same space as dx and dy. */
+  contentDx?: number
+  contentDy?: number
+  /** Mean grey of the darker frame. A low value means the raw shift is not trusted. */
+  frameMean?: number
+  /** Brightest of the four halves of the darker frame. */
+  brightHalf?: number
+  /** Brightest half of the frame the read was sent from. */
+  anchorBright?: number
+  /** Brightest half of the frame the read came back on. */
+  nextBright?: number
   dx: number
   dy: number
   /** Shift length. X is a share of the width and y a share of the height, then combined. */
@@ -810,20 +842,185 @@ function motionOf(anchor: GreyFrame, next: GreyFrame): FrameMotion {
   return { mad, residual, dx: shift.dx, dy: shift.dy, shiftFrac }
 }
 
-/** Shift first, then the residual of the aligned frames. A shift that does not actually line the pictures up is dropped. */
+function greyMean(frame: GreyFrame): number {
+  let sum = 0
+  const data = frame.data
+  for (let i = 0; i < data.length; i += 1) sum += data[i]
+  return data.length ? sum / data.length : 0
+}
+
+function regionMean(frame: GreyFrame, x0: number, x1: number, y0: number, y1: number): number {
+  let sum = 0
+  let n = 0
+  for (let y = y0; y < y1; y += 1) {
+    for (let x = x0; x < x1; x += 1) {
+      sum += frame.data[y * frame.width + x]
+      n += 1
+    }
+  }
+  return n ? sum / n : 0
+}
+
+/** The brightest of the left, right, top and bottom halves. A shadow on one side does not darken the other. */
+export function brightestHalfMean(frame: GreyFrame): number {
+  const midX = Math.max(1, Math.floor(frame.width / 2))
+  const midY = Math.max(1, Math.floor(frame.height / 2))
+  return Math.max(
+    regionMean(frame, 0, midX, 0, frame.height),
+    regionMean(frame, midX, frame.width, 0, frame.height),
+    regionMean(frame, 0, frame.width, 0, midY),
+    regionMean(frame, 0, frame.width, midY, frame.height),
+  )
+}
+
+/** How many times the local-mean comparison has actually run. A lit frame does not add one. */
+let contentMotionComputes = 0
+export function contentMotionComputeCount(): number {
+  return contentMotionComputes
+}
+
+/**
+ * Shift first, then the residual of the aligned frames. A shift that does not
+ * actually line the pictures up is dropped. The local-mean comparison waits
+ * until a gate reads it.
+ */
 export function compareFrames(anchor: GreyFrame, next: GreyFrame): FrameMotion {
   const raw = motionOf(anchor, next)
-  const content = motionOf(divideByLocalMean(anchor), divideByLocalMean(next))
-  return { ...raw, contentResidual: content.residual, contentShiftFrac: content.shiftFrac }
+  let content: FrameMotion | undefined
+  const ensure = () => {
+    if (!content) {
+      contentMotionComputes += 1
+      content = motionOf(divideByLocalMean(anchor), divideByLocalMean(next))
+    }
+    return content
+  }
+  return {
+    mad: raw.mad,
+    residual: raw.residual,
+    dx: raw.dx,
+    dy: raw.dy,
+    shiftFrac: raw.shiftFrac,
+    frameMean: Math.min(greyMean(anchor), greyMean(next)),
+    anchorBright: brightestHalfMean(anchor),
+    nextBright: brightestHalfMean(next),
+    brightHalf: Math.min(brightestHalfMean(anchor), brightestHalfMean(next)),
+    get contentResidual() {
+      return ensure().residual
+    },
+    get contentShiftFrac() {
+      return ensure().shiftFrac
+    },
+    get contentDx() {
+      return ensure().dx
+    },
+    get contentDy() {
+      return ensure().dy
+    },
+  }
+}
+
+function dimFrame(motion: FrameMotion): boolean {
+  return (motion.frameMean ?? 255) < DIM_FRAME_MEAN
+}
+
+function nearBlack(motion: FrameMotion): boolean {
+  return (motion.frameMean ?? 255) < NEAR_BLACK_MEAN
+}
+
+/** Below the enter threshold the frame cannot be tracked. A tap is placed unshifted. */
+export function tooDarkToTrack(brightHalf: number): boolean {
+  return brightHalf < DARK_ENTER_MAX
+}
+
+/** Automatic scans need a brightest half of 17.5 or more and the too-dark cue off. */
+export function autoScanAllowed(brightHalf: number, dark: boolean): boolean {
+  return !dark && !tooDarkToTrack(brightHalf)
+}
+
+export function frameTooDark(frame: GreyFrame): boolean {
+  return tooDarkToTrack(brightestHalfMean(frame))
+}
+
+/**
+ * Enter after a second under 17.5. Clear after a second at 18 or more.
+ * The band between those holds the current state, so a shadow does not flicker the cue.
+ */
+export function stepDarkState(
+  dark: boolean,
+  pendingSince: number | null,
+  brightHalf: number,
+  now: number,
+  holdMs = DARK_CLEAR_MS,
+): { dark: boolean; pendingSince: number | null } {
+  const since = pendingSince != null && pendingSince <= now ? pendingSince : now
+  if (!dark) {
+    if (brightHalf >= DARK_ENTER_MAX) return { dark: false, pendingSince: null }
+    if (now - since >= holdMs) return { dark: true, pendingSince: null }
+    return { dark: false, pendingSince: since }
+  }
+  if (brightHalf < BRIGHT_HALF_MIN) return { dark: true, pendingSince: null }
+  if (now - since >= holdMs) return { dark: false, pendingSince: null }
+  return { dark: true, pendingSince: since }
+}
+
+/** The read was sent from a frame that could be tracked and came back too dark to place. */
+export function cameBackDark(motion: FrameMotion | null): boolean {
+  if (!motion) return false
+  const sent = motion.anchorBright ?? motion.brightHalf ?? motion.frameMean ?? 255
+  const back = motion.nextBright ?? motion.brightHalf ?? motion.frameMean ?? 255
+  return !tooDarkToTrack(sent) && tooDarkToTrack(back)
+}
+
+/** Shift used to place or drop a read. Dim light trusts the local-mean shift, until it is too dark to track. */
+function trackLevel(motion: FrameMotion): number {
+  return motion.brightHalf ?? motion.frameMean ?? 255
+}
+
+function sentWhileDark(motion: FrameMotion): boolean {
+  return tooDarkToTrack(motion.anchorBright ?? motion.brightHalf ?? motion.frameMean ?? 255)
+}
+
+function placedShift(motion: FrameMotion): number {
+  if (sentWhileDark(motion)) return 0
+  if (dimFrame(motion)) return motion.contentShiftFrac ?? motion.shiftFrac
+  return motion.shiftFrac
+}
+
+function placedDelta(motion: FrameMotion): { dx: number; dy: number } {
+  if (sentWhileDark(motion)) return { dx: 0, dy: 0 }
+  if (dimFrame(motion) && motion.contentDx != null && motion.contentDy != null) return { dx: motion.contentDx, dy: motion.contentDy }
+  return { dx: motion.dx, dy: motion.dy }
+}
+
+/** A dim but still trackable read whose local-mean pictures disagree is a row change, not noise. */
+function dimContentSwap(motion: FrameMotion): boolean {
+  const mean = motion.frameMean ?? 255
+  if (tooDarkToTrack(trackLevel(motion)) || mean >= DIM_FRAME_MEAN) return false
+  return (motion.contentResidual ?? 0) >= PAUSE_RESUME_RESIDUAL
+}
+
+/** The raw residual. Local-mean residuals are not compared with the raw bars. */
+function placedResidual(motion: FrameMotion): number {
+  return motion.residual
+}
+
+/** Residual for resume and unread checks. Near-black frames use the raw one. */
+function gateResidual(motion: FrameMotion): number {
+  if (nearBlack(motion)) return motion.residual
+  return motion.contentResidual ?? motion.residual
 }
 
 /**
  * Moved when the frame slid by about 6% of its width or its height.
  * A tremble or an exposure change stays put: the residual after aligning,
  * removing the mean, and blurring has to clear the bar on its own.
+ * In dim light the raw match misses a real pan, so the local-mean shift counts too.
  */
 export function sceneMoved(motion: FrameMotion): boolean {
-  return motion.shiftFrac >= SCENE_MOVE_FRAC || motion.residual >= SCENE_MOVE_MAD
+  if (motion.shiftFrac >= SCENE_MOVE_FRAC || motion.residual >= SCENE_MOVE_MAD) return true
+  const mean = motion.frameMean ?? 255
+  if (mean >= DIM_FRAME_MEAN || tooDarkToTrack(trackLevel(motion))) return false
+  return (motion.contentShiftFrac ?? 0) >= SCENE_MOVE_FRAC
 }
 
 /** A slide of about 20% of the width or the height, or a picture that still disagrees after aligning. */
@@ -833,14 +1030,18 @@ export function substantialSceneChange(motion: FrameMotion): boolean {
 
 /**
  * A paused scan resumes on a slide of about 20% of the frame, or when the
- * local-mean residual reaches about 16. A shadow does not. A 15% pan does not.
- * A row swap does.
+ * local-mean residual reaches about 15. A shadow does not. Near-black frames
+ * use the raw residual, so a swap there needs a tap. A 15% pan does not.
+ * A dim frame under a new view, including a shift the matcher missed, has to
+ * clear a higher residual so a wobble does not resume.
  */
 export function resumesPausedScan(motion: FrameMotion | null): boolean {
   if (!motion) return false
   const shift = motion.contentShiftFrac ?? motion.shiftFrac
-  const residual = motion.contentResidual ?? motion.residual
-  return shift >= SCENE_RESET_FRAC || residual >= PAUSE_RESUME_RESIDUAL
+  if (shift >= SCENE_RESET_FRAC) return true
+  const residual = gateResidual(motion)
+  if (dimFrame(motion) && shift < SCENE_RESET_FRAC && residual < DIM_SLIDE_RESIDUAL) return false
+  return residual >= PAUSE_RESUME_RESIDUAL
 }
 
 /** The hold-still clock restarts on a real slide. A light blinking in place does not restart it. */
@@ -870,9 +1071,13 @@ export function stepFrameHold(since: number | null, frameMoved: boolean, now: nu
  */
 export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
   if (!motion) return 'show'
-  if (motion.shiftFrac < SCENE_MOVE_FRAC) return substantialSceneChange(motion) ? 'discard' : 'show'
-  if (motion.residual >= BOX_MOTION_RESIDUAL || substantialSceneChange(motion)) return 'discard'
-  return 'show'
+  if (cameBackDark(motion)) return 'discard'
+  const shift = placedShift(motion)
+  const residual = placedResidual(motion)
+  const substantial = shift >= SCENE_RESET_FRAC || residual >= SCENE_MOVE_MAD
+  const discard = shift < SCENE_MOVE_FRAC ? substantial : residual >= BOX_MOTION_RESIDUAL || substantial
+  if (!discard && dimContentSwap(motion)) return 'discard'
+  return discard ? 'discard' : 'show'
 }
 
 /**
@@ -882,13 +1087,18 @@ export function placeRead(motion: FrameMotion | null): 'show' | 'discard' {
 export function labelOffset(motion: FrameMotion | null, width: number, height: number): { x: number; y: number } | null {
   if (!motion) return { x: 0, y: 0 }
   if (placeRead(motion) === 'discard') return null
-  if (motion.shiftFrac < SCENE_MOVE_FRAC && motion.residual >= BOX_MOTION_RESIDUAL) return { x: 0, y: 0 }
-  return { x: motion.dx / Math.max(width, 1), y: motion.dy / Math.max(height, 1) }
+  const shift = placedShift(motion)
+  if (shift < SCENE_MOVE_FRAC && placedResidual(motion) >= BOX_MOTION_RESIDUAL) return { x: 0, y: 0 }
+  const delta = placedDelta(motion)
+  return { x: delta.dx / Math.max(width, 1), y: delta.dy / Math.max(height, 1) }
 }
 
 /** A moving shadow (high residual, shift under 6%) does not wipe the cards already seen. */
 export function forgetsSeenCards(motion: FrameMotion | null): boolean {
-  return Boolean(motion && motion.shiftFrac >= SCENE_MOVE_FRAC && substantialSceneChange(motion))
+  if (!motion) return false
+  const shift = placedShift(motion)
+  const residual = placedResidual(motion)
+  return shift >= SCENE_MOVE_FRAC && (shift >= SCENE_RESET_FRAC || residual >= SCENE_MOVE_MAD)
 }
 
 /** A discarded read must be allowed to scan again. The same steady view is not stranded. */
@@ -898,18 +1108,23 @@ export function rearmAfterDiscard(state: SceneHold): SceneHold {
 
 /**
  * A discarded read whose shift is under 6% counts toward the dry-streak pause.
- * A real slide does not. Three of these pauses the camera.
+ * A real slide does not. A read that comes back too dark counts unless the
+ * too-dark cue is already on. Three of these pauses the camera.
  */
-export function dryStreakAfterDiscard(streak: number, motion: FrameMotion | null): { streak: number; pause: boolean } | null {
-  if (!motion || motion.shiftFrac >= SCENE_MOVE_FRAC || placeRead(motion) !== 'discard') return null
+export function dryStreakAfterDiscard(streak: number, motion: FrameMotion | null, dark = false): { streak: number; pause: boolean } | null {
+  if (!motion || placeRead(motion) !== 'discard') return null
+  if (cameBackDark(motion)) {
+    if (dark) return null
+  } else if (placedShift(motion) >= SCENE_MOVE_FRAC) return null
   const next = streak + 1
   return { streak: next, pause: next >= 3 }
 }
 
 /** Shift for unread boxes. A residual of 6 or more is not trusted. */
 export function unreadBoxMotion(motion: FrameMotion | null, width: number, height: number): BoxMotion | null {
-  if (!motion || motion.residual >= BOX_MOTION_RESIDUAL) return null
-  return { dx: motion.dx, dy: motion.dy, width, height }
+  if (!motion || placedResidual(motion) >= BOX_MOTION_RESIDUAL) return null
+  const delta = placedDelta(motion)
+  return { dx: delta.dx, dy: delta.dy, width, height }
 }
 
 /**
@@ -919,8 +1134,7 @@ export function unreadBoxMotion(motion: FrameMotion | null, width: number, heigh
  */
 export function unreadSlabsAreNew(motion: FrameMotion | null): boolean {
   if (!motion) return false
-  const residual = motion.contentResidual ?? motion.residual
-  return residual >= PAUSE_RESUME_RESIDUAL
+  return gateResidual(motion) >= PAUSE_RESUME_RESIDUAL
 }
 
 /**
@@ -1194,6 +1408,8 @@ export function simulateCaseWatch(input: {
   residual: (fromT: number, toT: number) => number
   /** Local-mean residual. When omitted, the gates use residual. */
   contentResidual?: (fromT: number, toT: number) => number
+  /** When set, dim and near-black rules apply to every tick. */
+  frameMean?: number
 }): CaseWatch {
   const dt = 200
   const asMotion = (fromT: number, fromPos: number, toT: number, toPos: number): FrameMotion => {
@@ -1205,6 +1421,7 @@ export function simulateCaseWatch(input: {
       dx: (toPos - fromPos) * 100,
       dy: 0,
       shiftFrac: Math.abs(toPos - fromPos),
+      ...(input.frameMean != null ? { frameMean: input.frameMean, contentShiftFrac: Math.abs(toPos - fromPos), contentDx: (toPos - fromPos) * 100, contentDy: 0 } : {}),
     }
   }
 
@@ -1233,6 +1450,8 @@ export function simulateCaseWatch(input: {
   let shiftAtPause: number | null = null
   let pausedAt: number | null = null
   let resumedAt: number | null = null
+  let dark = false
+  let darkPending: number | null = null
 
   const resumeFrom = (fromT: number, fromPos: number, pos: number, sameTick: boolean) => {
     const motion = asMotion(fromT, fromPos, t, pos)
@@ -1254,6 +1473,11 @@ export function simulateCaseWatch(input: {
 
   while (t <= input.durationMs) {
     const pos = input.position(t)
+    if (input.frameMean != null) {
+      const next = stepDarkState(dark, darkPending, input.frameMean, t)
+      dark = next.dark
+      darkPending = next.pendingSince
+    }
     let ready = false
     if (anchorPos == null) {
       anchorPos = pos
@@ -1288,7 +1512,7 @@ export function simulateCaseWatch(input: {
           streak = 0
         }
         scanned = false
-        const dry = dryStreakAfterDiscard(streak, motion)
+        const dry = dryStreakAfterDiscard(streak, motion, dark)
         if (dry) {
           streak = dry.streak
           if (dry.pause) {
@@ -1320,7 +1544,8 @@ export function simulateCaseWatch(input: {
 
     if (paused) resumeFrom(pauseT, pausePos, pos, pauseT === t)
 
-    if (readingUntil == null && !paused) {
+    const trackable = input.frameMean == null || autoScanAllowed(input.frameMean, dark)
+    if (readingUntil == null && !paused && trackable) {
       const hop = asMotion(prevT, prevPos, t, pos)
       let start = false
       if (movedReads >= MOVED_HOLD_AFTER) {
