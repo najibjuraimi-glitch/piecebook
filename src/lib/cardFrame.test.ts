@@ -1569,6 +1569,9 @@ describe('case view: one steady second, then not the same scene again', () => {
         const pos = posAt(t)
         const frame = frameAt(pos)
         const half = brightestHalfMean(frame)
+        const nextDark = stepDarkState(dark, pending, half, t)
+        dark = nextDark.dark
+        pending = nextDark.pendingSince
         if (readingUntil != null && t >= readingUntil) {
           const motion = compareFrames(frameAt(capture), frame)
           if (placeRead(motion) === 'show') {
@@ -1581,21 +1584,15 @@ describe('case view: one steady second, then not the same scene again', () => {
           readingUntil = null
           lastScanAt = t
         }
-        if (!(paused || readingUntil != null)) {
-          const step = stepSceneHold(hold, frame, t)
-          hold = step.state
-          if (t === 0) hold = { ...hold, steadySince: 0 }
-          if (hold.steadySince != null && t - hold.steadySince >= SCENE_STEADY_MS && !hold.scanned && scanIntervalOpen(lastScanAt, t) && autoScanAllowed(half, dark)) {
-            scans += 1
-            hold = markSceneScanned(hold)
-            readingUntil = t + readMs
-            capture = pos
-          }
+        if (paused || readingUntil != null) continue
+        const step = stepSceneHold(hold, frame, t)
+        hold = step.state
+        if (step.ready && scanIntervalOpen(lastScanAt, t) && autoScanAllowed(half, dark)) {
+          scans += 1
+          hold = markSceneScanned(hold)
+          readingUntil = t + readMs
+          capture = pos
         }
-        if (t === 0) pending = 0
-        const nextDark = stepDarkState(dark, pending, half, t)
-        dark = nextDark.dark
-        pending = nextDark.pendingSince
       }
       return { scans, wrong, discards }
     }
@@ -1607,7 +1604,24 @@ describe('case view: one steady second, then not the same scene again', () => {
     const held = watch(0.133, 2_000, false)
     expect(held.scans).toBe(1)
     expect(held.discards).toBe(0)
-    expect(watch(0.13, 2_000, false).scans).toBe(1)
+    // Exposure 0.13 is grey 17.48 on this portrait, under the 17.5 track gate.
+    expect(watch(0.13, 2_000, false).scans).toBe(0)
+    for (const exposure of [0.12, 0.1, 0.08]) expect(watch(exposure, 2_000, false).scans).toBe(0)
+    expect(watch(0.12, 8_000, true).scans).toBe(0)
+  })
+
+  it('does not flicker the cue on a short dark blip', () => {
+    let dark = false
+    let pending: number | null = null
+    let toggles = 0
+    for (let t = 0; t <= 120_000; t += 200) {
+      const half = t % 3_000 < 400 ? 16 : 20
+      const next = stepDarkState(dark, pending, half, t)
+      if (next.dark !== dark) toggles += 1
+      dark = next.dark
+      pending = next.pendingSince
+    }
+    expect(toggles).toBeLessThanOrEqual(2)
   })
 
   it('does not flicker the dark cue on a dim14 band shadow or a slow drift', () => {

@@ -932,13 +932,9 @@ export function tooDarkToTrack(brightHalf: number): boolean {
   return brightHalf < DARK_ENTER_MAX
 }
 
-/**
- * Automatic scans run while the too-dark cue is off.
- * A frame under 17.5 can still send the scan that comes due as that cue turns on.
- * Grey 18 only clears the cue.
- */
+/** Automatic scans need a brightest half of 17.5 or more and the too-dark cue off. */
 export function autoScanAllowed(brightHalf: number, dark: boolean): boolean {
-  return !dark && Number.isFinite(brightHalf)
+  return !dark && !tooDarkToTrack(brightHalf)
 }
 
 export function frameTooDark(frame: GreyFrame): boolean {
