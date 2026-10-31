@@ -2,6 +2,7 @@ card_number,variant,category,color,cost,life,power,counter,attribute,types,effec
 ST14-001,,Leader,Black,,5,5000,,Strike,Straw Hat Crew,"[DON!! x1] All of your Characters gain +1 cost. If you have a Character with a cost of 8 or more, this Leader gains +1000 power.",,Hokuyuu,2,legal,legal
 ST14-002,,Character,Black,,,,,,,,,,,,
 ST14-003,,Character,Black,,,,,,,,,,,,
+ST14-003p1,Special Card,Character,Black,5,,6000,,Strike,Straw Hat Crew,"[On Play] If you have a Character with a cost of 6 or more, K.O. up to 1 of your opponent's Characters with a cost of 5 or less.",,otton,2,legal,legal
 ST14-004,,Character,Black,,,,,,,,,,,,
 ST14-005,,Character,Black,,,,,,,,,,,,
 ST14-006,,Character,Black,,,,,,,,,,,,
