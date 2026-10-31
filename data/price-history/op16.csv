@@ -15,6 +15,7 @@ OP16-001,2026-08-24,0.16,tcgplayer
 OP16-001,2026-08-31,0.18,tcgplayer
 OP16-001,2026-09-04,0.17,limitless
 OP16-001,2026-09-05,0.18,limitless
+OP16-001,2026-10-31,0.14,limitless
 OP16-001p1,2026-05-25,199.99,tcgplayer
 OP16-001p1,2026-06-01,194.10,tcgplayer
 OP16-001p1,2026-06-08,43.22,tcgplayer
@@ -32,6 +33,7 @@ OP16-001p1,2026-08-24,54.82,tcgplayer
 OP16-001p1,2026-08-31,49.36,tcgplayer
 OP16-001p1,2026-09-04,49.81,limitless
 OP16-001p1,2026-09-05,49.36,limitless
+OP16-001p1,2026-10-31,25.07,limitless
 OP16-002,2026-06-01,0.44,tcgplayer
 OP16-002,2026-06-08,0.12,tcgplayer
 OP16-002,2026-06-15,0.12,tcgplayer
@@ -48,6 +50,7 @@ OP16-002,2026-08-24,0.11,tcgplayer
 OP16-002,2026-08-31,0.12,tcgplayer
 OP16-002,2026-09-04,0.11,limitless
 OP16-002,2026-09-05,0.12,limitless
+OP16-002,2026-10-31,0.12,limitless
 OP16-003,2026-06-01,6.08,tcgplayer
 OP16-003,2026-06-08,1.38,tcgplayer
 OP16-003,2026-06-15,1.67,tcgplayer
@@ -64,6 +67,7 @@ OP16-003,2026-08-24,1.64,tcgplayer
 OP16-003,2026-08-31,2.01,tcgplayer
 OP16-003,2026-09-04,1.94,limitless
 OP16-003,2026-09-05,2.01,limitless
+OP16-003,2026-10-31,1.17,limitless
 OP16-003p1,2026-06-01,43.89,tcgplayer
 OP16-003p1,2026-06-08,20.17,tcgplayer
 OP16-003p1,2026-06-15,39.29,tcgplayer
@@ -80,6 +84,7 @@ OP16-003p1,2026-08-24,27.19,tcgplayer
 OP16-003p1,2026-08-31,28.07,tcgplayer
 OP16-003p1,2026-09-04,28.23,limitless
 OP16-003p1,2026-09-05,28.16,limitless
+OP16-003p1,2026-10-31,16.20,limitless
 OP16-004,2026-06-01,0.32,tcgplayer
 OP16-004,2026-06-08,0.11,tcgplayer
 OP16-004,2026-06-15,0.09,tcgplayer
@@ -96,6 +101,7 @@ OP16-004,2026-08-24,0.12,tcgplayer
 OP16-004,2026-08-31,0.13,tcgplayer
 OP16-004,2026-09-04,0.09,limitless
 OP16-004,2026-09-05,0.13,limitless
+OP16-004,2026-10-31,0.08,limitless
 OP16-005,2026-06-01,0.46,tcgplayer
 OP16-005,2026-06-08,0.14,tcgplayer
 OP16-005,2026-06-15,0.13,tcgplayer
@@ -112,6 +118,7 @@ OP16-005,2026-08-24,0.15,tcgplayer
 OP16-005,2026-08-31,0.14,tcgplayer
 OP16-005,2026-09-04,0.11,limitless
 OP16-005,2026-09-05,0.14,limitless
+OP16-005,2026-10-31,0.19,limitless
 OP16-006,2026-06-01,0.24,tcgplayer
 OP16-006,2026-06-08,0.10,tcgplayer
 OP16-006,2026-06-15,0.12,tcgplayer
@@ -128,6 +135,7 @@ OP16-006,2026-08-24,0.04,tcgplayer
 OP16-006,2026-08-31,0.05,tcgplayer
 OP16-006,2026-09-04,0.04,limitless
 OP16-006,2026-09-05,0.05,limitless
+OP16-006,2026-10-31,0.07,limitless
 OP16-007,2026-06-01,0.36,tcgplayer
 OP16-007,2026-06-08,0.12,tcgplayer
 OP16-007,2026-06-15,0.11,tcgplayer
@@ -144,6 +152,7 @@ OP16-007,2026-08-24,0.05,tcgplayer
 OP16-007,2026-08-31,0.07,tcgplayer
 OP16-007,2026-09-04,0.06,limitless
 OP16-007,2026-09-05,0.07,limitless
+OP16-007,2026-10-31,0.05,limitless
 OP16-008,2026-06-08,0.06,tcgplayer
 OP16-008,2026-06-15,0.05,tcgplayer
 OP16-008,2026-06-22,0.05,tcgplayer
@@ -159,6 +168,7 @@ OP16-008,2026-08-24,0.05,tcgplayer
 OP16-008,2026-08-31,0.05,tcgplayer
 OP16-008,2026-09-04,0.05,limitless
 OP16-008,2026-09-05,0.05,limitless
+OP16-008,2026-10-31,0.04,limitless
 OP16-009,2026-06-01,0.38,tcgplayer
 OP16-009,2026-06-08,0.07,tcgplayer
 OP16-009,2026-06-15,0.06,tcgplayer
@@ -175,6 +185,7 @@ OP16-009,2026-08-24,0.07,tcgplayer
 OP16-009,2026-08-31,0.09,tcgplayer
 OP16-009,2026-09-04,0.08,limitless
 OP16-009,2026-09-05,0.09,limitless
+OP16-009,2026-10-31,0.09,limitless
 OP16-010,2026-06-01,0.42,tcgplayer
 OP16-010,2026-06-08,0.12,tcgplayer
 OP16-010,2026-06-15,0.13,tcgplayer
@@ -191,6 +202,7 @@ OP16-010,2026-08-24,0.18,tcgplayer
 OP16-010,2026-08-31,0.17,tcgplayer
 OP16-010,2026-09-04,0.17,limitless
 OP16-010,2026-09-05,0.17,limitless
+OP16-010,2026-10-31,0.16,limitless
 OP16-011,2026-06-01,0.97,tcgplayer
 OP16-011,2026-06-08,0.17,tcgplayer
 OP16-011,2026-06-15,0.17,tcgplayer
@@ -207,6 +219,7 @@ OP16-011,2026-08-24,0.16,tcgplayer
 OP16-011,2026-08-31,0.20,tcgplayer
 OP16-011,2026-09-04,0.21,limitless
 OP16-011,2026-09-05,0.20,limitless
+OP16-011,2026-10-31,0.17,limitless
 OP16-011p1,2026-06-01,37.66,tcgplayer
 OP16-011p1,2026-06-08,29.08,tcgplayer
 OP16-011p1,2026-06-15,37.22,tcgplayer
@@ -223,6 +236,7 @@ OP16-011p1,2026-08-24,23.36,tcgplayer
 OP16-011p1,2026-08-31,22.05,tcgplayer
 OP16-011p1,2026-09-04,22.67,limitless
 OP16-011p1,2026-09-05,21.63,limitless
+OP16-011p1,2026-10-31,13.83,limitless
 OP16-012,2026-06-01,1.28,tcgplayer
 OP16-012,2026-06-08,0.19,tcgplayer
 OP16-012,2026-06-15,0.31,tcgplayer
@@ -239,6 +253,7 @@ OP16-012,2026-08-24,0.11,tcgplayer
 OP16-012,2026-08-31,0.12,tcgplayer
 OP16-012,2026-09-04,0.12,limitless
 OP16-012,2026-09-05,0.12,limitless
+OP16-012,2026-10-31,0.11,limitless
 OP16-013,2026-06-01,0.47,tcgplayer
 OP16-013,2026-06-08,0.08,tcgplayer
 OP16-013,2026-06-15,0.10,tcgplayer
@@ -255,6 +270,7 @@ OP16-013,2026-08-24,0.05,tcgplayer
 OP16-013,2026-08-31,0.06,tcgplayer
 OP16-013,2026-09-04,0.05,limitless
 OP16-013,2026-09-05,0.06,limitless
+OP16-013,2026-10-31,0.04,limitless
 OP16-014,2026-06-01,1.40,tcgplayer
 OP16-014,2026-06-08,0.11,tcgplayer
 OP16-014,2026-06-15,0.16,tcgplayer
@@ -271,6 +287,7 @@ OP16-014,2026-08-24,0.19,tcgplayer
 OP16-014,2026-08-31,0.21,tcgplayer
 OP16-014,2026-09-04,0.20,limitless
 OP16-014,2026-09-05,0.21,limitless
+OP16-014,2026-10-31,0.15,limitless
 OP16-014p1,2026-06-01,20.95,tcgplayer
 OP16-014p1,2026-06-08,8.70,tcgplayer
 OP16-014p1,2026-06-15,9.74,tcgplayer
@@ -287,6 +304,7 @@ OP16-014p1,2026-08-24,11.99,tcgplayer
 OP16-014p1,2026-08-31,10.75,tcgplayer
 OP16-014p1,2026-09-04,10.78,limitless
 OP16-014p1,2026-09-05,10.79,limitless
+OP16-014p1,2026-10-31,7.40,limitless
 OP16-015,2026-05-25,24.99,tcgplayer
 OP16-015,2026-06-01,6.76,tcgplayer
 OP16-015,2026-06-08,1.32,tcgplayer
@@ -304,6 +322,7 @@ OP16-015,2026-08-24,1.64,tcgplayer
 OP16-015,2026-08-31,2.23,tcgplayer
 OP16-015,2026-09-04,2.23,limitless
 OP16-015,2026-09-05,2.19,limitless
+OP16-015,2026-10-31,0.51,limitless
 OP16-015p1,2026-06-01,118.91,tcgplayer
 OP16-015p1,2026-06-08,34.64,tcgplayer
 OP16-015p1,2026-06-15,46.05,tcgplayer
@@ -320,6 +339,7 @@ OP16-015p1,2026-08-24,34.56,tcgplayer
 OP16-015p1,2026-08-31,32.13,tcgplayer
 OP16-015p1,2026-09-04,33.11,limitless
 OP16-015p1,2026-09-05,31.99,limitless
+OP16-015p1,2026-10-31,15.77,limitless
 OP16-016,2026-06-01,0.11,tcgplayer
 OP16-016,2026-06-08,0.07,tcgplayer
 OP16-016,2026-06-15,0.05,tcgplayer
@@ -336,6 +356,7 @@ OP16-016,2026-08-24,0.06,tcgplayer
 OP16-016,2026-08-31,0.05,tcgplayer
 OP16-016,2026-09-04,0.06,limitless
 OP16-016,2026-09-05,0.05,limitless
+OP16-016,2026-10-31,0.04,limitless
 OP16-017,2026-06-01,1.12,tcgplayer
 OP16-017,2026-06-08,0.12,tcgplayer
 OP16-017,2026-06-15,0.15,tcgplayer
@@ -352,6 +373,7 @@ OP16-017,2026-08-24,0.15,tcgplayer
 OP16-017,2026-08-31,0.17,tcgplayer
 OP16-017,2026-09-04,0.14,limitless
 OP16-017,2026-09-05,0.17,limitless
+OP16-017,2026-10-31,0.14,limitless
 OP16-018,2026-06-01,0.29,tcgplayer
 OP16-018,2026-06-08,0.14,tcgplayer
 OP16-018,2026-06-15,0.12,tcgplayer
@@ -368,6 +390,7 @@ OP16-018,2026-08-24,0.07,tcgplayer
 OP16-018,2026-08-31,0.06,tcgplayer
 OP16-018,2026-09-04,0.06,limitless
 OP16-018,2026-09-05,0.06,limitless
+OP16-018,2026-10-31,0.05,limitless
 OP16-019,2026-06-01,0.41,tcgplayer
 OP16-019,2026-06-08,0.08,tcgplayer
 OP16-019,2026-06-15,0.07,tcgplayer
@@ -384,6 +407,7 @@ OP16-019,2026-08-24,0.06,tcgplayer
 OP16-019,2026-08-31,0.06,tcgplayer
 OP16-019,2026-09-04,0.07,limitless
 OP16-019,2026-09-05,0.06,limitless
+OP16-019,2026-10-31,0.08,limitless
 OP16-020,2026-06-01,0.48,tcgplayer
 OP16-020,2026-06-08,0.12,tcgplayer
 OP16-020,2026-06-15,0.13,tcgplayer
@@ -400,6 +424,7 @@ OP16-020,2026-08-24,0.13,tcgplayer
 OP16-020,2026-08-31,0.18,tcgplayer
 OP16-020,2026-09-04,0.16,limitless
 OP16-020,2026-09-05,0.18,limitless
+OP16-020,2026-10-31,0.15,limitless
 OP16-021,2026-06-01,1.10,tcgplayer
 OP16-021,2026-06-08,0.30,tcgplayer
 OP16-021,2026-06-15,0.37,tcgplayer
@@ -416,6 +441,7 @@ OP16-021,2026-08-24,0.36,tcgplayer
 OP16-021,2026-08-31,0.44,tcgplayer
 OP16-021,2026-09-04,0.44,limitless
 OP16-021,2026-09-05,0.45,limitless
+OP16-021,2026-10-31,0.33,limitless
 OP16-021p1,2026-06-01,25.88,tcgplayer
 OP16-021p1,2026-06-08,18.10,tcgplayer
 OP16-021p1,2026-06-15,26.24,tcgplayer
@@ -432,6 +458,7 @@ OP16-021p1,2026-08-24,18.76,tcgplayer
 OP16-021p1,2026-08-31,17.47,tcgplayer
 OP16-021p1,2026-09-04,18.22,limitless
 OP16-021p1,2026-09-05,17.57,limitless
+OP16-021p1,2026-10-31,13.96,limitless
 OP16-022,2026-06-01,0.54,tcgplayer
 OP16-022,2026-06-08,0.18,tcgplayer
 OP16-022,2026-06-15,0.23,tcgplayer
@@ -448,6 +475,7 @@ OP16-022,2026-08-24,0.15,tcgplayer
 OP16-022,2026-08-31,0.16,tcgplayer
 OP16-022,2026-09-04,0.17,limitless
 OP16-022,2026-09-05,0.16,limitless
+OP16-022,2026-10-31,0.16,limitless
 OP16-022p1,2026-06-01,166.19,tcgplayer
 OP16-022p1,2026-06-08,80.50,tcgplayer
 OP16-022p1,2026-06-15,123.96,tcgplayer
@@ -464,6 +492,7 @@ OP16-022p1,2026-08-24,41.94,tcgplayer
 OP16-022p1,2026-08-31,39.38,tcgplayer
 OP16-022p1,2026-09-04,40.13,limitless
 OP16-022p1,2026-09-05,39.38,limitless
+OP16-022p1,2026-10-31,34.16,limitless
 OP16-023,2026-06-01,0.11,tcgplayer
 OP16-023,2026-06-08,0.05,tcgplayer
 OP16-023,2026-06-15,0.05,tcgplayer
@@ -480,6 +509,7 @@ OP16-023,2026-08-24,0.04,tcgplayer
 OP16-023,2026-08-31,0.04,tcgplayer
 OP16-023,2026-09-04,0.04,limitless
 OP16-023,2026-09-05,0.04,limitless
+OP16-023,2026-10-31,0.04,limitless
 OP16-024,2026-06-01,0.26,tcgplayer
 OP16-024,2026-06-08,0.11,tcgplayer
 OP16-024,2026-06-15,0.09,tcgplayer
@@ -496,6 +526,7 @@ OP16-024,2026-08-24,0.05,tcgplayer
 OP16-024,2026-08-31,0.06,tcgplayer
 OP16-024,2026-09-04,0.05,limitless
 OP16-024,2026-09-05,0.06,limitless
+OP16-024,2026-10-31,0.07,limitless
 OP16-025,2026-06-01,0.23,tcgplayer
 OP16-025,2026-06-08,0.08,tcgplayer
 OP16-025,2026-06-15,0.09,tcgplayer
@@ -512,6 +543,7 @@ OP16-025,2026-08-24,0.07,tcgplayer
 OP16-025,2026-08-31,0.08,tcgplayer
 OP16-025,2026-09-04,0.08,limitless
 OP16-025,2026-09-05,0.08,limitless
+OP16-025,2026-10-31,0.06,limitless
 OP16-026,2026-06-01,1.00,tcgplayer
 OP16-026,2026-06-08,0.50,tcgplayer
 OP16-026,2026-06-15,0.57,tcgplayer
@@ -528,6 +560,7 @@ OP16-026,2026-08-24,0.26,tcgplayer
 OP16-026,2026-08-31,0.29,tcgplayer
 OP16-026,2026-09-04,0.42,limitless
 OP16-026,2026-09-05,0.29,limitless
+OP16-026,2026-10-31,0.41,limitless
 OP16-026p1,2026-06-08,14.16,tcgplayer
 OP16-026p1,2026-06-15,14.09,tcgplayer
 OP16-026p1,2026-06-22,13.50,tcgplayer
@@ -543,6 +576,7 @@ OP16-026p1,2026-08-24,3.38,tcgplayer
 OP16-026p1,2026-08-31,3.11,tcgplayer
 OP16-026p1,2026-09-04,3.22,limitless
 OP16-026p1,2026-09-05,3.11,limitless
+OP16-026p1,2026-10-31,3.79,limitless
 OP16-027,2026-06-01,0.42,tcgplayer
 OP16-027,2026-06-08,0.17,tcgplayer
 OP16-027,2026-06-15,0.16,tcgplayer
@@ -559,6 +593,7 @@ OP16-027,2026-08-24,0.12,tcgplayer
 OP16-027,2026-08-31,0.17,tcgplayer
 OP16-027,2026-09-04,0.13,limitless
 OP16-027,2026-09-05,0.17,limitless
+OP16-027,2026-10-31,0.18,limitless
 OP16-028,2026-06-08,0.05,tcgplayer
 OP16-028,2026-06-15,0.06,tcgplayer
 OP16-028,2026-06-22,0.06,tcgplayer
@@ -574,6 +609,7 @@ OP16-028,2026-08-24,0.07,tcgplayer
 OP16-028,2026-08-31,0.07,tcgplayer
 OP16-028,2026-09-04,0.07,limitless
 OP16-028,2026-09-05,0.07,limitless
+OP16-028,2026-10-31,0.05,limitless
 OP16-029,2026-06-01,0.21,tcgplayer
 OP16-029,2026-06-08,0.12,tcgplayer
 OP16-029,2026-06-15,0.11,tcgplayer
@@ -590,6 +626,7 @@ OP16-029,2026-08-24,0.05,tcgplayer
 OP16-029,2026-08-31,0.05,tcgplayer
 OP16-029,2026-09-04,0.05,limitless
 OP16-029,2026-09-05,0.05,limitless
+OP16-029,2026-10-31,0.09,limitless
 OP16-030,2026-06-01,0.95,tcgplayer
 OP16-030,2026-06-08,0.21,tcgplayer
 OP16-030,2026-06-15,0.27,tcgplayer
@@ -606,6 +643,7 @@ OP16-030,2026-08-24,0.15,tcgplayer
 OP16-030,2026-08-31,0.14,tcgplayer
 OP16-030,2026-09-04,0.14,limitless
 OP16-030,2026-09-05,0.14,limitless
+OP16-030,2026-10-31,0.17,limitless
 OP16-031,2026-06-01,0.23,tcgplayer
 OP16-031,2026-06-08,0.09,tcgplayer
 OP16-031,2026-06-15,0.09,tcgplayer
@@ -622,6 +660,7 @@ OP16-031,2026-08-24,0.05,tcgplayer
 OP16-031,2026-08-31,0.05,tcgplayer
 OP16-031,2026-09-04,0.05,limitless
 OP16-031,2026-09-05,0.05,limitless
+OP16-031,2026-10-31,0.08,limitless
 OP16-032,2026-05-25,29.99,tcgplayer
 OP16-032,2026-06-01,5.52,tcgplayer
 OP16-032,2026-06-08,2.11,tcgplayer
@@ -639,6 +678,7 @@ OP16-032,2026-08-24,0.73,tcgplayer
 OP16-032,2026-08-31,0.63,tcgplayer
 OP16-032,2026-09-04,0.68,limitless
 OP16-032,2026-09-05,0.63,limitless
+OP16-032,2026-10-31,0.64,limitless
 OP16-032p1,2026-06-01,139.83,tcgplayer
 OP16-032p1,2026-06-08,71.90,tcgplayer
 OP16-032p1,2026-06-15,71.33,tcgplayer
@@ -655,6 +695,7 @@ OP16-032p1,2026-08-24,29.30,tcgplayer
 OP16-032p1,2026-08-31,28.78,tcgplayer
 OP16-032p1,2026-09-04,29.34,limitless
 OP16-032p1,2026-09-05,28.78,limitless
+OP16-032p1,2026-10-31,22.96,limitless
 OP16-033,2026-06-01,0.21,tcgplayer
 OP16-033,2026-06-08,0.07,tcgplayer
 OP16-033,2026-06-15,0.06,tcgplayer
@@ -671,6 +712,7 @@ OP16-033,2026-08-24,0.02,tcgplayer
 OP16-033,2026-08-31,0.03,tcgplayer
 OP16-033,2026-09-04,0.02,limitless
 OP16-033,2026-09-05,0.03,limitless
+OP16-033,2026-10-31,0.04,limitless
 OP16-034,2026-06-01,0.71,tcgplayer
 OP16-034,2026-06-08,0.16,tcgplayer
 OP16-034,2026-06-15,0.19,tcgplayer
@@ -687,6 +729,7 @@ OP16-034,2026-08-24,0.15,tcgplayer
 OP16-034,2026-08-31,0.21,tcgplayer
 OP16-034,2026-09-04,0.18,limitless
 OP16-034,2026-09-05,0.21,limitless
+OP16-034,2026-10-31,0.19,limitless
 OP16-034p1,2026-06-08,15.45,tcgplayer
 OP16-034p1,2026-06-15,19.14,tcgplayer
 OP16-034p1,2026-06-22,18.93,tcgplayer
@@ -702,6 +745,7 @@ OP16-034p1,2026-08-24,6.96,tcgplayer
 OP16-034p1,2026-08-31,6.19,tcgplayer
 OP16-034p1,2026-09-04,6.80,limitless
 OP16-034p1,2026-09-05,6.19,limitless
+OP16-034p1,2026-10-31,8.13,limitless
 OP16-035,2026-06-01,0.26,tcgplayer
 OP16-035,2026-06-08,0.12,tcgplayer
 OP16-035,2026-06-15,0.11,tcgplayer
@@ -718,6 +762,7 @@ OP16-035,2026-08-24,0.08,tcgplayer
 OP16-035,2026-08-31,0.09,tcgplayer
 OP16-035,2026-09-04,0.08,limitless
 OP16-035,2026-09-05,0.09,limitless
+OP16-035,2026-10-31,0.12,limitless
 OP16-036,2026-06-08,0.08,tcgplayer
 OP16-036,2026-06-15,0.08,tcgplayer
 OP16-036,2026-06-22,0.08,tcgplayer
@@ -733,6 +778,7 @@ OP16-036,2026-08-24,0.05,tcgplayer
 OP16-036,2026-08-31,0.05,tcgplayer
 OP16-036,2026-09-04,0.05,limitless
 OP16-036,2026-09-05,0.05,limitless
+OP16-036,2026-10-31,0.09,limitless
 OP16-037,2026-06-01,0.17,tcgplayer
 OP16-037,2026-06-08,0.08,tcgplayer
 OP16-037,2026-06-15,0.09,tcgplayer
@@ -749,6 +795,7 @@ OP16-037,2026-08-24,0.07,tcgplayer
 OP16-037,2026-08-31,0.07,tcgplayer
 OP16-037,2026-09-04,0.07,limitless
 OP16-037,2026-09-05,0.07,limitless
+OP16-037,2026-10-31,0.09,limitless
 OP16-038,2026-06-01,0.32,tcgplayer
 OP16-038,2026-06-08,0.17,tcgplayer
 OP16-038,2026-06-15,0.17,tcgplayer
@@ -765,6 +812,7 @@ OP16-038,2026-08-24,0.12,tcgplayer
 OP16-038,2026-08-31,0.17,tcgplayer
 OP16-038,2026-09-04,0.11,limitless
 OP16-038,2026-09-05,0.17,limitless
+OP16-038,2026-10-31,0.18,limitless
 OP16-039,2026-06-01,0.20,tcgplayer
 OP16-039,2026-06-08,0.11,tcgplayer
 OP16-039,2026-06-15,0.12,tcgplayer
@@ -781,6 +829,7 @@ OP16-039,2026-08-24,0.07,tcgplayer
 OP16-039,2026-08-31,0.05,tcgplayer
 OP16-039,2026-09-04,0.04,limitless
 OP16-039,2026-09-05,0.05,limitless
+OP16-039,2026-10-31,0.13,limitless
 OP16-040,2026-06-01,0.20,tcgplayer
 OP16-040,2026-06-08,0.11,tcgplayer
 OP16-040,2026-06-15,0.11,tcgplayer
@@ -797,6 +846,7 @@ OP16-040,2026-08-24,0.08,tcgplayer
 OP16-040,2026-08-31,0.08,tcgplayer
 OP16-040,2026-09-04,0.09,limitless
 OP16-040,2026-09-05,0.08,limitless
+OP16-040,2026-10-31,0.06,limitless
 OP16-041,2026-06-01,1.38,tcgplayer
 OP16-041,2026-06-08,0.16,tcgplayer
 OP16-041,2026-06-15,0.10,tcgplayer
@@ -813,6 +863,7 @@ OP16-041,2026-08-24,0.13,tcgplayer
 OP16-041,2026-08-31,0.09,tcgplayer
 OP16-041,2026-09-04,0.10,limitless
 OP16-041,2026-09-05,0.09,limitless
+OP16-041,2026-10-31,0.14,limitless
 OP16-041p1,2026-06-01,112.50,tcgplayer
 OP16-041p1,2026-06-08,31.71,tcgplayer
 OP16-041p1,2026-06-15,31.75,tcgplayer
@@ -829,6 +880,7 @@ OP16-041p1,2026-08-24,15.78,tcgplayer
 OP16-041p1,2026-08-31,16.51,tcgplayer
 OP16-041p1,2026-09-04,16.45,limitless
 OP16-041p1,2026-09-05,16.43,limitless
+OP16-041p1,2026-10-31,13.03,limitless
 OP16-042,2026-06-01,9.24,tcgplayer
 OP16-042,2026-06-08,6.98,tcgplayer
 OP16-042,2026-06-15,6.88,tcgplayer
@@ -845,6 +897,7 @@ OP16-042,2026-08-24,2.02,tcgplayer
 OP16-042,2026-08-31,1.85,tcgplayer
 OP16-042,2026-09-04,2.06,limitless
 OP16-042,2026-09-05,1.85,limitless
+OP16-042,2026-10-31,2.30,limitless
 OP16-043,2026-06-01,0.33,tcgplayer
 OP16-043,2026-06-08,0.13,tcgplayer
 OP16-043,2026-06-15,0.10,tcgplayer
@@ -861,6 +914,7 @@ OP16-043,2026-08-24,0.07,tcgplayer
 OP16-043,2026-08-31,0.08,tcgplayer
 OP16-043,2026-09-04,0.08,limitless
 OP16-043,2026-09-05,0.08,limitless
+OP16-043,2026-10-31,0.12,limitless
 OP16-044,2026-06-01,0.31,tcgplayer
 OP16-044,2026-06-08,0.09,tcgplayer
 OP16-044,2026-06-15,0.13,tcgplayer
@@ -877,6 +931,7 @@ OP16-044,2026-08-24,0.08,tcgplayer
 OP16-044,2026-08-31,0.08,tcgplayer
 OP16-044,2026-09-04,0.08,limitless
 OP16-044,2026-09-05,0.08,limitless
+OP16-044,2026-10-31,0.07,limitless
 OP16-045,2026-06-01,0.29,tcgplayer
 OP16-045,2026-06-08,0.23,tcgplayer
 OP16-045,2026-06-15,0.29,tcgplayer
@@ -893,6 +948,7 @@ OP16-045,2026-08-24,0.28,tcgplayer
 OP16-045,2026-08-31,0.29,tcgplayer
 OP16-045,2026-09-04,0.23,limitless
 OP16-045,2026-09-05,0.29,limitless
+OP16-045,2026-10-31,0.26,limitless
 OP16-046,2026-06-01,0.20,tcgplayer
 OP16-046,2026-06-08,0.07,tcgplayer
 OP16-046,2026-06-15,0.08,tcgplayer
@@ -909,6 +965,7 @@ OP16-046,2026-08-24,0.07,tcgplayer
 OP16-046,2026-08-31,0.08,tcgplayer
 OP16-046,2026-09-04,0.08,limitless
 OP16-046,2026-09-05,0.08,limitless
+OP16-046,2026-10-31,0.06,limitless
 OP16-047,2026-06-01,0.29,tcgplayer
 OP16-047,2026-06-08,0.12,tcgplayer
 OP16-047,2026-06-15,0.09,tcgplayer
@@ -925,6 +982,7 @@ OP16-047,2026-08-24,0.07,tcgplayer
 OP16-047,2026-08-31,0.07,tcgplayer
 OP16-047,2026-09-04,0.07,limitless
 OP16-047,2026-09-05,0.07,limitless
+OP16-047,2026-10-31,0.11,limitless
 OP16-048,2026-06-01,2.75,tcgplayer
 OP16-048,2026-06-08,1.16,tcgplayer
 OP16-048,2026-06-15,1.71,tcgplayer
@@ -941,6 +999,7 @@ OP16-048,2026-08-24,0.58,tcgplayer
 OP16-048,2026-08-31,0.48,tcgplayer
 OP16-048,2026-09-04,0.53,limitless
 OP16-048,2026-09-05,0.48,limitless
+OP16-048,2026-10-31,0.51,limitless
 OP16-048p1,2026-05-25,79.99,tcgplayer
 OP16-048p1,2026-06-01,79.99,tcgplayer
 OP16-048p1,2026-06-08,17.94,tcgplayer
@@ -958,6 +1017,7 @@ OP16-048p1,2026-08-24,5.63,tcgplayer
 OP16-048p1,2026-08-31,5.21,tcgplayer
 OP16-048p1,2026-09-04,5.48,limitless
 OP16-048p1,2026-09-05,5.21,limitless
+OP16-048p1,2026-10-31,7.29,limitless
 OP16-049,2026-06-01,0.22,tcgplayer
 OP16-049,2026-06-08,0.07,tcgplayer
 OP16-049,2026-06-15,0.09,tcgplayer
@@ -974,6 +1034,7 @@ OP16-049,2026-08-24,0.07,tcgplayer
 OP16-049,2026-08-31,0.07,tcgplayer
 OP16-049,2026-09-04,0.07,limitless
 OP16-049,2026-09-05,0.07,limitless
+OP16-049,2026-10-31,0.08,limitless
 OP16-050,2026-06-01,0.32,tcgplayer
 OP16-050,2026-06-08,0.15,tcgplayer
 OP16-050,2026-06-15,0.12,tcgplayer
@@ -990,6 +1051,7 @@ OP16-050,2026-08-24,0.11,tcgplayer
 OP16-050,2026-08-31,0.09,tcgplayer
 OP16-050,2026-09-04,0.09,limitless
 OP16-050,2026-09-05,0.09,limitless
+OP16-050,2026-10-31,0.10,limitless
 OP16-051,2026-06-01,0.22,tcgplayer
 OP16-051,2026-06-08,0.06,tcgplayer
 OP16-051,2026-06-15,0.09,tcgplayer
@@ -1006,6 +1068,7 @@ OP16-051,2026-08-24,0.07,tcgplayer
 OP16-051,2026-08-31,0.04,tcgplayer
 OP16-051,2026-09-04,0.05,limitless
 OP16-051,2026-09-05,0.04,limitless
+OP16-051,2026-10-31,0.05,limitless
 OP16-052,2026-06-01,0.33,tcgplayer
 OP16-052,2026-06-08,0.14,tcgplayer
 OP16-052,2026-06-15,0.16,tcgplayer
@@ -1022,6 +1085,7 @@ OP16-052,2026-08-24,0.12,tcgplayer
 OP16-052,2026-08-31,0.10,tcgplayer
 OP16-052,2026-09-04,0.11,limitless
 OP16-052,2026-09-05,0.10,limitless
+OP16-052,2026-10-31,0.14,limitless
 OP16-053,2026-06-01,0.23,tcgplayer
 OP16-053,2026-06-08,0.10,tcgplayer
 OP16-053,2026-06-15,0.09,tcgplayer
@@ -1038,6 +1102,7 @@ OP16-053,2026-08-24,0.07,tcgplayer
 OP16-053,2026-08-31,0.09,tcgplayer
 OP16-053,2026-09-04,0.06,limitless
 OP16-053,2026-09-05,0.09,limitless
+OP16-053,2026-10-31,0.12,limitless
 OP16-054,2026-06-01,1.27,tcgplayer
 OP16-054,2026-06-08,0.27,tcgplayer
 OP16-054,2026-06-15,0.20,tcgplayer
@@ -1054,6 +1119,7 @@ OP16-054,2026-08-24,0.16,tcgplayer
 OP16-054,2026-08-31,0.23,tcgplayer
 OP16-054,2026-09-04,0.20,limitless
 OP16-054,2026-09-05,0.23,limitless
+OP16-054,2026-10-31,0.23,limitless
 OP16-055,2026-06-01,1.44,tcgplayer
 OP16-055,2026-06-08,0.23,tcgplayer
 OP16-055,2026-06-15,0.22,tcgplayer
@@ -1070,6 +1136,7 @@ OP16-055,2026-08-24,0.19,tcgplayer
 OP16-055,2026-08-31,0.21,tcgplayer
 OP16-055,2026-09-04,0.18,limitless
 OP16-055,2026-09-05,0.21,limitless
+OP16-055,2026-10-31,0.21,limitless
 OP16-055p1,2026-06-08,17.32,tcgplayer
 OP16-055p1,2026-06-15,17.69,tcgplayer
 OP16-055p1,2026-06-22,15.81,tcgplayer
@@ -1085,6 +1152,7 @@ OP16-055p1,2026-08-24,5.81,tcgplayer
 OP16-055p1,2026-08-31,4.98,tcgplayer
 OP16-055p1,2026-09-04,5.23,limitless
 OP16-055p1,2026-09-05,4.98,limitless
+OP16-055p1,2026-10-31,12.87,limitless
 OP16-056,2026-06-01,2.88,tcgplayer
 OP16-056,2026-06-08,8.00,tcgplayer
 OP16-056,2026-06-15,8.88,tcgplayer
@@ -1101,6 +1169,7 @@ OP16-056,2026-08-24,3.28,tcgplayer
 OP16-056,2026-08-31,3.36,tcgplayer
 OP16-056,2026-09-04,3.45,limitless
 OP16-056,2026-09-05,3.37,limitless
+OP16-056,2026-10-31,6.15,limitless
 OP16-056p1,2026-06-08,42.48,tcgplayer
 OP16-056p1,2026-06-15,58.25,tcgplayer
 OP16-056p1,2026-06-22,50.37,tcgplayer
@@ -1116,6 +1185,7 @@ OP16-056p1,2026-08-24,21.73,tcgplayer
 OP16-056p1,2026-08-31,17.78,tcgplayer
 OP16-056p1,2026-09-04,18.59,limitless
 OP16-056p1,2026-09-05,17.78,limitless
+OP16-056p1,2026-10-31,26.99,limitless
 OP16-057,2026-06-01,0.28,tcgplayer
 OP16-057,2026-06-08,0.09,tcgplayer
 OP16-057,2026-06-15,0.10,tcgplayer
@@ -1132,6 +1202,7 @@ OP16-057,2026-08-24,0.05,tcgplayer
 OP16-057,2026-08-31,0.06,tcgplayer
 OP16-057,2026-09-04,0.06,limitless
 OP16-057,2026-09-05,0.06,limitless
+OP16-057,2026-10-31,0.08,limitless
 OP16-058,2026-06-01,1.39,tcgplayer
 OP16-058,2026-06-08,0.16,tcgplayer
 OP16-058,2026-06-15,0.15,tcgplayer
@@ -1148,6 +1219,7 @@ OP16-058,2026-08-24,0.08,tcgplayer
 OP16-058,2026-08-31,0.07,tcgplayer
 OP16-058,2026-09-04,0.07,limitless
 OP16-058,2026-09-05,0.07,limitless
+OP16-058,2026-10-31,0.09,limitless
 OP16-059,2026-06-01,0.37,tcgplayer
 OP16-059,2026-06-08,0.10,tcgplayer
 OP16-059,2026-06-15,0.09,tcgplayer
@@ -1164,6 +1236,7 @@ OP16-059,2026-08-24,0.10,tcgplayer
 OP16-059,2026-08-31,0.10,tcgplayer
 OP16-059,2026-09-04,0.11,limitless
 OP16-059,2026-09-05,0.10,limitless
+OP16-059,2026-10-31,0.09,limitless
 OP16-060,2026-06-01,1.33,tcgplayer
 OP16-060,2026-06-08,0.15,tcgplayer
 OP16-060,2026-06-15,0.11,tcgplayer
@@ -1180,6 +1253,7 @@ OP16-060,2026-08-24,0.13,tcgplayer
 OP16-060,2026-08-31,0.11,tcgplayer
 OP16-060,2026-09-04,0.11,limitless
 OP16-060,2026-09-05,0.11,limitless
+OP16-060,2026-10-31,0.10,limitless
 OP16-060p1,2026-06-01,97.78,tcgplayer
 OP16-060p1,2026-06-08,28.54,tcgplayer
 OP16-060p1,2026-06-15,27.13,tcgplayer
@@ -1196,6 +1270,7 @@ OP16-060p1,2026-08-24,12.53,tcgplayer
 OP16-060p1,2026-08-31,11.47,tcgplayer
 OP16-060p1,2026-09-04,12.10,limitless
 OP16-060p1,2026-09-05,11.47,limitless
+OP16-060p1,2026-10-31,9.01,limitless
 OP16-061,2026-06-01,0.20,tcgplayer
 OP16-061,2026-06-08,0.09,tcgplayer
 OP16-061,2026-06-15,0.09,tcgplayer
@@ -1212,6 +1287,7 @@ OP16-061,2026-08-24,0.10,tcgplayer
 OP16-061,2026-08-31,0.09,tcgplayer
 OP16-061,2026-09-04,0.09,limitless
 OP16-061,2026-09-05,0.09,limitless
+OP16-061,2026-10-31,0.07,limitless
 OP16-062,2026-06-01,0.33,tcgplayer
 OP16-062,2026-06-08,0.10,tcgplayer
 OP16-062,2026-06-15,0.11,tcgplayer
@@ -1228,6 +1304,7 @@ OP16-062,2026-08-24,0.05,tcgplayer
 OP16-062,2026-08-31,0.07,tcgplayer
 OP16-062,2026-09-04,0.06,limitless
 OP16-062,2026-09-05,0.07,limitless
+OP16-062,2026-10-31,0.07,limitless
 OP16-063,2026-06-01,1.03,tcgplayer
 OP16-063,2026-06-08,0.17,tcgplayer
 OP16-063,2026-06-15,0.19,tcgplayer
@@ -1244,6 +1321,7 @@ OP16-063,2026-08-24,0.14,tcgplayer
 OP16-063,2026-08-31,0.13,tcgplayer
 OP16-063,2026-09-04,0.14,limitless
 OP16-063,2026-09-05,0.13,limitless
+OP16-063,2026-10-31,0.15,limitless
 OP16-063p1,2026-06-01,47.71,tcgplayer
 OP16-063p1,2026-06-08,13.97,tcgplayer
 OP16-063p1,2026-06-15,11.87,tcgplayer
@@ -1260,6 +1338,7 @@ OP16-063p1,2026-08-24,4.60,tcgplayer
 OP16-063p1,2026-08-31,4.78,tcgplayer
 OP16-063p1,2026-09-04,4.86,limitless
 OP16-063p1,2026-09-05,4.78,limitless
+OP16-063p1,2026-10-31,3.55,limitless
 OP16-063p2,2026-06-15,1196.67,tcgplayer
 OP16-063p2,2026-06-22,1195.60,tcgplayer
 OP16-063p2,2026-06-29,1189.33,tcgplayer
@@ -1274,6 +1353,7 @@ OP16-063p2,2026-08-24,1146.03,tcgplayer
 OP16-063p2,2026-08-31,1133.22,tcgplayer
 OP16-063p2,2026-09-04,1146.03,limitless
 OP16-063p2,2026-09-05,1133.22,limitless
+OP16-063p2,2026-10-31,1088.18,limitless
 OP16-064,2026-06-01,0.93,tcgplayer
 OP16-064,2026-06-08,0.30,tcgplayer
 OP16-064,2026-06-15,0.31,tcgplayer
@@ -1290,6 +1370,7 @@ OP16-064,2026-08-24,0.14,tcgplayer
 OP16-064,2026-08-31,0.17,tcgplayer
 OP16-064,2026-09-04,0.16,limitless
 OP16-064,2026-09-05,0.17,limitless
+OP16-064,2026-10-31,0.22,limitless
 OP16-065,2026-06-01,10.58,tcgplayer
 OP16-065,2026-06-08,3.26,tcgplayer
 OP16-065,2026-06-15,2.70,tcgplayer
@@ -1306,6 +1387,7 @@ OP16-065,2026-08-24,0.46,tcgplayer
 OP16-065,2026-08-31,0.36,tcgplayer
 OP16-065,2026-09-04,0.45,limitless
 OP16-065,2026-09-05,0.36,limitless
+OP16-065,2026-10-31,0.41,limitless
 OP16-065p1,2026-06-01,59.15,tcgplayer
 OP16-065p1,2026-06-08,34.26,tcgplayer
 OP16-065p1,2026-06-15,31.96,tcgplayer
@@ -1322,6 +1404,7 @@ OP16-065p1,2026-08-24,13.19,tcgplayer
 OP16-065p1,2026-08-31,12.13,tcgplayer
 OP16-065p1,2026-09-04,12.46,limitless
 OP16-065p1,2026-09-05,12.01,limitless
+OP16-065p1,2026-10-31,14.39,limitless
 OP16-065p2,2026-06-08,1230.94,tcgplayer
 OP16-065p2,2026-06-15,1199.20,tcgplayer
 OP16-065p2,2026-06-22,1204.71,tcgplayer
@@ -1337,6 +1420,7 @@ OP16-065p2,2026-08-24,1177.87,tcgplayer
 OP16-065p2,2026-08-31,1140.40,tcgplayer
 OP16-065p2,2026-09-04,1141.32,limitless
 OP16-065p2,2026-09-05,1140.40,limitless
+OP16-065p2,2026-10-31,1111.83,limitless
 OP16-066,2026-06-01,0.28,tcgplayer
 OP16-066,2026-06-08,0.14,tcgplayer
 OP16-066,2026-06-15,0.15,tcgplayer
@@ -1353,6 +1437,7 @@ OP16-066,2026-08-24,0.07,tcgplayer
 OP16-066,2026-08-31,0.09,tcgplayer
 OP16-066,2026-09-04,0.08,limitless
 OP16-066,2026-09-05,0.09,limitless
+OP16-066,2026-10-31,0.12,limitless
 OP16-067,2026-06-01,0.35,tcgplayer
 OP16-067,2026-06-08,0.24,tcgplayer
 OP16-067,2026-06-15,0.24,tcgplayer
@@ -1369,6 +1454,7 @@ OP16-067,2026-08-24,0.11,tcgplayer
 OP16-067,2026-08-31,0.11,tcgplayer
 OP16-067,2026-09-04,0.12,limitless
 OP16-067,2026-09-05,0.11,limitless
+OP16-067,2026-10-31,0.16,limitless
 OP16-068,2026-06-01,0.22,tcgplayer
 OP16-068,2026-06-08,0.12,tcgplayer
 OP16-068,2026-06-15,0.09,tcgplayer
@@ -1385,6 +1471,7 @@ OP16-068,2026-08-24,0.08,tcgplayer
 OP16-068,2026-08-31,0.07,tcgplayer
 OP16-068,2026-09-04,0.07,limitless
 OP16-068,2026-09-05,0.07,limitless
+OP16-068,2026-10-31,0.11,limitless
 OP16-069,2026-06-01,0.20,tcgplayer
 OP16-069,2026-06-08,0.07,tcgplayer
 OP16-069,2026-06-15,0.07,tcgplayer
@@ -1401,6 +1488,7 @@ OP16-069,2026-08-24,0.10,tcgplayer
 OP16-069,2026-08-31,0.09,tcgplayer
 OP16-069,2026-09-04,0.09,limitless
 OP16-069,2026-09-05,0.09,limitless
+OP16-069,2026-10-31,0.09,limitless
 OP16-070,2026-06-01,0.27,tcgplayer
 OP16-070,2026-06-08,0.16,tcgplayer
 OP16-070,2026-06-15,0.12,tcgplayer
@@ -1417,6 +1505,7 @@ OP16-070,2026-08-24,0.11,tcgplayer
 OP16-070,2026-08-31,0.10,tcgplayer
 OP16-070,2026-09-04,0.12,limitless
 OP16-070,2026-09-05,0.10,limitless
+OP16-070,2026-10-31,0.11,limitless
 OP16-071,2026-06-01,0.19,tcgplayer
 OP16-071,2026-06-08,0.08,tcgplayer
 OP16-071,2026-06-15,0.10,tcgplayer
@@ -1433,6 +1522,7 @@ OP16-071,2026-08-24,0.06,tcgplayer
 OP16-071,2026-08-31,0.06,tcgplayer
 OP16-071,2026-09-04,0.06,limitless
 OP16-071,2026-09-05,0.06,limitless
+OP16-071,2026-10-31,0.05,limitless
 OP16-072,2026-06-01,0.21,tcgplayer
 OP16-072,2026-06-08,0.08,tcgplayer
 OP16-072,2026-06-15,0.08,tcgplayer
@@ -1449,6 +1539,7 @@ OP16-072,2026-08-24,0.06,tcgplayer
 OP16-072,2026-08-31,0.06,tcgplayer
 OP16-072,2026-09-04,0.06,limitless
 OP16-072,2026-09-05,0.06,limitless
+OP16-072,2026-10-31,0.09,limitless
 OP16-073,2026-06-01,1.30,tcgplayer
 OP16-073,2026-06-08,0.22,tcgplayer
 OP16-073,2026-06-15,0.18,tcgplayer
@@ -1465,6 +1556,7 @@ OP16-073,2026-08-24,0.13,tcgplayer
 OP16-073,2026-08-31,0.15,tcgplayer
 OP16-073,2026-09-04,0.16,limitless
 OP16-073,2026-09-05,0.15,limitless
+OP16-073,2026-10-31,0.13,limitless
 OP16-073p1,2026-06-08,14.58,tcgplayer
 OP16-073p1,2026-06-15,11.44,tcgplayer
 OP16-073p1,2026-06-22,11.42,tcgplayer
@@ -1480,6 +1572,7 @@ OP16-073p1,2026-08-24,5.36,tcgplayer
 OP16-073p1,2026-08-31,4.65,tcgplayer
 OP16-073p1,2026-09-04,5.08,limitless
 OP16-073p1,2026-09-05,4.65,limitless
+OP16-073p1,2026-10-31,4.60,limitless
 OP16-073p2,2026-06-08,991.49,tcgplayer
 OP16-073p2,2026-06-15,1032.26,tcgplayer
 OP16-073p2,2026-06-22,1057.11,tcgplayer
@@ -1495,6 +1588,7 @@ OP16-073p2,2026-08-24,1043.28,tcgplayer
 OP16-073p2,2026-08-31,1043.28,tcgplayer
 OP16-073p2,2026-09-04,1043.28,limitless
 OP16-073p2,2026-09-05,1043.28,limitless
+OP16-073p2,2026-10-31,1001.12,limitless
 OP16-074,2026-06-01,0.21,tcgplayer
 OP16-074,2026-06-08,0.07,tcgplayer
 OP16-074,2026-06-15,0.10,tcgplayer
@@ -1511,6 +1605,7 @@ OP16-074,2026-08-24,0.07,tcgplayer
 OP16-074,2026-08-31,0.06,tcgplayer
 OP16-074,2026-09-04,0.07,limitless
 OP16-074,2026-09-05,0.06,limitless
+OP16-074,2026-10-31,0.13,limitless
 OP16-075,2026-06-01,0.25,tcgplayer
 OP16-075,2026-06-08,0.12,tcgplayer
 OP16-075,2026-06-15,0.13,tcgplayer
@@ -1527,6 +1622,7 @@ OP16-075,2026-08-24,0.07,tcgplayer
 OP16-075,2026-08-31,0.08,tcgplayer
 OP16-075,2026-09-04,0.08,limitless
 OP16-075,2026-09-05,0.08,limitless
+OP16-075,2026-10-31,0.10,limitless
 OP16-076,2026-06-01,0.31,tcgplayer
 OP16-076,2026-06-08,0.17,tcgplayer
 OP16-076,2026-06-15,0.13,tcgplayer
@@ -1543,6 +1639,7 @@ OP16-076,2026-08-24,0.08,tcgplayer
 OP16-076,2026-08-31,0.09,tcgplayer
 OP16-076,2026-09-04,0.11,limitless
 OP16-076,2026-09-05,0.09,limitless
+OP16-076,2026-10-31,0.11,limitless
 OP16-077,2026-06-01,1.04,tcgplayer
 OP16-077,2026-06-08,0.22,tcgplayer
 OP16-077,2026-06-15,0.25,tcgplayer
@@ -1559,6 +1656,7 @@ OP16-077,2026-08-24,0.10,tcgplayer
 OP16-077,2026-08-31,0.17,tcgplayer
 OP16-077,2026-09-04,0.13,limitless
 OP16-077,2026-09-05,0.17,limitless
+OP16-077,2026-10-31,0.17,limitless
 OP16-078,2026-06-01,0.29,tcgplayer
 OP16-078,2026-06-08,0.17,tcgplayer
 OP16-078,2026-06-15,0.17,tcgplayer
@@ -1575,6 +1673,7 @@ OP16-078,2026-08-24,0.08,tcgplayer
 OP16-078,2026-08-31,0.13,tcgplayer
 OP16-078,2026-09-04,0.12,limitless
 OP16-078,2026-09-05,0.13,limitless
+OP16-078,2026-10-31,0.14,limitless
 OP16-079,2026-05-25,6.99,tcgplayer
 OP16-079,2026-06-01,1.17,tcgplayer
 OP16-079,2026-06-08,0.13,tcgplayer
@@ -1592,6 +1691,7 @@ OP16-079,2026-08-24,0.16,tcgplayer
 OP16-079,2026-08-31,0.10,tcgplayer
 OP16-079,2026-09-04,0.10,limitless
 OP16-079,2026-09-05,0.10,limitless
+OP16-079,2026-10-31,0.14,limitless
 OP16-079p1,2026-05-25,189.99,tcgplayer
 OP16-079p1,2026-06-01,157.22,tcgplayer
 OP16-079p1,2026-06-08,93.03,tcgplayer
@@ -1609,6 +1709,7 @@ OP16-079p1,2026-08-24,49.62,tcgplayer
 OP16-079p1,2026-08-31,48.59,tcgplayer
 OP16-079p1,2026-09-04,48.86,limitless
 OP16-079p1,2026-09-05,48.59,limitless
+OP16-079p1,2026-10-31,47.07,limitless
 OP16-080,2026-06-01,1.61,tcgplayer
 OP16-080,2026-06-08,0.18,tcgplayer
 OP16-080,2026-06-15,0.18,tcgplayer
@@ -1625,6 +1726,7 @@ OP16-080,2026-08-24,0.16,tcgplayer
 OP16-080,2026-08-31,0.12,tcgplayer
 OP16-080,2026-09-04,0.14,limitless
 OP16-080,2026-09-05,0.12,limitless
+OP16-080,2026-10-31,0.11,limitless
 OP16-080p1,2026-05-25,199.99,tcgplayer
 OP16-080p1,2026-06-01,183.33,tcgplayer
 OP16-080p1,2026-06-08,65.37,tcgplayer
@@ -1642,6 +1744,7 @@ OP16-080p1,2026-08-24,20.50,tcgplayer
 OP16-080p1,2026-08-31,18.88,tcgplayer
 OP16-080p1,2026-09-04,19.85,limitless
 OP16-080p1,2026-09-05,18.88,limitless
+OP16-080p1,2026-10-31,14.18,limitless
 OP16-081,2026-06-01,0.20,tcgplayer
 OP16-081,2026-06-08,0.13,tcgplayer
 OP16-081,2026-06-15,0.12,tcgplayer
@@ -1658,6 +1761,7 @@ OP16-081,2026-08-24,0.10,tcgplayer
 OP16-081,2026-08-31,0.08,tcgplayer
 OP16-081,2026-09-04,0.07,limitless
 OP16-081,2026-09-05,0.08,limitless
+OP16-081,2026-10-31,0.12,limitless
 OP16-082,2026-06-01,5.28,tcgplayer
 OP16-082,2026-06-08,3.78,tcgplayer
 OP16-082,2026-06-15,3.92,tcgplayer
@@ -1674,6 +1778,7 @@ OP16-082,2026-08-24,0.98,tcgplayer
 OP16-082,2026-08-31,1.08,tcgplayer
 OP16-082,2026-09-04,0.84,limitless
 OP16-082,2026-09-05,1.06,limitless
+OP16-082,2026-10-31,0.79,limitless
 OP16-082p1,2026-06-01,34.47,tcgplayer
 OP16-082p1,2026-06-08,29.38,tcgplayer
 OP16-082p1,2026-06-15,38.28,tcgplayer
@@ -1690,6 +1795,7 @@ OP16-082p1,2026-08-24,11.95,tcgplayer
 OP16-082p1,2026-08-31,11.94,tcgplayer
 OP16-082p1,2026-09-04,11.62,limitless
 OP16-082p1,2026-09-05,11.97,limitless
+OP16-082p1,2026-10-31,16.48,limitless
 OP16-083,2026-06-01,0.23,tcgplayer
 OP16-083,2026-06-08,0.12,tcgplayer
 OP16-083,2026-06-15,0.12,tcgplayer
@@ -1706,6 +1812,7 @@ OP16-083,2026-08-24,0.06,tcgplayer
 OP16-083,2026-08-31,0.06,tcgplayer
 OP16-083,2026-09-04,0.06,limitless
 OP16-083,2026-09-05,0.06,limitless
+OP16-083,2026-10-31,0.11,limitless
 OP16-084,2026-06-01,0.40,tcgplayer
 OP16-084,2026-06-08,0.23,tcgplayer
 OP16-084,2026-06-15,0.22,tcgplayer
@@ -1722,6 +1829,7 @@ OP16-084,2026-08-24,0.14,tcgplayer
 OP16-084,2026-08-31,0.15,tcgplayer
 OP16-084,2026-09-04,0.15,limitless
 OP16-084,2026-09-05,0.15,limitless
+OP16-084,2026-10-31,0.17,limitless
 OP16-085,2026-06-01,0.87,tcgplayer
 OP16-085,2026-06-08,0.25,tcgplayer
 OP16-085,2026-06-15,0.25,tcgplayer
@@ -1738,6 +1846,7 @@ OP16-085,2026-08-24,0.14,tcgplayer
 OP16-085,2026-08-31,0.18,tcgplayer
 OP16-085,2026-09-04,0.17,limitless
 OP16-085,2026-09-05,0.19,limitless
+OP16-085,2026-10-31,0.29,limitless
 OP16-085p1,2026-05-25,59.99,tcgplayer
 OP16-085p1,2026-06-01,55.85,tcgplayer
 OP16-085p1,2026-06-08,28.36,tcgplayer
@@ -1755,6 +1864,7 @@ OP16-085p1,2026-08-24,12.43,tcgplayer
 OP16-085p1,2026-08-31,12.53,tcgplayer
 OP16-085p1,2026-09-04,12.35,limitless
 OP16-085p1,2026-09-05,12.49,limitless
+OP16-085p1,2026-10-31,15.09,limitless
 OP16-086,2026-06-01,0.21,tcgplayer
 OP16-086,2026-06-08,0.14,tcgplayer
 OP16-086,2026-06-15,0.11,tcgplayer
@@ -1771,6 +1881,7 @@ OP16-086,2026-08-24,0.09,tcgplayer
 OP16-086,2026-08-31,0.10,tcgplayer
 OP16-086,2026-09-04,0.08,limitless
 OP16-086,2026-09-05,0.10,limitless
+OP16-086,2026-10-31,0.11,limitless
 OP16-087,2026-06-01,0.51,tcgplayer
 OP16-087,2026-06-08,0.63,tcgplayer
 OP16-087,2026-06-15,0.93,tcgplayer
@@ -1787,6 +1898,7 @@ OP16-087,2026-08-24,0.46,tcgplayer
 OP16-087,2026-08-31,0.50,tcgplayer
 OP16-087,2026-09-04,0.45,limitless
 OP16-087,2026-09-05,0.50,limitless
+OP16-087,2026-10-31,0.38,limitless
 OP16-088,2026-06-01,0.24,tcgplayer
 OP16-088,2026-06-08,0.12,tcgplayer
 OP16-088,2026-06-15,0.11,tcgplayer
@@ -1803,6 +1915,7 @@ OP16-088,2026-08-24,0.07,tcgplayer
 OP16-088,2026-08-31,0.06,tcgplayer
 OP16-088,2026-09-04,0.05,limitless
 OP16-088,2026-09-05,0.07,limitless
+OP16-088,2026-10-31,0.10,limitless
 OP16-089,2026-06-01,0.25,tcgplayer
 OP16-089,2026-06-08,0.10,tcgplayer
 OP16-089,2026-06-15,0.09,tcgplayer
@@ -1819,6 +1932,7 @@ OP16-089,2026-08-24,0.06,tcgplayer
 OP16-089,2026-08-31,0.07,tcgplayer
 OP16-089,2026-09-04,0.06,limitless
 OP16-089,2026-09-05,0.07,limitless
+OP16-089,2026-10-31,0.09,limitless
 OP16-090,2026-06-01,0.25,tcgplayer
 OP16-090,2026-06-08,0.11,tcgplayer
 OP16-090,2026-06-15,0.10,tcgplayer
@@ -1835,6 +1949,7 @@ OP16-090,2026-08-24,0.09,tcgplayer
 OP16-090,2026-08-31,0.09,tcgplayer
 OP16-090,2026-09-04,0.10,limitless
 OP16-090,2026-09-05,0.09,limitless
+OP16-090,2026-10-31,0.14,limitless
 OP16-091,2026-06-01,1.88,tcgplayer
 OP16-091,2026-06-08,0.71,tcgplayer
 OP16-091,2026-06-15,0.88,tcgplayer
@@ -1851,6 +1966,7 @@ OP16-091,2026-08-24,0.52,tcgplayer
 OP16-091,2026-08-31,0.60,tcgplayer
 OP16-091,2026-09-04,0.50,limitless
 OP16-091,2026-09-05,0.61,limitless
+OP16-091,2026-10-31,0.50,limitless
 OP16-092,2026-06-01,0.44,tcgplayer
 OP16-092,2026-06-08,0.22,tcgplayer
 OP16-092,2026-06-15,0.26,tcgplayer
@@ -1867,6 +1983,7 @@ OP16-092,2026-08-24,0.21,tcgplayer
 OP16-092,2026-08-31,0.22,tcgplayer
 OP16-092,2026-09-04,0.18,limitless
 OP16-092,2026-09-05,0.22,limitless
+OP16-092,2026-10-31,0.19,limitless
 OP16-093,2026-06-01,0.17,tcgplayer
 OP16-093,2026-06-08,0.07,tcgplayer
 OP16-093,2026-06-15,0.08,tcgplayer
@@ -1883,6 +2000,7 @@ OP16-093,2026-08-24,0.07,tcgplayer
 OP16-093,2026-08-31,0.06,tcgplayer
 OP16-093,2026-09-04,0.06,limitless
 OP16-093,2026-09-05,0.06,limitless
+OP16-093,2026-10-31,0.06,limitless
 OP16-094,2026-06-01,0.36,tcgplayer
 OP16-094,2026-06-08,0.19,tcgplayer
 OP16-094,2026-06-15,0.21,tcgplayer
@@ -1899,6 +2017,7 @@ OP16-094,2026-08-24,0.11,tcgplayer
 OP16-094,2026-08-31,0.13,tcgplayer
 OP16-094,2026-09-04,0.11,limitless
 OP16-094,2026-09-05,0.13,limitless
+OP16-094,2026-10-31,0.23,limitless
 OP16-095,2026-06-01,2.05,tcgplayer
 OP16-095,2026-06-08,0.26,tcgplayer
 OP16-095,2026-06-15,0.26,tcgplayer
@@ -1915,6 +2034,7 @@ OP16-095,2026-08-24,0.21,tcgplayer
 OP16-095,2026-08-31,0.22,tcgplayer
 OP16-095,2026-09-04,0.16,limitless
 OP16-095,2026-09-05,0.22,limitless
+OP16-095,2026-10-31,0.18,limitless
 OP16-096,2026-06-01,2.34,tcgplayer
 OP16-096,2026-06-08,0.62,tcgplayer
 OP16-096,2026-06-15,0.69,tcgplayer
@@ -1931,6 +2051,7 @@ OP16-096,2026-08-24,0.34,tcgplayer
 OP16-096,2026-08-31,0.43,tcgplayer
 OP16-096,2026-09-04,0.37,limitless
 OP16-096,2026-09-05,0.42,limitless
+OP16-096,2026-10-31,0.35,limitless
 OP16-097,2026-06-01,2.88,tcgplayer
 OP16-097,2026-06-08,0.50,tcgplayer
 OP16-097,2026-06-15,0.65,tcgplayer
@@ -1947,6 +2068,7 @@ OP16-097,2026-08-24,0.33,tcgplayer
 OP16-097,2026-08-31,0.38,tcgplayer
 OP16-097,2026-09-04,0.32,limitless
 OP16-097,2026-09-05,0.38,limitless
+OP16-097,2026-10-31,0.32,limitless
 OP16-098,2026-06-01,9.47,tcgplayer
 OP16-098,2026-06-08,7.26,tcgplayer
 OP16-098,2026-06-15,5.35,tcgplayer
@@ -1963,6 +2085,7 @@ OP16-098,2026-08-24,1.40,tcgplayer
 OP16-098,2026-08-31,1.57,tcgplayer
 OP16-098,2026-09-04,1.16,limitless
 OP16-098,2026-09-05,1.57,limitless
+OP16-098,2026-10-31,1.24,limitless
 OP16-098p1,2026-05-25,79.99,tcgplayer
 OP16-098p1,2026-06-01,71.99,tcgplayer
 OP16-098p1,2026-06-08,73.86,tcgplayer
@@ -1980,6 +2103,7 @@ OP16-098p1,2026-08-24,33.13,tcgplayer
 OP16-098p1,2026-08-31,31.63,tcgplayer
 OP16-098p1,2026-09-04,31.45,limitless
 OP16-098p1,2026-09-05,31.59,limitless
+OP16-098p1,2026-10-31,30.91,limitless
 OP16-099,2026-06-01,0.57,tcgplayer
 OP16-099,2026-06-08,0.72,tcgplayer
 OP16-099,2026-06-15,0.97,tcgplayer
@@ -1996,6 +2120,7 @@ OP16-099,2026-08-24,0.46,tcgplayer
 OP16-099,2026-08-31,0.45,tcgplayer
 OP16-099,2026-09-04,0.45,limitless
 OP16-099,2026-09-05,0.45,limitless
+OP16-099,2026-10-31,0.33,limitless
 OP16-100,2026-06-01,0.24,tcgplayer
 OP16-100,2026-06-08,0.13,tcgplayer
 OP16-100,2026-06-15,0.13,tcgplayer
@@ -2012,6 +2137,7 @@ OP16-100,2026-08-24,0.09,tcgplayer
 OP16-100,2026-08-31,0.09,tcgplayer
 OP16-100,2026-09-04,0.09,limitless
 OP16-100,2026-09-05,0.09,limitless
+OP16-100,2026-10-31,0.06,limitless
 OP16-101,2026-06-01,0.23,tcgplayer
 OP16-101,2026-06-08,0.11,tcgplayer
 OP16-101,2026-06-15,0.08,tcgplayer
@@ -2028,6 +2154,7 @@ OP16-101,2026-08-24,0.09,tcgplayer
 OP16-101,2026-08-31,0.10,tcgplayer
 OP16-101,2026-09-04,0.10,limitless
 OP16-101,2026-09-05,0.10,limitless
+OP16-101,2026-10-31,0.10,limitless
 OP16-102,2026-06-01,0.35,tcgplayer
 OP16-102,2026-06-08,0.12,tcgplayer
 OP16-102,2026-06-15,0.13,tcgplayer
@@ -2044,6 +2171,7 @@ OP16-102,2026-08-24,0.09,tcgplayer
 OP16-102,2026-08-31,0.08,tcgplayer
 OP16-102,2026-09-04,0.08,limitless
 OP16-102,2026-09-05,0.08,limitless
+OP16-102,2026-10-31,0.10,limitless
 OP16-103,2026-06-01,0.31,tcgplayer
 OP16-103,2026-06-08,0.15,tcgplayer
 OP16-103,2026-06-15,0.14,tcgplayer
@@ -2060,6 +2188,7 @@ OP16-103,2026-08-24,0.08,tcgplayer
 OP16-103,2026-08-31,0.10,tcgplayer
 OP16-103,2026-09-04,0.09,limitless
 OP16-103,2026-09-05,0.10,limitless
+OP16-103,2026-10-31,0.07,limitless
 OP16-104,2026-06-01,0.82,tcgplayer
 OP16-104,2026-06-08,0.17,tcgplayer
 OP16-104,2026-06-15,0.16,tcgplayer
@@ -2076,6 +2205,7 @@ OP16-104,2026-08-24,0.14,tcgplayer
 OP16-104,2026-08-31,0.11,tcgplayer
 OP16-104,2026-09-04,0.12,limitless
 OP16-104,2026-09-05,0.11,limitless
+OP16-104,2026-10-31,0.15,limitless
 OP16-105,2026-06-01,0.31,tcgplayer
 OP16-105,2026-06-08,0.08,tcgplayer
 OP16-105,2026-06-15,0.09,tcgplayer
@@ -2092,6 +2222,7 @@ OP16-105,2026-08-24,0.08,tcgplayer
 OP16-105,2026-08-31,0.09,tcgplayer
 OP16-105,2026-09-04,0.08,limitless
 OP16-105,2026-09-05,0.09,limitless
+OP16-105,2026-10-31,0.05,limitless
 OP16-106,2026-06-01,1.48,tcgplayer
 OP16-106,2026-06-08,0.12,tcgplayer
 OP16-106,2026-06-15,0.14,tcgplayer
@@ -2108,6 +2239,7 @@ OP16-106,2026-08-24,0.10,tcgplayer
 OP16-106,2026-08-31,0.11,tcgplayer
 OP16-106,2026-09-04,0.09,limitless
 OP16-106,2026-09-05,0.11,limitless
+OP16-106,2026-10-31,0.09,limitless
 OP16-107,2026-06-01,0.30,tcgplayer
 OP16-107,2026-06-08,0.12,tcgplayer
 OP16-107,2026-06-15,0.11,tcgplayer
@@ -2124,6 +2256,7 @@ OP16-107,2026-08-24,0.08,tcgplayer
 OP16-107,2026-08-31,0.07,tcgplayer
 OP16-107,2026-09-04,0.06,limitless
 OP16-107,2026-09-05,0.07,limitless
+OP16-107,2026-10-31,0.09,limitless
 OP16-108,2026-06-01,7.68,tcgplayer
 OP16-108,2026-06-08,1.13,tcgplayer
 OP16-108,2026-06-15,1.29,tcgplayer
@@ -2140,6 +2273,7 @@ OP16-108,2026-08-24,0.53,tcgplayer
 OP16-108,2026-08-31,0.40,tcgplayer
 OP16-108,2026-09-04,0.41,limitless
 OP16-108,2026-09-05,0.40,limitless
+OP16-108,2026-10-31,0.42,limitless
 OP16-108p1,2026-06-08,23.71,tcgplayer
 OP16-108p1,2026-06-15,19.84,tcgplayer
 OP16-108p1,2026-06-22,15.25,tcgplayer
@@ -2155,6 +2289,7 @@ OP16-108p1,2026-08-24,6.88,tcgplayer
 OP16-108p1,2026-08-31,6.36,tcgplayer
 OP16-108p1,2026-09-04,6.18,limitless
 OP16-108p1,2026-09-05,6.36,limitless
+OP16-108p1,2026-10-31,6.49,limitless
 OP16-109,2026-06-01,0.32,tcgplayer
 OP16-109,2026-06-08,0.15,tcgplayer
 OP16-109,2026-06-15,0.14,tcgplayer
@@ -2171,6 +2306,7 @@ OP16-109,2026-08-24,0.10,tcgplayer
 OP16-109,2026-08-31,0.08,tcgplayer
 OP16-109,2026-09-04,0.09,limitless
 OP16-109,2026-09-05,0.08,limitless
+OP16-109,2026-10-31,0.06,limitless
 OP16-110,2026-06-01,2.48,tcgplayer
 OP16-110,2026-06-08,0.17,tcgplayer
 OP16-110,2026-06-15,0.19,tcgplayer
@@ -2187,6 +2323,7 @@ OP16-110,2026-08-24,0.14,tcgplayer
 OP16-110,2026-08-31,0.08,tcgplayer
 OP16-110,2026-09-04,0.13,limitless
 OP16-110,2026-09-05,0.08,limitless
+OP16-110,2026-10-31,0.11,limitless
 OP16-111,2026-06-01,0.30,tcgplayer
 OP16-111,2026-06-08,0.09,tcgplayer
 OP16-111,2026-06-15,0.10,tcgplayer
@@ -2203,6 +2340,7 @@ OP16-111,2026-08-24,0.07,tcgplayer
 OP16-111,2026-08-31,0.06,tcgplayer
 OP16-111,2026-09-04,0.06,limitless
 OP16-111,2026-09-05,0.06,limitless
+OP16-111,2026-10-31,0.12,limitless
 OP16-112,2026-06-01,0.20,tcgplayer
 OP16-112,2026-06-08,0.07,tcgplayer
 OP16-112,2026-06-15,0.10,tcgplayer
@@ -2219,6 +2357,7 @@ OP16-112,2026-08-24,0.10,tcgplayer
 OP16-112,2026-08-31,0.09,tcgplayer
 OP16-112,2026-09-04,0.10,limitless
 OP16-112,2026-09-05,0.09,limitless
+OP16-112,2026-10-31,0.09,limitless
 OP16-113,2026-06-01,0.47,tcgplayer
 OP16-113,2026-06-08,0.09,tcgplayer
 OP16-113,2026-06-15,0.14,tcgplayer
@@ -2235,6 +2374,7 @@ OP16-113,2026-08-24,0.06,tcgplayer
 OP16-113,2026-08-31,0.08,tcgplayer
 OP16-113,2026-09-04,0.07,limitless
 OP16-113,2026-09-05,0.08,limitless
+OP16-113,2026-10-31,0.08,limitless
 OP16-114,2026-06-01,0.20,tcgplayer
 OP16-114,2026-06-08,0.10,tcgplayer
 OP16-114,2026-06-15,0.11,tcgplayer
@@ -2251,6 +2391,7 @@ OP16-114,2026-08-24,0.07,tcgplayer
 OP16-114,2026-08-31,0.05,tcgplayer
 OP16-114,2026-09-04,0.06,limitless
 OP16-114,2026-09-05,0.05,limitless
+OP16-114,2026-10-31,0.06,limitless
 OP16-115,2026-06-01,0.47,tcgplayer
 OP16-115,2026-06-08,0.11,tcgplayer
 OP16-115,2026-06-15,0.10,tcgplayer
@@ -2267,6 +2408,7 @@ OP16-115,2026-08-24,0.06,tcgplayer
 OP16-115,2026-08-31,0.08,tcgplayer
 OP16-115,2026-09-04,0.07,limitless
 OP16-115,2026-09-05,0.08,limitless
+OP16-115,2026-10-31,0.07,limitless
 OP16-116,2026-06-01,2.02,tcgplayer
 OP16-116,2026-06-08,0.25,tcgplayer
 OP16-116,2026-06-15,0.28,tcgplayer
@@ -2283,6 +2425,7 @@ OP16-116,2026-08-24,0.15,tcgplayer
 OP16-116,2026-08-31,0.18,tcgplayer
 OP16-116,2026-09-04,0.15,limitless
 OP16-116,2026-09-05,0.18,limitless
+OP16-116,2026-10-31,0.19,limitless
 OP16-116p1,2026-06-01,298.26,tcgplayer
 OP16-116p1,2026-06-08,172.70,tcgplayer
 OP16-116p1,2026-06-15,160.33,tcgplayer
@@ -2299,6 +2442,7 @@ OP16-116p1,2026-08-24,67.64,tcgplayer
 OP16-116p1,2026-08-31,62.31,tcgplayer
 OP16-116p1,2026-09-04,65.53,limitless
 OP16-116p1,2026-09-05,62.31,limitless
+OP16-116p1,2026-10-31,46.98,limitless
 OP16-117,2026-06-01,0.20,tcgplayer
 OP16-117,2026-06-08,0.11,tcgplayer
 OP16-117,2026-06-15,0.10,tcgplayer
@@ -2315,6 +2459,7 @@ OP16-117,2026-08-24,0.08,tcgplayer
 OP16-117,2026-08-31,0.07,tcgplayer
 OP16-117,2026-09-04,0.06,limitless
 OP16-117,2026-09-05,0.07,limitless
+OP16-117,2026-10-31,0.11,limitless
 OP16-118,2026-06-01,22.82,tcgplayer
 OP16-118,2026-06-08,14.09,tcgplayer
 OP16-118,2026-06-15,15.53,tcgplayer
@@ -2331,6 +2476,7 @@ OP16-118,2026-08-24,14.76,tcgplayer
 OP16-118,2026-08-31,15.93,tcgplayer
 OP16-118,2026-09-04,14.86,limitless
 OP16-118,2026-09-05,15.90,limitless
+OP16-118,2026-10-31,7.08,limitless
 OP16-118p1,2026-06-01,79.00,tcgplayer
 OP16-118p1,2026-06-08,28.78,tcgplayer
 OP16-118p1,2026-06-15,31.11,tcgplayer
@@ -2347,6 +2493,7 @@ OP16-118p1,2026-08-24,26.02,tcgplayer
 OP16-118p1,2026-08-31,26.59,tcgplayer
 OP16-118p1,2026-09-04,26.10,limitless
 OP16-118p1,2026-09-05,26.63,limitless
+OP16-118p1,2026-10-31,20.61,limitless
 OP16-119,2026-06-01,43.99,tcgplayer
 OP16-119,2026-06-08,41.02,tcgplayer
 OP16-119,2026-06-15,40.55,tcgplayer
@@ -2363,6 +2510,7 @@ OP16-119,2026-08-24,19.91,tcgplayer
 OP16-119,2026-08-31,31.43,tcgplayer
 OP16-119,2026-09-04,24.86,limitless
 OP16-119,2026-09-05,31.43,limitless
+OP16-119,2026-10-31,23.60,limitless
 OP16-119p1,2026-06-01,100.90,tcgplayer
 OP16-119p1,2026-06-08,94.01,tcgplayer
 OP16-119p1,2026-06-15,95.63,tcgplayer
@@ -2379,3 +2527,4 @@ OP16-119p1,2026-08-24,38.47,tcgplayer
 OP16-119p1,2026-08-31,42.70,tcgplayer
 OP16-119p1,2026-09-04,37.37,limitless
 OP16-119p1,2026-09-05,42.70,limitless
+OP16-119p1,2026-10-31,40.47,limitless
